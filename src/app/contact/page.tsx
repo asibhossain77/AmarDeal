@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/app-shell';
+import { SeoPageLayout } from '@/components/seo-page-layout';
+import { ContactSection } from '@/components/landing/contact-section';
 
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
 
@@ -31,7 +32,9 @@ export default function ContactPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      <AppShell initialView="page-contact" />
+      <SeoPageLayout title="যোগাযোগ" subtitle="আমাদের সাথে যোগাযোগ করুন">
+        <ContactSection />
+      </SeoPageLayout>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/app-shell';
+import { SeoPageLayout } from '@/components/seo-page-layout';
+import { FAQSection } from '@/components/landing/faq-section';
 
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
 
@@ -50,7 +51,9 @@ export default function FaqPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageLd) }} />
-      <AppShell initialView="page-faq" />
+      <SeoPageLayout title="ঘন ঘন জিজ্ঞাসিত প্রশ্নাবলী" subtitle="আমাদের সেবা সম্পর্কে সাধারণ প্রশ্ন ও উত্তর">
+        <FAQSection />
+      </SeoPageLayout>
     </>
   );
 }

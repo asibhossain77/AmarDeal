@@ -318,3 +318,20 @@ Stage Summary:
 - Desktop dashboard header alignment fixed across all views (user, admin, seller)
 - Left alignment: Logo matches sidebar nav items (both at 20px from viewport edge)
 - Right alignment: Navbar buttons match content area (both at 24px from viewport edge)
+
+---
+Task ID: seo-fix
+Agent: fullstack-developer
+Task: Fix Google page indexing by making route pages server-render actual content
+
+Work Log:
+- Identified root cause: All route pages used AppShell with initialView (client-side only)
+- Created SeoPageLayout server component at src/components/seo-page-layout.tsx
+- Rewrote 8 route pages: about, faq, fees, security, contact, privacy, terms, how-it-works
+- Each page now renders section component directly (server-side rendered)
+- Blog page kept as-is (uses AppShell for complex routing)
+
+Stage Summary:
+- All 8 route pages now render actual HTML content server-side
+- Google can now crawl and index unique content on each page
+- Metadata, OpenGraph, and BreadcrumbList JSON-LD preserved

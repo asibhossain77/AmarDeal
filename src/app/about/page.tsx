@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/app-shell';
+import { SeoPageLayout } from '@/components/seo-page-layout';
+import { AboutSection } from '@/components/landing/about-section';
 
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
 
@@ -31,7 +32,9 @@ export default function AboutPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      <AppShell initialView="page-about" />
+      <SeoPageLayout title="আমাদের সম্পর্কে" subtitle="নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা">
+        <AboutSection />
+      </SeoPageLayout>
     </>
   );
 }

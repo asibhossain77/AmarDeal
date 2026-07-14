@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/app-shell';
+import { SeoPageLayout } from '@/components/seo-page-layout';
+import { HowItWorks } from '@/components/landing/how-it-works';
 
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
 
@@ -44,7 +45,9 @@ export default function HowItWorksPage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToLd) }} />
-      <AppShell initialView="page-how-it-works" />
+      <SeoPageLayout title="কিভাবে কাজ করে" subtitle="মাত্র তিনটি ধাপে নিরাপদ লেনদেন সম্পন্ন করুন">
+        <HowItWorks />
+      </SeoPageLayout>
     </>
   );
 }

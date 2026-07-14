@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { AppShell } from '@/components/app-shell';
+import { SeoPageLayout } from '@/components/seo-page-layout';
+import { ContractSection } from '@/components/landing/contract-section';
 
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
 
@@ -31,7 +32,9 @@ export default function TermsPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      <AppShell initialView="page-terms" />
+      <SeoPageLayout title="শর্তাবলী ও চুক্তি" subtitle="আমাদের সেবার শর্তাবলী ও ব্যবহারের শর্ত">
+        <ContractSection />
+      </SeoPageLayout>
     </>
   );
 }
