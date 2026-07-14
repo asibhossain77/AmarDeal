@@ -170,38 +170,36 @@ export function Navbar() {
 
           {/* ── Desktop Nav: Landing ── */}
           {!isAuth && !isAdmin && (
-            <>
-              <div className="hidden items-center gap-1 md:flex">
-                <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  বৈশিষ্ট্য
-                </a>
-                <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  ফি কাঠামো
-                </a>
-                <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  ব্লগ
-                </a>
-                <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  যোগাযোগ
-                </a>
-              </div>
-              <div className="hidden items-center gap-2 md:flex">
-                <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  FAQ
-                </a>
-                <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  কিভাবে কাজ করে
-                </a>
-                <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  আমাদের সম্পর্কে
-                </a>
+            <div className="hidden items-center gap-1 md:flex">
+              <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                বৈশিষ্ট্য
+              </a>
+              <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                ফি কাঠামো
+              </a>
+              <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                কিভাবে কাজ করে
+              </a>
+              <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                FAQ
+              </a>
+              <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                ব্লগ
+              </a>
+              <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                আমাদের সম্পর্কে
+              </a>
+              <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                যোগাযোগ
+              </a>
+              <div className="flex items-center gap-2 ml-3 pl-3 border-l border-border/60">
+                <ThemeToggle />
                 <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                   <LogIn className="h-4 w-4" />
                   লগইন / নিবন্ধন
                 </Button>
-                <ThemeToggle />
               </div>
-            </>
+            </div>
           )}
 
           {/* ── Desktop Nav: Dashboard ── */}
