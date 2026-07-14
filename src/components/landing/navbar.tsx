@@ -139,8 +139,8 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
       <nav
-        className={`flex h-16 items-center ${
-          isSidebarView ? '' : 'mx-auto max-w-6xl'
+        className={`relative h-16 items-center justify-between px-4 sm:px-6 ${
+          isSidebarView ? 'flex' : 'mx-auto flex max-w-6xl md:px-8'
         }`}
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
@@ -152,10 +152,10 @@ export function Navbar() {
 
         {/* ── Main content area ── */}
         <div
-          className={`flex flex-1 items-center justify-between ${
+          className={`flex items-center ${
             isSidebarView
-              ? 'px-4 sm:px-6 lg:px-0 lg:pr-6 lg:justify-end'
-              : 'px-4 sm:px-6 lg:px-8'
+              ? 'flex-1 justify-between px-4 sm:px-6 lg:px-0 lg:pr-6'
+              : ''
           }`}
         >
           {/* Landing / Auth logo */}
@@ -165,45 +165,6 @@ export function Navbar() {
           {isSidebarView && (
             <div className="lg:hidden">
               <LogoButton onClick={handleLogoClick} />
-            </div>
-          )}
-
-          {/* ── Desktop Nav: Landing ── */}
-          {!isAuth && !isAdmin && (
-            <div className="hidden flex-1 items-center justify-between md:flex">
-              <div className="w-32 shrink-0">
-                {/* Logo spacer — actual logo is in sibling */}
-              </div>
-              <div className="flex items-center gap-1">
-                <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  বৈশিষ্ট্য
-                </a>
-                <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  ফি কাঠামো
-                </a>
-                <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  কিভাবে কাজ করে
-                </a>
-                <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  FAQ
-                </a>
-                <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  ব্লগ
-                </a>
-                <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  আমাদের সম্পর্কে
-                </a>
-                <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                  যোগাযোগ
-                </a>
-              </div>
-              <div className="flex w-32 shrink-0 items-center justify-end gap-2">
-                <ThemeToggle />
-                <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
-                  <LogIn className="h-4 w-4" />
-                  লগইন / নিবন্ধন
-                </Button>
-              </div>
             </div>
           )}
 
@@ -257,8 +218,47 @@ export function Navbar() {
               </button>
             </div>
           )}
+        </div>
 
-          {/* ── Mobile Menu (single hamburger for all views) ── */}
+        {/* ── Center: Landing Desktop Nav Links (direct child of nav for proper absolute centering) ── */}
+        {!isAuth && !isAdmin && (
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
+            <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              বৈশিষ্ট্য
+            </a>
+            <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              ফি কাঠামো
+            </a>
+            <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              কিভাবে কাজ করে
+            </a>
+            <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              FAQ
+            </a>
+            <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              ব্লগ
+            </a>
+            <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              আমাদের সম্পর্কে
+            </a>
+            <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+              যোগাযোগ
+            </a>
+          </div>
+        )}
+
+        {/* ── Right: Landing Desktop Buttons (direct child of nav) ── */}
+        {!isAuth && !isAdmin && (
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
+            <ThemeToggle />
+            <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <LogIn className="h-4 w-4" />
+              লগইন / নিবন্ধন
+            </Button>
+          </div>
+        )}
+
+        {/* ── Mobile Menu (single hamburger for all views) ── */}
           <div className="flex items-center gap-2 md:hidden">
             <ThemeToggle />
             <Sheet open={open} onOpenChange={setOpen}>
@@ -425,7 +425,6 @@ export function Navbar() {
               </SheetContent>
             </Sheet>
           </div>
-        </div>
       </nav>
     </header>
   );
