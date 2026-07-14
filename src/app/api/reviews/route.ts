@@ -1,6 +1,5 @@
 import { db } from '@/lib/db'
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/deal-guard'
+import { NextResponse } from 'next/server'
 
 // GET /api/reviews — public: approved reviews only
 export async function GET() {
@@ -16,17 +15,14 @@ export async function GET() {
   }
 }
 
-// POST /api/reviews — submit a new review (auth required)
-export async function POST(request: NextRequest) {
+// POST /api/reviews — submit review with email/phone verification
+export async function POST(request: Request) {
   try {
-    const auth = await requireAuth(request)
-    if (!auth.ok) return auth.response
-
     const body = await request.json()
-    const { rating, comment } = body
+    const { rating, comment, contact } = body
 
-    if (!rating || !comment) {
-      return NextResponse.json({ error: 'রেটিং ও মন্তব্য আবশ্যক' }, { status: 400 })
+    if (!rating || !comment || !contact) {
+      return NextResponse.json({ error: 'রেটিং, মন্তব্য ও ইমেইল/ফোন আবশ্যক' }, { status: 400 })
     }
 
     if (rating < 1 || rating > 5) {
@@ -37,14 +33,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'মন্তব্য ৫০০ অক্ষরের বেশি হতে পারবে না' }, { status: 400 })
     }
 
-    // Get user info from account (name is auto-filled, not from input)
-    const user = await db.user.findUnique({
-      where: { id: auth.userId },
-      select: { id: true, name: true },
+    const trimmed = contact.trim().toLowerCase()
+
+    // Find user by email or phone
+    const user = await db.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: trimmed, mode: 'insensitive' } },
+          { phone: trimmed },
+        ],
+      },
+      select: { id: true, name: true, email: true, phone: true },
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'ইউজার পাওয়া যায়নি' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'এই ইমেইল/ফোন নম্বর দিয়ে কোনো একাউন্ট নেই', code: 'NO_ACCOUNT' },
+        { status: 404 }
+      )
     }
 
     // Check if user already reviewed (one review per user)
@@ -52,7 +58,10 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     })
     if (existing) {
-      return NextResponse.json({ error: 'আপনি ইতিমধ্যে একটি রিভিউ দিয়েছেন' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'এই একাউন্ট দিয়ে ইতিমধ্যে একটি রিভিউ দেওয়া হয়েছে', code: 'ALREADY_REVIEWED' },
+        { status: 400 }
+      )
     }
 
     const review = await db.review.create({
@@ -65,7 +74,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(review, { status: 201 })
+    return NextResponse.json({ success: true, review }, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'রিভিউ জমা দিতে সমস্যা' }, { status: 500 })
   }
