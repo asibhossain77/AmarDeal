@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
-import { LiveSupportButton } from '@/components/landing/live-support-button';
+import { LiveSupportButton } from '@/components/live-support-button';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
