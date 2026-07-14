@@ -76,12 +76,13 @@ export async function POST(
       )
     }
 
-    // Calculate amount
+    // Calculate amount (use admin-updated paymentAmount if available)
+    const baseAmount = deal.paymentAmount || deal.amount
     let amount: number
     if (payoutType === 'buyer_refund') {
-      amount = deal.paymentAmount || deal.amount
+      amount = baseAmount
     } else {
-      amount = deal.amount - (deal.platformFee || 0)
+      amount = baseAmount - (deal.platformFee || 0)
     }
 
     // Get user email for notification

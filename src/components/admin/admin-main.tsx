@@ -2362,7 +2362,7 @@ interface PayoutRow {
   createdAt: string;
   updatedAt: string;
   recipient: { id: string; name: string; email: string; phone: string } | null;
-  deal: { id: string; title: string; status: string; amount: number; sellerId: string; buyerId: string } | null;
+  deal: { id: string; title: string; status: string; amount: number; paymentAmount?: number | null; platformFee?: number | null; sellerId: string; buyerId: string } | null;
 }
 
 function PayoutsPanel() {
@@ -2517,6 +2517,12 @@ function PayoutsPanel() {
                   <p className="text-[10px] text-muted-foreground">ডিলের পরিমাণ</p>
                   <p className="font-semibold text-foreground">৳{p.deal?.amount.toLocaleString('bn-BD') || '—'}</p>
                 </div>
+                {p.deal?.paymentAmount != null && p.deal.paymentAmount !== p.deal.amount && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-muted-foreground">প্রকৃত পেমেন্টের পরিমাণ (ফি ছাড়া)</p>
+                    <p className="font-bold text-primary">৳{p.deal.paymentAmount.toLocaleString('bn-BD')}</p>
+                  </div>
+                )}
               </div>
               {p.deal?.title && (
                 <div>

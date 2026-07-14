@@ -17,7 +17,7 @@ export async function GET() {
           }),
           db.deal.findUnique({
             where: { id: p.dealId },
-            select: { id: true, title: true, status: true, amount: true, sellerId: true, buyerId: true },
+            select: { id: true, title: true, status: true, amount: true, paymentAmount: true, platformFee: true, sellerId: true, buyerId: true },
           }),
         ])
 
