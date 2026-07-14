@@ -1,0 +1,592 @@
+     1→'use client';
+     2→
+     3→import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore, type DealStatus } from '@/lib/store';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import { Input } from '@/components/ui/input';
+     9→import { toast } from 'sonner';
+    10→import {
+    11→  ArrowLeft,
+    12→  FileCheck,
+    13→  Send,
+    14→  ShieldCheck,
+    15→  Truck,
+    16→  ThumbsUp,
+    17→  Check,
+    18→  Clock,
+    19→  Banknote,
+    20→  User,
+    21→  CalendarDays,
+    22→  ScrollText,
+    23→  SendHorizonal,
+    24→  Shield,
+    25→  Loader2,
+    26→  PackageCheck,
+    27→  AlertTriangle,
+    28→  XCircle,
+    29→  Ban,
+    30→} from 'lucide-react';
+    31→
+    32→const emptySubscribe = () => () => {};
+    33→
+    34→/* ═══════════════════════════════════════════════════════════
+    35→   Types & Constants
+    36→   ═══════════════════════════════════════════════════════════ */
+    37→
+    38→const STEPS = [
+    39→  { num: '১', label: 'ডিল তৈরি', icon: FileCheck, statusKey: 'created' as const },
+    40→  { num: '২', label: 'পেমেন্ট', icon: Send, statusKey: 'Pending_Verification' as const },
+    41→  { num: '৩', label: 'ভেরিফিকেশন', icon: ShieldCheck, statusKey: 'Payment_Verified' as const },
+    42→  { num: '৪', label: 'ডেলিভারি', icon: Truck, statusKey: 'in_delivery' as const },
+    43→  { num: '৫', label: 'ডিল সম্পন্ন', icon: ThumbsUp, statusKey: 'completed' as const },
+    44→];
+    45→
+    46→function statusToActiveStep(status: string): number {
+    47→  switch (status) {
+    48→    case 'created': return 0;
+    49→    case 'Pending_Verification': return 1;
+    50→    case 'Pending_Payment': return 1;
+    51→    case 'Payment_Verified': return 2;
+    52→    case 'in_delivery': return 3;
+    53→    case 'completed': return 4;
+    54→    case 'cancelled':
+    55→    case 'rejected': return -1;
+    56→    case 'disputed': return 3;
+    57→    default: return 0;
+    58→  }
+    59→}
+    60→
+    61→function getStatusBadge(status: string) {
+    62→  switch (status) {
+    63→    case 'created':
+    64→      return <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">তৈরি হয়েছে</Badge>;
+    65→    case 'Pending_Verification':
+    66→      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">ভেরিফিকেশন পেন্ডিং</Badge>;
+    67→    case 'Pending_Payment':
+    68→      return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium">পেমেন্ট ফেরত</Badge>;
+    69→    case 'Payment_Verified':
+    70→      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">ভেরিফাইড</Badge>;
+    71→    case 'in_delivery':
+    72→      return <Badge className="bg-primary/15 text-primary dark:bg-primary/20 border-0 font-medium">ডেলিভারি চলছে</Badge>;
+    73→    case 'completed':
+    74→      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
+    75→    case 'cancelled':
+    76→      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+    77→    case 'disputed':
+    78→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ চলছে</Badge>;
+    79→    case 'rejected':
+    80→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">রিজেক্টেড</Badge>;
+    81→    default:
+    82→      return <Badge variant="outline">{status}</Badge>;
+    83→  }
+    84→}
+    85→
+    86→/* ═══════════════════════════════════════════════════════════
+    87→   Stepper Components
+    88→   ═══════════════════════════════════════════════════════════ */
+    89→
+    90→function HorizontalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+    91→  if (isCancelled) {
+    92→    return (
+    93→      <div className="flex items-center justify-center py-6">
+    94→        <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-6 py-4 border border-red-200 dark:border-red-500/20">
+    95→          <Ban className="h-8 w-8 text-red-500" />
+    96→          <div>
+    97→            <p className="text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল হয়েছে</p>
+    98→            <p className="text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+    99→          </div>
+   100→        </div>
+   101→      </div>
+   102→    );
+   103→  }
+   104→
+   105→  return (
+   106→    <div className="relative flex items-start justify-between">
+   107→      <div className="absolute top-[18px] left-[18px] right-[18px] h-[3px] rounded-full bg-border/60" />
+   108→      {activeStep >= 0 && (
+   109→        <div
+   110→          className="absolute top-[18px] left-[18px] h-[3px] rounded-full transition-all duration-700"
+   111→          style={{
+   112→            width: activeStep >= STEPS.length - 1
+   113→              ? 'calc(100% - 36px)'
+   114→              : `calc(${(activeStep / (STEPS.length - 1)) * 100}% - 18px)`,
+   115→            backgroundColor: isDisputed ? '#EF4444' : '#84CC16',
+   116→          }}
+   117→        />
+   118→      )}
+   119→
+   120→      {STEPS.map((step, i) => {
+   121→        const Icon = step.icon;
+   122→        const isCompleted = i < activeStep;
+   123→        const isActive = i === activeStep;
+   124→
+   125→        return (
+   126→          <div key={step.num} className="relative z-10 flex flex-col items-center" style={{ width: `${100 / STEPS.length}%` }}>
+   127→            <div className="relative">
+   128→              {isActive && (
+   129→                <>
+   130→                  <span className="absolute -inset-2.5 rounded-full border-2 animate-ping opacity-30" style={{ borderColor: isDisputed ? '#EF4444' : '#84CC16' }} />
+   131→                  <span className="absolute -inset-1.5 rounded-full border-2 animate-pulse" style={{ borderColor: isDisputed ? '#EF444440' : '#84CC1640' }} />
+   132→                </>
+   133→              )}
+   134→              <div
+   135→                className="relative flex h-9 w-9 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   136→                style={{
+   137→                  backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+   138→                  borderColor: isCompleted || isActive ? (isDisputed && isActive ? '#EF4444' : '#84CC16') : 'var(--border)',
+   139→                  color: isCompleted ? '#18181b' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#18181b' : 'var(--muted-foreground)')),
+   140→                  boxShadow: (isCompleted || isActive) && !isDisputed ? '0 4px 14px rgba(163,230,53,0.35)' : 'none',
+   141→                }}
+   142→              >
+   143→                {isCompleted ? <Check className="h-4 w-4" strokeWidth={3} /> : isActive && isDisputed ? <AlertTriangle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+   144→              </div>
+   145→            </div>
+   146→            <p className="mt-2.5 text-center text-[11px] font-semibold leading-tight" style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+   147→              {step.label}
+   148→            </p>
+   149→          </div>
+   150→        );
+   151→      })}
+   152→    </div>
+   153→  );
+   154→}
+   155→
+   156→function VerticalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+   157→  if (isCancelled) {
+   158→    return (
+   159→      <div className="flex items-center justify-center py-6">
+   160→        <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-6 py-4 border border-red-200 dark:border-red-500/20 w-full">
+   161→          <Ban className="h-8 w-8 text-red-500 shrink-0" />
+   162→          <div>
+   163→            <p className="text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল হয়েছে</p>
+   164→            <p className="text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+   165→          </div>
+   166→        </div>
+   167→      </div>
+   168→    );
+   169→  }
+   170→
+   171→  return (
+   172→    <div className="space-y-0">
+   173→      {STEPS.map((step, i) => {
+   174→        const Icon = step.icon;
+   175→        const isCompleted = i < activeStep;
+   176→        const isActive = i === activeStep;
+   177→        const isLast = i === STEPS.length - 1;
+   178→
+   179→        return (
+   180→          <div key={step.num} className="flex gap-4">
+   181→            <div className="flex flex-col items-center">
+   182→              <div className="relative">
+   183→                {isActive && (
+   184→                  <span className="absolute -inset-2 rounded-full border-2 animate-pulse" style={{ borderColor: isDisputed ? '#EF444440' : '#84CC1640' }} />
+   185→                )}
+   186→                <div
+   187→                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   188→                  style={{
+   189→                    backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+   190→                    borderColor: isCompleted || isActive ? (isDisputed && isActive ? '#EF4444' : '#84CC16') : 'var(--border)',
+   191→                    color: isCompleted ? '#18181b' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#18181b' : 'var(--muted-foreground)')),
+   192→                    boxShadow: (isCompleted || isActive) && !isDisputed ? '0 4px 14px rgba(163,230,53,0.35)' : 'none',
+   193→                  }}
+   194→                >
+   195→                  {isCompleted ? <Check className="h-4 w-4" strokeWidth={3} /> : isActive && isDisputed ? <AlertTriangle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+   196→                </div>
+   197→              </div>
+   198→              {!isLast && (
+   199→                <div className="w-[3px] flex-1 min-h-8 my-1.5 rounded-full">
+   200→                  <div className="h-full w-full rounded-full transition-colors" style={{ backgroundColor: isCompleted ? '#84CC16' : 'var(--border)' }} />
+   201→                </div>
+   202→              )}
+   203→            </div>
+   204→            <div className={`flex flex-col justify-center ${isLast ? '' : 'pb-4'}`}>
+   205→              <p className="text-sm font-semibold leading-tight" style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+   206→                {step.label}
+   207→              </p>
+   208→              <div className="mt-1 flex items-center gap-2">
+   209→                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>ধাপ {step.num}</span>
+   210→                {isCompleted && <span className="text-xs font-medium" style={{ color: '#84CC16' }}>সম্পন্ন</span>}
+   211→                {isActive && !isDisputed && (
+   212→                  <span className="flex items-center gap-1 text-xs font-medium text-amber-500 dark:text-amber-400">
+   213→                    <span className="relative flex h-1.5 w-1.5">
+   214→                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+   215→                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+   216→                    </span>
+   217→                    অপেক্ষমান
+   218→                  </span>
+   219→                )}
+   220→                {isActive && isDisputed && (
+   221→                  <span className="flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400">
+   222→                    <AlertTriangle className="h-3 w-3" /> বিরোধ
+   223→                  </span>
+   224→                )}
+   225→              </div>
+   226→            </div>
+   227→          </div>
+   228→        );
+   229→      })}
+   230→    </div>
+   231→  );
+   232→}
+   233→
+   234→/* ═══════════════════════════════════════════════════════════
+   235→   Detail Card
+   236→   ═══════════════════════════════════════════════════════════ */
+   237→
+   238→function DetailCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+   239→  return (
+   240→    <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-3.5">
+   241→      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+   242→        <Icon className="h-5 w-5" />
+   243→      </div>
+   244→      <div className="min-w-0">
+   245→        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>{label}</p>
+   246→        <p className="text-sm font-bold truncate" style={{ color: 'var(--foreground)' }}>{value}</p>
+   247→      </div>
+   248→    </div>
+   249→  );
+   250→}
+   251→
+   252→/* ═══════════════════════════════════════════════════════════
+   253→   API Deal Data Type
+   254→   ═══════════════════════════════════════════════════════════ */
+   255→
+   256→interface DealData {
+   257→  id: string;
+   258→  title: string;
+   259→  amount: number;
+   260→  status: DealStatus;
+   261→  terms?: string | null;
+   262→  createdAt: string;
+   263→  buyerId: string;
+   264→  sellerId?: string | null;
+   265→  creatorId: string;
+   266→  paymentMethodId?: string | null;
+   267→  senderNumber?: string | null;
+   268→  transactionId?: string | null;
+   269→  paymentAmount?: number | null;
+   270→  buyer: { id: string; name: string; email: string; phone: string } | null;
+   271→  seller: { id: string; name: string; email: string; phone: string } | null;
+   272→  creator: { id: string; name: string; email: string } | null;
+   273→}
+   274→
+   275→/* ═══════════════════════════════════════════════════════════
+   276→   Main Component
+   277→   ═══════════════════════════════════════════════════════════ */
+   278→
+   279→export function SellerDealTracker() {
+   280→  const { setSellerPanel, activeDeal, user } = useAppStore();
+   281→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   282→
+   283→  const [dealData, setDealData] = useState<DealData | null>(null);
+   284→  const [loading, setLoading] = useState(true);
+   285→  const [actionLoading, setActionLoading] = useState(false);
+   286→
+   287→  const fetchDeal = useCallback(async () => {
+   288→    if (!activeDeal?.id) {
+   289→      setLoading(false);
+   290→      return;
+   291→    }
+   292→    setLoading(true);
+   293→    try {
+   294→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}`);
+   295→      if (res.ok) {
+   296→        const data: DealData = await res.json();
+   297→        setDealData(data);
+   298→        if (data.status !== activeDeal.status) {
+   299→          useAppStore.getState().setActiveDeal({
+   300→            id: data.id,
+   301→            title: data.title,
+   302→            amount: data.amount,
+   303→            status: data.status,
+   304→            createdAt: data.createdAt,
+   305→            buyerId: data.buyerId,
+   306→            sellerId: data.sellerId || undefined,
+   307→            creatorId: data.creatorId,
+   308→            buyerName: data.buyer?.name,
+   309→            sellerName: data.seller?.name,
+   310→          });
+   311→        }
+   312→      }
+   313→    } catch {
+   314→      // Use store data as fallback
+   315→    } finally {
+   316→      setLoading(false);
+   317→    }
+   318→  }, [activeDeal?.id, activeDeal?.status]);
+   319→
+   320→  useEffect(() => {
+   321→    fetchDeal();
+   322→  }, [fetchDeal]);
+   323→
+   324→  if (!mounted) return null;
+   325→
+   326→  const status = dealData?.status || activeDeal?.status || 'created';
+   327→  const activeStep = statusToActiveStep(status);
+   328→  const isDisputed = status === 'disputed';
+   329→  const isCancelled = status === 'cancelled' || status === 'rejected';
+   330→  const isCompleted = status === 'completed';
+   331→
+   332→  const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
+   333→  const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
+   334→  const dealDate = (dealData?.createdAt || activeDeal?.createdAt)
+   335→    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })
+   336→    : '---';
+   337→  const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || 'ক্রেতা';
+   338→  const sellerName = dealData?.seller?.name || activeDeal?.sellerName || user?.name || 'বিক্রেতা';
+   339→  const dealTerms = dealData?.terms;
+   340→
+   341→  const userId = user?.id;
+   342→  const isSeller = userId === (dealData?.sellerId) || userId === activeDeal?.sellerId;
+   343→
+   344→  /* ── Action Handlers ── */
+   345→  const handleDeliver = async () => {
+   346→    if (!dealData) return;
+   347→    setActionLoading(true);
+   348→    try {
+   349→      const res = await fetch('/api/deals/deliver', {
+   350→        method: 'POST',
+   351→        headers: { 'Content-Type': 'application/json' },
+   352→        body: JSON.stringify({ dealId: dealData.id }),
+   353→      });
+   354→      if (res.ok) {
+   355→        toast.success('কাজ সম্পন্ন হিসেবে চিহ্নিত হয়েছে! ক্রেতাকে জানানো হচ্ছে।');
+   356→        fetchDeal();
+   357→      } else {
+   358→        const data = await res.json().catch(() => ({}));
+   359→        toast.error(data.error || 'আপডেট ব্যর্থ হয়েছে');
+   360→      }
+   361→    } catch {
+   362→      toast.error('নেটওয়ার্ক সমস্যা');
+   363→    } finally {
+   364→      setActionLoading(false);
+   365→    }
+   366→  };
+   367→
+   368→  const handleCancel = async () => {
+   369→    if (!dealData) return;
+   370→    setActionLoading(true);
+   371→    try {
+   372→      const res = await fetch('/api/deals/cancel', {
+   373→        method: 'POST',
+   374→        headers: { 'Content-Type': 'application/json' },
+   375→        body: JSON.stringify({ dealId: dealData.id }),
+   376→      });
+   377→      if (res.ok) {
+   378→        toast.success('ডিলটি বাতিল করা হয়েছে');
+   379→        fetchDeal();
+   380→      } else {
+   381→        const data = await res.json().catch(() => ({}));
+   382→        toast.error(data.error || 'বাতিল করতে সমস্যা');
+   383→      }
+   384→    } catch {
+   385→      toast.error('নেটওয়ার্ক সমস্যা');
+   386→    } finally {
+   387→      setActionLoading(false);
+   388→    }
+   389→  };
+   390→
+   391→  /* ── Loading ── */
+   392→  if (loading) {
+   393→    return (
+   394→      <div className="flex items-center justify-center py-20">
+   395→        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   396→      </div>
+   397→    );
+   398→  }
+   399→
+   400→  return (
+   401→    <motion.div
+   402→      initial={{ opacity: 0, y: 16 }}
+   403→      animate={{ opacity: 1, y: 0 }}
+   404→      transition={{ duration: 0.4 }}
+   405→      className="mx-auto w-full max-w-2xl"
+   406→    >
+   407→      <div className="overflow-hidden rounded-xl border shadow-lg" style={{ backgroundColor: 'var(--background, #fff)', borderColor: 'var(--border)' }}>
+   408→        {/* ── Header ── */}
+   409→        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5" style={{ borderColor: 'var(--border)' }}>
+   410→          <div className="flex items-center gap-3">
+   411→            <button
+   412→              onClick={() => setSellerPanel('active-deals')}
+   413→              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-accent"
+   414→              aria-label="ফিরে যান"
+   415→            >
+   416→              <ArrowLeft className="h-4 w-4" style={{ color: 'var(--foreground)' }} />
+   417→            </button>
+   418→            <div className="flex items-center gap-2">
+   419→              <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-md" style={{ backgroundColor: '#84CC16' }}>
+   420→                <span className="text-sm font-bold" style={{ color: '#18181b' }}>আ</span>
+   421→              </div>
+   422→              <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+   423→                আমার ডিল
+   424→              </span>
+   425→            </div>
+   426→          </div>
+   427→
+   428→          <div className="flex items-center gap-2">
+   429→            <span className="hidden sm:block text-xs font-medium truncate max-w-[100px]" style={{ color: 'var(--muted-foreground)' }}>
+   430→              {user?.name || 'বিক্রেতা'}
+   431→            </span>
+   432→            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#84CC1625', color: '#84CC16' }}>
+   433→              {user?.name?.charAt(0) || 'ব'}
+   434→            </div>
+   435→          </div>
+   436→        </div>
+   437→
+   438→        {/* ── Deal Info Content ── */}
+   439→        <div className="p-4 sm:p-6 space-y-6">
+   440→          {/* Deal title + status badge */}
+   441→          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+   442→            <div>
+   443→              <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+   444→                {dealTitle}
+   445→              </h2>
+   446→              <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+   447→                DL-{(dealData?.id || activeDeal?.id || '').slice(-5)}
+   448→              </p>
+   449→            </div>
+   450→            {getStatusBadge(status)}
+   451→          </div>
+   452→
+   453→          {/* 5-Step Progress Bar */}
+   454→          <div className="py-2">
+   455→            <div className="hidden md:block">
+   456→              <HorizontalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+   457→            </div>
+   458→            <div className="md:hidden">
+   459→              <VerticalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+   460→            </div>
+   461→          </div>
+   462→
+   463→          {/* Details Grid */}
+   464→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   465→            <DetailCard icon={Banknote} label="ডিলের পরিমাণ" value={`৳${dealAmount.toLocaleString('bn-BD')}`} />
+   466→            <DetailCard icon={User} label="ক্রেতা" value={buyerName} />
+   467→            <DetailCard icon={User} label="বিক্রেতা" value={sellerName} />
+   468→            <DetailCard icon={CalendarDays} label="তৈরির তারিখ" value={dealDate} />
+   469→          </div>
+   470→
+   471→          {/* Deal Terms */}
+   472→          {dealTerms && (
+   473→            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
+   474→              <div className="flex items-center gap-2 mb-2">
+   475→                <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
+   476→                <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
+   477→              </div>
+   478→              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+   479→            </div>
+   480→          )}
+   481→
+   482→          {/* ═══════════════════════════════════════
+   483→              SELLER CONDITIONAL ACTION BUTTONS
+   484→              ═══════════════════════════════════════ */}
+   485→
+   486→          {/* Seller: Waiting for payment (status = created) */}
+   487→          {isSeller && status === 'created' && (
+   488→            <div className="flex flex-col items-center gap-2 py-3">
+   489→              <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-5 py-3 border border-amber-200 dark:border-amber-500/20 w-full justify-center">
+   490→                <Clock className="h-5 w-5 text-amber-500" />
+   491→                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+   492→                  ক্রেতার পেমেন্টের অপেক্ষায় আছে
+   493→                </p>
+   494→              </div>
+   495→            </div>
+   496→          )}
+   497→
+   498→          {/* Seller: Waiting for verification (status = Pending_Verification) */}
+   499→          {isSeller && status === 'Pending_Verification' && (
+   500→            <div className="flex flex-col items-center gap-2 py-3">
+   501→              <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-5 py-3 border border-amber-200 dark:border-amber-500/20 w-full justify-center">
+   502→                <Clock className="h-5 w-5 text-amber-500" />
+   503→                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+   504→                  পেমেন্ট ভেরিফিকেশনের অপেক্ষায় আছে
+   505→                </p>
+   506→              </div>
+   507→            </div>
+   508→          )}
+   509→
+   510→          {/* Seller: Waiting for buyer re-payment (status = Pending_Payment) */}
+   511→          {isSeller && status === 'Pending_Payment' && (
+   512→            <div className="flex items-center gap-2 rounded-xl bg-orange-50 dark:bg-orange-500/10 px-5 py-3 border border-orange-200 dark:border-orange-500/20 w-full justify-center">
+   513→              <Clock className="h-5 w-5 text-orange-500" />
+   514→              <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
+   515→                ক্রেতা পুনরায় পেমেন্ট করছে
+   516→              </p>
+   517→            </div>
+   518→          )}
+   519→
+   520→          {/* Seller: Deliver + Cancel buttons (status = Payment_Verified) */}
+   521→          {isSeller && status === 'Payment_Verified' && (
+   522→            <div className="space-y-3">
+   523→              <p className="text-sm text-center font-medium text-muted-foreground">
+   524→                পেমেন্ট ভেরিফাই হয়েছে। পণ্য/সেবা ডেলিভারি করুন।
+   525→              </p>
+   526→              <div className="flex gap-3">
+   527→                <Button
+   528→                  onClick={handleDeliver}
+   529→                  disabled={actionLoading}
+   530→                  className="flex-1 h-12 rounded-xl text-base font-bold gap-2.5 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   531→                  style={{
+   532→                    backgroundColor: '#84CC16',
+   533→                    color: '#18181b',
+   534→                    boxShadow: '0 6px 24px rgba(163,230,53,0.3)',
+   535→                  }}
+   536→                >
+   537→                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <PackageCheck className="h-5 w-5" />}
+   538→                  কাজ সম্পন্ন
+   539→                </Button>
+   540→                <Button
+   541→                  onClick={handleCancel}
+   542→                  disabled={actionLoading}
+   543→                  variant="outline"
+   544→                  className="flex-1 h-12 rounded-xl text-base font-semibold gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+   545→                >
+   546→                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-5 w-5" />}
+   547→                  ক্যান্সেল করুন
+   548→                </Button>
+   549→              </div>
+   550→            </div>
+   551→          )}
+   552→
+   553→          {/* Seller: Waiting for buyer confirmation (status = in_delivery) */}
+   554→          {isSeller && status === 'in_delivery' && (
+   555→            <div className="flex flex-col items-center gap-2 py-3">
+   556→              <div className="flex items-center gap-2 rounded-xl bg-primary/10 dark:bg-primary/15 px-5 py-3 border border-primary/20 w-full justify-center">
+   557→                <Truck className="h-5 w-5 text-primary" />
+   558→                <p className="text-sm font-medium text-foreground">
+   559→                  ক্রেতার নিশ্চিতকরণের অপেক্ষায় আছে
+   560→                </p>
+   561→              </div>
+   562→            </div>
+   563→          )}
+   564→
+   565→          {/* Disputed state */}
+   566→          {isDisputed && (
+   567→            <div className="flex flex-col items-center gap-2 py-3">
+   568→              <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 px-5 py-3 border border-red-200 dark:border-red-500/20 w-full justify-center">
+   569→                <AlertTriangle className="h-5 w-5 text-red-500" />
+   570→                <p className="text-sm font-medium text-red-700 dark:text-red-400">
+   571→                  বিরোধ দায়ের করা হয়েছে। অ্যাডমিন পর্যালোচনা করছেন।
+   572→                </p>
+   573→              </div>
+   574→            </div>
+   575→          )}
+   576→
+   577→          {/* Completed state */}
+   578→          {isCompleted && (
+   579→            <div className="flex flex-col items-center gap-2 py-3">
+   580→              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 px-5 py-3 border border-emerald-200 dark:border-emerald-500/20 w-full justify-center">
+   581→                <Check className="h-5 w-5 text-emerald-500" />
+   582→                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+   583→                  ডিল সফলভাবে সম্পন্ন হয়েছে!
+   584→                </p>
+   585→              </div>
+   586→            </div>
+   587→          )}
+   588→        </div>
+   589→      </div>
+   590→    </motion.div>
+   591→  );
+   592→}

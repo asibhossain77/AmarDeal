@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.amardeal.bangla"
+        }
+      ],
+      "destination": "https://amardeal.bangla/:path*",
+      "permanent": true
+    }
+  ]
+}

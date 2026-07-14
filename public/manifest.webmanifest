@@ -1,0 +1,21 @@
+{
+  "name": "AmarDeal আমারডিল",
+  "short_name": "AmarDeal",
+  "description": "বাংলাদেশের সবচেয়ে নিরাপদ এসক্রো সার্ভিস ও অনলাইন লেনদেন প্ল্যাটফর্ম।",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "business"],
+  "lang": "bn",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/uploads/site-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

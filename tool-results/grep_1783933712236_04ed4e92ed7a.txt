@@ -1,0 +1,247 @@
+/home/z/my-project/src/components/live-support-button.tsx:3:import { useState, useEffect, useCallback } from 'react';
+/home/z/my-project/src/components/live-support-button.tsx:239:  const handleClick = useCallback(() => {
+/home/z/my-project/src/components/dashboard/new-deal-form.tsx:3:import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+/home/z/my-project/src/components/dashboard/new-deal-form.tsx:44:  const handleSubmit = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:6:import { Banknote, Clock, Check, XCircle, ArrowLeft, Loader2, Inbox } from 'lucide-react';
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:99:          aria-label="ফিরে যান"
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:101:          <ArrowLeft className="h-4 w-4 text-foreground" />
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:122:            style={{ backgroundColor: PARROT_GREEN_MILD }}
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:141:                style={{ backgroundColor: 'var(--card)' }}
+/home/z/my-project/src/components/dashboard/payout-accounts-panel.tsx:148:                      style={{ backgroundColor: PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:3:import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:11:  ArrowLeft,
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:198:            style={{ backgroundColor: avatarColor }}
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:223:          style={isOwn ? { backgroundColor: '#65A30D' } : undefined}
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:294:  const fetchMessages = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:393:      <div className="shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-xl px-4 py-3 sm:px-5">
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:399:            aria-label="ফিরে যান"
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:401:            <ArrowLeft className="h-4.5 w-4.5 text-foreground" />
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:407:            style={{ backgroundColor: '#65A30D' }}
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:451:          backgroundImage: `radial-gradient(circle at 1px 1px, var(--border) 0.5px, transparent 0)`,
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:452:          backgroundSize: '24px 24px',
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:505:      <div className="shrink-0 border-t border-border/60 bg-background/90 backdrop-blur-xl px-4 py-3 sm:px-5">
+/home/z/my-project/src/components/dashboard/deal-chat-view.tsx:540:              backgroundColor: inputText.trim() ? '#65A30D' : 'var(--muted)',
+/home/z/my-project/src/components/dashboard/dashboard-main.tsx:131:      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl ${className}`}
+/home/z/my-project/src/components/dashboard/my-deals-panel.tsx:3:import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/dashboard/my-deals-panel.tsx:55:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:3:import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:11:  ArrowLeft,
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:60:          className={`w-full h-10 rounded-xl border border-border/50 bg-background px-3 pr-8 text-sm outline-none transition-colors ${
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:162:      return <Badge className="border-0 font-medium" style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}>ডেলিভারি চলছে</Badge>;
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:272:            backgroundColor: isDisputed ? '#EF4444' : PARROT_GREEN,
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:305:                  backgroundColor: isCompleted || isActive
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:307:                    : 'var(--background)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:370:                      backgroundColor: isCompleted || isActive
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:372:                        : 'var(--background)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:392:                      style={{ backgroundColor: isCompleted ? PARROT_GREEN : 'var(--border)' }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:444:                      backgroundColor: isCompleted || isActive
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:446:                        : 'var(--background)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:467:                      style={{ backgroundColor: isCompleted ? PARROT_GREEN : 'var(--border)' }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:533:        style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:581:        backgroundColor: PARROT_GREEN,
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:616:              backgroundColor: 'rgba(251, 191, 36, 0.08)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:656:              backgroundColor: 'rgba(147, 51, 234, 0.06)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:689:              backgroundColor: isOwn ? PARROT_GREEN : 'var(--muted)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:703:            backgroundColor: isOwn ? PARROT_GREEN : 'var(--card)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:808:  const checkPayoutStatus = useCallback((showLoading = false) => {
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:832:        // Only update states if we found a match — never reset submitted/paid back to false
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:850:  const fetchDeal = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:879:      // Use store data as fallback
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:892:  const handleChatScroll = useCallback(() => {
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:909:  const authHeaders = useCallback(() => ({
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:914:  const fetchMessages = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1209:          backgroundColor: 'var(--background)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1215:          style={{ backgroundColor: 'var(--card)' }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1221:              aria-label="ফিরে যান"
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1223:              <ArrowLeft className="h-4 w-4 text-foreground" />
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1228:                style={{ backgroundColor: PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1264:              style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1279:              style={{ backgroundColor: PARROT_GREEN, boxShadow: PARROT_GREEN_GLOW }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1304:                style={{ backgroundColor: activeTab === 'chat' ? '#fff' : PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1389:                        style={{ backgroundColor: PARROT_GREEN_MILD }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1443:                    <div className="flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1483:                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1493:                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1810:                style={{ backgroundColor: 'var(--card)' }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1815:                    style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1840:                  backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(101,163,13,0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(101,163,13,0.02) 0%, transparent 50%)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1841:                  backgroundColor: 'var(--muted)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1854:                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: PARROT_GREEN_MILD }}>
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1879:                  backgroundColor: 'var(--card)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1889:                      backgroundColor: dealData?.adminCalled ? 'hsl(var(--muted))' : 'rgba(239,68,68,0.1)',
+/home/z/my-project/src/components/dashboard/deal-workflow-tracker.tsx:1918:                      backgroundColor: chatInput.trim() && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
+/home/z/my-project/src/components/dashboard/profile-panel.tsx:54:            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+/home/z/my-project/src/components/dashboard/profile-panel.tsx:64:            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+/home/z/my-project/src/components/dashboard/profile-panel.tsx:74:            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+/home/z/my-project/src/components/dashboard/profile-panel.tsx:84:            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+/home/z/my-project/src/components/dashboard/dashboard-sidebar.tsx:8:  ArrowLeftRight,
+/home/z/my-project/src/components/dashboard/dashboard-sidebar.tsx:25:  { label: 'লেনদেন', icon: ArrowLeftRight, panel: 'payment' },
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:3:import { useState, useEffect, useCallback } from 'react';
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:12:  ArrowLeft,
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:82:  const fetchData = useCallback(async () => {
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:203:          <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:204:          ফিরে যান
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:251:          aria-label="ফিরে যান"
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:253:          <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:293:                        backgroundColor: isSelected
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:308:                      style={{ backgroundColor: methodColor }}
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:411:                  backgroundColor: canConfirm ? activeColor : 'hsl(var(--muted))',
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:462:                          backgroundColor: isSelected
+/home/z/my-project/src/components/dashboard/user-payment-view.tsx:632:            backgroundColor: canConfirm ? activeColor : 'hsl(var(--muted))',
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:119:  'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl';
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:269:            style={{ backgroundColor: PARROT_GREEN }}
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:297:                style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:322:                style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:347:                style={{ backgroundColor: 'rgba(101, 163, 13, 0.12)' }}
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:369:        style={{ backgroundColor: 'var(--muted)' }}
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:375:            backgroundColor: PARROT_GREEN,
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:429:            .payout-scroll::-webkit-scrollbar-track { background: transparent; }
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:431:              background: ${PARROT_GREEN}40;
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:435:              background: ${PARROT_GREEN}60;
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:539:                        backgroundColor: PARROT_GREEN,
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:542:                        (e.currentTarget as HTMLElement).style.backgroundColor = PARROT_GREEN_LIGHT;
+/home/z/my-project/src/components/admin/admin-payouts-panel.tsx:545:                        (e.currentTarget as HTMLElement).style.backgroundColor = PARROT_GREEN;
+/home/z/my-project/src/components/admin/admin-main.tsx:3:import { useState, useEffect, useRef, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/admin/admin-main.tsx:45:  ArrowLeft,
+/home/z/my-project/src/components/admin/admin-main.tsx:422:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:430:      // use fallback
+/home/z/my-project/src/components/admin/admin-main.tsx:552:            <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/admin/admin-main.tsx:553:            ফিরে যান
+/home/z/my-project/src/components/admin/admin-main.tsx:975:  const handleChatScroll = useCallback(() => {
+/home/z/my-project/src/components/admin/admin-main.tsx:981:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:1067:            <ArrowLeft className="h-4 w-4 text-foreground" />
+/home/z/my-project/src/components/admin/admin-main.tsx:1277:  const fetchUsers = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:1363:            <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/admin/admin-main.tsx:1364:            ফিরে যান
+/home/z/my-project/src/components/admin/admin-main.tsx:1934:                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+/home/z/my-project/src/components/admin/admin-main.tsx:2125:  const fetchPayouts = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:2192:            <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/admin/admin-main.tsx:2193:            ফিরে যান
+/home/z/my-project/src/components/admin/admin-main.tsx:2395:                ? 'bg-background text-foreground shadow-sm'
+/home/z/my-project/src/components/admin/admin-main.tsx:2548:  const handleDisputeChatScroll = useCallback(() => {
+/home/z/my-project/src/components/admin/admin-main.tsx:2554:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:2655:            <ArrowLeft className="h-4 w-4 text-foreground" />
+/home/z/my-project/src/components/admin/admin-main.tsx:2915:  const handleAdminCallScroll = useCallback(() => {
+/home/z/my-project/src/components/admin/admin-main.tsx:2921:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/admin/admin-main.tsx:3020:            <ArrowLeft className="h-4 w-4 text-foreground" />
+/home/z/my-project/src/components/admin/fee-rules-panel.tsx:3:import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+/home/z/my-project/src/components/admin/fee-rules-panel.tsx:153:  const fetchRules = useCallback(async () => {
+/home/z/my-project/src/components/admin/contact-info-panel.tsx:125:                className="rounded-xl border-border/60 bg-background"
+/home/z/my-project/src/components/admin/contact-info-panel.tsx:135:                className="rounded-xl border-border/60 bg-background"
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:3:import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:128:          style={{ backgroundColor: color }}
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:140:              backgroundColor: c,
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:164:  const fetchMethods = useCallback(async () => {
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:340:                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm" style={{ backgroundColor: `${m.color || '#84CC16'}18` }}>
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:359:                            <div className="relative h-8 w-8 rounded-lg border border-border/50 cursor-pointer transition-transform hover:scale-110" style={{ backgroundColor: m.color || '#84CC16' }} title="ক্লিক করে কালার পরিবর্তন করুন">
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:392:                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${m.color || '#84CC16'}18` }}>
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:400:                      <div className="relative h-7 w-7 rounded-lg border border-border/50" style={{ backgroundColor: m.color || '#84CC16' }}>
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:473:                          backgroundColor: isSelected ? `${c}15` : 'transparent',
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:479:                          style={{ backgroundColor: `${c}20` }}
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:522:                        backgroundColor: activeMethods[0].color || '#84CC16',
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:546:              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:622:                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:636:                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:683:                      backgroundColor: `${form.color}15`,
+/home/z/my-project/src/components/admin/payment-methods-panel.tsx:689:                      style={{ backgroundColor: form.image ? 'transparent' : `${form.color}20` }}
+/home/z/my-project/src/components/admin/blog-panel.tsx:29:  ArrowLeft,
+/home/z/my-project/src/components/admin/blog-panel.tsx:98:        <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/admin/blog-panel.tsx:99:        ফিরে যান
+/home/z/my-project/src/components/admin/admin-view.tsx:40:        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-white/90 backdrop-blur-xl dark:bg-zinc-950/90 safe-area-bottom">
+/home/z/my-project/src/components/auth/auth-view.tsx:3:import { useState, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/auth/auth-view.tsx:12:  ArrowLeft,
+/home/z/my-project/src/components/auth/auth-view.tsx:32:  const handleLogin = useCallback(async () => {
+/home/z/my-project/src/components/auth/auth-view.tsx:155:  const handleRegister = useCallback(async () => {
+/home/z/my-project/src/components/auth/auth-view.tsx:319:          <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/ui/menubar.tsx:17:        "bg-background flex h-9 items-center gap-1 rounded-md border p-1 shadow-xs",
+/home/z/my-project/src/components/ui/sheet.tsx:61:          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+/home/z/my-project/src/components/ui/sheet.tsx:75:        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+/home/z/my-project/src/components/ui/calendar.tsx:32:        "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+/home/z/my-project/src/components/ui/slider.tsx:56:          className="border-primary bg-background ring-ring/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
+/home/z/my-project/src/components/ui/drawer.tsx:59:          "group/drawer-content bg-background fixed z-50 flex h-auto flex-col",
+/home/z/my-project/src/components/ui/alert-dialog.tsx:57:          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+/home/z/my-project/src/components/ui/carousel.tsx:7:import { ArrowLeft, ArrowRight } from "lucide-react"
+/home/z/my-project/src/components/ui/carousel.tsx:64:  const onSelect = React.useCallback((api: CarouselApi) => {
+/home/z/my-project/src/components/ui/carousel.tsx:70:  const scrollPrev = React.useCallback(() => {
+/home/z/my-project/src/components/ui/carousel.tsx:74:  const scrollNext = React.useCallback(() => {
+/home/z/my-project/src/components/ui/carousel.tsx:78:  const handleKeyDown = React.useCallback(
+/home/z/my-project/src/components/ui/carousel.tsx:80:      if (event.key === "ArrowLeft") {
+/home/z/my-project/src/components/ui/carousel.tsx:198:      <ArrowLeft />
+/home/z/my-project/src/components/ui/sidebar.tsx:76:  const setOpen = React.useCallback(
+/home/z/my-project/src/components/ui/sidebar.tsx:92:  const toggleSidebar = React.useCallback(() => {
+/home/z/my-project/src/components/ui/sidebar.tsx:312:        "bg-background relative flex w-full flex-1 flex-col",
+/home/z/my-project/src/components/ui/sidebar.tsx:329:      className={cn("bg-background h-8 w-full shadow-none", className)}
+/home/z/my-project/src/components/ui/sidebar.tsx:483:          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+/home/z/my-project/src/components/ui/toast.tsx:32:        default: "border bg-background text-foreground",
+/home/z/my-project/src/components/ui/chart.tsx:58:          "[&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border flex aspect-video justify-center text-xs [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-hidden [&_.recharts-sector]:outline-hidden [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-surface]:outline-hidden",
+/home/z/my-project/src/components/ui/chart.tsx:176:        "border-border/50 bg-background grid min-w-[8rem] items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
+/home/z/my-project/src/components/ui/chart.tsx:295:                  backgroundColor: item.color,
+/home/z/my-project/src/components/ui/navigation-menu.tsx:62:  "group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=open]:hover:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:focus:bg-accent data-[state=open]:bg-accent/50 focus-visible:ring-ring/50 outline-none transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1"
+/home/z/my-project/src/components/ui/switch.tsx:24:          "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
+/home/z/my-project/src/components/ui/dialog.tsx:63:          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+/home/z/my-project/src/components/ui/dialog.tsx:72:            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+/home/z/my-project/src/components/ui/tabs.tsx:45:        "data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+/home/z/my-project/src/components/ui/button.tsx:17:          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+/home/z/my-project/src/components/ui/avatar.tsx:37:function AvatarFallback({
+/home/z/my-project/src/components/ui/avatar.tsx:40:}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+/home/z/my-project/src/components/ui/avatar.tsx:42:    <AvatarPrimitive.Fallback
+/home/z/my-project/src/components/ui/avatar.tsx:43:      data-slot="avatar-fallback"
+/home/z/my-project/src/components/ui/avatar.tsx:53:export { Avatar, AvatarImage, AvatarFallback }
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:3:import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:11:  ArrowLeft,
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:112:            backgroundColor: isDisputed ? '#EF4444' : '#84CC16',
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:134:                  backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:186:                    backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:197:                  <div className="h-full w-full rounded-full transition-colors" style={{ backgroundColor: isCompleted ? '#84CC16' : 'var(--border)' }} />
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:238:      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:284:  const fetchDeal = useCallback(async () => {
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:311:      // Use store data as fallback
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:404:      <div className="overflow-hidden rounded-xl border shadow-lg" style={{ backgroundColor: 'var(--background, #fff)', borderColor: 'var(--border)' }}>
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:411:              aria-label="ফিরে যান"
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:413:              <ArrowLeft className="h-4 w-4" style={{ color: 'var(--foreground)' }} />
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:416:              <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-md" style={{ backgroundColor: '#84CC16' }}>
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:429:            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#84CC1625', color: '#84CC16' }}>
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:470:            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
+/home/z/my-project/src/components/seller/seller-deal-tracker.tsx:519:                    backgroundColor: '#84CC16',
+/home/z/my-project/src/components/seller/seller-main.tsx:3:import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+/home/z/my-project/src/components/seller/seller-main.tsx:205:  const fetchDeals = useCallback(async () => {
+/home/z/my-project/src/components/seller/seller-sidebar.tsx:127:              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden"
+/home/z/my-project/src/components/landing/contact-section.tsx:85:      {/* Subtle background accent */}
+/home/z/my-project/src/components/landing/contact-section.tsx:167:                    className="group flex items-center gap-4 rounded-2xl border border-border/40 bg-white/80 backdrop-blur-sm p-4 sm:p-5 shadow-lg transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 dark:bg-zinc-900/80 dark:shadow-none cursor-pointer"
+/home/z/my-project/src/components/landing/navbar.tsx:18:  ArrowLeftRight,
+/home/z/my-project/src/components/landing/navbar.tsx:95:  { label: 'লেনদেন', icon: ArrowLeftRight, panel: 'payment' },
+/home/z/my-project/src/components/landing/navbar.tsx:140:    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
+/home/z/my-project/src/components/landing/blog-view.tsx:6:import { ArrowLeft, Calendar, BookOpen, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+/home/z/my-project/src/components/landing/blog-view.tsx:117:        <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/landing/blog-view.tsx:277:            <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/components/landing/blog-view.tsx:278:            ফিরে যান
+/home/z/my-project/src/components/landing/fee-structure.tsx:3:import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+/home/z/my-project/src/components/landing/fee-structure.tsx:31:  const fetchRules = useCallback(async () => {
+/home/z/my-project/src/components/shared/access-denied.tsx:6:import { ShieldX, ArrowLeft, Lock } from 'lucide-react';
+/home/z/my-project/src/components/shared/access-denied.tsx:27:            style={{ backgroundColor: '#65A30D15' }}
+/home/z/my-project/src/components/shared/access-denied.tsx:34:          <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-background border shadow-sm">
+/home/z/my-project/src/components/shared/access-denied.tsx:55:            backgroundColor: '#65A30D',
+/home/z/my-project/src/components/shared/access-denied.tsx:60:          <ArrowLeft className="h-4 w-4" />
+/home/z/my-project/src/hooks/use-socket.ts:3:import { useEffect, useRef, useCallback, useState } from 'react'
+/home/z/my-project/src/hooks/use-socket.ts:20:  const onNotification = useCallback((callback: (n: NotificationPayload) => void) => {
+/home/z/my-project/src/hooks/use-socket.ts:21:    listenersRef.current.add(callback)
+/home/z/my-project/src/hooks/use-socket.ts:22:    return () => { listenersRef.current.delete(callback) }
+/home/z/my-project/src/app/api/deals/calculate-fee/route.ts:41:    // If no rule matched, use a fallback (no fee)
+/home/z/my-project/src/lib/email.ts:24:/* From address — uses Brevo verified sender or fallback */
+/home/z/my-project/src/lib/email.ts:32:  body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+/home/z/my-project/src/lib/email.ts:33:  .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+/home/z/my-project/src/lib/email.ts:34:  .header { background: #16a34a; padding: 24px 32px; text-align: center; }
+/home/z/my-project/src/lib/email.ts:39:  .info-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+/home/z/my-project/src/lib/email.ts:43:  .btn { display: inline-block; background: #16a34a; color: #ffffff !important; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 16px; }
+/home/z/my-project/src/lib/email.ts:44:  .btn:hover { background: #15803d; }
+/home/z/my-project/src/lib/email.ts:48:  .warning-box { background: #fff7ed; border-left: 4px solid #ea580c; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+/home/z/my-project/src/lib/email.ts:50:  .danger-box { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+/home/z/my-project/src/lib/email.ts:52:  .success-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+/home/z/my-project/src/lib/deal-guard.ts:25:    // Try cookie first, then fall back to X-User-Id header (for sandbox/proxy envs)
+/home/z/my-project/src/lib/use-admin-guard.ts:2:import { useCallback, useEffect } from 'react'
+/home/z/my-project/src/app/not-found.tsx:19:            হোমে ফিরে যান
+/home/z/my-project/src/app/globals.css:7:  --color-background: var(--background);
+/home/z/my-project/src/app/globals.css:49:  --background: #F2F4F7;
+/home/z/my-project/src/app/globals.css:84:  --background: oklch(0.1 0.005 250);
+/home/z/my-project/src/app/globals.css:123:    background-color: #F2F4F7 !important;
+/home/z/my-project/src/app/globals.css:126:    background-color: oklch(0.1 0.005 250) !important;

@@ -1,0 +1,206 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Loader2, Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon } from 'lucide-react';
+import { invalidateSiteSettingsCache } from '@/lib/use-site-settings';
+
+interface ContactData {
+  phone: string | null;
+  email: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  facebook: string | null;
+  facebookGroup: string | null;
+  address: string | null;
+}
+
+interface ProfileData {
+  adminName: string;
+  adminImageUrl: string;
+}
+
+export function ContactInfoPanel() {
+  const [data, setData] = useState<ContactData>({
+    phone: '', email: '', whatsapp: '', telegram: '',
+    facebook: '', facebookGroup: '', address: '',
+  });
+  const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/admin/contact-info').then(r => r.json()),
+      fetch('/api/admin/settings').then(r => r.json()),
+    ]).then(([contact, settings]) => {
+      setData({
+        phone: contact.phone || '',
+        email: contact.email || '',
+        whatsapp: contact.whatsapp || '',
+        telegram: contact.telegram || '',
+        facebook: contact.facebook || '',
+        facebookGroup: contact.facebookGroup || '',
+        address: contact.address || '',
+      });
+      setProfile({
+        adminName: settings.platform_name ? '' : (settings.admin_display_name || ''),
+        adminImageUrl: settings.admin_image_url || '',
+      });
+    }).catch(() => {
+      toast.error('তথ্য লোড করতে সমস্যা');
+    }).finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await Promise.all([
+        fetch('/api/admin/contact-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
+        // Save admin name & image url
+        fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            admin_display_name: profile.adminName,
+            admin_image_url: profile.adminImageUrl,
+          }),
+        }),
+      ]);
+      invalidateSiteSettingsCache();
+      toast.success('তথ্য সফলভাবে সংরক্ষিত হয়েছে');
+    } catch {
+      toast.error('সংরক্ষণ করতে সমস্যা');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (key: keyof ContactData, value: string) => {
+    setData(prev => ({ ...prev, [key]: value }));
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Profile Picture + Name */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <User className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">প্রোফাইল</p>
+            <p className="text-[11px] text-muted-foreground">অ্যাডমিনের নাম ও ছবি</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-5">
+          {/* Profile Preview */}
+          <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-border/40 bg-muted/30 flex items-center justify-center">
+            {profile.adminImageUrl ? (
+              <img src={profile.adminImageUrl} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <User className="h-10 w-10 text-muted-foreground/40" />
+            )}
+          </div>
+          <div className="w-full space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="adminName" className="text-sm font-medium text-foreground">অ্যাডমিনের নাম</Label>
+              <Input
+                id="adminName"
+                value={profile.adminName}
+                onChange={e => setProfile(p => ({ ...p, adminName: e.target.value }))}
+                placeholder="আপনার নাম"
+                className="rounded-xl border-border/60 bg-background"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="adminImage" className="text-sm font-medium text-foreground flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5 text-muted-foreground" /> প্রোফাইল ছবির লিংক</Label>
+              <Input
+                id="adminImage"
+                value={profile.adminImageUrl}
+                onChange={e => setProfile(p => ({ ...p, adminImageUrl: e.target.value }))}
+                placeholder="https://example.com/photo.jpg"
+                className="rounded-xl border-border/60 bg-background"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Fields */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Phone className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">যোগাযোগ তথ্য</p>
+            <p className="text-[11px] text-muted-foreground">ফোন, ইমেইল, ঠিকানা</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> ফোন নম্বর</Label>
+            <Input type="tel" placeholder="০১XXXXXXXXX" value={data.phone || ''} onChange={e => updateField('phone', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-muted-foreground" /> হোয়াটসঅ্যাপ লিংক</Label>
+            <Input type="url" placeholder="https://wa.me/..." value={data.whatsapp || ''} onChange={e => updateField('whatsapp', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> ইমেইল</Label>
+            <Input type="email" placeholder="example@email.com" value={data.email || ''} onChange={e => updateField('email', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> ঠিকানা</Label>
+            <Input placeholder="আপনার ঠিকানা" value={data.address || ''} onChange={e => updateField('address', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+        </div>
+      </div>
+
+      {/* Social Links */}
+      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Facebook className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-foreground">সোশ্যাল মিডিয়া</p>
+            <p className="text-[11px] text-muted-foreground">ফেসবুক প্রোফাইল, গ্রুপ, টেলিগ্রাম</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক প্রোফাইল লিংক</Label>
+            <Input placeholder="https://facebook.com/..." value={data.facebook || ''} onChange={e => updateField('facebook', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক গ্রুপ লিংক</Label>
+            <Input placeholder="https://facebook.com/groups/..." value={data.facebookGroup || ''} onChange={e => updateField('facebookGroup', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl h-11 font-medium shadow-md shadow-primary/20 px-6">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          সংরক্ষণ করুন
+        </Button>
+      </div>
+    </div>
+  );
+}

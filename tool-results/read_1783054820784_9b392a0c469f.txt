@@ -1,0 +1,686 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→     5→import { Button } from '@/components/ui/button';
+     6→     6→import { Input } from '@/components/ui/input';
+     7→     7→import { Label } from '@/components/ui/label';
+     8→     8→import { Badge } from '@/components/ui/badge';
+     9→     9→import { toast } from 'sonner';
+    10→    10→import { handleAdminResponse } from '@/lib/use-admin-guard';
+    11→    11→import {
+    12→    12→  CreditCard,
+    13→    13→  Plus,
+    14→    14→  Pencil,
+    15→    15→  Trash2,
+    16→    16→  Save,
+    17→    17→  X,
+    18→    18→  Palette,
+    19→    19→  Loader2,
+    20→    20→  CheckCircle,
+    21→    21→  Eye,
+    22→    22→} from 'lucide-react';
+    23→    23→
+    24→    24→const emptySubscribe = () => () => {};
+    25→    25→
+    26→    26→/* ─── Types ─── */
+    27→    27→interface PaymentMethod {
+    28→    28→  id: string;
+    29→    29→  name: string;
+    30→    30→  accountNumber: string;
+    31→    31→  accountType: string;
+    32→    32→  status: string;
+    33→    33→  sortOrder: number;
+    34→    34→  createdAt: string;
+    35→    35→}
+    36→    36→
+    37→    37→interface FormData {
+    38→    38→  name: string;
+    39→    39→  accountNumber: string;
+    40→    40→  accountType: string;
+    41→    41→  status: string;
+    42→    42→  sortOrder: number;
+    43→    43→}
+    44→    44→
+    45→    45→const emptyForm: FormData = {
+    46→    46→  name: '',
+    47→    47→  accountNumber: '',
+    48→    48→  accountType: 'personal',
+    49→    49→  status: 'active',
+    50→    50→  sortOrder: 0,
+    51→    51→};
+    52→    52→
+    53→    53→/* ─── Solid Card Helper ─── */
+    54→    54→function SolidCard({
+    55→    55→  children,
+    56→    56→  className = '',
+    57→    57→}: {
+    58→    58→  children: React.ReactNode;
+    59→    59→  className?: string;
+    60→    60→}) {
+    61→    61→  return (
+    62→    62→    <div
+    63→    63→      className={`rounded-2xl bg-white p-5 shadow-lg dark:bg-zinc-900 ${className}`}
+    64→    64→    >
+    65→    65→      {children}
+    66→    66→    </div>
+    67→    67→  );
+    68→    68→}
+    69→    69→
+    70→    70→/* ═══════════════════════════════════════════
+    71→    71→   Admin Payment Methods Panel
+    72→    72→   ═══════════════════════════════════════════ */
+    73→    73→
+    74→    74→export function PaymentMethodsPanel() {
+    75→    75→  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+    76→    76→  const [loading, setLoading] = useState(true);
+    77→    77→  const [dialogOpen, setDialogOpen] = useState(false);
+    78→    78→  const [editingId, setEditingId] = useState<string | null>(null);
+    79→    79→  const [form, setForm] = useState<FormData>(emptyForm);
+    80→    80→  const [saving, setSaving] = useState(false);
+    81→    81→  const [deletingId, setDeletingId] = useState<string | null>(null);
+    82→    82→
+    83→    83→  // Theme color state
+    84→    84→  const [themeColor, setThemeColor] = useState('#84CC16');
+    85→    85→  const [originalThemeColor, setOriginalThemeColor] = useState('#84CC16');
+    86→    86→  const [savingTheme, setSavingTheme] = useState(false);
+    87→    87→  const [themeLoaded, setThemeLoaded] = useState(false);
+    88→    88→
+    89→    89→  const fetchMethods = useCallback(async () => {
+    90→    90→    try {
+    91→    91→      const res = await fetch('/api/admin/payment-methods');
+    92→    92→      if (handleAdminResponse(res)) return;
+    93→    93→      if (res.ok) setMethods(await res.json());
+    94→    94→    } catch {
+    95→    95→      // silent
+    96→    96→    } finally {
+    97→    97→      setLoading(false);
+    98→    98→    }
+    99→    99→  }, []);
+   100→   100→
+   101→   101→  const fetchThemeColor = useCallback(async () => {
+   102→   102→    try {
+   103→   103→      const res = await fetch('/api/admin/settings');
+   104→   104→      if (handleAdminResponse(res)) return;
+   105→   105→      if (res.ok) {
+   106→   106→        const data = await res.json();
+   107→   107→        if (data.payment_theme_color) {
+   108→   108→          setThemeColor(data.payment_theme_color);
+   109→   109→          setOriginalThemeColor(data.payment_theme_color);
+   110→   110→        }
+   111→   111→      }
+   112→   112→    } catch {
+   113→   113→      // silent
+   114→   114→    } finally {
+   115→   115→      setThemeLoaded(true);
+   116→   116→    }
+   117→   117→  }, []);
+   118→   118→
+   119→   119→  useEffect(() => {
+   120→   120→    fetchMethods();
+   121→   121→    fetchThemeColor();
+   122→   122→  }, [fetchMethods, fetchThemeColor]);
+   123→   123→
+   124→   124→  // ─── CRUD Handlers ───
+   125→   125→  const openCreate = () => {
+   126→   126→    setEditingId(null);
+   127→   127→    setForm(emptyForm);
+   128→   128→    setDialogOpen(true);
+   129→   129→  };
+   130→   130→
+   131→   131→  const openEdit = (m: PaymentMethod) => {
+   132→   132→    setEditingId(m.id);
+   133→   133→    setForm({
+   134→   134→      name: m.name,
+   135→   135→      accountNumber: m.accountNumber,
+   136→   136→      accountType: m.accountType,
+   137→   137→      status: m.status,
+   138→   138→      sortOrder: m.sortOrder,
+   139→   139→    });
+   140→   140→    setDialogOpen(true);
+   141→   141→  };
+   142→   142→
+   143→   143→  const handleSave = async () => {
+   144→   144→    if (!form.name.trim() || !form.accountNumber.trim()) {
+   145→   145→      toast.error('নাম এবং অ্যাকাউন্ট নম্বর আবশ্যক');
+   146→   146→      return;
+   147→   147→    }
+   148→   148→    setSaving(true);
+   149→   149→    try {
+   150→   150→      const url = editingId
+   151→   151→        ? `/api/admin/payment-methods/${editingId}`
+   152→   152→        : '/api/admin/payment-methods';
+   153→   153→      const method = editingId ? 'PUT' : 'POST';
+   154→   154→      const res = await fetch(url, {
+   155→   155→        method,
+   156→   156→        headers: { 'Content-Type': 'application/json' },
+   157→   157→        body: JSON.stringify(form),
+   158→   158→      });
+   159→   159→      if (handleAdminResponse(res)) { setSaving(false); return; }
+   160→   160→      if (res.ok) {
+   161→   161→        toast.success(editingId ? 'মেথড আপডেট হয়েছে' : 'নতুন মেথড যোগ হয়েছে');
+   162→   162→        setDialogOpen(false);
+   163→   163→        fetchMethods();
+   164→   164→      } else {
+   165→   165→        toast.error('সংরক্ষণ ব্যর্থ হয়েছে');
+   166→   166→      }
+   167→   167→    } catch {
+   168→   168→      toast.error('সার্ভারে সমস্যা');
+   169→   169→    } finally {
+   170→   170→      setSaving(false);
+   171→   171→    }
+   172→   172→  };
+   173→   173→
+   174→   174→  const handleDelete = async (id: string) => {
+   175→   175→    setDeletingId(id);
+   176→   176→    try {
+   177→   177→      const res = await fetch(`/api/admin/payment-methods/${id}`, {
+   178→   178→        method: 'DELETE',
+   179→   179→      });
+   180→   180→      if (handleAdminResponse(res)) { setDeletingId(null); return; }
+   181→   181→      if (res.ok) {
+   182→   182→        toast.success('মেথড মুছে ফেলা হয়েছে');
+   183→   183→        fetchMethods();
+   184→   184→      } else {
+   185→   185→        toast.error('মুছে ফেলা ব্যর্থ হয়েছে');
+   186→   186→      }
+   187→   187→    } catch {
+   188→   188→      toast.error('সার্ভারে সমস্যা');
+   189→   189→    } finally {
+   190→   190→      setDeletingId(null);
+   191→   191→    }
+   192→   192→  };
+   193→   193→
+   194→   194→  const handleSaveTheme = async () => {
+   195→   195→    setSavingTheme(true);
+   196→   196→    try {
+   197→   197→      const res = await fetch('/api/admin/settings', {
+   198→   198→        method: 'POST',
+   199→   199→        headers: { 'Content-Type': 'application/json' },
+   200→   200→        body: JSON.stringify({ payment_theme_color: themeColor }),
+   201→   201→      });
+   202→   202→      if (handleAdminResponse(res)) { setSavingTheme(false); return; }
+   203→   203→      if (res.ok) {
+   204→   204→        setOriginalThemeColor(themeColor);
+   205→   205→        toast.success('থিম কালার সংরক্ষণ হয়েছে');
+   206→   206→      } else {
+   207→   207→        toast.error('থিম সংরক্ষণ ব্যর্থ হয়েছে');
+   208→   208→      }
+   209→   209→    } catch {
+   210→   210→      toast.error('সার্ভারে সমস্যা');
+   211→   211→    } finally {
+   212→   212→      setSavingTheme(false);
+   213→   213→    }
+   214→   214→  };
+   215→   215→
+   216→   216→  const hasThemeChanged = themeColor !== originalThemeColor;
+   217→   217→
+   218→   218→  // Preview methods for the color picker
+   219→   219→  const previewMethods = ['bKash', 'Nagad', 'Rocket', 'Bank Transfer'];
+   220→   220→
+   221→   221→  if (loading && !themeLoaded)
+   222→   222→    return (
+   223→   223→      <div className="flex items-center justify-center py-16">
+   224→   224→        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   225→   225→      </div>
+   226→   226→    );
+   227→   227→
+   228→   228→  return (
+   229→   229→    <div className="space-y-6">
+   230→   230→      {/* ═══ Section 1: Payment Methods CRUD ═══ */}
+   231→   231→      <div>
+   232→   232→        {/* Header */}
+   233→   233→        <div className="mb-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+   234→   234→          <div className="text-center sm:text-left">
+   235→   235→            <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   236→   236→              <CreditCard className="h-5 w-5 text-primary" />
+   237→   237→              পেমেন্ট মেথড ম্যানেজমেন্ট
+   238→   238→            </h2>
+   239→   239→            <p className="mt-0.5 text-sm text-muted-foreground">
+   240→   240→              পেমেন্ট মেথড তৈরি, সম্পাদনা ও মুছে ফেলুন
+   241→   241→            </p>
+   242→   242→          </div>
+   243→   243→          <Button
+   244→   244→            onClick={openCreate}
+   245→   245→            className="h-9 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
+   246→   246→          >
+   247→   247→            <Plus className="h-4 w-4" />
+   248→   248→            নতুন মেথড যোগ করুন
+   249→   249→          </Button>
+   250→   250→        </div>
+   251→   251→
+   252→   252→        {/* Table Card */}
+   253→   253→        <motion.div
+   254→   254→          initial={{ opacity: 0, y: 16 }}
+   255→   255→          animate={{ opacity: 1, y: 0 }}
+   256→   256→          transition={{ duration: 0.4 }}
+   257→   257→        >
+   258→   258→          <SolidCard className="!p-0 overflow-hidden">
+   259→   259→            {loading ? (
+   260→   260→              <div className="flex items-center justify-center py-16">
+   261→   261→                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   262→   262→              </div>
+   263→   263→            ) : methods.length === 0 ? (
+   264→   264→              <div className="flex flex-col items-center justify-center py-16 text-center">
+   265→   265→                <CreditCard className="mb-3 h-10 w-10 text-muted-foreground" />
+   266→   266→                <p className="text-sm font-semibold text-foreground">
+   267→   267→                  কোনো পেমেন্ট মেথড নেই
+   268→   268→                </p>
+   269→   269→                <p className="mt-1 text-xs text-muted-foreground">
+   270→   270→                  নতুন মেথড যোগ করতে উপরের বাটনে ক্লিক করুন
+   271→   271→                </p>
+   272→   272→              </div>
+   273→   273→            ) : (
+   274→   274→              <div className="overflow-x-auto">
+   275→   275→                <table className="w-full text-sm min-w-[700px]">
+   276→   276→                  <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+   277→   277→                    <tr className="border-b border-border bg-muted/30">
+   278→   278→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   279→   279→                        মেথড নাম
+   280→   280→                      </th>
+   281→   281→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   282→   282→                        অ্যাকাউন্ট নম্বর
+   283→   283→                      </th>
+   284→   284→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   285→   285→                        অ্যাকাউন্ট টাইপ
+   286→   286→                      </th>
+   287→   287→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   288→   288→                        স্ট্যাটাস
+   289→   289→                      </th>
+   290→   290→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   291→   291→                        অ্যাকশন
+   292→   292→                      </th>
+   293→   293→                    </tr>
+   294→   294→                  </thead>
+   295→   295→                  <tbody>
+   296→   296→                    {methods.map((m) => (
+   297→   297→                      <tr
+   298→   298→                        key={m.id}
+   299→   299→                        className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0"
+   300→   300→                      >
+   301→   301→                        <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
+   302→   302→                          {m.name}
+   303→   303→                        </td>
+   304→   304→                        <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+   305→   305→                          {m.accountNumber}
+   306→   306→                        </td>
+   307→   307→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   308→   308→                          {m.accountType === 'merchant' ? (
+   309→   309→                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
+   310→   310→                              মার্চেন্ট
+   311→   311→                            </Badge>
+   312→   312→                          ) : (
+   313→   313→                            <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">
+   314→   314→                              পার্সোনাল
+   315→   315→                            </Badge>
+   316→   316→                          )}
+   317→   317→                        </td>
+   318→   318→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   319→   319→                          {m.status === 'active' ? (
+   320→   320→                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">
+   321→   321→                              সক্রিয়
+   322→   322→                            </Badge>
+   323→   323→                          ) : (
+   324→   324→                            <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">
+   325→   325→                              নিষ্ক্রিয়
+   326→   326→                            </Badge>
+   327→   327→                          )}
+   328→   328→                        </td>
+   329→   329→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   330→   330→                          <div className="flex items-center justify-center gap-2">
+   331→   331→                            <Button
+   332→   332→                              size="sm"
+   333→   333→                              variant="outline"
+   334→   334→                              onClick={() => openEdit(m)}
+   335→   335→                              className="h-8 gap-1.5 rounded-lg text-xs font-medium"
+   336→   336→                            >
+   337→   337→                              <Pencil className="h-3.5 w-3.5" />
+   338→   338→                              সম্পাদনা
+   339→   339→                            </Button>
+   340→   340→                            <Button
+   341→   341→                              size="sm"
+   342→   342→                              variant="outline"
+   343→   343→                              disabled={deletingId === m.id}
+   344→   344→                              onClick={() => handleDelete(m.id)}
+   345→   345→                              className="h-8 gap-1.5 rounded-lg text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
+   346→   346→                            >
+   347→   347→                              {deletingId === m.id ? (
+   348→   348→                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+   349→   349→                              ) : (
+   350→   350→                                <Trash2 className="h-3.5 w-3.5" />
+   351→   351→                              )}
+   352→   352→                              মুছুন
+   353→   353→                            </Button>
+   354→   354→                          </div>
+   355→   355→                        </td>
+   356→   356→                      </tr>
+   357→   357→                    ))}
+   358→   358→                  </tbody>
+   359→   359→                </table>
+   360→   360→              </div>
+   361→   361→            )}
+   362→   362→          </SolidCard>
+   363→   363→        </motion.div>
+   364→   364→      </div>
+   365→   365→
+   366→   366→      {/* ═══ Section 2: Payment Theme Configuration ═══ */}
+   367→   367→      <motion.div
+   368→   368→        initial={{ opacity: 0, y: 16 }}
+   369→   369→        animate={{ opacity: 1, y: 0 }}
+   370→   370→        transition={{ duration: 0.4, delay: 0.15 }}
+   371→   371→      >
+   372→   372→        <div className="mb-5 text-center sm:text-left">
+   373→   373→          <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   374→   374→            <Palette className="h-5 w-5 text-primary" />
+   375→   375→            পেমেন্ট থিম কনফিগারেশন
+   376→   376→          </h2>
+   377→   377→          <p className="mt-0.5 text-sm text-muted-foreground">
+   378→   378→            পেমেন্ট পেজের প্রাইমারি কালার কাস্টমাইজ করুন
+   379→   379→          </p>
+   380→   380→        </div>
+   381→   381→
+   382→   382→        <SolidCard>
+   383→   383→          <div className="space-y-6">
+   384→   384→            {/* Color Picker Row */}
+   385→   385→            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   386→   386→              <div>
+   387→   387→                <Label className="text-sm font-medium text-foreground">
+   388→   388→                  প্রাইমারি পেমেন্ট থিম কালার
+   389→   389→                </Label>
+   390→   390→                <p className="mt-1 text-xs text-muted-foreground">
+   391→   391→                  এই কালার পেমেন্ট পেজের সিলেকশন, বর্ডার এবং বাটনে প্রয়োগ হবে
+   392→   392→                </p>
+   393→   393→              </div>
+   394→   394→              <div className="flex items-center gap-3">
+   395→   395→                <div className="relative">
+   396→   396→                  <input
+   397→   397→                    type="color"
+   398→   398→                    value={themeColor}
+   399→   399→                    onChange={(e) => setThemeColor(e.target.value)}
+   400→   400→                    className="h-10 w-14 cursor-pointer rounded-lg border border-border p-1 bg-transparent"
+   401→   401→                  />
+   402→   402→                </div>
+   403→   403→                <Input
+   404→   404→                  value={themeColor}
+   405→   405→                  onChange={(e) => {
+   406→   406→                    const v = e.target.value;
+   407→   407→                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
+   408→   408→                      setThemeColor(v.length === 7 ? v : themeColor);
+   409→   409→                    }
+   410→   410→                  }}
+   411→   411→                  className="w-28 h-10 font-mono text-sm"
+   412→   412→                />
+   413→   413→                {hasThemeChanged && (
+   414→   414→                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+   415→   415→                    পরিবর্তিত
+   416→   416→                  </span>
+   417→   417→                )}
+   418→   418→              </div>
+   419→   419→            </div>
+   420→   420→
+   421→   421→            {/* ─── Real-Time Preview ─── */}
+   422→   422→            <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
+   423→   423→              <div className="mb-3 flex items-center gap-2">
+   424→   424→                <Eye className="h-4 w-4 text-muted-foreground" />
+   425→   425→                <span className="text-sm font-semibold text-foreground">
+   426→   426→                  রিয়েল-টাইম প্রিভিউ
+   427→   427→                </span>
+   428→   428→              </div>
+   429→   429→
+   430→   430→              {/* Mini method selection grid */}
+   431→   431→              <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+   432→   432→                {previewMethods.map((name, i) => {
+   433→   433→                  const isSelected = i === 0;
+   434→   434→                  return (
+   435→   435→                    <button
+   436→   436→                      key={name}
+   437→   437→                      className="rounded-xl border-2 p-3 text-center transition-all text-xs font-medium"
+   438→   438→                      style={{
+   439→   439→                        borderColor: isSelected
+   440→   440→                          ? themeColor
+   441→   441→                          : 'hsl(var(--border))',
+   442→   442→                        backgroundColor: isSelected
+   443→   443→                          ? `${themeColor}15`
+   444→   444→                          : 'transparent',
+   445→   445→                        color: isSelected ? themeColor : 'hsl(var(--foreground))',
+   446→   446→                      }}
+   447→   447→                    >
+   448→   448→                      <div
+   449→   449→                        className="mx-auto mb-1.5 h-8 w-8 rounded-lg flex items-center justify-center"
+   450→   450→                        style={{
+   451→   451→                          backgroundColor: `${themeColor}20`,
+   452→   452→                        }}
+   453→   453→                      >
+   454→   454→                        <CreditCard
+   455→   455→                          className="h-4 w-4"
+   456→   456→                          style={{ color: themeColor }}
+   457→   457→                        />
+   458→   458→                      </div>
+   459→   459→                      {name}
+   460→   460→                    </button>
+   461→   461→                  );
+   462→   462→                })}
+   463→   463→              </div>
+   464→   464→
+   465→   465→              {/* Mini instructions box */}
+   466→   466→              <div
+   467→   467→                className="mb-4 rounded-xl border-l-4 bg-white dark:bg-zinc-800 p-3"
+   468→   468→                style={{ borderLeftColor: themeColor }}
+   469→   469→              >
+   470→   470→                <div className="flex items-center justify-between text-xs">
+   471→   471→                  <span className="text-muted-foreground">মোট পরিমাণ</span>
+   472→   472→                  <span className="font-bold" style={{ color: themeColor }}>
+   473→   473→                    ৳১,০৩,০০০.০০
+   474→   474→                  </span>
+   475→   475→                </div>
+   476→   476→                <div className="flex items-center justify-between text-xs mt-1">
+   477→   477→                  <span className="text-muted-foreground">পেমেন্ট পাঠান</span>
+   478→   478→                  <span className="font-mono font-medium text-foreground">
+   479→   479→                    ০১৭XXXXXXXXX
+   480→   480→                  </span>
+   481→   481→                </div>
+   482→   482→              </div>
+   483→   483→
+   484→   484→              {/* Mini confirm button */}
+   485→   485→              <button
+   486→   486→                className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   487→   487→                style={{
+   488→   488→                  backgroundColor: themeColor,
+   489→   489→                  color: getContrastColor(themeColor),
+   490→   490→                }}
+   491→   491→              >
+   492→   492→                <ShieldCheckIcon />
+   493→   493→                কনফার্ম পেমেন্ট
+   494→   494→              </button>
+   495→   495→            </div>
+   496→   496→
+   497→   497→            {/* Save Theme Button */}
+   498→   498→            <div className="flex justify-end">
+   499→   499→              <Button
+   500→   500→                onClick={handleSaveTheme}
+   501→   501→                disabled={savingTheme || !hasThemeChanged}
+   502→   502→                className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
+   503→   503→              >
+   504→   504→                {savingTheme ? (
+   505→   505→                  <Loader2 className="h-4 w-4 animate-spin" />
+   506→   506→                ) : (
+   507→   507→                  <Save className="h-4 w-4" />
+   508→   508→                )}
+   509→   509→                থিম সংরক্ষণ করুন
+   510→   510→              </Button>
+   511→   511→            </div>
+   512→   512→          </div>
+   513→   513→        </SolidCard>
+   514→   514→      </motion.div>
+   515→   515→
+   516→   516→      {/* ═══ Add/Edit Dialog ═══ */}
+   517→   517→      <AnimatePresence>
+   518→   518→        {dialogOpen && (
+   519→   519→          <>
+   520→   520→            {/* Overlay */}
+   521→   521→            <motion.div
+   522→   522→              initial={{ opacity: 0 }}
+   523→   523→              animate={{ opacity: 1 }}
+   524→   524→              exit={{ opacity: 0 }}
+   525→   525→              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+   526→   526→              onClick={() => setDialogOpen(false)}
+   527→   527→            />
+   528→   528→            {/* Modal */}
+   529→   529→            <motion.div
+   530→   530→              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+   531→   531→              animate={{ opacity: 1, scale: 1, y: 0 }}
+   532→   532→              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+   533→   533→              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+   534→   534→              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+   535→   535→            >
+   536→   536→              <div
+   537→   537→                className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
+   538→   538→                onClick={(e) => e.stopPropagation()}
+   539→   539→              >
+   540→   540→                {/* Modal Header */}
+   541→   541→                <div className="mb-5 flex items-center justify-between">
+   542→   542→                  <h3 className="text-base font-bold text-foreground">
+   543→   543→                    {editingId ? 'মেথড সম্পাদনা করুন' : 'নতুন মেথড যোগ করুন'}
+   544→   544→                  </h3>
+   545→   545→                  <button
+   546→   546→                    onClick={() => setDialogOpen(false)}
+   547→   547→                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   548→   548→                  >
+   549→   549→                    <X className="h-4 w-4" />
+   550→   550→                  </button>
+   551→   551→                </div>
+   552→   552→
+   553→   553→                {/* Modal Form */}
+   554→   554→                <div className="space-y-4">
+   555→   555→                  <div className="space-y-1.5">
+   556→   556→                    <Label className="text-sm font-medium">মেথড নাম</Label>
+   557→   557→                    <Input
+   558→   558→                      value={form.name}
+   559→   559→                      onChange={(e) =>
+   560→   560→                        setForm({ ...form, name: e.target.value })
+   561→   561→                      }
+   562→   562→                      placeholder="যেমন: bKash, Nagad, Rocket"
+   563→   563→                    />
+   564→   564→                  </div>
+   565→   565→
+   566→   566→                  <div className="space-y-1.5">
+   567→   567→                    <Label className="text-sm font-medium">
+   568→   568→                      অ্যাকাউন্ট নম্বর
+   569→   569→                    </Label>
+   570→   570→                    <Input
+   571→   571→                      value={form.accountNumber}
+   572→   572→                      onChange={(e) =>
+   573→   573→                        setForm({ ...form, accountNumber: e.target.value })
+   574→   574→                      }
+   575→   575→                      placeholder="০১XXXXXXXXX"
+   576→   576→                    />
+   577→   577→                  </div>
+   578→   578→
+   579→   579→                  <div className="grid grid-cols-2 gap-3">
+   580→   580→                    <div className="space-y-1.5">
+   581→   581→                      <Label className="text-sm font-medium">
+   582→   582→                        অ্যাকাউন্ট টাইপ
+   583→   583→                      </Label>
+   584→   584→                      <select
+   585→   585→                        value={form.accountType}
+   586→   586→                        onChange={(e) =>
+   587→   587→                          setForm({ ...form, accountType: e.target.value })
+   588→   588→                        }
+   589→   589→                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+   590→   590→                      >
+   591→   591→                        <option value="personal">পার্সোনাল</option>
+   592→   592→                        <option value="merchant">মার্চেন্ট</option>
+   593→   593→                      </select>
+   594→   594→                    </div>
+   595→   595→
+   596→   596→                    <div className="space-y-1.5">
+   597→   597→                      <Label className="text-sm font-medium">স্ট্যাটাস</Label>
+   598→   598→                      <select
+   599→   599→                        value={form.status}
+   600→   600→                        onChange={(e) =>
+   601→   601→                          setForm({ ...form, status: e.target.value })
+   602→   602→                        }
+   603→   603→                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+   604→   604→                      >
+   605→   605→                        <option value="active">সক্রিয়</option>
+   606→   606→                        <option value="inactive">নিষ্ক্রিয়</option>
+   607→   607→                      </select>
+   608→   608→                    </div>
+   609→   609→                  </div>
+   610→   610→
+   611→   611→                  <div className="space-y-1.5">
+   612→   612→                    <Label className="text-sm font-medium">সর্ট অর্ডার</Label>
+   613→   613→                    <Input
+   614→   614→                      type="number"
+   615→   615→                      value={form.sortOrder}
+   616→   616→                      onChange={(e) =>
+   617→   617→                        setForm({
+   618→   618→                          ...form,
+   619→   619→                          sortOrder: parseInt(e.target.value) || 0,
+   620→   620→                        })
+   621→   621→                      }
+   622→   622→                      placeholder="০"
+   623→   623→                    />
+   624→   624→                    <p className="text-xs text-muted-foreground">
+   625→   625→                      কম মান মানে পেমেন্ট পেজে আগে দেখাবে
+   626→   626→                    </p>
+   627→   627→                  </div>
+   628→   628→                </div>
+   629→   629→
+   630→   630→                {/* Modal Actions */}
+   631→   631→                <div className="mt-6 flex items-center justify-end gap-3">
+   632→   632→                  <Button
+   633→   633→                    variant="outline"
+   634→   634→                    onClick={() => setDialogOpen(false)}
+   635→   635→                    className="h-10 rounded-xl px-5 text-sm font-medium"
+   636→   636→                  >
+   637→   637→                    বাতিল
+   638→   638→                  </Button>
+   639→   639→                  <Button
+   640→   640→                    onClick={handleSave}
+   641→   641→                    disabled={saving}
+   642→   642→                    className="h-10 gap-2 rounded-xl px-5 text-sm font-semibold shadow-md shadow-primary/20"
+   643→   643→                  >
+   644→   644→                    {saving ? (
+   645→   645→                      <Loader2 className="h-4 w-4 animate-spin" />
+   646→   646→                    ) : (
+   647→   647→                      <Save className="h-4 w-4" />
+   648→   648→                    )}
+   649→   649→                    সংরক্ষণ করুন
+   650→   650→                  </Button>
+   651→   651→                </div>
+   652→   652→              </div>
+   653→   653→            </motion.div>
+   654→   654→          </>
+   655→   655→        )}
+   656→   656→      </AnimatePresence>
+   657→   657→    </div>
+   658→   658→  );
+   659→   659→}
+   660→   660→
+   661→   661→/* ─── Helpers ─── */
+   662→   662→function getContrastColor(hex: string): string {
+   663→   663→  const r = parseInt(hex.slice(1, 3), 16);
+   664→   664→  const g = parseInt(hex.slice(3, 5), 16);
+   665→   665→  const b = parseInt(hex.slice(5, 7), 16);
+   666→   666→  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+   667→   667→  return luminance > 0.6 ? '#18181b' : '#ffffff';
+   668→   668→}
+   669→   669→
+   670→   670→function ShieldCheckIcon() {
+   671→   671→  return (
+   672→   672→    <svg
+   673→   673→      width="16"
+   674→   674→      height="16"
+   675→   675→      viewBox="0 0 24 24"
+   676→   676→      fill="none"
+   677→   677→      stroke="currentColor"
+   678→   678→      strokeWidth="2"
+   679→   679→      strokeLinecap="round"
+   680→   680→      strokeLinejoin="round"
+   681→   681→    >
+   682→   682→      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+   683→   683→      <path d="m9 12 2 2 4-4" />
+   684→   684→    </svg>
+   685→   685→  );
+   686→   686→}

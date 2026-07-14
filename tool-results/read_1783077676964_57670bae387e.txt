@@ -1,0 +1,683 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore } from '@/lib/store';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { toast } from 'sonner';
+    11→import {
+    12→  ArrowLeft,
+    13→  Phone,
+    14→  Hash,
+    15→  ShieldCheck,
+    16→  CreditCard,
+    17→  Building2,
+    18→  Wallet,
+    19→  Loader2,
+    20→  CheckCircle2,
+    21→  Clock,
+    22→  AlertTriangle,
+    23→  RotateCcw,
+    24→} from 'lucide-react';
+    25→
+    26→/* ─── Types ─── */
+    27→interface PaymentMethod {
+    28→  id: string;
+    29→  name: string;
+    30→  accountNumber: string;
+    31→  accountType: string;
+    32→  themeColor: string;
+    33→}
+    34→
+    35→interface PaymentSettings {
+    36→  paymentThemeColor: string;
+    37→  feePercentage: number;
+    38→  platformName: string;
+    39→}
+    40→
+    41→/* ─── Color Utility ─── */
+    42→function getContrastColor(hex: string): string {
+    43→  const r = parseInt(hex.slice(1, 3), 16);
+    44→  const g = parseInt(hex.slice(3, 5), 16);
+    45→  const b = parseInt(hex.slice(5, 7), 16);
+    46→  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    47→  return luminance > 0.6 ? '#18181b' : '#ffffff';
+    48→}
+    49→
+    50→/* ─── Method icon helper ─── */
+    51→function getMethodIcon(name: string) {
+    52→  const lower = name.toLowerCase();
+    53→  if (lower.includes('bkash')) return Wallet;
+    54→  if (lower.includes('nagad')) return CreditCard;
+    55→  if (lower.includes('rocket')) return Wallet;
+    56→  if (lower.includes('bank')) return Building2;
+    57→  return CreditCard;
+    58→}
+    59→
+    60→/* ─── Animation Variants ─── */
+    61→const containerVariants = {
+    62→  hidden: { opacity: 0 },
+    63→  visible: {
+    64→    opacity: 1,
+    65→    transition: { staggerChildren: 0.07 },
+    66→  },
+    67→};
+    68→
+    69→const itemVariants = {
+    70→  hidden: { opacity: 0, y: 18 },
+    71→  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+    72→};
+    73→
+    74→/* ─── Component ─── */
+    75→export function UserPaymentView() {
+    76→  const activeDeal = useAppStore((s) => s.activeDeal);
+    77→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+    78→
+    79→  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+    80→  const [selectedId, setSelectedId] = useState<string>('');
+    81→  const [feePercentage, setFeePercentage] = useState<number>(2.5);
+    82→  const [loading, setLoading] = useState(true);
+    83→  const [senderNumber, setSenderNumber] = useState('');
+    84→  const [txnId, setTxnId] = useState('');
+    85→  const [submitting, setSubmitting] = useState(false);
+    86→  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+    87→  const [verifiedAmount, setVerifiedAmount] = useState<number | null>(null);
+    88→  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+    89→  const [isRepayment, setIsRepayment] = useState(false);
+    90→
+    91→  /* ─── Fetch data ─── */
+    92→  const fetchData = useCallback(async () => {
+    93→    setLoading(true);
+    94→    try {
+    95→      const [methodsRes, settingsRes] = await Promise.all([
+    96→        fetch('/api/payment-methods'),
+    97→        fetch('/api/payment-settings'),
+    98→      ]);
+    99→
+   100→      let methodsData: PaymentMethod[] = [];
+   101→      if (methodsRes.ok) {
+   102→        methodsData = await methodsRes.json();
+   103→        setMethods(methodsData);
+   104→      }
+   105→
+   106→      if (settingsRes.ok) {
+   107→        const settingsData: PaymentSettings = await settingsRes.json();
+   108→        setFeePercentage(settingsData.feePercentage ?? 2.5);
+   109→      }
+   110→
+   111→      // If deal is already in Pending_Verification, restore verification state
+   112→      if (activeDeal?.status === 'Pending_Verification') {
+   113→        try {
+   114→          const dealRes = await fetch(`/api/deals/${activeDeal.id}`);
+   115→          if (dealRes.ok) {
+   116→            const dealData = await dealRes.json();
+   117→            if (dealData.transactionId) setTxnId(dealData.transactionId);
+   118→            if (dealData.senderNumber) setSenderNumber(dealData.senderNumber);
+   119→            if (dealData.paymentAmount) setVerifiedAmount(dealData.paymentAmount);
+   120→            if (dealData.paymentMethodId) {
+   121→              setSelectedId(dealData.paymentMethodId);
+   122→            } else if (methodsData.length > 0) {
+   123→              setSelectedId(methodsData[0].id);
+   124→            }
+   125→            setPaymentSubmitted(true);
+   126→          }
+   127→        } catch { /* silent — fall through to payment form */ }
+   128→      }
+   129→      // If deal was rejected or payment returned, pre-fill old details & show reason
+   130→      else if (activeDeal?.status === 'Pending_Payment' || activeDeal?.status === 'rejected') {
+   131→        try {
+   132→          const dealRes = await fetch(`/api/deals/${activeDeal.id}`);
+   133→          if (dealRes.ok) {
+   134→            const dealData = await dealRes.json();
+   135→            if (dealData.rejectionReason) setRejectionReason(dealData.rejectionReason);
+   136→            // Pre-fill previous payment method
+   137→            if (dealData.paymentMethodId) {
+   138→              setSelectedId(dealData.paymentMethodId);
+   139→            } else if (methodsData.length > 0) {
+   140→              setSelectedId(methodsData[0].id);
+   141→            }
+   142→            setIsRepayment(true);
+   143→          }
+   144→        } catch { /* silent */ }
+   145→        if (methodsData.length > 0 && !selectedId) {
+   146→          setSelectedId(methodsData[0].id);
+   147→        }
+   148→      } else {
+   149→        if (methodsData.length > 0 && !selectedId) {
+   150→          setSelectedId(methodsData[0].id);
+   151→        }
+   152→      }
+   153→    } catch {
+   154→      toast.error('পেমেন্ট তথ্য লোড করতে সমস্যা হয়েছে');
+   155→    } finally {
+   156→      setLoading(false);
+   157→    }
+   158→  }, [activeDeal?.id, activeDeal?.status]);
+   159→
+   160→  useEffect(() => {
+   161→    fetchData();
+   162→  }, [fetchData]);
+   163→
+   164→  /* ─── Derived ─── */
+   165→  const selectedMethod = methods.find((m) => m.id === selectedId);
+   166→  const themeColor = selectedMethod?.themeColor || '#65A30D';
+   167→  const amount = activeDeal?.amount ?? 0;
+   168→  const fee = Math.round((amount * feePercentage) / 100);
+   169→  const totalAmount = verifiedAmount ?? (amount + fee);
+   170→  const contrastColor = getContrastColor(themeColor);
+   171→
+   172→  const canConfirm =
+   173→    selectedId !== '' && senderNumber.trim() !== '' && txnId.trim() !== '';
+   174→
+   175→  /* ─── Handlers ─── */
+   176→  const handleConfirm = async () => {
+   177→    if (!canConfirm || !activeDeal || !selectedMethod) return;
+   178→
+   179→    setSubmitting(true);
+   180→    try {
+   181→      const res = await fetch('/api/deals/payment', {
+   182→        method: 'POST',
+   183→        headers: { 'Content-Type': 'application/json' },
+   184→        body: JSON.stringify({
+   185→          dealId: activeDeal.id,
+   186→          paymentMethodId: selectedMethod.id,
+   187→          senderNumber: senderNumber.trim(),
+   188→          transactionId: txnId.trim(),
+   189→          amount: totalAmount,
+   190→        }),
+   191→      });
+   192→
+   193→      if (res.ok) {
+   194→        toast.success('পেমেন্ট সফলভাবে জমা হয়েছে! ভেরিফিকেশন চলছে।');
+   195→        setVerifiedAmount(totalAmount);
+   196→        setPaymentSubmitted(true);
+   197→      } else {
+   198→        const data = await res.json().catch(() => ({}));
+   199→        toast.error(data.error || 'পেমেন্ট জমা করতে সমস্যা হয়েছে');
+   200→      }
+   201→    } catch {
+   202→      toast.error('নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।');
+   203→    } finally {
+   204→      setSubmitting(false);
+   205→    }
+   206→  };
+   207→
+   208→  /* ─── No active deal ─── */
+   209→  if (!activeDeal) {
+   210→    return (
+   211→      <div className="flex flex-col items-center justify-center gap-4 py-20">
+   212→        <CreditCard className="h-12 w-12 text-muted-foreground/50" />
+   213→        <p className="text-lg font-medium text-muted-foreground">
+   214→          কোনো সক্রিয় ডিল নেই
+   215→        </p>
+   216→        <Button
+   217→          variant="outline"
+   218→          onClick={() => setDashboardPanel('deal-detail')}
+   219→          className="gap-2"
+   220→        >
+   221→          <ArrowLeft className="h-4 w-4" />
+   222→          ফিরে যান
+   223→        </Button>
+   224→      </div>
+   225→    );
+   226→  }
+   227→
+   228→  /* ─── Loading skeleton ─── */
+   229→  if (loading) {
+   230→    return (
+   231→      <div className="flex flex-col gap-6">
+   232→        <div className="flex items-center gap-3">
+   233→          <div className="h-10 w-10 rounded-xl bg-muted animate-pulse" />
+   234→          <div className="space-y-2">
+   235→            <div className="h-6 w-40 rounded bg-muted animate-pulse" />
+   236→            <div className="h-4 w-64 rounded bg-muted animate-pulse" />
+   237→          </div>
+   238→        </div>
+   239→        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   240→          {[1, 2, 3, 4].map((i) => (
+   241→            <div key={i} className="h-28 rounded-2xl bg-white dark:bg-zinc-900 shadow-lg animate-pulse" />
+   242→          ))}
+   243→        </div>
+   244→      </div>
+   245→    );
+   246→  }
+   247→
+   248→  /* ═══════════════════════════════════════════════════
+   249→     VERIFICATION IN PROGRESS STATE
+   250→     ═══════════════════════════════════════════════════ */
+   251→  if (paymentSubmitted) {
+   252→    return (
+   253→      <motion.div
+   254→        initial={{ opacity: 0, y: 20 }}
+   255→        animate={{ opacity: 1, y: 0 }}
+   256→        transition={{ duration: 0.5 }}
+   257→        className="flex flex-col gap-6"
+   258→      >
+   259→        {/* Header */}
+   260→        <div className="flex items-center gap-3">
+   261→          <Button
+   262→            variant="ghost"
+   263→            size="icon"
+   264→            onClick={() => {
+   265→              setDashboardPanel('deal-detail');
+   266→            }}
+   267→            className="h-10 w-10 rounded-xl hover:bg-accent"
+   268→            aria-label="ফিরে যান"
+   269→          >
+   270→            <ArrowLeft className="h-5 w-5" />
+   271→          </Button>
+   272→          <div>
+   273→            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+   274→              পেমেন্ট সম্পন্ন
+   275→            </h1>
+   276→            <p className="mt-0.5 text-sm text-muted-foreground">
+   277→              আপনার পেমেন্ট সফলভাবে জমা হয়েছে
+   278→            </p>
+   279→          </div>
+   280→        </div>
+   281→
+   282→        {/* Success banner */}
+   283→        <motion.div
+   284→          initial={{ scale: 0.95, opacity: 0 }}
+   285→          animate={{ scale: 1, opacity: 1 }}
+   286→          transition={{ duration: 0.4, delay: 0.1 }}
+   287→          className="rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-6 sm:p-8"
+   288→        >
+   289→          <div className="flex flex-col items-center gap-4 text-center">
+   290→            <motion.div
+   291→              initial={{ scale: 0 }}
+   292→              animate={{ scale: 1 }}
+   293→              transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.2 }}
+   294→              className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20"
+   295→            >
+   296→              <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+   297→            </motion.div>
+   298→            <div>
+   299→              <h2 className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+   300→                Pay Now সফল হয়েছে!
+   301→              </h2>
+   302→              <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80 mt-1">
+   303→                আপনার পেমেন্ট রেকর্ড করা হয়েছে।
+   304→              </p>
+   305→            </div>
+   306→          </div>
+   307→        </motion.div>
+   308→
+   309→        {/* Verification in Progress card */}
+   310→        <motion.div
+   311→          initial={{ y: 10, opacity: 0 }}
+   312→          animate={{ y: 0, opacity: 1 }}
+   313→          transition={{ duration: 0.4, delay: 0.3 }}
+   314→          className="rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-5"
+   315→        >
+   316→          <div className="flex items-center gap-3">
+   317→            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/20">
+   318→              <Loader2 className="h-5 w-5 text-amber-600 dark:text-amber-400 animate-spin" />
+   319→            </div>
+   320→            <div>
+   321→              <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+   322→                ভেরিফিকেশন চলছে
+   323→              </p>
+   324→              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">
+   325→                অ্যাডমিন আপনার পেমেন্ট যাচাই করছেন। এটি কিছু সময় নিতে পারে।
+   326→              </p>
+   327→            </div>
+   328→          </div>
+   329→        </motion.div>
+   330→
+   331→        {/* Payment summary card */}
+   332→        <motion.div
+   333→          initial={{ y: 10, opacity: 0 }}
+   334→          animate={{ y: 0, opacity: 1 }}
+   335→          transition={{ duration: 0.4, delay: 0.4 }}
+   336→          className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-5 space-y-4"
+   337→        >
+   338→          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+   339→            <CreditCard className="h-4 w-4 text-muted-foreground" />
+   340→            পেমেন্ট সারাংশ
+   341→          </h3>
+   342→          <div className="space-y-3">
+   343→            {/* Payment Method */}
+   344→            {selectedMethod && (
+   345→              <div className="flex items-center justify-between py-2 border-b border-border/40">
+   346→                <span className="text-sm text-muted-foreground">পেমেন্ট মেথড</span>
+   347→                <div className="flex items-center gap-2">
+   348→                  <div
+   349→                    className="h-2.5 w-2.5 rounded-full"
+   350→                    style={{ backgroundColor: selectedMethod.themeColor }}
+   351→                  />
+   352→                  <span className="text-sm font-semibold text-foreground">
+   353→                    {selectedMethod.name}
+   354→                  </span>
+   355→                </div>
+   356→              </div>
+   357→            )}
+   358→            {/* Transaction ID */}
+   359→            <div className="flex items-center justify-between py-2 border-b border-border/40">
+   360→              <span className="text-sm text-muted-foreground">ট্রানজেকশন আইডি</span>
+   361→              <span className="text-sm font-semibold font-mono text-foreground">
+   362→                {txnId.trim()}
+   363→              </span>
+   364→            </div>
+   365→            {/* Sender Number */}
+   366→            <div className="flex items-center justify-between py-2 border-b border-border/40">
+   367→              <span className="text-sm text-muted-foreground">প্রেরকের নম্বর</span>
+   368→              <span className="text-sm font-semibold font-mono text-foreground">
+   369→                {senderNumber.trim()}
+   370→              </span>
+   371→            </div>
+   372→            {/* Amount */}
+   373→            <div className="flex items-center justify-between py-2">
+   374→              <span className="text-sm font-medium text-muted-foreground">মোট পরিমাণ</span>
+   375→              <span className="text-lg font-bold" style={{ color: themeColor }}>
+   376→                ৳{(verifiedAmount ?? totalAmount).toLocaleString('bn-BD')}
+   377→              </span>
+   378→            </div>
+   379→          </div>
+   380→        </motion.div>
+   381→
+   382→        {/* Back to deal detail button */}
+   383→        <motion.div
+   384→          initial={{ y: 10, opacity: 0 }}
+   385→          animate={{ y: 0, opacity: 1 }}
+   386→          transition={{ duration: 0.4, delay: 0.5 }}
+   387→        >
+   388→          <Button
+   389→            onClick={() => setDashboardPanel('deal-detail')}
+   390→            className="w-full h-12 rounded-xl text-base font-semibold gap-2.5 shadow-lg transition-all duration-200"
+   391→            style={{
+   392→              backgroundColor: themeColor,
+   393→              color: contrastColor,
+   394→            }}
+   395→          >
+   396→            <CheckCircle2 className="h-5 w-5" />
+   397→            ডিল বিবরণে ফিরে যান
+   398→          </Button>
+   399→        </motion.div>
+   400→      </motion.div>
+   401→    );
+   402→  }
+   403→
+   404→  /* ═══════════════════════════════════════════════════
+   405→     PAYMENT FORM (default state)
+   406→     ═══════════════════════════════════════════════════ */
+   407→  return (
+   408→    <motion.div
+   409→      variants={containerVariants}
+   410→      initial="hidden"
+   411→      animate="visible"
+   412→      className="flex flex-col gap-6"
+   413→    >
+   414→      {/* ── Top Section: Back Button + Title ── */}
+   415→      <motion.div variants={itemVariants} className="flex items-center gap-3">
+   416→        <Button
+   417→          variant="ghost"
+   418→          size="icon"
+   419→          onClick={() => setDashboardPanel('deal-detail')}
+   420→          className="h-10 w-10 rounded-xl hover:bg-accent"
+   421→          aria-label="ফিরে যান"
+   422→        >
+   423→          <ArrowLeft className="h-5 w-5" />
+   424→        </Button>
+   425→        <div>
+   426→          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+   427→            {isRepayment ? 'পুনরায় পেমেন্ট করুন' : 'পেমেন্ট করুন'}
+   428→          </h1>
+   429→          <p className="mt-0.5 text-sm text-muted-foreground">
+   430→            {isRepayment
+   431→              ? 'সঠিক পেমেন্ট তথ্য দিয়ে আবার জমা দিন'
+   432→              : 'পেমেন্ট মেথড নির্বাচন করুন এবং তথ্য প্রদান করুন'}
+   433→          </p>
+   434→        </div>
+   435→      </motion.div>
+   436→
+   437→      {/* ── Rejection Reason Banner (re-payment flow) ── */}
+   438→      {isRepayment && (
+   439→        <motion.div
+   440→          variants={itemVariants}
+   441→          className="rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 p-4 sm:p-5"
+   442→        >
+   443→          <div className="flex items-start gap-3">
+   444→            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/20">
+   445→              <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+   446→            </div>
+   447→            <div className="min-w-0 flex-1">
+   448→              <p className="text-sm font-bold text-orange-700 dark:text-orange-400">
+   449→                পেমেন্ট যাচাই ব্যর্থ হয়েছে
+   450→              </p>
+   451→              {rejectionReason ? (
+   452→                <div className="mt-2 rounded-xl bg-white/70 dark:bg-zinc-800/50 p-3">
+   453→                  <p className="text-xs font-medium text-orange-600/60 dark:text-orange-400/60 mb-1">
+   454→                    অ্যাডমিনের মন্তব্য:
+   455→                  </p>
+   456→                  <p className="text-sm text-orange-800 dark:text-orange-300 leading-relaxed">
+   457→                    {rejectionReason}
+   458→                  </p>
+   459→                </div>
+   460→              ) : (
+   461→                <p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">
+   462→                  অ্যাডমিন আপনার পেমেন্ট যাচাই করতে পারেনি। অনুগ্রহ করে সঠিক তথ্য দিয়ে আবার জমা দিন।
+   463→                </p>
+   464→              )}
+   465→            </div>
+   466→          </div>
+   467→        </motion.div>
+   468→      )}
+   469→
+   470→      {/* ── Payment Method Selection Grid ── */}
+   471→      {methods.length > 0 && (
+   472→        <motion.div variants={itemVariants}>
+   473→          <h2 className="mb-3 text-base font-semibold text-foreground">
+   474→            পেমেন্ট মেথড নির্বাচন করুন
+   475→          </h2>
+   476→          <div className="grid grid-cols-2 gap-3">
+   477→            {methods.map((method) => {
+   478→              const Icon = getMethodIcon(method.name);
+   479→              const isSelected = method.id === selectedId;
+   480→
+   481→              return (
+   482→                <motion.button
+   483→                  key={method.id}
+   484→                  type="button"
+   485→                  onClick={() => setSelectedId(method.id)}
+   486→                  whileHover={{ scale: 1.02 }}
+   487→                  whileTap={{ scale: 0.97 }}
+   488→                  className="relative text-left rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-3 sm:p-4 border-2 transition-colors duration-200 cursor-pointer"
+   489→                  style={{
+   490→                    borderColor: isSelected ? method.themeColor : 'transparent',
+   491→                    backgroundColor: isSelected
+   492→                      ? `color-mix(in srgb, ${method.themeColor} 8%, white)`
+   493→                      : undefined,
+   494→                  }}
+   495→                >
+   496→                  {/* Dark mode fix for selected bg */}
+   497→                  {isSelected && (
+   498→                    <style>{`
+   499→                      @media (prefers-color-scheme: dark) {
+   500→                        .dark .pm-card-selected-${method.id.replace(/[^a-zA-Z0-9]/g, '')} {
+   501→                          background-color: color-mix(in srgb, ${method.themeColor} 10%, #18181b) !important;
+   502→                        }
+   503→                      }
+   504→                    `}</style>
+   505→                  )}
+   506→
+   507→                  <div className="flex flex-col gap-2">
+   508→                    <div className="flex items-center justify-between gap-2">
+   509→                      <div
+   510→                        className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl"
+   511→                        style={{
+   512→                          backgroundColor: isSelected
+   513→                            ? `color-mix(in srgb, ${method.themeColor} 18%, transparent)`
+   514→                            : 'hsl(var(--muted))',
+   515→                          color: isSelected ? method.themeColor : 'hsl(var(--muted-foreground))',
+   516→                        }}
+   517→                      >
+   518→                        <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+   519→                      </div>
+   520→                      <Badge
+   521→                        className={`shrink-0 border-0 text-[10px] sm:text-xs font-medium ${
+   522→                          method.accountType === 'merchant'
+   523→                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+   524→                            : 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+   525→                        }`}
+   526→                      >
+   527→                        {method.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
+   528→                      </Badge>
+   529→                    </div>
+   530→                    <div className="min-w-0">
+   531→                      <p className="text-sm sm:text-base font-bold text-foreground truncate">
+   532→                        {method.name}
+   533→                      </p>
+   534→                      <div className="flex items-center gap-1.5 mt-0.5">
+   535→                        <div
+   536→                          className="h-2 w-2 rounded-full shrink-0"
+   537→                          style={{ backgroundColor: method.themeColor || '#65A30D' }}
+   538→                        />
+   539→                        <p className="text-xs sm:text-sm text-muted-foreground font-mono tracking-wide truncate">
+   540→                          {method.accountNumber}
+   541→                        </p>
+   542→                      </div>
+   543→                    </div>
+   544→                  </div>
+   545→                </motion.button>
+   546→              );
+   547→            })}
+   548→          </div>
+   549→        </motion.div>
+   550→      )}
+   551→
+   552→      {methods.length === 0 && !loading && (
+   553→        <motion.div variants={itemVariants} className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-6 text-center">
+   554→          <CreditCard className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+   555→          <p className="text-sm text-muted-foreground">
+   556→            কোনো সক্রিয় পেমেন্ট মেথড পাওয়া যায়নি
+   557→          </p>
+   558→        </motion.div>
+   559→      )}
+   560→
+   561→      {/* ── Payment Instructions Section ── */}
+   562→      <AnimatePresence>
+   563→        {selectedMethod && (
+   564→          <motion.div
+   565→            key={selectedMethod.id}
+   566→            variants={itemVariants}
+   567→            initial={{ opacity: 0, y: 12 }}
+   568→            animate={{ opacity: 1, y: 0 }}
+   569→            exit={{ opacity: 0, y: -12 }}
+   570→            transition={{ duration: 0.3 }}
+   571→            className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-5 border-l-4"
+   572→            style={{ borderLeftColor: themeColor }}
+   573→          >
+   574→            <h2 className="mb-4 text-base font-semibold text-foreground flex items-center gap-2">
+   575→              <CreditCard className="h-4 w-4" style={{ color: themeColor }} />
+   576→              পেমেন্ট তথ্য
+   577→            </h2>
+   578→            <div className="space-y-3">
+   579→              <div className="flex items-center justify-between">
+   580→                <span className="text-sm text-muted-foreground">পরিমাণ</span>
+   581→                <span className="text-base font-semibold text-foreground">
+   582→                  ৳{amount.toLocaleString('bn-BD')}
+   583→                </span>
+   584→              </div>
+   585→              <div className="flex items-center justify-between">
+   586→                <span className="text-sm text-muted-foreground">প্ল্যাটফর্ম ফি ({feePercentage}%)</span>
+   587→                <span className="text-base font-semibold text-foreground">
+   588→                  ৳{fee.toLocaleString('bn-BD')}
+   589→                </span>
+   590→              </div>
+   591→              <div className="border-t border-border/60 pt-3">
+   592→                <div className="flex items-center justify-between">
+   593→                  <span className="text-sm font-medium text-muted-foreground">মোট পরিমাণ</span>
+   594→                  <span
+   595→                    className="text-xl font-bold"
+   596→                    style={{ color: themeColor }}
+   597→                  >
+   598→                    ৳{totalAmount.toLocaleString('bn-BD')}
+   599→                  </span>
+   600→                </div>
+   601→              </div>
+   602→              <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-3">
+   603→                <span className="text-sm text-muted-foreground">পেমেন্ট পাঠান</span>
+   604→                <span className="text-base font-bold font-mono tracking-wide text-foreground">
+   605→                  {selectedMethod.accountNumber}
+   606→                </span>
+   607→              </div>
+   608→            </div>
+   609→          </motion.div>
+   610→        )}
+   611→      </AnimatePresence>
+   612→
+   613→      {/* ── Input Section ── */}
+   614→      <motion.div
+   615→        variants={itemVariants}
+   616→        className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-5"
+   617→      >
+   618→        <h2 className="mb-4 text-base font-semibold text-foreground">
+   619→          আপনার পেমেন্ট তথ্য
+   620→        </h2>
+   621→        <div className="space-y-4">
+   622→          {/* Sender Number */}
+   623→          <div className="space-y-2">
+   624→            <Label htmlFor="senderNumber" className="text-sm font-medium text-foreground">
+   625→              প্রেরকের নম্বর
+   626→            </Label>
+   627→            <div className="relative">
+   628→              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   629→              <Input
+   630→                id="senderNumber"
+   631→                type="tel"
+   632→                placeholder="আপনার bKash/Nagad/Rocket নম্বর"
+   633→                value={senderNumber}
+   634→                onChange={(e) => setSenderNumber(e.target.value)}
+   635→                className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-1"
+   636→              />
+   637→            </div>
+   638→          </div>
+   639→
+   640→          {/* Transaction ID */}
+   641→          <div className="space-y-2">
+   642→            <Label htmlFor="txnId" className="text-sm font-medium text-foreground">
+   643→              ট্রানজেকশন আইডি (TxnID)
+   644→            </Label>
+   645→            <div className="relative">
+   646→              <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   647→              <Input
+   648→                id="txnId"
+   649→                type="text"
+   650→                placeholder="ট্রানজেকশন আইডি লিখুন"
+   651→                value={txnId}
+   652→                onChange={(e) => setTxnId(e.target.value)}
+   653→                className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-1"
+   654→              />
+   655→            </div>
+   656→          </div>
+   657→        </div>
+   658→      </motion.div>
+   659→
+   660→      {/* ── Pay Now Button ── */}
+   661→      <motion.div variants={itemVariants}>
+   662→        <Button
+   663→          onClick={handleConfirm}
+   664→          disabled={!canConfirm || submitting}
+   665→          className="w-full h-12 rounded-xl text-base font-bold gap-2.5 shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+   666→          style={{
+   667→            backgroundColor: canConfirm ? themeColor : 'hsl(var(--muted))',
+   668→            color: canConfirm ? contrastColor : 'hsl(var(--muted-foreground))',
+   669→          }}
+   670→        >
+   671→          {submitting ? (
+   672→            <Loader2 className="h-5 w-5 animate-spin" />
+   673→          ) : isRepayment ? (
+   674→            <RotateCcw className="h-5 w-5" />
+   675→          ) : (
+   676→            <ShieldCheck className="h-5 w-5" />
+   677→          )}
+   678→          {submitting ? 'জমা হচ্ছে...' : isRepayment ? 'পুনরায় জমা দিন' : 'Pay Now'}
+   679→        </Button>
+   680→      </motion.div>
+   681→    </motion.div>
+   682→  );
+   683→}

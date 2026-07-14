@@ -1,0 +1,210 @@
+   675→ GET / 200 in 53ms (compile: 3ms, render: 49ms)
+   676→✓ Compiled in 164ms
+   677→✓ Compiled in 116ms
+   678→ GET / 200 in 347ms (compile: 89ms, render: 258ms)
+   679→ POST /api/auth/login 200 in 11ms (compile: 3ms, render: 9ms)
+   680→prisma:query SELECT 1
+   681→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`phone`, `main`.`User`.`email`, `main`.`User`.`password`, `main`.`User`.`isSeller`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE ((`main`.`User`.`email` = ? OR `main`.`User`.`phone` = ?) AND `main`.`User`.`password` = ?) LIMIT ? OFFSET ?
+   682→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE `main`.`Admin`.`userId` IN (?) LIMIT ? OFFSET ?
+   683→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   684→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   685→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   686→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   687→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   688→ GET /api/admin/stats 200 in 23ms (compile: 3ms, proxy.ts: 5ms, render: 15ms)
+   689→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   690→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   691→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   692→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   693→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   694→ GET /api/admin/stats 200 in 19ms (compile: 3ms, proxy.ts: 3ms, render: 13ms)
+   695→ GET / 200 in 137ms (compile: 4ms, render: 133ms)
+   696→ GET / 200 in 71ms (compile: 4ms, render: 67ms)
+   697→ GET / 200 in 63ms (compile: 4ms, render: 59ms)
+   698→✓ Compiled in 184ms
+   699→✓ Compiled in 106ms
+   700→✓ Compiled in 98ms
+   701→✓ Compiled in 95ms
+   702→✓ Compiled in 103ms
+   703→✓ Compiled in 170ms
+   704→✓ Compiled in 94ms
+   705→✓ Compiled in 87ms
+   706→✓ Compiled in 104ms
+   707→✓ Compiled in 88ms
+   708→ GET / 200 in 232ms (compile: 57ms, render: 175ms)
+   709→ GET / 200 in 88ms (compile: 8ms, render: 80ms)
+   710→ POST /api/auth/login 200 in 17ms (compile: 4ms, render: 13ms)
+   711→prisma:query SELECT 1
+   712→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`phone`, `main`.`User`.`email`, `main`.`User`.`password`, `main`.`User`.`isSeller`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE ((`main`.`User`.`email` = ? OR `main`.`User`.`phone` = ?) AND `main`.`User`.`password` = ?) LIMIT ? OFFSET ?
+   713→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE `main`.`Admin`.`userId` IN (?) LIMIT ? OFFSET ?
+   714→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   715→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   716→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   717→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   718→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   719→ GET /api/admin/stats 200 in 24ms (compile: 5ms, proxy.ts: 5ms, render: 13ms)
+   720→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   721→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   722→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   723→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   724→prisma:query SELECT 1
+   725→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   726→ GET /api/admin/stats 200 in 23ms (compile: 8ms, proxy.ts: 4ms, render: 12ms)
+   727→prisma:query SELECT 1
+   728→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   729→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   730→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   731→prisma:query SELECT 1
+   732→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   733→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   734→ GET /api/admin/stats 200 in 16ms (compile: 3ms, proxy.ts: 4ms, render: 9ms)
+   735→ GET / 200 in 76ms (compile: 4ms, render: 71ms)
+   736→ GET / 200 in 78ms (compile: 5ms, render: 73ms)
+   737→prisma:query SELECT 1
+   738→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`phone`, `main`.`User`.`email`, `main`.`User`.`password`, `main`.`User`.`isSeller`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE ((`main`.`User`.`email` = ? OR `main`.`User`.`phone` = ?) AND `main`.`User`.`password` = ?) LIMIT ? OFFSET ?
+   739→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE `main`.`Admin`.`userId` IN (?) LIMIT ? OFFSET ?
+   740→ POST /api/auth/login 200 in 22ms (compile: 4ms, render: 19ms)
+   741→prisma:query SELECT 1
+   742→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) LIMIT ? OFFSET ?) AS `sub`
+   743→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   744→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   745→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   746→prisma:query SELECT 1
+   747→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE (`main`.`Deal`.`sellerId` = ? AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   748→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   749→ POST /api/user/dashboard-stats 200 in 37ms (compile: 18ms, render: 19ms)
+   750→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) ORDER BY `main`.`Deal`.`createdAt` DESC LIMIT ? OFFSET ?
+   751→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   752→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   753→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   754→ POST /api/user/recent-deals 200 in 26ms (compile: 16ms, render: 10ms)
+   755→ GET / 200 in 74ms (compile: 4ms, render: 70ms)
+   756→ GET / 200 in 183ms (compile: 4ms, render: 179ms)
+   757→ GET / 200 in 122ms (compile: 4ms, render: 119ms)
+   758→ GET / 200 in 65ms (compile: 4ms, render: 61ms)
+   759→prisma:query SELECT 1
+   760→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`phone`, `main`.`User`.`email`, `main`.`User`.`password`, `main`.`User`.`isSeller`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE ((`main`.`User`.`email` = ? OR `main`.`User`.`phone` = ?) AND `main`.`User`.`password` = ?) LIMIT ? OFFSET ?
+   761→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE `main`.`Admin`.`userId` IN (?) LIMIT ? OFFSET ?
+   762→ POST /api/auth/login 200 in 11ms (compile: 3ms, render: 8ms)
+   763→prisma:query SELECT 1
+   764→prisma:query SELECT 1
+   765→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) LIMIT ? OFFSET ?) AS `sub`
+   766→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   767→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   768→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE (`main`.`Deal`.`sellerId` = ? AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   769→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   770→ POST /api/user/dashboard-stats 200 in 14ms (compile: 3ms, render: 11ms)
+   771→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   772→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) ORDER BY `main`.`Deal`.`createdAt` DESC LIMIT ? OFFSET ?
+   773→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   774→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   775→ POST /api/user/recent-deals 200 in 13ms (compile: 3ms, render: 10ms)
+   776→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` IN (?,?,?,?,?,?,?,?) ORDER BY `main`.`Deal`.`createdAt` DESC LIMIT ? OFFSET ?
+   777→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?,?,?,?) LIMIT ? OFFSET ?
+   778→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   779→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?,?,?,?) LIMIT ? OFFSET ?
+   780→ GET /api/user/deals 200 in 134ms (compile: 125ms, render: 10ms)
+   781→prisma:query SELECT 1
+   782→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+   783→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   784→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   785→ GET /api/deals/cmr2ae9ej0003ndyhm66trw23 200 in 894ms (compile: 881ms, render: 13ms)
+   786→prisma:query SELECT 1
+   787→prisma:query SELECT 1
+   788→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) LIMIT ? OFFSET ?) AS `sub`
+   789→prisma:query SELECT 1
+   790→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   791→prisma:query SELECT 1
+   792→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE (`main`.`Deal`.`sellerId` = ? AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   793→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   794→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   795→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   796→ POST /api/user/dashboard-stats 200 in 13ms (compile: 3ms, render: 9ms)
+   797→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) ORDER BY `main`.`Deal`.`createdAt` DESC LIMIT ? OFFSET ?
+   798→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   799→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   800→ POST /api/user/recent-deals 200 in 10ms (compile: 3ms, render: 8ms)
+   801→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+   802→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   803→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   804→ GET /api/deals/cmr2ae9ej0003ndyhm66trw23 200 in 72ms (compile: 62ms, render: 10ms)
+   805→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+   806→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   807→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   808→ GET /api/deals/cmr2ae9ej0003ndyhm66trw23 200 in 77ms (compile: 68ms, render: 9ms)
+   809→✓ Compiled in 204ms
+   810→✓ Compiled in 340ms
+   811→✓ Compiled in 213ms
+   812→✓ Compiled in 203ms
+   813→✓ Compiled in 197ms
+   814→✓ Compiled in 201ms
+   815→✓ Compiled in 206ms
+   816→✓ Compiled in 195ms
+   817→✓ Compiled in 90ms
+   818→✓ Compiled in 180ms
+   819→✓ Compiled in 171ms
+   820→ GET / 200 in 351ms (compile: 84ms, render: 267ms)
+   821→prisma:query SELECT 1
+   822→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`phone`, `main`.`User`.`email`, `main`.`User`.`password`, `main`.`User`.`isSeller`, `main`.`User`.`createdAt`, `main`.`User`.`updatedAt` FROM `main`.`User` WHERE ((`main`.`User`.`email` = ? OR `main`.`User`.`phone` = ?) AND `main`.`User`.`password` = ?) LIMIT ? OFFSET ?
+   823→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE `main`.`Admin`.`userId` IN (?) LIMIT ? OFFSET ?
+   824→ POST /api/auth/login 200 in 20ms (compile: 4ms, render: 16ms)
+   825→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   826→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   827→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   828→prisma:query SELECT 1
+   829→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   830→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   831→ GET /api/admin/stats 200 in 43ms (compile: 6ms, proxy.ts: 11ms, render: 26ms)
+   832→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   833→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   834→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   835→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   836→ GET /api/admin/stats 200 in 20ms (compile: 3ms, proxy.ts: 5ms, render: 12ms)
+   837→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   838→prisma:query SELECT 1
+   839→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) LIMIT ? OFFSET ?) AS `sub`
+   840→prisma:query SELECT 1
+   841→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   842→prisma:query SELECT 1
+   843→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   844→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE (`main`.`Deal`.`sellerId` = ? AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   845→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` IN (?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+   846→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE ((`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) AND `main`.`Deal`.`status` = ?) LIMIT ? OFFSET ?) AS `sub`
+   847→ POST /api/user/dashboard-stats 200 in 14ms (compile: 3ms, render: 11ms)
+   848→prisma:query SELECT `main`.`Deal`.`id`, `main`.`Deal`.`title`, `main`.`Deal`.`amount`, `main`.`Deal`.`status`, `main`.`Deal`.`buyerId`, `main`.`Deal`.`sellerId`, `main`.`Deal`.`creatorId`, `main`.`Deal`.`terms`, `main`.`Deal`.`paymentMethodId`, `main`.`Deal`.`senderNumber`, `main`.`Deal`.`transactionId`, `main`.`Deal`.`paymentAmount`, `main`.`Deal`.`createdAt`, `main`.`Deal`.`updatedAt` FROM `main`.`Deal` WHERE (`main`.`Deal`.`buyerId` = ? OR `main`.`Deal`.`sellerId` = ? OR `main`.`Deal`.`creatorId` = ?) ORDER BY `main`.`Deal`.`createdAt` DESC LIMIT ? OFFSET ?
+   849→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email`, `main`.`User`.`phone` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   850→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   851→ POST /api/user/recent-deals 200 in 13ms (compile: 3ms, render: 10ms)
+   852→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   853→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   854→prisma:query SELECT `main`.`PaymentMethod`.`id`, `main`.`PaymentMethod`.`name`, `main`.`PaymentMethod`.`accountNumber`, `main`.`PaymentMethod`.`accountType`, `main`.`PaymentMethod`.`status`, `main`.`PaymentMethod`.`sortOrder`, `main`.`PaymentMethod`.`createdAt`, `main`.`PaymentMethod`.`updatedAt` FROM `main`.`PaymentMethod` WHERE 1=1 ORDER BY `main`.`PaymentMethod`.`sortOrder` ASC LIMIT ? OFFSET ?
+   855→ GET /api/admin/payment-methods 200 in 184ms (compile: 164ms, proxy.ts: 4ms, render: 15ms)
+   856→prisma:query SELECT 1
+   857→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   858→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   859→prisma:query SELECT 1
+   860→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   861→prisma:query SELECT 1
+   862→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   863→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   864→ GET /api/admin/stats 200 in 20ms (compile: 6ms, proxy.ts: 4ms, render: 10ms)
+   865→prisma:query SELECT 1
+   866→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   867→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   868→prisma:query SELECT 1
+   869→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   870→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   871→ GET /api/admin/stats 200 in 19ms (compile: 3ms, proxy.ts: 4ms, render: 12ms)
+   872→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   873→prisma:query SELECT 1
+   874→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   875→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   876→ PUT /api/admin/payment-methods/pm_bkash 500 in 934ms (compile: 903ms, proxy.ts: 7ms, render: 24ms)
+   877→prisma:query SELECT `main`.`Admin`.`id`, `main`.`Admin`.`userId`, `main`.`Admin`.`role`, `main`.`Admin`.`createdAt`, `main`.`Admin`.`updatedAt` FROM `main`.`Admin` WHERE (`main`.`Admin`.`userId` = ? AND 1=1) LIMIT ? OFFSET ?
+   878→prisma:query SELECT `main`.`User`.`id`, `main`.`User`.`name`, `main`.`User`.`email` FROM `main`.`User` WHERE `main`.`User`.`id` IN (?) LIMIT ? OFFSET ?
+   879→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE 1=1 LIMIT ? OFFSET ?) AS `sub`
+   880→prisma:query SELECT 1
+   881→prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Deal`.`id` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   882→prisma:query SELECT SUM(`amount`) AS `_sum$amount` FROM (SELECT `main`.`Deal`.`amount` FROM `main`.`Deal` WHERE `main`.`Deal`.`status` = ? LIMIT ? OFFSET ?) AS `sub`
+   883→ GET /api/admin/stats 200 in 21ms (compile: 5ms, proxy.ts: 4ms, render: 12ms)
+   884→

@@ -1,0 +1,819 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→     5→import { useAppStore, type DealStatus } from '@/lib/store';
+     6→     6→import { Button } from '@/components/ui/button';
+     7→     7→import { Badge } from '@/components/ui/badge';
+     8→     8→import { Input } from '@/components/ui/input';
+     9→     9→import { toast } from 'sonner';
+    10→    10→import {
+    11→    11→  ArrowLeft,
+    12→    12→  FileCheck,
+    13→    13→  Send,
+    14→    14→  ShieldCheck,
+    15→    15→  Truck,
+    16→    16→  ThumbsUp,
+    17→    17→  Check,
+    18→    18→  Clock,
+    19→    19→  Banknote,
+    20→    20→  User,
+    21→    21→  CalendarDays,
+    22→    22→  ScrollText,
+    23→    23→  SendHorizonal,
+    24→    24→  Shield,
+    25→    25→  Loader2,
+    26→    26→  PackageCheck,
+    27→    27→  AlertTriangle,
+    28→    28→  XCircle,
+    29→    29→  Ban,
+    30→    30→  CreditCard,
+    31→    31→  RotateCcw,
+    32→    32→  Phone,
+    33→    33→  Hash,
+    34→    34→  MessageSquare,
+    35→    35→  Bot,
+    36→    36→} from 'lucide-react';
+    37→    37→
+    38→    38→const emptySubscribe = () => () => {};
+    39→    39→
+    40→    40→/* ═══════════════════════════════════════════════════════════
+    41→    41→   Types & Constants
+    42→    42→   ═══════════════════════════════════════════════════════════ */
+    43→    43→
+    44→    44→const STEPS = [
+    45→    45→  { num: '১', label: 'ডিল তৈরি', icon: FileCheck, statusKey: 'created' as const },
+    46→    46→  { num: '২', label: 'পেমেন্ট', icon: Send, statusKey: 'Pending_Verification' as const },
+    47→    47→  { num: '৩', label: 'ভেরিফিকেশন', icon: ShieldCheck, statusKey: 'Payment_Verified' as const },
+    48→    48→  { num: '৪', label: 'ডেলিভারি', icon: Truck, statusKey: 'in_delivery' as const },
+    49→    49→  { num: '৫', label: 'ডিল সম্পন্ন', icon: ThumbsUp, statusKey: 'completed' as const },
+    50→    50→];
+    51→    51→
+    52→    52→function statusToActiveStep(status: string): number {
+    53→    53→  switch (status) {
+    54→    54→    case 'created': return 0;
+    55→    55→    case 'Pending_Verification': return 1;
+    56→    56→    case 'Pending_Payment': return 1;
+    57→    57→    case 'Payment_Verified': return 2;
+    58→    58→    case 'in_delivery': return 3;
+    59→    59→    case 'completed': return 4;
+    60→    60→    case 'cancelled':
+    61→    61→    case 'rejected': return -1;
+    62→    62→    case 'disputed': return 3;
+    63→    63→    default: return 0;
+    64→    64→  }
+    65→    65→}
+    66→    66→
+    67→    67→function getStatusBadge(status: string) {
+    68→    68→  switch (status) {
+    69→    69→    case 'created':
+    70→    70→      return <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">তৈরি হয়েছে</Badge>;
+    71→    71→    case 'Pending_Verification':
+    72→    72→      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">ভেরিফিকেশন পেন্ডিং</Badge>;
+    73→    73→    case 'Pending_Payment':
+    74→    74→      return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium">পেমেন্ট ফেরত</Badge>;
+    75→    75→    case 'Payment_Verified':
+    76→    76→      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">ভেরিফাইড</Badge>;
+    77→    77→    case 'in_delivery':
+    78→    78→      return <Badge className="bg-primary/15 text-primary dark:bg-primary/20 border-0 font-medium">ডেলিভারি চলছে</Badge>;
+    79→    79→    case 'completed':
+    80→    80→      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
+    81→    81→    case 'cancelled':
+    82→    82→      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+    83→    83→    case 'disputed':
+    84→    84→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ চলছে</Badge>;
+    85→    85→    case 'rejected':
+    86→    86→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">রিজেক্টেড</Badge>;
+    87→    87→    default:
+    88→    88→      return <Badge variant="outline">{status}</Badge>;
+    89→    89→  }
+    90→    90→}
+    91→    91→
+    92→    92→/* ═══════════════════════════════════════════════════════════
+    93→    93→   Stepper Components
+    94→    94→   ═══════════════════════════════════════════════════════════ */
+    95→    95→
+    96→    96→function HorizontalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+    97→    97→  if (isCancelled) {
+    98→    98→    return (
+    99→    99→      <div className="flex items-center justify-center py-6">
+   100→   100→        <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-6 py-4 border border-red-200 dark:border-red-500/20">
+   101→   101→          <Ban className="h-8 w-8 text-red-500" />
+   102→   102→          <div>
+   103→   103→            <p className="text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল/রিজেক্ট হয়েছে</p>
+   104→   104→            <p className="text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+   105→   105→          </div>
+   106→   106→        </div>
+   107→   107→      </div>
+   108→   108→    );
+   109→   109→  }
+   110→   110→
+   111→   111→  return (
+   112→   112→    <div className="relative flex items-start justify-between">
+   113→   113→      <div className="absolute top-[18px] left-[18px] right-[18px] h-[3px] rounded-full bg-border/60" />
+   114→   114→      {activeStep >= 0 && (
+   115→   115→        <div
+   116→   116→          className="absolute top-[18px] left-[18px] h-[3px] rounded-full transition-all duration-700"
+   117→   117→          style={{
+   118→   118→            width: activeStep >= STEPS.length - 1
+   119→   119→              ? 'calc(100% - 36px)'
+   120→   120→              : `calc(${(activeStep / (STEPS.length - 1)) * 100}% - 18px)`,
+   121→   121→            backgroundColor: isDisputed ? '#EF4444' : '#84CC16',
+   122→   122→          }}
+   123→   123→        />
+   124→   124→      )}
+   125→   125→
+   126→   126→      {STEPS.map((step, i) => {
+   127→   127→        const Icon = step.icon;
+   128→   128→        const isCompleted = i < activeStep;
+   129→   129→        const isActive = i === activeStep;
+   130→   130→
+   131→   131→        return (
+   132→   132→          <div key={step.num} className="relative z-10 flex flex-col items-center" style={{ width: `${100 / STEPS.length}%` }}>
+   133→   133→            <div className="relative">
+   134→   134→              {isActive && (
+   135→   135→                <>
+   136→   136→                  <span className="absolute -inset-2.5 rounded-full border-2 animate-ping opacity-30" style={{ borderColor: isDisputed ? '#EF4444' : '#84CC16' }} />
+   137→   137→                  <span className="absolute -inset-1.5 rounded-full border-2 animate-pulse" style={{ borderColor: isDisputed ? '#EF444440' : '#84CC1640' }} />
+   138→   138→                </>
+   139→   139→              )}
+   140→   140→              <div
+   141→   141→                className="relative flex h-9 w-9 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   142→   142→                style={{
+   143→   143→                  backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+   144→   144→                  borderColor: isCompleted || isActive ? (isDisputed && isActive ? '#EF4444' : '#84CC16') : 'var(--border)',
+   145→   145→                  color: isCompleted ? '#18181b' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#18181b' : 'var(--muted-foreground)')),
+   146→   146→                  boxShadow: (isCompleted || isActive) && !isDisputed ? '0 4px 14px rgba(163,230,53,0.35)' : 'none',
+   147→   147→                }}
+   148→   148→              >
+   149→   149→                {isCompleted ? <Check className="h-4 w-4" strokeWidth={3} /> : isActive && isDisputed ? <AlertTriangle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+   150→   150→              </div>
+   151→   151→            </div>
+   152→   152→            <p className="mt-2.5 text-center text-[11px] font-semibold leading-tight" style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+   153→   153→              {step.label}
+   154→   154→            </p>
+   155→   155→          </div>
+   156→   156→        );
+   157→   157→      })}
+   158→   158→    </div>
+   159→   159→  );
+   160→   160→}
+   161→   161→
+   162→   162→function VerticalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+   163→   163→  if (isCancelled) {
+   164→   164→    return (
+   165→   165→      <div className="flex items-center justify-center py-6">
+   166→   166→        <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-6 py-4 border border-red-200 dark:border-red-500/20 w-full">
+   167→   167→          <Ban className="h-8 w-8 text-red-500 shrink-0" />
+   168→   168→          <div>
+   169→   169→            <p className="text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল/রিজেক্ট হয়েছে</p>
+   170→   170→            <p className="text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+   171→   171→          </div>
+   172→   172→        </div>
+   173→   173→      </div>
+   174→   174→    );
+   175→   175→  }
+   176→   176→
+   177→   177→  return (
+   178→   178→    <div className="space-y-0">
+   179→   179→      {STEPS.map((step, i) => {
+   180→   180→        const Icon = step.icon;
+   181→   181→        const isCompleted = i < activeStep;
+   182→   182→        const isActive = i === activeStep;
+   183→   183→        const isLast = i === STEPS.length - 1;
+   184→   184→
+   185→   185→        return (
+   186→   186→          <div key={step.num} className="flex gap-4">
+   187→   187→            <div className="flex flex-col items-center">
+   188→   188→              <div className="relative">
+   189→   189→                {isActive && (
+   190→   190→                  <span className="absolute -inset-2 rounded-full border-2 animate-pulse" style={{ borderColor: isDisputed ? '#EF444440' : '#84CC1640' }} />
+   191→   191→                )}
+   192→   192→                <div
+   193→   193→                  className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   194→   194→                  style={{
+   195→   195→                    backgroundColor: isCompleted || isActive ? (isDisputed && isActive ? '#FEE2E2' : '#84CC16') : 'var(--background)',
+   196→   196→                    borderColor: isCompleted || isActive ? (isDisputed && isActive ? '#EF4444' : '#84CC16') : 'var(--border)',
+   197→   197→                    color: isCompleted ? '#18181b' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#18181b' : 'var(--muted-foreground)')),
+   198→   198→                    boxShadow: (isCompleted || isActive) && !isDisputed ? '0 4px 14px rgba(163,230,53,0.35)' : 'none',
+   199→   199→                  }}
+   200→   200→                >
+   201→   201→                  {isCompleted ? <Check className="h-4 w-4" strokeWidth={3} /> : isActive && isDisputed ? <AlertTriangle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+   202→   202→                </div>
+   203→   203→              </div>
+   204→   204→              {!isLast && (
+   205→   205→                <div className="w-[3px] flex-1 min-h-8 my-1.5 rounded-full">
+   206→   206→                  <div className="h-full w-full rounded-full transition-colors" style={{ backgroundColor: isCompleted ? '#84CC16' : 'var(--border)' }} />
+   207→   207→                </div>
+   208→   208→              )}
+   209→   209→            </div>
+   210→   210→            <div className={`flex flex-col justify-center ${isLast ? '' : 'pb-4'}`}>
+   211→   211→              <p className="text-sm font-semibold leading-tight" style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}>
+   212→   212→                {step.label}
+   213→   213→              </p>
+   214→   214→              <div className="mt-1 flex items-center gap-2">
+   215→   215→                <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>ধাপ {step.num}</span>
+   216→   216→                {isCompleted && <span className="text-xs font-medium" style={{ color: '#84CC16' }}>সম্পন্ন</span>}
+   217→   217→                {isActive && !isDisputed && (
+   218→   218→                  <span className="flex items-center gap-1 text-xs font-medium text-amber-500 dark:text-amber-400">
+   219→   219→                    <span className="relative flex h-1.5 w-1.5">
+   220→   220→                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+   221→   221→                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+   222→   222→                    </span>
+   223→   223→                    অপেক্ষমান
+   224→   224→                  </span>
+   225→   225→                )}
+   226→   226→                {isActive && isDisputed && (
+   227→   227→                  <span className="flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400">
+   228→   228→                    <AlertTriangle className="h-3 w-3" /> বিরোধ
+   229→   229→                  </span>
+   230→   230→                )}
+   231→   231→              </div>
+   232→   232→            </div>
+   233→   233→          </div>
+   234→   234→        );
+   235→   235→      })}
+   236→   236→    </div>
+   237→   237→  );
+   238→   238→}
+   239→   239→
+   240→   240→/* ═══════════════════════════════════════════════════════════
+   241→   241→   Detail Card
+   242→   242→   ═══════════════════════════════════════════════════════════ */
+   243→   243→
+   244→   244→function DetailCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+   245→   245→  return (
+   246→   246→    <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-3.5">
+   247→   247→      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
+   248→   248→        <Icon className="h-5 w-5" />
+   249→   249→      </div>
+   250→   250→      <div className="min-w-0">
+   251→   251→        <p className="text-xs font-medium" style={{ color: 'var(--muted-foreground)' }}>{label}</p>
+   252→   252→        <p className="text-sm font-bold truncate" style={{ color: 'var(--foreground)' }}>{value}</p>
+   253→   253→      </div>
+   254→   254→    </div>
+   255→   255→  );
+   256→   256→}
+   257→   257→
+   258→   258→/* ═══════════════════════════════════════════════════════════
+   259→   259→   API Deal Data Type
+   260→   260→   ═══════════════════════════════════════════════════════════ */
+   261→   261→
+   262→   262→interface ChatMsg {
+   263→   263→  id: string;
+   264→   264→  dealId: string;
+   265→   265→  role: string;
+   266→   266→  senderName: string;
+   267→   267→  text: string;
+   268→   268→  createdAt: string;
+   269→   269→}
+   270→   270→
+   271→   271→interface DealData {
+   272→   272→  id: string;
+   273→   273→  title: string;
+   274→   274→  amount: number;
+   275→   275→  status: DealStatus;
+   276→   276→  terms?: string | null;
+   277→   277→  createdAt: string;
+   278→   278→  buyerId: string;
+   279→   279→  sellerId?: string | null;
+   280→   280→  creatorId: string;
+   281→   281→  paymentMethodId?: string | null;
+   282→   282→  senderNumber?: string | null;
+   283→   283→  transactionId?: string | null;
+   284→   284→  paymentAmount?: number | null;
+   285→   285→  rejectionReason?: string | null;
+   286→   286→  buyer: { id: string; name: string; email: string; phone: string } | null;
+   287→   287→  seller: { id: string; name: string; email: string; phone: string } | null;
+   288→   288→  creator: { id: string; name: string; email: string } | null;
+   289→   289→  paymentMethod?: { id: string; name: string; accountNumber: string; themeColor: string } | null;
+   290→   290→}
+   291→   291→
+   292→   292→/* ═══════════════════════════════════════════════════════════
+   293→   293→   Main Component
+   294→   294→   ═══════════════════════════════════════════════════════════ */
+   295→   295→
+   296→   296→export function DealWorkflowTracker() {
+   297→   297→  const { setDashboardPanel, activeDeal, user, setActiveDeal } = useAppStore();
+   298→   298→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   299→   299→
+   300→   300→  const [dealData, setDealData] = useState<DealData | null>(null);
+   301→   301→  const [loading, setLoading] = useState(true);
+   302→   302→  const [actionLoading, setActionLoading] = useState(false);
+   303→   303→  const [messages, setMessages] = useState<ChatMsg[]>([]);
+   304→   304→  const messagesEndRef = useRef<HTMLDivElement>(null);
+   305→   305→
+   306→   306→  const fetchDeal = useCallback(async () => {
+   307→   307→    if (!activeDeal?.id) {
+   308→   308→      setLoading(false);
+   309→   309→      return;
+   310→   310→    }
+   311→   311→    setLoading(true);
+   312→   312→    try {
+   313→   313→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}`);
+   314→   314→      if (res.ok) {
+   315→   315→        const data: DealData = await res.json();
+   316→   316→        setDealData(data);
+   317→   317→        if (data.status !== activeDeal.status) {
+   318→   318→          setActiveDeal({
+   319→   319→            id: data.id,
+   320→   320→            title: data.title,
+   321→   321→            amount: data.amount,
+   322→   322→            status: data.status,
+   323→   323→            createdAt: data.createdAt,
+   324→   324→            buyerId: data.buyerId,
+   325→   325→            sellerId: data.sellerId || undefined,
+   326→   326→            creatorId: data.creatorId,
+   327→   327→            buyerName: data.buyer?.name,
+   328→   328→            sellerName: data.seller?.name,
+   329→   329→            rejectionReason: data.rejectionReason || undefined,
+   330→   330→          });
+   331→   331→        }
+   332→   332→      }
+   333→   333→    } catch {
+   334→   334→      // Use store data as fallback
+   335→   335→    } finally {
+   336→   336→      setLoading(false);
+   337→   337→    }
+   338→   338→  }, [activeDeal?.id, activeDeal?.status, setActiveDeal]);
+   339→   339→
+   340→   340→  const fetchMessages = useCallback(async () => {
+   341→   341→    if (!activeDeal?.id) return;
+   342→   342→    try {
+   343→   343→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`);
+   344→   344→      if (res.ok) {
+   345→   345→        const data: ChatMsg[] = await res.json();
+   346→   346→        setMessages(data);
+   347→   347→      }
+   348→   348→    } catch { /* silent */ }
+   349→   349→  }, [activeDeal?.id]);
+   350→   350→
+   351→   351→  useEffect(() => {
+   352→   352→    fetchDeal();
+   353→   353→    fetchMessages();
+   354→   354→  }, [fetchDeal, fetchMessages]);
+   355→   355→
+   356→   356→  // Auto-scroll messages to bottom
+   357→   357→  useEffect(() => {
+   358→   358→    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+   359→   359→  }, [messages]);
+   360→   360→
+   361→   361→  if (!mounted) return null;
+   362→   362→
+   363→   363→  const status = dealData?.status || activeDeal?.status || 'created';
+   364→   364→  const activeStep = statusToActiveStep(status);
+   365→   365→  const isDisputed = status === 'disputed';
+   366→   366→  const isCancelled = status === 'cancelled';
+   367→   367→  const isHardRejected = status === 'rejected';
+   368→   368→  const isPendingPayment = status === 'Pending_Payment';
+   369→   369→  const isCompleted = status === 'completed';
+   370→   370→  const canRepay = isPendingPayment || isHardRejected;
+   371→   371→
+   372→   372→  const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
+   373→   373→  const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
+   374→   374→  const dealDate = (dealData?.createdAt || activeDeal?.createdAt)
+   375→   375→    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })
+   376→   376→    : '---';
+   377→   377→  const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || user?.name || 'ক্রেতা';
+   378→   378→  const sellerName = dealData?.seller?.name || activeDeal?.sellerName || 'বিক্রেতা';
+   379→   379→  const dealTerms = dealData?.terms;
+   380→   380→  const rejectionReason = dealData?.rejectionReason || activeDeal?.rejectionReason || null;
+   381→   381→
+   382→   382→  /* ── Action Handlers ── */
+   383→   383→  const handlePayNow = () => {
+   384→   384→    setDashboardPanel('payment');
+   385→   385→  };
+   386→   386→
+   387→   387→  const handleComplete = async () => {
+   388→   388→    if (!dealData) return;
+   389→   389→    setActionLoading(true);
+   390→   390→    try {
+   391→   391→      const res = await fetch('/api/deals/complete', {
+   392→   392→        method: 'POST',
+   393→   393→        headers: { 'Content-Type': 'application/json' },
+   394→   394→        body: JSON.stringify({ dealId: dealData.id }),
+   395→   395→      });
+   396→   396→      if (res.ok) {
+   397→   397→        toast.success('ডিলটি সফলভাবে সম্পন্ন হয়েছে!');
+   398→   398→        fetchDeal();
+   399→   399→        fetchMessages();
+   400→   400→      } else {
+   401→   401→        const data = await res.json().catch(() => ({}));
+   402→   402→        toast.error(data.error || 'আপডেট ব্যর্থ হয়েছে');
+   403→   403→      }
+   404→   404→    } catch {
+   405→   405→      toast.error('নেটওয়ার্ক সমস্যা');
+   406→   406→    } finally {
+   407→   407→      setActionLoading(false);
+   408→   408→    }
+   409→   409→  };
+   410→   410→
+   411→   411→  const handleDispute = async () => {
+   412→   412→    if (!dealData) return;
+   413→   413→    setActionLoading(true);
+   414→   414→    try {
+   415→   415→      const res = await fetch('/api/deals/dispute', {
+   416→   416→        method: 'POST',
+   417→   417→        headers: { 'Content-Type': 'application/json' },
+   418→   418→        body: JSON.stringify({ dealId: dealData.id }),
+   419→   419→      });
+   420→   420→      if (res.ok) {
+   421→   421→        toast.success('বিরোধ দায়ের করা হয়েছে। অ্যাডমিন পর্যালোচনা করবেন।');
+   422→   422→        fetchDeal();
+   423→   423→        fetchMessages();
+   424→   424→      } else {
+   425→   425→        const data = await res.json().catch(() => ({}));
+   426→   426→        toast.error(data.error || 'বিরোধ দায়ের ব্যর্থ হয়েছে');
+   427→   427→      }
+   428→   428→    } catch {
+   429→   429→      toast.error('নেটওয়ার্ক সমস্যা');
+   430→   430→    } finally {
+   431→   431→      setActionLoading(false);
+   432→   432→    }
+   433→   433→  };
+   434→   434→
+   435→   435→  /* ── Loading ── */
+   436→   436→  if (loading) {
+   437→   437→    return (
+   438→   438→      <div className="flex items-center justify-center py-20">
+   439→   439→        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   440→   440→      </div>
+   441→   441→    );
+   442→   442→  }
+   443→   443→
+   444→   444→  return (
+   445→   445→    <motion.div
+   446→   446→      initial={{ opacity: 0, y: 16 }}
+   447→   447→      animate={{ opacity: 1, y: 0 }}
+   448→   448→      transition={{ duration: 0.4 }}
+   449→   449→      className="mx-auto w-full max-w-2xl"
+   450→   450→    >
+   451→   451→      <div className="overflow-hidden rounded-xl border shadow-lg" style={{ backgroundColor: 'var(--background, #fff)', borderColor: 'var(--border)' }}>
+   452→   452→        {/* ── Header ── */}
+   453→   453→        <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5" style={{ borderColor: 'var(--border)' }}>
+   454→   454→          <div className="flex items-center gap-3">
+   455→   455→            <button
+   456→   456→              onClick={() => setDashboardPanel('my-deals')}
+   457→   457→              className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-accent"
+   458→   458→              aria-label="ফিরে যান"
+   459→   459→            >
+   460→   460→              <ArrowLeft className="h-4 w-4" style={{ color: 'var(--foreground)' }} />
+   461→   461→            </button>
+   462→   462→            <div className="flex items-center gap-2">
+   463→   463→              <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-md" style={{ backgroundColor: '#84CC16' }}>
+   464→   464→                <span className="text-sm font-bold" style={{ color: '#18181b' }}>আ</span>
+   465→   465→              </div>
+   466→   466→              <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+   467→   467→                ডিল বিবরণ
+   468→   468→              </span>
+   469→   469→            </div>
+   470→   470→          </div>
+   471→   471→
+   472→   472→          <div className="flex items-center gap-2">
+   473→   473→            <span className="hidden sm:block text-xs font-medium truncate max-w-[100px]" style={{ color: 'var(--muted-foreground)' }}>
+   474→   474→              {user?.name || 'ব্যবহারকারী'}
+   475→   475→            </span>
+   476→   476→            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#84CC1625', color: '#84CC16' }}>
+   477→   477→              {user?.name?.charAt(0) || 'ব'}
+   478→   478→            </div>
+   479→   479→          </div>
+   480→   480→        </div>
+   481→   481→
+   482→   482→        {/* ── Deal Info Content ── */}
+   483→   483→        <div className="p-4 sm:p-6 space-y-6">
+   484→   484→          {/* Deal title + status badge */}
+   485→   485→          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+   486→   486→            <div>
+   487→   487→              <h2 className="text-lg font-bold" style={{ color: 'var(--foreground)' }}>
+   488→   488→                {dealTitle}
+   489→   489→              </h2>
+   490→   490→              <p className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
+   491→   491→                DL-{(dealData?.id || activeDeal?.id || '').slice(-5)}
+   492→   492→              </p>
+   493→   493→            </div>
+   494→   494→            {getStatusBadge(status)}
+   495→   495→          </div>
+   496→   496→
+   497→   497→          {/* 5-Step Progress Bar */}
+   498→   498→          <div className="py-2">
+   499→   499→            <div className="hidden md:block">
+   500→   500→              <HorizontalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isHardRejected} />
+   501→   501→            </div>
+   502→   502→            <div className="md:hidden">
+   503→   503→              <VerticalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isHardRejected} />
+   504→   504→            </div>
+   505→   505→          </div>
+   506→   506→
+   507→   507→          {/* ═══════════════════════════════════════
+   508→   508→              REJECTION REASON BANNER (rejected / Pending_Payment)
+   509→   509→              ═══════════════════════════════════════ */}
+   510→   510→          {canRepay && (
+   511→   511→            <motion.div
+   512→   512→              initial={{ opacity: 0, y: -8 }}
+   513→   513→              animate={{ opacity: 1, y: 0 }}
+   514→   514→              transition={{ duration: 0.4 }}
+   515→   515→              className="rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 p-4 sm:p-5"
+   516→   516→            >
+   517→   517→              <div className="flex items-start gap-3">
+   518→   518→                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/20">
+   519→   519→                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+   520→   520→                </div>
+   521→   521→                <div className="min-w-0 flex-1">
+   522→   522→                  <p className="text-sm font-bold text-orange-700 dark:text-orange-400">
+   523→   523→                    পেমেন্ট যাচাই ব্যর্থ হয়েছে
+   524→   524→                  </p>
+   525→   525→                  {rejectionReason ? (
+   526→   526→                    <div className="mt-2 rounded-xl bg-white/70 dark:bg-zinc-800/50 p-3">
+   527→   527→                      <p className="text-xs font-medium text-orange-600/60 dark:text-orange-400/60 mb-1">
+   528→   528→                        অ্যাডমিনের মন্তব্য:
+   529→   529→                      </p>
+   530→   530→                      <p className="text-sm text-orange-800 dark:text-orange-300 leading-relaxed">
+   531→   531→                        {rejectionReason}
+   532→   532→                      </p>
+   533→   533→                    </div>
+   534→   534→                  ) : (
+   535→   535→                    <p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">
+   536→   536→                      অ্যাডমিন আপনার পেমেন্ট যাচাই করতে পারেনি। অনুগ্রহ করে সঠিক তথ্য দিয়ে আবার জমা দিন।
+   537→   537→                    </p>
+   538→   538→                  )}
+   539→   539→                </div>
+   540→   540→              </div>
+   541→   541→            </motion.div>
+   542→   542→          )}
+   543→   543→
+   544→   544→          {/* Details Grid */}
+   545→   545→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   546→   546→            <DetailCard icon={Banknote} label="ডিলের পরিমাণ" value={`৳${dealAmount.toLocaleString('bn-BD')}`} />
+   547→   547→            <DetailCard icon={User} label="বিক্রেতা" value={sellerName} />
+   548→   548→            <DetailCard icon={User} label="ক্রেতা" value={buyerName} />
+   549→   549→            <DetailCard icon={CalendarDays} label="তৈরির তারিখ" value={dealDate} />
+   550→   550→          </div>
+   551→   551→
+   552→   552→          {/* Deal Terms */}
+   553→   553→          {dealTerms && (
+   554→   554→            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
+   555→   555→              <div className="flex items-center gap-2 mb-2">
+   556→   556→                <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
+   557→   557→                <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
+   558→   558→              </div>
+   559→   559→              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+   560→   560→            </div>
+   561→   561→          )}
+   562→   562→
+   563→   563→          {/* ═══════════════════════════════════════
+   564→   564→              BUYER CONDITIONAL ACTION BUTTONS
+   565→   565→              ═══════════════════════════════════════ */}
+   566→   566→
+   567→   567→          {/* Buyer: created → Pay Now */}
+   568→   568→          {status === 'created' && (
+   569→   569→            <div className="space-y-3">
+   570→   570→              <p className="text-sm text-center font-medium text-muted-foreground">
+   571→   571→                পেমেন্ট করুন এবং ডিল এগিয়ে নিন
+   572→   572→              </p>
+   573→   573→              <Button
+   574→   574→                onClick={handlePayNow}
+   575→   575→                className="w-full h-12 rounded-xl text-base font-bold gap-2.5 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   576→   576→                style={{
+   577→   577→                  backgroundColor: '#84CC16',
+   578→   578→                  color: '#18181b',
+   579→   579→                  boxShadow: '0 6px 24px rgba(163,230,53,0.3)',
+   580→   580→                }}
+   581→   581→              >
+   582→   582→                <CreditCard className="h-5 w-5" />
+   583→   583→                Pay Now
+   584→   584→              </Button>
+   585→   585→            </div>
+   586→   586→          )}
+   587→   587→
+   588→   588→          {/* Buyer: Pending_Verification → Waiting */}
+   589→   589→          {status === 'Pending_Verification' && (
+   590→   590→            <div className="flex flex-col items-center gap-3 py-3">
+   591→   591→              <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-5 py-3 border border-amber-200 dark:border-amber-500/20 w-full justify-center">
+   592→   592→                <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
+   593→   593→                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+   594→   594→                  পেমেন্ট ভেরিফিকেশন চলছে
+   595→   595→                </p>
+   596→   596→              </div>
+   597→   597→              <p className="text-xs text-muted-foreground text-center">
+   598→   598→                অ্যাডমিন আপনার পেমেন্ট যাচাই করছেন। এটি কিছু সময় নিতে পারে।
+   599→   599→              </p>
+   600→   600→
+   601→   601→              {/* Show submitted payment details */}
+   602→   602→              {(dealData?.transactionId || dealData?.senderNumber) && (
+   603→   603→                <div className="w-full rounded-xl bg-white dark:bg-zinc-900 shadow-md border border-border/50 p-4 space-y-2">
+   604→   604→                  <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+   605→   605→                    <ShieldCheck className="h-3.5 w-3.5" />
+   606→   606→                    জমা দেওয়া পেমেন্ট তথ্য
+   607→   607→                  </h4>
+   608→   608→                  <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+   609→   609→                    <span className="text-xs text-muted-foreground">ট্রানজেকশন আইডি</span>
+   610→   610→                    <span className="text-xs font-mono font-semibold text-foreground">{dealData.transactionId || '---'}</span>
+   611→   611→                  </div>
+   612→   612→                  <div className="flex items-center justify-between py-1.5 border-b border-border/30">
+   613→   613→                    <span className="text-xs text-muted-foreground">প্রেরকের নম্বর</span>
+   614→   614→                    <span className="text-xs font-mono font-semibold text-foreground">{dealData.senderNumber || '---'}</span>
+   615→   615→                  </div>
+   616→   616→                  <div className="flex items-center justify-between py-1.5">
+   617→   617→                    <span className="text-xs text-muted-foreground">পরিমাণ</span>
+   618→   618→                    <span className="text-xs font-bold text-foreground">৳{(dealData.paymentAmount || dealAmount).toLocaleString('bn-BD')}</span>
+   619→   619→                  </div>
+   620→   620→                </div>
+   621→   621→              )}
+   622→   622→            </div>
+   623→   623→          )}
+   624→   624→
+   625→   625→          {/* Buyer: rejected / Pending_Payment → Re-Pay Now */}
+   626→   626→          {canRepay && (
+   627→   627→            <div className="space-y-3">
+   628→   628→              <p className="text-sm text-center font-medium text-orange-700 dark:text-orange-400">
+   629→   629→                সঠিক পেমেন্ট তথ্য দিয়ে আবার জমা দিন
+   630→   630→              </p>
+   631→   631→              <Button
+   632→   632→                onClick={handlePayNow}
+   633→   633→                className="w-full h-12 rounded-xl text-base font-bold gap-2.5 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   634→   634→                style={{
+   635→   635→                  backgroundColor: '#F97316',
+   636→   636→                  color: '#ffffff',
+   637→   637→                  boxShadow: '0 6px 24px rgba(249,115,22,0.3)',
+   638→   638→                }}
+   639→   639→              >
+   640→   640→                <RotateCcw className="h-5 w-5" />
+   641→   641→                পুনরায় Pay Now
+   642→   642→              </Button>
+   643→   643→            </div>
+   644→   644→          )}
+   645→   645→
+   646→   646→          {/* Buyer: Payment_Verified → Waiting for delivery */}
+   647→   647→          {status === 'Payment_Verified' && (
+   648→   648→            <div className="flex flex-col items-center gap-2 py-3">
+   649→   649→              <div className="flex items-center gap-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 px-5 py-3 border border-blue-200 dark:border-blue-500/20 w-full justify-center">
+   650→   650→                <ShieldCheck className="h-5 w-5 text-blue-500" />
+   651→   651→                <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
+   652→   652→                  পেমেন্ট ভেরিফাইড — বিক্রেতার ডেলিভারির অপেক্ষায়
+   653→   653→                </p>
+   654→   654→              </div>
+   655→   655→            </div>
+   656→   656→          )}
+   657→   657→
+   658→   658→          {/* Buyer: in_delivery → Confirm + Dispute */}
+   659→   659→          {status === 'in_delivery' && (
+   660→   660→            <div className="space-y-3">
+   661→   661→              <p className="text-sm text-center font-medium text-muted-foreground">
+   662→   662→                বিক্রেতা কাজ সম্পন্ন করেছেন। আপনি কি নিশ্চিত করতে চান?
+   663→   663→              </p>
+   664→   664→              <div className="flex gap-3">
+   665→   665→                <Button
+   666→   666→                  onClick={handleComplete}
+   667→   667→                  disabled={actionLoading}
+   668→   668→                  className="flex-1 h-12 rounded-xl text-base font-bold gap-2.5 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   669→   669→                  style={{
+   670→   670→                    backgroundColor: '#84CC16',
+   671→   671→                    color: '#18181b',
+   672→   672→                    boxShadow: '0 6px 24px rgba(163,230,53,0.3)',
+   673→   673→                  }}
+   674→   674→                >
+   675→   675→                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+   676→   676→                  নিশ্চিত করুন
+   677→   677→                </Button>
+   678→   678→                <Button
+   679→   679→                  onClick={handleDispute}
+   680→   680→                  disabled={actionLoading}
+   681→   681→                  variant="outline"
+   682→   682→                  className="flex-1 h-12 rounded-xl text-base font-semibold gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+   683→   683→                >
+   684→   684→                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <AlertTriangle className="h-5 w-5" />}
+   685→   685→                  বিরোধ করুন
+   686→   686→                </Button>
+   687→   687→              </div>
+   688→   688→            </div>
+   689→   689→          )}
+   690→   690→
+   691→   691→          {/* Disputed state */}
+   692→   692→          {isDisputed && (
+   693→   693→            <div className="flex flex-col items-center gap-2 py-3">
+   694→   694→              <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 px-5 py-3 border border-red-200 dark:border-red-500/20 w-full justify-center">
+   695→   695→                <AlertTriangle className="h-5 w-5 text-red-500" />
+   696→   696→                <p className="text-sm font-medium text-red-700 dark:text-red-400">
+   697→   697→                  বিরোধ দায়ের করা হয়েছে। অ্যাডমিন পর্যালোচনা করছেন।
+   698→   698→                </p>
+   699→   699→              </div>
+   700→   700→            </div>
+   701→   701→          )}
+   702→   702→
+   703→   703→          {/* Completed state */}
+   704→   704→          {isCompleted && (
+   705→   705→            <div className="flex flex-col items-center gap-2 py-3">
+   706→   706→              <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 px-5 py-3 border border-emerald-200 dark:border-emerald-500/20 w-full justify-center">
+   707→   707→                <Check className="h-5 w-5 text-emerald-500" />
+   708→   708→                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+   709→   709→                  ডিল সফলভাবে সম্পন্ন হয়েছে!
+   710→   710→                </p>
+   711→   711→              </div>
+   712→   712→            </div>
+   713→   713→          )}
+   714→   714→
+   715→   715→          {/* Cancelled state */}
+   716→   716→          {isCancelled && (
+   717→   717→            <div className="flex flex-col items-center gap-2 py-3">
+   718→   718→              <div className="flex items-center gap-2 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 px-5 py-3 border border-zinc-200 dark:border-zinc-700 w-full justify-center">
+   719→   719→                <Ban className="h-5 w-5 text-zinc-500" />
+   720→   720→                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+   721→   721→                  এই ডিল বাতিল করা হয়েছে
+   722→   722→                </p>
+   723→   723→              </div>
+   724→   724→            </div>
+   725→   725→          )}
+   726→   726→        </div>
+   727→   727→
+   728→   728→        {/* ═══════════════════════════════════════
+   729→   729→            DEAL MESSAGES SECTION
+   730→   730→            ═══════════════════════════════════════ */}
+   731→   731→        <div className="border-t" style={{ borderColor: 'var(--border)' }}>
+   732→   732→          <div className="px-4 py-3 sm:px-5">
+   733→   733→            <div className="flex items-center gap-2">
+   734→   734→              <MessageSquare className="h-4 w-4 text-primary" />
+   735→   735→              <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+   736→   736→                ডিল মেসেজ
+   737→   737→              </h3>
+   738→   738→              {messages.length > 0 && (
+   739→   739→                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 text-xs font-bold text-primary">
+   740→   740→                  {messages.length}
+   741→   741→                </span>
+   742→   742→              )}
+   743→   743→            </div>
+   744→   744→          </div>
+   745→   745→
+   746→   746→          <div className="mx-4 mb-4 sm:mx-5 sm:mb-5 max-h-72 overflow-y-auto rounded-xl border p-3 space-y-2.5 scrollbar-thin" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted, #f4f4f5)' }}>
+   747→   747→            {messages.length === 0 ? (
+   748→   748→              <div className="flex flex-col items-center justify-center py-6 text-center">
+   749→   749→                <MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-2" />
+   750→   750→                <p className="text-xs text-muted-foreground/60">কোনো মেসেজ নেই</p>
+   751→   751→              </div>
+   752→   752→            ) : (
+   753→   753→              messages.map((msg) => {
+   754→   754→                const isSystem = msg.role === 'system';
+   755→   755→                const isAdmin = msg.role === 'admin';
+   756→   756→                const isBuyer = msg.role === 'buyer';
+   757→   757→                const isMe = isBuyer && user?.id === dealData?.buyerId;
+   758→   758→                const isMyMsg = (isBuyer && isMe) || (msg.role === 'seller' && user?.id === dealData?.sellerId);
+   759→   759→
+   760→   760→                return (
+   761→   761→                  <motion.div
+   762→   762→                    key={msg.id}
+   763→   763→                    initial={{ opacity: 0, y: 6 }}
+   764→   764→                    animate={{ opacity: 1, y: 0 }}
+   765→   765→                    transition={{ duration: 0.25 }}
+   766→   766→                    className={`flex gap-2 ${isMyMsg ? 'flex-row-reverse' : ''}`}
+   767→   767→                  >
+   768→   768→                    {/* Avatar */}
+   769→   769→                    <div
+   770→   770→                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+   771→   771→                        isSystem
+   772→   772→                          ? 'bg-primary/15 text-primary'
+   773→   773→                          : isAdmin
+   774→   774→                          ? 'bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400'
+   775→   775→                          : isMyMsg
+   776→   776→                          ? 'bg-primary text-primary-foreground'
+   777→   777→                          : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'
+   778→   778→                      }`}
+   779→   779→                    >
+   780→   780→                      {isSystem ? <Bot className="h-3.5 w-3.5" /> : msg.senderName?.charAt(0) || '?'}
+   781→   781→                    </div>
+   782→   782→
+   783→   783→                    {/* Bubble */}
+   784→   784→                    <div className={`max-w-[80%] ${isMyMsg ? 'items-end' : 'items-start'}`}>
+   785→   785→                      <div className="flex items-center gap-1.5 mb-0.5">
+   786→   786→                        <span className={`text-[10px] font-semibold ${
+   787→   787→                          isSystem ? 'text-primary/70' : isAdmin ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'
+   788→   788→                        }`}>
+   789→   789→                          {isSystem ? 'System' : msg.senderName}
+   790→   790→                        </span>
+   791→   791→                        <span className="text-[10px] text-muted-foreground/50">
+   792→   792→                          {new Date(msg.createdAt).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
+   793→   793→                        </span>
+   794→   794→                      </div>
+   795→   795→                      <div
+   796→   796→                        className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
+   797→   797→                          isSystem
+   798→   798→                            ? 'bg-primary/8 border border-primary/15 text-foreground/80'
+   799→   799→                            : isAdmin
+   800→   800→                            ? 'bg-purple-50 dark:bg-purple-500/10 border border-purple-200/60 dark:border-purple-500/20 text-purple-800 dark:text-purple-200'
+   801→   801→                            : isMyMsg
+   802→   802→                            ? 'bg-primary text-primary-foreground'
+   803→   803→                            : 'bg-white dark:bg-zinc-800 border border-border/50 text-foreground'
+   804→   804→                        }`}
+   805→   805→                      >
+   806→   806→                        {msg.text}
+   807→   807→                      </div>
+   808→   808→                    </div>
+   809→   809→                  </motion.div>
+   810→   810→                );
+   811→   811→              })
+   812→   812→            )}
+   813→   813→            <div ref={messagesEndRef} />
+   814→   814→          </div>
+   815→   815→        </div>
+   816→   816→      </div>
+   817→   817→    </motion.div>
+   818→   818→  );
+   819→   819→}

@@ -1,0 +1,837 @@
+     1→     1→'use client';
+     2→     2→
+     3→     3→import { useState, useEffect, useSyncExternalStore, useCallback, useRef } from 'react';
+     4→     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→     5→import { useAppStore } from '@/lib/store';
+     6→     6→import { useTheme } from 'next-themes';
+     7→     7→import { Button } from '@/components/ui/button';
+     8→     8→import { Badge } from '@/components/ui/badge';
+     9→     9→import {
+    10→    10→  Bell,
+    11→    11→  Plus,
+    12→    12→  Wallet,
+    13→    13→  TrendingUp,
+    14→    14→  Handshake,
+    15→    15→  ArrowUpRight,
+    16→    16→  CheckCircle,
+    17→    17→  Clock,
+    18→    18→  X,
+    19→    19→  Loader2,
+    20→    20→  ExternalLink,
+    21→    21→  UserCircle,
+    22→    22→  Settings,
+    23→    23→  List,
+    24→    24→  Sun,
+    25→    25→  Moon,
+    26→    26→} from 'lucide-react';
+    27→    27→import { NewDealForm } from './new-deal-form';
+    28→    28→import { DealWorkflowTracker } from './deal-workflow-tracker';
+    29→    29→import { UserPaymentView } from './user-payment-view';
+    30→    30→import { useSocket } from '@/hooks/use-socket';
+    31→    31→import { toast } from 'sonner';
+    32→    32→
+    33→    33→const emptySubscribe = () => () => {};
+    34→    34→
+    35→    35→/* ─── Types ─── */
+    36→    36→interface UserStats {
+    37→    37→  activeDeals: number;
+    38→    38→  completedDeals: number;
+    39→    39→  totalAmount: number;
+    40→    40→}
+    41→    41→
+    42→    42→interface DealItem {
+    43→    43→  id: string;
+    44→    44→  title: string;
+    45→    45→  amount: number;
+    46→    46→  status: string;
+    47→    47→  createdAt: string;
+    48→    48→  buyerId: string;
+    49→    49→  sellerId: string | null;
+    50→    50→  buyer?: { name: string; email: string } | null;
+    51→    51→  seller?: { name: string; email: string } | null;
+    52→    52→}
+    53→    53→
+    54→    54→interface NotifItem {
+    55→    55→  id: string;
+    56→    56→  type: string;
+    57→    57→  title: string;
+    58→    58→  message: string;
+    59→    59→  dealId: string | null;
+    60→    60→  read: boolean;
+    61→    61→  createdAt: string;
+    62→    62→}
+    63→    63→
+    64→    64→/* ─── Status Badge ─── */
+    65→    65→function DealStatusBadge({ status }: { status: string }) {
+    66→    66→  const config: Record<string, { label: string; classes: string }> = {
+    67→    67→    created: { label: 'তৈরি', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
+    68→    68→    payment_pending: { label: 'পেমেন্ট পেন্ডিং', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
+    69→    69→    payment_verified: { label: 'ভেরিফাইড', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' },
+    70→    70→    in_delivery: { label: 'ডেলিভারি', classes: 'bg-primary/15 text-primary dark:bg-primary/20' },
+    71→    71→    delivery_confirmed: { label: 'ডেলিভারি কনফার্মড', classes: 'bg-primary/15 text-primary dark:bg-primary/20' },
+    72→    72→    completed: { label: 'সম্পন্ন', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' },
+    73→    73→    rejected: { label: 'রিজেক্টেড', classes: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' },
+    74→    74→  };
+    75→    75→  const c = config[status] || { label: status, classes: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400' };
+    76→    76→  return <Badge className={`${c.classes} border-0 font-medium`}>{c.label}</Badge>;
+    77→    77→}
+    78→    78→
+    79→    79→/* ─── Glass Card helper ─── */
+    80→    80→function GlassCard({
+    81→    81→  children,
+    82→    82→  className = '',
+    83→    83→}: {
+    84→    84→  children: React.ReactNode;
+    85→    85→  className?: string;
+    86→    86→}) {
+    87→    87→  return (
+    88→    88→    <div
+    89→    89→      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl ${className}`}
+    90→    90→    >
+    91→    91→      {children}
+    92→    92→    </div>
+    93→    93→  );
+    94→    94→}
+    95→    95→
+    96→    96→/* ─── Notification Bell + Dropdown ─── */
+    97→    97→function NotificationBell() {
+    98→    98→  const user = useAppStore((s) => s.user);
+    99→    99→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   100→   100→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   101→   101→  const [open, setOpen] = useState(false);
+   102→   102→  const [notifications, setNotifications] = useState<NotifItem[]>([]);
+   103→   103→  const [unreadCount, setUnreadCount] = useState(0);
+   104→   104→  const [loading, setLoading] = useState(true);
+   105→   105→  const dropdownRef = useRef<HTMLDivElement>(null);
+   106→   106→
+   107→   107→  const { onNotification, latestNotification } = useSocket(user?.id);
+   108→   108→
+   109→   109→  // Fetch notifications on mount
+   110→   110→  const fetchNotifs = useCallback(async () => {
+   111→   111→    if (!user?.id) return;
+   112→   112→    try {
+   113→   113→      const res = await fetch(`/api/notifications?userId=${user.id}`);
+   114→   114→      if (res.ok) {
+   115→   115→        const data = await res.json();
+   116→   116→        setNotifications(data.notifications || []);
+   117→   117→        setUnreadCount(data.unreadCount || 0);
+   118→   118→      }
+   119→   119→    } catch { /* silent */ }
+   120→   120→    finally { setLoading(false); }
+   121→   121→  }, [user?.id]);
+   122→   122→
+   123→   123→  useEffect(() => { fetchNotifs() }, [fetchNotifs]);
+   124→   124→
+   125→   125→  // Listen for real-time notifications
+   126→   126→  useEffect(() => {
+   127→   127→    const unsub = onNotification(() => {
+   128→   128→      fetchNotifs();
+   129→   129→      toast.success('নতুন নোটিফিকেশন এসেছে!', {
+   130→   130→        description: 'ডিল সেকশনে দেখুন',
+   131→   131→      });
+   132→   132→    });
+   133→   133→    return unsub;
+   134→   134→  }, [onNotification, fetchNotifs]);
+   135→   135→
+   136→   136→  // Close dropdown on outside click
+   137→   137→  useEffect(() => {
+   138→   138→    const handleClick = (e: MouseEvent) => {
+   139→   139→      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+   140→   140→        setOpen(false);
+   141→   141→      }
+   142→   142→    };
+   143→   143→    document.addEventListener('mousedown', handleClick);
+   144→   144→    return () => document.removeEventListener('mousedown', handleClick);
+   145→   145→  }, []);
+   146→   146→
+   147→   147→  const handleMarkRead = async (notifId: string) => {
+   148→   148→    try {
+   149→   149→      await fetch(`/api/notifications/${notifId}/read`, { method: 'POST' });
+   150→   150→      setNotifications((prev) =>
+   151→   151→        prev.map((n) => (n.id === notifId ? { ...n, read: true } : n))
+   152→   152→      );
+   153→   153→      setUnreadCount((c) => Math.max(0, c - 1));
+   154→   154→    } catch { /* silent */ }
+   155→   155→  };
+   156→   156→
+   157→   157→  const handleMarkAllRead = async () => {
+   158→   158→    if (!user?.id) return;
+   159→   159→    try {
+   160→   160→      await fetch('/api/notifications/all-read', {
+   161→   161→        method: 'PUT',
+   162→   162→        headers: { 'Content-Type': 'application/json' },
+   163→   163→        body: JSON.stringify({ userId: user.id }),
+   164→   164→      });
+   165→   165→      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+   166→   166→      setUnreadCount(0);
+   167→   167→    } catch { /* silent */ }
+   168→   168→  };
+   169→   169→
+   170→   170→  const handleNotifClick = (notif: NotifItem) => {
+   171→   171→    handleMarkRead(notif.id);
+   172→   172→    if (notif.dealId) {
+   173→   173→      setActiveDeal({
+   174→   174→        id: notif.dealId,
+   175→   175→        title: notif.title,
+   176→   176→        category: '',
+   177→   177→        amount: 0,
+   178→   178→        feePayer: '',
+   179→   179→        status: 'created',
+   180→   180→        createdAt: notif.createdAt,
+   181→   181→      });
+   182→   182→      setDashboardPanel('deal-detail');
+   183→   183→    }
+   184→   184→    setOpen(false);
+   185→   185→  };
+   186→   186→
+   187→   187→  const timeAgo = (dateStr: string) => {
+   188→   188→    const diff = Date.now() - new Date(dateStr).getTime();
+   189→   189→    const mins = Math.floor(diff / 60000);
+   190→   190→    if (mins < 1) return 'এইমাত্র';
+   191→   191→    if (mins < 60) return `${mins} মিনিট আগে`;
+   192→   192→    const hrs = Math.floor(mins / 60);
+   193→   193→    if (hrs < 24) return `${hrs} ঘন্টা আগে`;
+   194→   194→    const days = Math.floor(hrs / 24);
+   195→   195→    return `${days} দিন আগে`;
+   196→   196→  };
+   197→   197→
+   198→   198→  return (
+   199→   199→    <div className="relative" ref={dropdownRef}>
+   200→   200→      <button
+   201→   201→        onClick={() => setOpen(!open)}
+   202→   202→        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   203→   203→        aria-label="নোটিফিকেশন"
+   204→   204→      >
+   205→   205→        <Bell className="h-5 w-5" />
+   206→   206→        {unreadCount > 0 && (
+   207→   207→          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm">
+   208→   208→            {unreadCount > 99 ? '৯৯+' : unreadCount}
+   209→   209→          </span>
+   210→   210→        )}
+   211→   211→      </button>
+   212→   212→
+   213→   213→      <AnimatePresence>
+   214→   214→        {open && (
+   215→   215→          <motion.div
+   216→   216→            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+   217→   217→            animate={{ opacity: 1, y: 0, scale: 1 }}
+   218→   218→            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+   219→   219→            transition={{ duration: 0.2 }}
+   220→   220→            className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-border/50 dark:bg-zinc-900 overflow-hidden"
+   221→   221→          >
+   222→   222→            {/* Header */}
+   223→   223→            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+   224→   224→              <h3 className="text-sm font-bold text-foreground">নোটিফিকেশন</h3>
+   225→   225→              {unreadCount > 0 && (
+   226→   226→                <button
+   227→   227→                  onClick={handleMarkAllRead}
+   228→   228→                  className="text-xs font-medium text-primary hover:underline"
+   229→   229→                >
+   230→   230→                  সব পড়া হয়েছে
+   231→   231→                </button>
+   232→   232→              )}
+   233→   233→            </div>
+   234→   234→
+   235→   235→            {/* List */}
+   236→   236→            <div className="max-h-80 overflow-y-auto">
+   237→   237→              {loading ? (
+   238→   238→                <div className="flex items-center justify-center py-10">
+   239→   239→                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+   240→   240→                </div>
+   241→   241→              ) : notifications.length === 0 ? (
+   242→   242→                <div className="flex flex-col items-center py-10 text-center">
+   243→   243→                  <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+   244→   244→                  <p className="text-sm text-muted-foreground">কোনো নোটিফিকেশন নেই</p>
+   245→   245→                </div>
+   246→   246→              ) : (
+   247→   247→                notifications.map((notif) => (
+   248→   248→                  <button
+   249→   249→                    key={notif.id}
+   250→   250→                    onClick={() => handleNotifClick(notif)}
+   251→   251→                    className={`w-full text-left px-4 py-3 border-b border-border/30 transition-colors hover:bg-muted/30 last:border-0 ${
+   252→   252→                      !notif.read ? 'bg-primary/5' : ''
+   253→   253→                    }`}
+   254→   254→                  >
+   255→   255→                    <div className="flex items-start gap-3">
+   256→   256→                      <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${
+   257→   257→                        !notif.read ? 'bg-primary' : 'bg-transparent'
+   258→   258→                      }`} />
+   259→   259→                      <div className="min-w-0 flex-1">
+   260→   260→                        <div className="flex items-center justify-between gap-2">
+   261→   261→                          <p className={`text-sm font-semibold truncate ${!notif.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+   262→   262→                            {notif.title}
+   263→   263→                          </p>
+   264→   264→                          <span className="text-[10px] text-muted-foreground shrink-0">
+   265→   265→                            {timeAgo(notif.createdAt)}
+   266→   266→                          </span>
+   267→   267→                        </div>
+   268→   268→                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+   269→   269→                          {notif.message}
+   270→   270→                        </p>
+   271→   271→                      </div>
+   272→   272→                    </div>
+   273→   273→                  </button>
+   274→   274→                ))
+   275→   275→              )}
+   276→   276→            </div>
+   277→   277→          </motion.div>
+   278→   278→        )}
+   279→   279→      </AnimatePresence>
+   280→   280→    </div>
+   281→   281→  );
+   282→   282→}
+   283→   283→
+   284→   284→/* ─── Overview Panel (real data) ─── */
+   285→   285→function OverviewPanel() {
+   286→   286→  const user = useAppStore((s) => s.user);
+   287→   287→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   288→   288→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   289→   289→
+   290→   290→  const [stats, setStats] = useState<UserStats | null>(null);
+   291→   291→  const [deals, setDeals] = useState<DealItem[]>([]);
+   292→   292→  const [loadingStats, setLoadingStats] = useState(true);
+   293→   293→  const [loadingDeals, setLoadingDeals] = useState(true);
+   294→   294→
+   295→   295→  const { onNotification } = useSocket(user?.id);
+   296→   296→
+   297→   297→  useEffect(() => {
+   298→   298→    if (!user?.id) return;
+   299→   299→    const fetchStats = async () => {
+   300→   300→      try {
+   301→   301→        const res = await fetch(`/api/user-stats?userId=${user.id}`);
+   302→   302→        if (res.ok) setStats(await res.json());
+   303→   303→      } catch { /* silent */ }
+   304→   304→      finally { setLoadingStats(false); }
+   305→   305→    };
+   306→   306→    const fetchDeals = async () => {
+   307→   307→      try {
+   308→   308→        const res = await fetch(`/api/deals?userId=${user.id}`);
+   309→   309→        if (res.ok) setDeals(await res.json());
+   310→   310→      } catch { /* silent */ }
+   311→   311→      finally { setLoadingDeals(false); }
+   312→   312→    };
+   313→   313→    fetchStats();
+   314→   314→    fetchDeals();
+   315→   315→  }, [user?.id]);
+   316→   316→
+   317→   317→  // Listen for real-time deal updates
+   318→   318→  useEffect(() => {
+   319→   319→    const unsub = onNotification(() => {
+   320→   320→      // Refresh deals and stats when notification arrives
+   321→   321→      if (!user?.id) return;
+   322→   322→      fetch(`/api/deals?userId=${user.id}`)
+   323→   323→        .then((r) => r.ok && r.json())
+   324→   324→        .then((d) => setDeals(d))
+   325→   325→        .catch(() => {});
+   326→   326→      fetch(`/api/user-stats?userId=${user.id}`)
+   327→   327→        .then((r) => r.ok && r.json())
+   328→   328→        .then((d) => setStats(d))
+   329→   329→        .catch(() => {});
+   330→   330→    });
+   331→   331→    return unsub;
+   332→   332→  }, [onNotification, user?.id]);
+   333→   333→
+   334→   334→  const statsCards = [
+   335→   335→    {
+   336→   336→      label: 'চলতি ডিল',
+   337→   337→      value: loadingStats ? '...' : (stats?.activeDeals || 0).toLocaleString('bn-BD'),
+   338→   338→      icon: Handshake,
+   339→   339→      color: 'text-primary',
+   340→   340→      bg: 'bg-primary/10',
+   341→   341→    },
+   342→   342→    {
+   343→   343→      label: 'সফল ডিল',
+   344→   344→      value: loadingStats ? '...' : (stats?.completedDeals || 0).toLocaleString('bn-BD'),
+   345→   345→      icon: TrendingUp,
+   346→   346→      color: 'text-emerald-500 dark:text-emerald-400',
+   347→   347→      bg: 'bg-emerald-500/10',
+   348→   348→    },
+   349→   349→    {
+   350→   350→      label: 'মোট লেনদেন (৳)',
+   351→   351→      value: loadingStats ? '...' : Math.round(stats?.totalAmount || 0).toLocaleString('bn-BD'),
+   352→   352→      icon: Wallet,
+   353→   353→      color: 'text-amber-500 dark:text-amber-400',
+   354→   354→      bg: 'bg-amber-500/10',
+   355→   355→    },
+   356→   356→  ];
+   357→   357→
+   358→   358→  const handleDealClick = (deal: DealItem) => {
+   359→   359→    setActiveDeal({
+   360→   360→      id: deal.id,
+   361→   361→      title: deal.title,
+   362→   362→      category: '',
+   363→   363→      amount: deal.amount,
+   364→   364→      feePayer: '',
+   365→   365→      status: deal.status,
+   366→   366→      createdAt: deal.createdAt,
+   367→   367→    });
+   368→   368→    setDashboardPanel('deal-detail');
+   369→   369→  };
+   370→   370→
+   371→   371→  return (
+   372→   372→    <>
+   373→   373→      {/* ── Top Bar ── */}
+   374→   374→      <div className="mb-6 flex items-center justify-between">
+   375→   375→        <div className="flex items-center gap-3">
+   376→   376→          <div className="text-center lg:text-left">
+   377→   377→            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+   378→   378→              স্বাগতম, {user?.name?.split(' ')[0] || 'ইউজার'}
+   379→   379→            </h1>
+   380→   380→            <p className="mt-0.5 text-sm text-muted-foreground">
+   381→   381→              আজকের ডিল ও লেনদেনের সারসংক্ষেপ
+   382→   382→            </p>
+   383→   383→          </div>
+   384→   384→        </div>
+   385→   385→        <div className="flex items-center gap-2">
+   386→   386→          <NotificationBell />
+   387→   387→          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
+   388→   388→            {user?.name?.charAt(0) || 'ই'}
+   389→   389→          </div>
+   390→   390→        </div>
+   391→   391→      </div>
+   392→   392→
+   393→   393→      {/* ── Stats Grid ── */}
+   394→   394→      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+   395→   395→        {statsCards.map((stat, i) => {
+   396→   396→          const Icon = stat.icon;
+   397→   397→          return (
+   398→   398→            <motion.div
+   399→   399→              key={stat.label}
+   400→   400→              initial={{ opacity: 0, y: 16 }}
+   401→   401→              animate={{ opacity: 1, y: 0 }}
+   402→   402→              transition={{ duration: 0.4, delay: i * 0.08 }}
+   403→   403→            >
+   404→   404→              <GlassCard>
+   405→   405→                <div className="flex items-center justify-between text-center sm:text-left">
+   406→   406→                  <div className="flex-1 min-w-0">
+   407→   407→                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+   408→   408→                    <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+   409→   409→                      {stat.value}
+   410→   410→                    </p>
+   411→   411→                  </div>
+   412→   412→                  <div
+   413→   413→                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
+   414→   414→                  >
+   415→   415→                    <Icon className={`h-5 w-5 ${stat.color}`} />
+   416→   416→                  </div>
+   417→   417→                </div>
+   418→   418→              </GlassCard>
+   419→   419→            </motion.div>
+   420→   420→          );
+   421→   421→        })}
+   422→   422→      </div>
+   423→   423→
+   424→   424→      {/* ── Activity Grid ── */}
+   425→   425→      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+   426→   426→        {/* Right Column → Quick Actions */}
+   427→   427→        <motion.div
+   428→   428→          initial={{ opacity: 0, y: 16 }}
+   429→   429→          animate={{ opacity: 1, y: 0 }}
+   430→   430→          transition={{ duration: 0.4, delay: 0.25 }}
+   431→   431→          className="order-1 lg:order-2 lg:col-span-2"
+   432→   432→        >
+   433→   433→          <GlassCard className="flex flex-col items-center gap-5 text-center">
+   434→   434→            <div className="w-full">
+   435→   435→              <h3 className="mb-4 text-base font-semibold text-foreground flex items-center justify-center gap-2">
+   436→   436→                <ArrowUpRight className="h-4 w-4 text-primary" />
+   437→   437→                কুইক অ্যাকশন
+   438→   438→              </h3>
+   439→   439→              <Button
+   440→   440→                onClick={() => setDashboardPanel('new-deal')}
+   441→   441→                className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 dark:glow-lime gap-2.5"
+   442→   442→              >
+   443→   443→                <Plus className="h-5 w-5" />
+   444→   444→                নতুন ডিল তৈরি করুন
+   445→   445→              </Button>
+   446→   446→            </div>
+   447→   447→
+   448→   448→            <div className="w-full border-t border-border/50" />
+   449→   449→
+   450→   450→            <div className="w-full">
+   451→   451→              <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+   452→   452→                অ্যাকাউন্ট সারসংক্ষেপ
+   453→   453→              </h3>
+   454→   454→              <div className="space-y-3">
+   455→   455→                <div className="flex items-center justify-between">
+   456→   456→                  <span className="text-sm text-muted-foreground">চলতি ডিল</span>
+   457→   457→                  <span className="text-base font-bold text-foreground">
+   458→   458→                    {loadingStats ? '...' : (stats?.activeDeals || 0).toLocaleString('bn-BD')}
+   459→   459→                  </span>
+   460→   460→                </div>
+   461→   461→                <div className="flex items-center justify-between">
+   462→   462→                  <span className="text-sm text-muted-foreground">সফল ডিল</span>
+   463→   463→                  <span className="text-base font-bold text-emerald-500">
+   464→   464→                    {loadingStats ? '...' : (stats?.completedDeals || 0).toLocaleString('bn-BD')}
+   465→   465→                  </span>
+   466→   466→                </div>
+   467→   467→                <div className="flex items-center justify-between">
+   468→   468→                  <span className="text-sm text-muted-foreground">মোট লেনদেন</span>
+   469→   469→                  <span className="text-base font-bold text-foreground">
+   470→   470→                    ৳{loadingStats ? '...' : Math.round(stats?.totalAmount || 0).toLocaleString('bn-BD')}
+   471→   471→                  </span>
+   472→   472→                </div>
+   473→   473→              </div>
+   474→   474→            </div>
+   475→   475→          </GlassCard>
+   476→   476→        </motion.div>
+   477→   477→
+   478→   478→        {/* Left Column → Active Deals */}
+   479→   479→        <motion.div
+   480→   480→          initial={{ opacity: 0, y: 16 }}
+   481→   481→          animate={{ opacity: 1, y: 0 }}
+   482→   482→          transition={{ duration: 0.4, delay: 0.15 }}
+   483→   483→          className="order-2 lg:order-1 lg:col-span-3"
+   484→   484→        >
+   485→   485→          <GlassCard className="!p-0 overflow-hidden">
+   486→   486→            <div className="p-5 pb-3 flex items-center justify-between">
+   487→   487→              <div>
+   488→   488→                <h3 className="text-base font-semibold text-foreground">
+   489→   489→                  সক্রিয় ডিলসমূহ
+   490→   490→                </h3>
+   491→   491→                <p className="mt-1 text-xs text-muted-foreground">
+   492→   492→                  আপনার সকল সক্রিয় ডিলের তালিকা
+   493→   493→                </p>
+   494→   494→              </div>
+   495→   495→              <Badge className="bg-primary/10 text-primary border-0 font-medium">
+   496→   496→                {loadingDeals ? '...' : deals.filter(d => !['completed', 'rejected'].includes(d.status)).length} সক্রিয়
+   497→   497→              </Badge>
+   498→   498→            </div>
+   499→   499→
+   500→   500→            {loadingDeals ? (
+   501→   501→              <div className="flex items-center justify-center py-16">
+   502→   502→                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   503→   503→              </div>
+   504→   504→            ) : deals.length === 0 ? (
+   505→   505→              <div className="flex flex-col items-center justify-center py-16 text-center px-5">
+   506→   506→                <Handshake className="mb-3 h-10 w-10 text-muted-foreground/30" />
+   507→   507→                <p className="text-sm font-semibold text-foreground">
+   508→   508→                  কোনো ডিল নেই
+   509→   509→                </p>
+   510→   510→                <p className="mt-1 text-xs text-muted-foreground">
+   511→   511→                  নতুন ডিল তৈরি করে লেনদেন শুরু করুন
+   512→   512→                </p>
+   513→   513→                <Button
+   514→   514→                  onClick={() => setDashboardPanel('new-deal')}
+   515→   515→                  className="mt-4 h-10 gap-2 rounded-xl text-sm font-medium"
+   516→   516→                  size="sm"
+   517→   517→                >
+   518→   518→                  <Plus className="h-4 w-4" />
+   519→   519→                  নতুন ডিল
+   520→   520→                </Button>
+   521→   521→              </div>
+   522→   522→            ) : (
+   523→   523→              <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+   524→   524→                <table className="w-full text-sm">
+   525→   525→                  <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm">
+   526→   526→                    <tr className="border-t border-b border-border/50 bg-muted/30">
+   527→   527→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   528→   528→                        ডিল
+   529→   529→                      </th>
+   530→   530→                      <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   531→   531→                        পরিমাণ
+   532→   532→                      </th>
+   533→   533→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   534→   534→                        অবস্থা
+   535→   535→                      </th>
+   536→   536→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   537→   537→                        দেখুন
+   538→   538→                      </th>
+   539→   539→                    </tr>
+   540→   540→                  </thead>
+   541→   541→                  <tbody>
+   542→   542→                    {deals.map((deal) => {
+   543→   543→                      const shortId = 'DL-' + deal.id.slice(-5);
+   544→   544→                      return (
+   545→   545→                        <tr
+   546→   546→                          key={deal.id}
+   547→   547→                          className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0 cursor-pointer"
+   548→   548→                          onClick={() => handleDealClick(deal)}
+   549→   549→                        >
+   550→   550→                          <td className="px-5 py-3.5">
+   551→   551→                            <div className="flex items-center gap-2.5">
+   552→   552→                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+   553→   553→                                <Handshake className="h-4 w-4 text-primary" />
+   554→   554→                              </div>
+   555→   555→                              <div className="min-w-0">
+   556→   556→                                <p className="font-medium text-foreground truncate max-w-[180px]">
+   557→   557→                                  {deal.title}
+   558→   558→                                </p>
+   559→   559→                                <p className="mt-0.5 text-xs text-muted-foreground">
+   560→   560→                                  {shortId}
+   561→   561→                                </p>
+   562→   562→                              </div>
+   563→   563→                            </div>
+   564→   564→                          </td>
+   565→   565→                          <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
+   566→   566→                            ৳{deal.amount.toLocaleString('bn-BD')}
+   567→   567→                          </td>
+   568→   568→                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   569→   569→                            <DealStatusBadge status={deal.status} />
+   570→   570→                          </td>
+   571→   571→                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   572→   572→                            <button
+   573→   573→                              onClick={(e) => { e.stopPropagation(); handleDealClick(deal); }}
+   574→   574→                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   575→   575→                            >
+   576→   576→                              <ExternalLink className="h-4 w-4" />
+   577→   577→                            </button>
+   578→   578→                          </td>
+   579→   579→                        </tr>
+   580→   580→                      );
+   581→   581→                    })}
+   582→   582→                  </tbody>
+   583→   583→                </table>
+   584→   584→              </div>
+   585→   585→            )}
+   586→   586→          </GlassCard>
+   587→   587→        </motion.div>
+   588→   588→      </div>
+   589→   589→    </>
+   590→   590→  );
+   591→   591→}
+   592→   592→
+   593→   593→/* ─── My Deals Panel ─── */
+   594→   594→function MyDealsPanel() {
+   595→   595→  const user = useAppStore((s) => s.user);
+   596→   596→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   597→   597→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   598→   598→
+   599→   599→  const [deals, setDeals] = useState<DealItem[]>([]);
+   600→   600→  const [loading, setLoading] = useState(true);
+   601→   601→  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+   602→   602→
+   603→   603→  useEffect(() => {
+   604→   604→    if (!user?.id) return;
+   605→   605→    const fetchDeals = async () => {
+   606→   606→      try {
+   607→   607→        const res = await fetch(`/api/deals?userId=${user.id}`);
+   608→   608→        if (res.ok) setDeals(await res.json());
+   609→   609→      } catch { /* silent */ }
+   610→   610→      finally { setLoading(false); }
+   611→   611→    };
+   612→   612→    fetchDeals();
+   613→   613→  }, [user?.id]);
+   614→   614→
+   615→   615→  const filteredDeals = deals.filter((d) => {
+   616→   616→    if (filter === 'active') return !['completed', 'rejected'].includes(d.status);
+   617→   617→    if (filter === 'completed') return d.status === 'completed';
+   618→   618→    return true;
+   619→   619→  });
+   620→   620→
+   621→   621→  const handleDealClick = (deal: DealItem) => {
+   622→   622→    setActiveDeal({
+   623→   623→      id: deal.id,
+   624→   624→      title: deal.title,
+   625→   625→      category: '',
+   626→   626→      amount: deal.amount,
+   627→   627→      feePayer: '',
+   628→   628→      status: deal.status,
+   629→   629→      createdAt: deal.createdAt,
+   630→   630→    });
+   631→   631→    setDashboardPanel('deal-detail');
+   632→   632→  };
+   633→   633→
+   634→   634→  const filterBtn = (f: 'all' | 'active' | 'completed', label: string) => (
+   635→   635→    <button
+   636→   636→      key={f}
+   637→   637→      onClick={() => setFilter(f)}
+   638→   638→      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+   639→   639→        filter === f
+   640→   640→          ? 'bg-primary/10 text-primary'
+   641→   641→          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+   642→   642→      }`}
+   643→   643→    >
+   644→   644→      {label}
+   645→   645→    </button>
+   646→   646→  );
+   647→   647→
+   648→   648→  return (
+   649→   649→    <div>
+   650→   650→      <div className="mb-5">
+   651→   651→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   652→   652→          <List className="h-5 w-5 text-primary" />
+   653→   653→          আমার ডিলসমূহ
+   654→   654→        </h2>
+   655→   655→        <p className="mt-0.5 text-sm text-muted-foreground">সকল ডিলের তালিকা দেখুন</p>
+   656→   656→      </div>
+   657→   657→
+   658→   658→      <div className="mb-4 flex items-center gap-2">
+   659→   659→        {filterBtn('all', 'সব')}
+   660→   660→        {filterBtn('active', 'সক্রিয়')}
+   661→   661→        {filterBtn('completed', 'সম্পন্ন')}
+   662→   662→      </div>
+   663→   663→
+   664→   664→      <GlassCard className="!p-0 overflow-hidden">
+   665→   665→        {loading ? (
+   666→   666→          <div className="flex items-center justify-center py-16">
+   667→   667→            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   668→   668→          </div>
+   669→   669→        ) : filteredDeals.length === 0 ? (
+   670→   670→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   671→   671→            <Handshake className="mb-3 h-10 w-10 text-muted-foreground/30" />
+   672→   672→            <p className="text-sm font-semibold text-foreground">কোনো ডিল নেই</p>
+   673→   673→            <p className="mt-1 text-xs text-muted-foreground">নতুন ডিল তৈরি করুন</p>
+   674→   674→            <Button onClick={() => setDashboardPanel('new-deal')} className="mt-4 h-10 gap-2 rounded-xl text-sm font-medium" size="sm">
+   675→   675→              <Plus className="h-4 w-4" /> নতুন ডিল
+   676→   676→            </Button>
+   677→   677→          </div>
+   678→   678→        ) : (
+   679→   679→          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+   680→   680→            <table className="w-full text-sm">
+   681→   681→              <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm">
+   682→   682→                <tr className="border-t border-b border-border/50 bg-muted/30">
+   683→   683→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল</th>
+   684→   684→                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">পরিমাণ</th>
+   685→   685→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">অবস্থা</th>
+   686→   686→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">দেখুন</th>
+   687→   687→                </tr>
+   688→   688→              </thead>
+   689→   689→              <tbody>
+   690→   690→                {filteredDeals.map((deal) => {
+   691→   691→                  const shortId = 'DL-' + deal.id.slice(-5);
+   692→   692→                  return (
+   693→   693→                    <tr
+   694→   694→                      key={deal.id}
+   695→   695→                      className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0 cursor-pointer"
+   696→   696→                      onClick={() => handleDealClick(deal)}
+   697→   697→                    >
+   698→   698→                      <td className="px-5 py-3.5">
+   699→   699→                        <div className="flex items-center gap-2.5">
+   700→   700→                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+   701→   701→                            <Handshake className="h-4 w-4 text-primary" />
+   702→   702→                          </div>
+   703→   703→                          <div className="min-w-0">
+   704→   704→                            <p className="font-medium text-foreground truncate max-w-[180px]">{deal.title}</p>
+   705→   705→                            <p className="mt-0.5 text-xs text-muted-foreground">{shortId}</p>
+   706→   706→                          </div>
+   707→   707→                        </div>
+   708→   708→                      </td>
+   709→   709→                      <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
+   710→   710→                        ৳{deal.amount.toLocaleString('bn-BD')}
+   711→   711→                      </td>
+   712→   712→                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   713→   713→                        <DealStatusBadge status={deal.status} />
+   714→   714→                      </td>
+   715→   715→                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   716→   716→                        <button
+   717→   717→                          onClick={(e) => { e.stopPropagation(); handleDealClick(deal); }}
+   718→   718→                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   719→   719→                        >
+   720→   720→                          <ExternalLink className="h-4 w-4" />
+   721→   721→                        </button>
+   722→   722→                      </td>
+   723→   723→                    </tr>
+   724→   724→                  );
+   725→   725→                })}
+   726→   726→              </tbody>
+   727→   727→            </table>
+   728→   728→          </div>
+   729→   729→        )}
+   730→   730→      </GlassCard>
+   731→   731→    </div>
+   732→   732→  );
+   733→   733→}
+   734→   734→
+   735→   735→/* ─── Profile Panel ─── */
+   736→   736→function ProfilePanel() {
+   737→   737→  const user = useAppStore((s) => s.user);
+   738→   738→
+   739→   739→  return (
+   740→   740→    <div>
+   741→   741→      <div className="mb-5">
+   742→   742→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   743→   743→          <UserCircle className="h-5 w-5 text-primary" />
+   744→   744→          প্রোফাইল
+   745→   745→        </h2>
+   746→   746→        <p className="mt-0.5 text-sm text-muted-foreground">আপনার অ্যাকাউন্ট তথ্য</p>
+   747→   747→      </div>
+   748→   748→      <GlassCard>
+   749→   749→        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+   750→   750→          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-2xl font-bold text-primary">
+   751→   751→            {user?.name?.charAt(0) || 'ই'}
+   752→   752→          </div>
+   753→   753→          <div className="text-center sm:text-left flex-1 space-y-3">
+   754→   754→            <div>
+   755→   755→              <p className="text-xs font-medium text-muted-foreground">নাম</p>
+   756→   756→              <p className="text-sm font-semibold text-foreground">{user?.name || '—'}</p>
+   757→   757→            </div>
+   758→   758→            <div>
+   759→   759→              <p className="text-xs font-medium text-muted-foreground">ইমেইল</p>
+   760→   760→              <p className="text-sm font-semibold text-foreground">{user?.email || '—'}</p>
+   761→   761→            </div>
+   762→   762→            <div>
+   763→   763→              <p className="text-xs font-medium text-muted-foreground">ফোন নম্বর</p>
+   764→   764→              <p className="text-sm font-semibold text-foreground">{user?.phone || '—'}</p>
+   765→   765→            </div>
+   766→   766→            <div>
+   767→   767→              <p className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের ধরন</p>
+   768→   768→              <Badge className="bg-primary/10 text-primary border-0 font-medium">
+   769→   769→                {user?.role === 'seller' ? 'বিক্রেতা' : 'ইউজার'}
+   770→   770→              </Badge>
+   771→   771→            </div>
+   772→   772→          </div>
+   773→   773→        </div>
+   774→   774→      </GlassCard>
+   775→   775→    </div>
+   776→   776→  );
+   777→   777→}
+   778→   778→
+   779→   779→/* ─── Settings Panel ─── */
+   780→   780→function SettingsPanel() {
+   781→   781→  const { theme, setTheme } = useTheme();
+   782→   782→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   783→   783→
+   784→   784→  return (
+   785→   785→    <div>
+   786→   786→      <div className="mb-5">
+   787→   787→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   788→   788→          <Settings className="h-5 w-5 text-primary" />
+   789→   789→          সেটিংস
+   790→   790→        </h2>
+   791→   791→        <p className="mt-0.5 text-sm text-muted-foreground">অ্যাপ্লিকেশন সেটিংস পরিবর্তন করুন</p>
+   792→   792→      </div>
+   793→   793→      <GlassCard className="space-y-5">
+   794→   794→        <div className="flex items-center justify-between">
+   795→   795→          <div>
+   796→   796→            <p className="text-sm font-semibold text-foreground">থিম</p>
+   797→   797→            <p className="text-xs text-muted-foreground">লাইট বা ডার্ক মোড নির্বাচন করুন</p>
+   798→   798→          </div>
+   799→   799→          {mounted && (
+   800→   800→            <button
+   801→   801→              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+   802→   802→              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-accent text-foreground hover:bg-accent/80 transition-colors"
+   803→   803→            >
+   804→   804→              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+   805→   805→              {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+   806→   806→            </button>
+   807→   807→          )}
+   808→   808→        </div>
+   809→   809→        <div className="border-t border-border/50" />
+   810→   810→        <div>
+   811→   811→          <p className="text-sm font-semibold text-foreground">প্ল্যাটফর্ম তথ্য</p>
+   812→   812→          <p className="mt-1 text-xs text-muted-foreground">আমার ডিল — বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম।</p>
+   813→   813→        </div>
+   814→   814→      </GlassCard>
+   815→   815→    </div>
+   816→   816→  );
+   817→   817→}
+   818→   818→
+   819→   819→/* ─── Main Content ─── */
+   820→   820→export function DashboardMain() {
+   821→   821→  const dashboardPanel = useAppStore((s) => s.dashboardPanel);
+   822→   822→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   823→   823→
+   824→   824→  if (!mounted) return null;
+   825→   825→
+   826→   826→  return (
+   827→   827→    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+   828→   828→      {dashboardPanel === 'overview' && <OverviewPanel />}
+   829→   829→      {dashboardPanel === 'new-deal' && <NewDealForm />}
+   830→   830→      {dashboardPanel === 'my-deals' && <MyDealsPanel />}
+   831→   831→      {dashboardPanel === 'deal-detail' && <DealWorkflowTracker />}
+   832→   832→      {dashboardPanel === 'payment' && <UserPaymentView />}
+   833→   833→      {dashboardPanel === 'profile' && <ProfilePanel />}
+   834→   834→      {dashboardPanel === 'settings' && <SettingsPanel />}
+   835→   835→    </div>
+   836→   836→  );
+   837→   837→}

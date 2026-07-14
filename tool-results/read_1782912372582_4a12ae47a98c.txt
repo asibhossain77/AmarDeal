@@ -1,0 +1,837 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useSyncExternalStore, useCallback, useRef } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore } from '@/lib/store';
+     6→import { useTheme } from 'next-themes';
+     7→import { Button } from '@/components/ui/button';
+     8→import { Badge } from '@/components/ui/badge';
+     9→import {
+    10→  Bell,
+    11→  Plus,
+    12→  Wallet,
+    13→  TrendingUp,
+    14→  Handshake,
+    15→  ArrowUpRight,
+    16→  CheckCircle,
+    17→  Clock,
+    18→  X,
+    19→  Loader2,
+    20→  ExternalLink,
+    21→  UserCircle,
+    22→  Settings,
+    23→  List,
+    24→  Sun,
+    25→  Moon,
+    26→} from 'lucide-react';
+    27→import { NewDealForm } from './new-deal-form';
+    28→import { DealWorkflowTracker } from './deal-workflow-tracker';
+    29→import { UserPaymentView } from './user-payment-view';
+    30→import { useSocket } from '@/hooks/use-socket';
+    31→import { toast } from 'sonner';
+    32→
+    33→const emptySubscribe = () => () => {};
+    34→
+    35→/* ─── Types ─── */
+    36→interface UserStats {
+    37→  activeDeals: number;
+    38→  completedDeals: number;
+    39→  totalAmount: number;
+    40→}
+    41→
+    42→interface DealItem {
+    43→  id: string;
+    44→  title: string;
+    45→  amount: number;
+    46→  status: string;
+    47→  createdAt: string;
+    48→  buyerId: string;
+    49→  sellerId: string | null;
+    50→  buyer?: { name: string; email: string } | null;
+    51→  seller?: { name: string; email: string } | null;
+    52→}
+    53→
+    54→interface NotifItem {
+    55→  id: string;
+    56→  type: string;
+    57→  title: string;
+    58→  message: string;
+    59→  dealId: string | null;
+    60→  read: boolean;
+    61→  createdAt: string;
+    62→}
+    63→
+    64→/* ─── Status Badge ─── */
+    65→function DealStatusBadge({ status }: { status: string }) {
+    66→  const config: Record<string, { label: string; classes: string }> = {
+    67→    created: { label: 'তৈরি', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
+    68→    payment_pending: { label: 'পেমেন্ট পেন্ডিং', classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' },
+    69→    payment_verified: { label: 'ভেরিফাইড', classes: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' },
+    70→    in_delivery: { label: 'ডেলিভারি', classes: 'bg-primary/15 text-primary dark:bg-primary/20' },
+    71→    delivery_confirmed: { label: 'ডেলিভারি কনফার্মড', classes: 'bg-primary/15 text-primary dark:bg-primary/20' },
+    72→    completed: { label: 'সম্পন্ন', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' },
+    73→    rejected: { label: 'রিজেক্টেড', classes: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' },
+    74→  };
+    75→  const c = config[status] || { label: status, classes: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400' };
+    76→  return <Badge className={`${c.classes} border-0 font-medium`}>{c.label}</Badge>;
+    77→}
+    78→
+    79→/* ─── Glass Card helper ─── */
+    80→function GlassCard({
+    81→  children,
+    82→  className = '',
+    83→}: {
+    84→  children: React.ReactNode;
+    85→  className?: string;
+    86→}) {
+    87→  return (
+    88→    <div
+    89→      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl ${className}`}
+    90→    >
+    91→      {children}
+    92→    </div>
+    93→  );
+    94→}
+    95→
+    96→/* ─── Notification Bell + Dropdown ─── */
+    97→function NotificationBell() {
+    98→  const user = useAppStore((s) => s.user);
+    99→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   100→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   101→  const [open, setOpen] = useState(false);
+   102→  const [notifications, setNotifications] = useState<NotifItem[]>([]);
+   103→  const [unreadCount, setUnreadCount] = useState(0);
+   104→  const [loading, setLoading] = useState(true);
+   105→  const dropdownRef = useRef<HTMLDivElement>(null);
+   106→
+   107→  const { onNotification, latestNotification } = useSocket(user?.id);
+   108→
+   109→  // Fetch notifications on mount
+   110→  const fetchNotifs = useCallback(async () => {
+   111→    if (!user?.id) return;
+   112→    try {
+   113→      const res = await fetch(`/api/notifications?userId=${user.id}`);
+   114→      if (res.ok) {
+   115→        const data = await res.json();
+   116→        setNotifications(data.notifications || []);
+   117→        setUnreadCount(data.unreadCount || 0);
+   118→      }
+   119→    } catch { /* silent */ }
+   120→    finally { setLoading(false); }
+   121→  }, [user?.id]);
+   122→
+   123→  useEffect(() => { fetchNotifs() }, [fetchNotifs]);
+   124→
+   125→  // Listen for real-time notifications
+   126→  useEffect(() => {
+   127→    const unsub = onNotification(() => {
+   128→      fetchNotifs();
+   129→      toast.success('নতুন নোটিফিকেশন এসেছে!', {
+   130→        description: 'ডিল সেকশনে দেখুন',
+   131→      });
+   132→    });
+   133→    return unsub;
+   134→  }, [onNotification, fetchNotifs]);
+   135→
+   136→  // Close dropdown on outside click
+   137→  useEffect(() => {
+   138→    const handleClick = (e: MouseEvent) => {
+   139→      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+   140→        setOpen(false);
+   141→      }
+   142→    };
+   143→    document.addEventListener('mousedown', handleClick);
+   144→    return () => document.removeEventListener('mousedown', handleClick);
+   145→  }, []);
+   146→
+   147→  const handleMarkRead = async (notifId: string) => {
+   148→    try {
+   149→      await fetch(`/api/notifications/${notifId}/read`, { method: 'POST' });
+   150→      setNotifications((prev) =>
+   151→        prev.map((n) => (n.id === notifId ? { ...n, read: true } : n))
+   152→      );
+   153→      setUnreadCount((c) => Math.max(0, c - 1));
+   154→    } catch { /* silent */ }
+   155→  };
+   156→
+   157→  const handleMarkAllRead = async () => {
+   158→    if (!user?.id) return;
+   159→    try {
+   160→      await fetch('/api/notifications/all-read', {
+   161→        method: 'PUT',
+   162→        headers: { 'Content-Type': 'application/json' },
+   163→        body: JSON.stringify({ userId: user.id }),
+   164→      });
+   165→      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+   166→      setUnreadCount(0);
+   167→    } catch { /* silent */ }
+   168→  };
+   169→
+   170→  const handleNotifClick = (notif: NotifItem) => {
+   171→    handleMarkRead(notif.id);
+   172→    if (notif.dealId) {
+   173→      setActiveDeal({
+   174→        id: notif.dealId,
+   175→        title: notif.title,
+   176→        category: '',
+   177→        amount: 0,
+   178→        feePayer: '',
+   179→        status: 'created',
+   180→        createdAt: notif.createdAt,
+   181→      });
+   182→      setDashboardPanel('deal-detail');
+   183→    }
+   184→    setOpen(false);
+   185→  };
+   186→
+   187→  const timeAgo = (dateStr: string) => {
+   188→    const diff = Date.now() - new Date(dateStr).getTime();
+   189→    const mins = Math.floor(diff / 60000);
+   190→    if (mins < 1) return 'এইমাত্র';
+   191→    if (mins < 60) return `${mins} মিনিট আগে`;
+   192→    const hrs = Math.floor(mins / 60);
+   193→    if (hrs < 24) return `${hrs} ঘন্টা আগে`;
+   194→    const days = Math.floor(hrs / 24);
+   195→    return `${days} দিন আগে`;
+   196→  };
+   197→
+   198→  return (
+   199→    <div className="relative" ref={dropdownRef}>
+   200→      <button
+   201→        onClick={() => setOpen(!open)}
+   202→        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   203→        aria-label="নোটিফিকেশন"
+   204→      >
+   205→        <Bell className="h-5 w-5" />
+   206→        {unreadCount > 0 && (
+   207→          <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm">
+   208→            {unreadCount > 99 ? '৯৯+' : unreadCount}
+   209→          </span>
+   210→        )}
+   211→      </button>
+   212→
+   213→      <AnimatePresence>
+   214→        {open && (
+   215→          <motion.div
+   216→            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+   217→            animate={{ opacity: 1, y: 0, scale: 1 }}
+   218→            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+   219→            transition={{ duration: 0.2 }}
+   220→            className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl bg-white shadow-2xl border border-border/50 dark:bg-zinc-900 overflow-hidden"
+   221→          >
+   222→            {/* Header */}
+   223→            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+   224→              <h3 className="text-sm font-bold text-foreground">নোটিফিকেশন</h3>
+   225→              {unreadCount > 0 && (
+   226→                <button
+   227→                  onClick={handleMarkAllRead}
+   228→                  className="text-xs font-medium text-primary hover:underline"
+   229→                >
+   230→                  সব পড়া হয়েছে
+   231→                </button>
+   232→              )}
+   233→            </div>
+   234→
+   235→            {/* List */}
+   236→            <div className="max-h-80 overflow-y-auto">
+   237→              {loading ? (
+   238→                <div className="flex items-center justify-center py-10">
+   239→                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+   240→                </div>
+   241→              ) : notifications.length === 0 ? (
+   242→                <div className="flex flex-col items-center py-10 text-center">
+   243→                  <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+   244→                  <p className="text-sm text-muted-foreground">কোনো নোটিফিকেশন নেই</p>
+   245→                </div>
+   246→              ) : (
+   247→                notifications.map((notif) => (
+   248→                  <button
+   249→                    key={notif.id}
+   250→                    onClick={() => handleNotifClick(notif)}
+   251→                    className={`w-full text-left px-4 py-3 border-b border-border/30 transition-colors hover:bg-muted/30 last:border-0 ${
+   252→                      !notif.read ? 'bg-primary/5' : ''
+   253→                    }`}
+   254→                  >
+   255→                    <div className="flex items-start gap-3">
+   256→                      <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${
+   257→                        !notif.read ? 'bg-primary' : 'bg-transparent'
+   258→                      }`} />
+   259→                      <div className="min-w-0 flex-1">
+   260→                        <div className="flex items-center justify-between gap-2">
+   261→                          <p className={`text-sm font-semibold truncate ${!notif.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+   262→                            {notif.title}
+   263→                          </p>
+   264→                          <span className="text-[10px] text-muted-foreground shrink-0">
+   265→                            {timeAgo(notif.createdAt)}
+   266→                          </span>
+   267→                        </div>
+   268→                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+   269→                          {notif.message}
+   270→                        </p>
+   271→                      </div>
+   272→                    </div>
+   273→                  </button>
+   274→                ))
+   275→              )}
+   276→            </div>
+   277→          </motion.div>
+   278→        )}
+   279→      </AnimatePresence>
+   280→    </div>
+   281→  );
+   282→}
+   283→
+   284→/* ─── Overview Panel (real data) ─── */
+   285→function OverviewPanel() {
+   286→  const user = useAppStore((s) => s.user);
+   287→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   288→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   289→
+   290→  const [stats, setStats] = useState<UserStats | null>(null);
+   291→  const [deals, setDeals] = useState<DealItem[]>([]);
+   292→  const [loadingStats, setLoadingStats] = useState(true);
+   293→  const [loadingDeals, setLoadingDeals] = useState(true);
+   294→
+   295→  const { onNotification } = useSocket(user?.id);
+   296→
+   297→  useEffect(() => {
+   298→    if (!user?.id) return;
+   299→    const fetchStats = async () => {
+   300→      try {
+   301→        const res = await fetch(`/api/user-stats?userId=${user.id}`);
+   302→        if (res.ok) setStats(await res.json());
+   303→      } catch { /* silent */ }
+   304→      finally { setLoadingStats(false); }
+   305→    };
+   306→    const fetchDeals = async () => {
+   307→      try {
+   308→        const res = await fetch(`/api/deals?userId=${user.id}`);
+   309→        if (res.ok) setDeals(await res.json());
+   310→      } catch { /* silent */ }
+   311→      finally { setLoadingDeals(false); }
+   312→    };
+   313→    fetchStats();
+   314→    fetchDeals();
+   315→  }, [user?.id]);
+   316→
+   317→  // Listen for real-time deal updates
+   318→  useEffect(() => {
+   319→    const unsub = onNotification(() => {
+   320→      // Refresh deals and stats when notification arrives
+   321→      if (!user?.id) return;
+   322→      fetch(`/api/deals?userId=${user.id}`)
+   323→        .then((r) => r.ok && r.json())
+   324→        .then((d) => setDeals(d))
+   325→        .catch(() => {});
+   326→      fetch(`/api/user-stats?userId=${user.id}`)
+   327→        .then((r) => r.ok && r.json())
+   328→        .then((d) => setStats(d))
+   329→        .catch(() => {});
+   330→    });
+   331→    return unsub;
+   332→  }, [onNotification, user?.id]);
+   333→
+   334→  const statsCards = [
+   335→    {
+   336→      label: 'চলতি ডিল',
+   337→      value: loadingStats ? '...' : (stats?.activeDeals || 0).toLocaleString('bn-BD'),
+   338→      icon: Handshake,
+   339→      color: 'text-primary',
+   340→      bg: 'bg-primary/10',
+   341→    },
+   342→    {
+   343→      label: 'সফল ডিল',
+   344→      value: loadingStats ? '...' : (stats?.completedDeals || 0).toLocaleString('bn-BD'),
+   345→      icon: TrendingUp,
+   346→      color: 'text-emerald-500 dark:text-emerald-400',
+   347→      bg: 'bg-emerald-500/10',
+   348→    },
+   349→    {
+   350→      label: 'মোট লেনদেন (৳)',
+   351→      value: loadingStats ? '...' : Math.round(stats?.totalAmount || 0).toLocaleString('bn-BD'),
+   352→      icon: Wallet,
+   353→      color: 'text-amber-500 dark:text-amber-400',
+   354→      bg: 'bg-amber-500/10',
+   355→    },
+   356→  ];
+   357→
+   358→  const handleDealClick = (deal: DealItem) => {
+   359→    setActiveDeal({
+   360→      id: deal.id,
+   361→      title: deal.title,
+   362→      category: '',
+   363→      amount: deal.amount,
+   364→      feePayer: '',
+   365→      status: deal.status,
+   366→      createdAt: deal.createdAt,
+   367→    });
+   368→    setDashboardPanel('deal-detail');
+   369→  };
+   370→
+   371→  return (
+   372→    <>
+   373→      {/* ── Top Bar ── */}
+   374→      <div className="mb-6 flex items-center justify-between">
+   375→        <div className="flex items-center gap-3">
+   376→          <div className="text-center lg:text-left">
+   377→            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+   378→              স্বাগতম, {user?.name?.split(' ')[0] || 'ইউজার'}
+   379→            </h1>
+   380→            <p className="mt-0.5 text-sm text-muted-foreground">
+   381→              আজকের ডিল ও লেনদেনের সারসংক্ষেপ
+   382→            </p>
+   383→          </div>
+   384→        </div>
+   385→        <div className="flex items-center gap-2">
+   386→          <NotificationBell />
+   387→          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
+   388→            {user?.name?.charAt(0) || 'ই'}
+   389→          </div>
+   390→        </div>
+   391→      </div>
+   392→
+   393→      {/* ── Stats Grid ── */}
+   394→      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+   395→        {statsCards.map((stat, i) => {
+   396→          const Icon = stat.icon;
+   397→          return (
+   398→            <motion.div
+   399→              key={stat.label}
+   400→              initial={{ opacity: 0, y: 16 }}
+   401→              animate={{ opacity: 1, y: 0 }}
+   402→              transition={{ duration: 0.4, delay: i * 0.08 }}
+   403→            >
+   404→              <GlassCard>
+   405→                <div className="flex items-center justify-between text-center sm:text-left">
+   406→                  <div className="flex-1 min-w-0">
+   407→                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+   408→                    <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+   409→                      {stat.value}
+   410→                    </p>
+   411→                  </div>
+   412→                  <div
+   413→                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
+   414→                  >
+   415→                    <Icon className={`h-5 w-5 ${stat.color}`} />
+   416→                  </div>
+   417→                </div>
+   418→              </GlassCard>
+   419→            </motion.div>
+   420→          );
+   421→        })}
+   422→      </div>
+   423→
+   424→      {/* ── Activity Grid ── */}
+   425→      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+   426→        {/* Right Column → Quick Actions */}
+   427→        <motion.div
+   428→          initial={{ opacity: 0, y: 16 }}
+   429→          animate={{ opacity: 1, y: 0 }}
+   430→          transition={{ duration: 0.4, delay: 0.25 }}
+   431→          className="order-1 lg:order-2 lg:col-span-2"
+   432→        >
+   433→          <GlassCard className="flex flex-col items-center gap-5 text-center">
+   434→            <div className="w-full">
+   435→              <h3 className="mb-4 text-base font-semibold text-foreground flex items-center justify-center gap-2">
+   436→                <ArrowUpRight className="h-4 w-4 text-primary" />
+   437→                কুইক অ্যাকশন
+   438→              </h3>
+   439→              <Button
+   440→                onClick={() => setDashboardPanel('new-deal')}
+   441→                className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 dark:glow-lime gap-2.5"
+   442→              >
+   443→                <Plus className="h-5 w-5" />
+   444→                নতুন ডিল তৈরি করুন
+   445→              </Button>
+   446→            </div>
+   447→
+   448→            <div className="w-full border-t border-border/50" />
+   449→
+   450→            <div className="w-full">
+   451→              <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+   452→                অ্যাকাউন্ট সারসংক্ষেপ
+   453→              </h3>
+   454→              <div className="space-y-3">
+   455→                <div className="flex items-center justify-between">
+   456→                  <span className="text-sm text-muted-foreground">চলতি ডিল</span>
+   457→                  <span className="text-base font-bold text-foreground">
+   458→                    {loadingStats ? '...' : (stats?.activeDeals || 0).toLocaleString('bn-BD')}
+   459→                  </span>
+   460→                </div>
+   461→                <div className="flex items-center justify-between">
+   462→                  <span className="text-sm text-muted-foreground">সফল ডিল</span>
+   463→                  <span className="text-base font-bold text-emerald-500">
+   464→                    {loadingStats ? '...' : (stats?.completedDeals || 0).toLocaleString('bn-BD')}
+   465→                  </span>
+   466→                </div>
+   467→                <div className="flex items-center justify-between">
+   468→                  <span className="text-sm text-muted-foreground">মোট লেনদেন</span>
+   469→                  <span className="text-base font-bold text-foreground">
+   470→                    ৳{loadingStats ? '...' : Math.round(stats?.totalAmount || 0).toLocaleString('bn-BD')}
+   471→                  </span>
+   472→                </div>
+   473→              </div>
+   474→            </div>
+   475→          </GlassCard>
+   476→        </motion.div>
+   477→
+   478→        {/* Left Column → Active Deals */}
+   479→        <motion.div
+   480→          initial={{ opacity: 0, y: 16 }}
+   481→          animate={{ opacity: 1, y: 0 }}
+   482→          transition={{ duration: 0.4, delay: 0.15 }}
+   483→          className="order-2 lg:order-1 lg:col-span-3"
+   484→        >
+   485→          <GlassCard className="!p-0 overflow-hidden">
+   486→            <div className="p-5 pb-3 flex items-center justify-between">
+   487→              <div>
+   488→                <h3 className="text-base font-semibold text-foreground">
+   489→                  সক্রিয় ডিলসমূহ
+   490→                </h3>
+   491→                <p className="mt-1 text-xs text-muted-foreground">
+   492→                  আপনার সকল সক্রিয় ডিলের তালিকা
+   493→                </p>
+   494→              </div>
+   495→              <Badge className="bg-primary/10 text-primary border-0 font-medium">
+   496→                {loadingDeals ? '...' : deals.filter(d => !['completed', 'rejected'].includes(d.status)).length} সক্রিয়
+   497→              </Badge>
+   498→            </div>
+   499→
+   500→            {loadingDeals ? (
+   501→              <div className="flex items-center justify-center py-16">
+   502→                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   503→              </div>
+   504→            ) : deals.length === 0 ? (
+   505→              <div className="flex flex-col items-center justify-center py-16 text-center px-5">
+   506→                <Handshake className="mb-3 h-10 w-10 text-muted-foreground/30" />
+   507→                <p className="text-sm font-semibold text-foreground">
+   508→                  কোনো ডিল নেই
+   509→                </p>
+   510→                <p className="mt-1 text-xs text-muted-foreground">
+   511→                  নতুন ডিল তৈরি করে লেনদেন শুরু করুন
+   512→                </p>
+   513→                <Button
+   514→                  onClick={() => setDashboardPanel('new-deal')}
+   515→                  className="mt-4 h-10 gap-2 rounded-xl text-sm font-medium"
+   516→                  size="sm"
+   517→                >
+   518→                  <Plus className="h-4 w-4" />
+   519→                  নতুন ডিল
+   520→                </Button>
+   521→              </div>
+   522→            ) : (
+   523→              <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+   524→                <table className="w-full text-sm">
+   525→                  <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm">
+   526→                    <tr className="border-t border-b border-border/50 bg-muted/30">
+   527→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   528→                        ডিল
+   529→                      </th>
+   530→                      <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   531→                        পরিমাণ
+   532→                      </th>
+   533→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   534→                        অবস্থা
+   535→                      </th>
+   536→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   537→                        দেখুন
+   538→                      </th>
+   539→                    </tr>
+   540→                  </thead>
+   541→                  <tbody>
+   542→                    {deals.map((deal) => {
+   543→                      const shortId = 'DL-' + deal.id.slice(-5);
+   544→                      return (
+   545→                        <tr
+   546→                          key={deal.id}
+   547→                          className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0 cursor-pointer"
+   548→                          onClick={() => handleDealClick(deal)}
+   549→                        >
+   550→                          <td className="px-5 py-3.5">
+   551→                            <div className="flex items-center gap-2.5">
+   552→                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+   553→                                <Handshake className="h-4 w-4 text-primary" />
+   554→                              </div>
+   555→                              <div className="min-w-0">
+   556→                                <p className="font-medium text-foreground truncate max-w-[180px]">
+   557→                                  {deal.title}
+   558→                                </p>
+   559→                                <p className="mt-0.5 text-xs text-muted-foreground">
+   560→                                  {shortId}
+   561→                                </p>
+   562→                              </div>
+   563→                            </div>
+   564→                          </td>
+   565→                          <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
+   566→                            ৳{deal.amount.toLocaleString('bn-BD')}
+   567→                          </td>
+   568→                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   569→                            <DealStatusBadge status={deal.status} />
+   570→                          </td>
+   571→                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   572→                            <button
+   573→                              onClick={(e) => { e.stopPropagation(); handleDealClick(deal); }}
+   574→                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   575→                            >
+   576→                              <ExternalLink className="h-4 w-4" />
+   577→                            </button>
+   578→                          </td>
+   579→                        </tr>
+   580→                      );
+   581→                    })}
+   582→                  </tbody>
+   583→                </table>
+   584→              </div>
+   585→            )}
+   586→          </GlassCard>
+   587→        </motion.div>
+   588→      </div>
+   589→    </>
+   590→  );
+   591→}
+   592→
+   593→/* ─── My Deals Panel ─── */
+   594→function MyDealsPanel() {
+   595→  const user = useAppStore((s) => s.user);
+   596→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+   597→  const setActiveDeal = useAppStore((s) => s.setActiveDeal);
+   598→
+   599→  const [deals, setDeals] = useState<DealItem[]>([]);
+   600→  const [loading, setLoading] = useState(true);
+   601→  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+   602→
+   603→  useEffect(() => {
+   604→    if (!user?.id) return;
+   605→    const fetchDeals = async () => {
+   606→      try {
+   607→        const res = await fetch(`/api/deals?userId=${user.id}`);
+   608→        if (res.ok) setDeals(await res.json());
+   609→      } catch { /* silent */ }
+   610→      finally { setLoading(false); }
+   611→    };
+   612→    fetchDeals();
+   613→  }, [user?.id]);
+   614→
+   615→  const filteredDeals = deals.filter((d) => {
+   616→    if (filter === 'active') return !['completed', 'rejected'].includes(d.status);
+   617→    if (filter === 'completed') return d.status === 'completed';
+   618→    return true;
+   619→  });
+   620→
+   621→  const handleDealClick = (deal: DealItem) => {
+   622→    setActiveDeal({
+   623→      id: deal.id,
+   624→      title: deal.title,
+   625→      category: '',
+   626→      amount: deal.amount,
+   627→      feePayer: '',
+   628→      status: deal.status,
+   629→      createdAt: deal.createdAt,
+   630→    });
+   631→    setDashboardPanel('deal-detail');
+   632→  };
+   633→
+   634→  const filterBtn = (f: 'all' | 'active' | 'completed', label: string) => (
+   635→    <button
+   636→      key={f}
+   637→      onClick={() => setFilter(f)}
+   638→      className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+   639→        filter === f
+   640→          ? 'bg-primary/10 text-primary'
+   641→          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+   642→      }`}
+   643→    >
+   644→      {label}
+   645→    </button>
+   646→  );
+   647→
+   648→  return (
+   649→    <div>
+   650→      <div className="mb-5">
+   651→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   652→          <List className="h-5 w-5 text-primary" />
+   653→          আমার ডিলসমূহ
+   654→        </h2>
+   655→        <p className="mt-0.5 text-sm text-muted-foreground">সকল ডিলের তালিকা দেখুন</p>
+   656→      </div>
+   657→
+   658→      <div className="mb-4 flex items-center gap-2">
+   659→        {filterBtn('all', 'সব')}
+   660→        {filterBtn('active', 'সক্রিয়')}
+   661→        {filterBtn('completed', 'সম্পন্ন')}
+   662→      </div>
+   663→
+   664→      <GlassCard className="!p-0 overflow-hidden">
+   665→        {loading ? (
+   666→          <div className="flex items-center justify-center py-16">
+   667→            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   668→          </div>
+   669→        ) : filteredDeals.length === 0 ? (
+   670→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   671→            <Handshake className="mb-3 h-10 w-10 text-muted-foreground/30" />
+   672→            <p className="text-sm font-semibold text-foreground">কোনো ডিল নেই</p>
+   673→            <p className="mt-1 text-xs text-muted-foreground">নতুন ডিল তৈরি করুন</p>
+   674→            <Button onClick={() => setDashboardPanel('new-deal')} className="mt-4 h-10 gap-2 rounded-xl text-sm font-medium" size="sm">
+   675→              <Plus className="h-4 w-4" /> নতুন ডিল
+   676→            </Button>
+   677→          </div>
+   678→        ) : (
+   679→          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+   680→            <table className="w-full text-sm">
+   681→              <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm">
+   682→                <tr className="border-t border-b border-border/50 bg-muted/30">
+   683→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল</th>
+   684→                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">পরিমাণ</th>
+   685→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">অবস্থা</th>
+   686→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">দেখুন</th>
+   687→                </tr>
+   688→              </thead>
+   689→              <tbody>
+   690→                {filteredDeals.map((deal) => {
+   691→                  const shortId = 'DL-' + deal.id.slice(-5);
+   692→                  return (
+   693→                    <tr
+   694→                      key={deal.id}
+   695→                      className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0 cursor-pointer"
+   696→                      onClick={() => handleDealClick(deal)}
+   697→                    >
+   698→                      <td className="px-5 py-3.5">
+   699→                        <div className="flex items-center gap-2.5">
+   700→                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+   701→                            <Handshake className="h-4 w-4 text-primary" />
+   702→                          </div>
+   703→                          <div className="min-w-0">
+   704→                            <p className="font-medium text-foreground truncate max-w-[180px]">{deal.title}</p>
+   705→                            <p className="mt-0.5 text-xs text-muted-foreground">{shortId}</p>
+   706→                          </div>
+   707→                        </div>
+   708→                      </td>
+   709→                      <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
+   710→                        ৳{deal.amount.toLocaleString('bn-BD')}
+   711→                      </td>
+   712→                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   713→                        <DealStatusBadge status={deal.status} />
+   714→                      </td>
+   715→                      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+   716→                        <button
+   717→                          onClick={(e) => { e.stopPropagation(); handleDealClick(deal); }}
+   718→                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   719→                        >
+   720→                          <ExternalLink className="h-4 w-4" />
+   721→                        </button>
+   722→                      </td>
+   723→                    </tr>
+   724→                  );
+   725→                })}
+   726→              </tbody>
+   727→            </table>
+   728→          </div>
+   729→        )}
+   730→      </GlassCard>
+   731→    </div>
+   732→  );
+   733→}
+   734→
+   735→/* ─── Profile Panel ─── */
+   736→function ProfilePanel() {
+   737→  const user = useAppStore((s) => s.user);
+   738→
+   739→  return (
+   740→    <div>
+   741→      <div className="mb-5">
+   742→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   743→          <UserCircle className="h-5 w-5 text-primary" />
+   744→          প্রোফাইল
+   745→        </h2>
+   746→        <p className="mt-0.5 text-sm text-muted-foreground">আপনার অ্যাকাউন্ট তথ্য</p>
+   747→      </div>
+   748→      <GlassCard>
+   749→        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+   750→          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-2xl font-bold text-primary">
+   751→            {user?.name?.charAt(0) || 'ই'}
+   752→          </div>
+   753→          <div className="text-center sm:text-left flex-1 space-y-3">
+   754→            <div>
+   755→              <p className="text-xs font-medium text-muted-foreground">নাম</p>
+   756→              <p className="text-sm font-semibold text-foreground">{user?.name || '—'}</p>
+   757→            </div>
+   758→            <div>
+   759→              <p className="text-xs font-medium text-muted-foreground">ইমেইল</p>
+   760→              <p className="text-sm font-semibold text-foreground">{user?.email || '—'}</p>
+   761→            </div>
+   762→            <div>
+   763→              <p className="text-xs font-medium text-muted-foreground">ফোন নম্বর</p>
+   764→              <p className="text-sm font-semibold text-foreground">{user?.phone || '—'}</p>
+   765→            </div>
+   766→            <div>
+   767→              <p className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের ধরন</p>
+   768→              <Badge className="bg-primary/10 text-primary border-0 font-medium">
+   769→                {user?.role === 'seller' ? 'বিক্রেতা' : 'ইউজার'}
+   770→              </Badge>
+   771→            </div>
+   772→          </div>
+   773→        </div>
+   774→      </GlassCard>
+   775→    </div>
+   776→  );
+   777→}
+   778→
+   779→/* ─── Settings Panel ─── */
+   780→function SettingsPanel() {
+   781→  const { theme, setTheme } = useTheme();
+   782→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   783→
+   784→  return (
+   785→    <div>
+   786→      <div className="mb-5">
+   787→        <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+   788→          <Settings className="h-5 w-5 text-primary" />
+   789→          সেটিংস
+   790→        </h2>
+   791→        <p className="mt-0.5 text-sm text-muted-foreground">অ্যাপ্লিকেশন সেটিংস পরিবর্তন করুন</p>
+   792→      </div>
+   793→      <GlassCard className="space-y-5">
+   794→        <div className="flex items-center justify-between">
+   795→          <div>
+   796→            <p className="text-sm font-semibold text-foreground">থিম</p>
+   797→            <p className="text-xs text-muted-foreground">লাইট বা ডার্ক মোড নির্বাচন করুন</p>
+   798→          </div>
+   799→          {mounted && (
+   800→            <button
+   801→              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+   802→              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium bg-accent text-foreground hover:bg-accent/80 transition-colors"
+   803→            >
+   804→              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+   805→              {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+   806→            </button>
+   807→          )}
+   808→        </div>
+   809→        <div className="border-t border-border/50" />
+   810→        <div>
+   811→          <p className="text-sm font-semibold text-foreground">প্ল্যাটফর্ম তথ্য</p>
+   812→          <p className="mt-1 text-xs text-muted-foreground">আমার ডিল — বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম।</p>
+   813→        </div>
+   814→      </GlassCard>
+   815→    </div>
+   816→  );
+   817→}
+   818→
+   819→/* ─── Main Content ─── */
+   820→export function DashboardMain() {
+   821→  const dashboardPanel = useAppStore((s) => s.dashboardPanel);
+   822→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   823→
+   824→  if (!mounted) return null;
+   825→
+   826→  return (
+   827→    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+   828→      {dashboardPanel === 'overview' && <OverviewPanel />}
+   829→      {dashboardPanel === 'new-deal' && <NewDealForm />}
+   830→      {dashboardPanel === 'my-deals' && <MyDealsPanel />}
+   831→      {dashboardPanel === 'deal-detail' && <DealWorkflowTracker />}
+   832→      {dashboardPanel === 'payment' && <UserPaymentView />}
+   833→      {dashboardPanel === 'profile' && <ProfilePanel />}
+   834→      {dashboardPanel === 'settings' && <SettingsPanel />}
+   835→    </div>
+   836→  );
+   837→}

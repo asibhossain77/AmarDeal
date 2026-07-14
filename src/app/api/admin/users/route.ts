@@ -1,0 +1,45 @@
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  try {
+    const users = await db.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        admin: {
+          select: {
+            id: true,
+            role: true,
+            permissions: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    // Flatten for frontend: add isAdmin, adminRole, adminPermissions
+    const flattened = users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      isActive: u.isActive,
+      isAdmin: !!u.admin,
+      adminRole: u.admin?.role ?? null,
+      adminPermissions: u.admin?.permissions ? JSON.parse(u.admin.permissions) : [],
+      createdAt: u.createdAt,
+    }))
+
+    return NextResponse.json(flattened)
+  } catch {
+    return NextResponse.json(
+      { error: 'ইউজার লোড করতে সমস্যা হয়েছে' },
+      { status: 500 }
+    )
+  }
+}

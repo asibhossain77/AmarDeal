@@ -1,0 +1,59 @@
+import { db } from '@/lib/db'
+import { NextResponse } from 'next/server'
+
+/**
+ * GET /api/admin/stats
+ */
+export async function GET() {
+  try {
+    const [totalDeals, totalUsers, pendingVerification, pendingPayouts, completedSum, profitSum, adminCalls, disputedCount] = await Promise.all([
+      db.deal.count(),
+
+      db.user.count(),
+
+      db.deal.count({
+        where: {
+          status: 'payment_pending',
+        },
+      }),
+
+      db.payout.count({
+        where: { status: 'pending' },
+      }),
+
+      db.deal.aggregate({
+        where: { status: 'completed' },
+        _sum: { amount: true },
+      }),
+
+      db.deal.aggregate({
+        where: { status: 'completed' },
+        _sum: { platformFee: true },
+      }),
+
+      db.deal.count({
+        where: { adminCalled: true },
+      }),
+
+      db.deal.count({
+        where: { status: 'disputed' },
+      }),
+    ])
+
+    return NextResponse.json({
+      totalDeals,
+      totalUsers,
+      pendingVerification,
+      pendingPayouts,
+      completedAmount: Math.round(completedSum._sum.amount || 0),
+      totalProfit: Math.round(profitSum._sum.platformFee || 0),
+      adminCalls,
+      disputedCount,
+    })
+  } catch {
+    return NextResponse.json(
+      { error: 'স্ট্যাটস লোড করতে সমস্যা হয়েছে' },
+      { status: 500 },
+    )
+  }
+}

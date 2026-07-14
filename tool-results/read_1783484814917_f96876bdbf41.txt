@@ -1,0 +1,636 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore } from '@/lib/store';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Input } from '@/components/ui/input';
+     8→import { Label } from '@/components/ui/label';
+     9→import { Badge } from '@/components/ui/badge';
+    10→import { toast } from 'sonner';
+    11→import {
+    12→  ArrowLeft,
+    13→  Phone,
+    14→  Hash,
+    15→  ShieldCheck,
+    16→  CreditCard,
+    17→  Building2,
+    18→  Wallet,
+    19→  Loader2,
+    20→  Copy,
+    21→  Check,
+    22→} from 'lucide-react';
+    23→
+    24→/* ─── Types ─── */
+    25→interface PaymentMethod {
+    26→  id: string;
+    27→  name: string;
+    28→  accountNumber: string;
+    29→  accountType: string;
+    30→  color: string;
+    31→  image: string | null;
+    32→}
+    33→
+    34→interface FeeCalc {
+    35→  amount: number;
+    36→  fee: number;
+    37→  total: number;
+    38→  feePercentage: number;
+    39→  matchedRule: {
+    40→    minimum_amount: number;
+    41→    maximum_amount: number;
+    42→    fee: number;
+    43→  } | null;
+    44→}
+    45→
+    46→/* ─── Color Utility ─── */
+    47→function getContrastColor(hex: string): string {
+    48→  const r = parseInt(hex.slice(1, 3), 16);
+    49→  const g = parseInt(hex.slice(3, 5), 16);
+    50→  const b = parseInt(hex.slice(5, 7), 16);
+    51→  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    52→  return luminance > 0.6 ? '#18181b' : '#ffffff';
+    53→}
+    54→
+    55→/* ─── Method icon/image helper ─── */
+    56→function getMethodIcon(name: string) {
+    57→  const lower = name.toLowerCase();
+    58→  if (lower.includes('bkash')) return Wallet;
+    59→  if (lower.includes('nagad')) return CreditCard;
+    60→  if (lower.includes('rocket')) return Wallet;
+    61→  if (lower.includes('bank')) return Building2;
+    62→  return CreditCard;
+    63→}
+    64→
+    65→/* ─── Component ─── */
+    66→export function UserPaymentView() {
+    67→  const activeDeal = useAppStore((s) => s.activeDeal);
+    68→  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+    69→
+    70→  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+    71→  const [selectedId, setSelectedId] = useState<string>('');
+    72→  const [feeCalc, setFeeCalc] = useState<FeeCalc | null>(null);
+    73→  const [loading, setLoading] = useState(true);
+    74→  const [senderNumber, setSenderNumber] = useState('');
+    75→  const [txnId, setTxnId] = useState('');
+    76→  const [submitting, setSubmitting] = useState(false);
+    77→  const [copied, setCopied] = useState<string | false>(false);
+    78→  const [showSuccess, setShowSuccess] = useState(false);
+    79→
+    80→  /* ─── Fetch data ─── */
+    81→  const fetchData = useCallback(async () => {
+    82→    setLoading(true);
+    83→    try {
+    84→      const [methodsRes, feeRes] = await Promise.all([
+    85→        fetch('/api/payment-methods'),
+    86→        activeDeal ? fetch(`/api/deals/calculate-fee?amount=${activeDeal.amount}`) : Promise.resolve(null),
+    87→      ]);
+    88→
+    89→      if (methodsRes.ok) {
+    90→        const methodsData = await methodsRes.json();
+    91→        setMethods(methodsData);
+    92→        if (methodsData.length > 0 && !selectedId) {
+    93→          setSelectedId(methodsData[0].id);
+    94→        }
+    95→      }
+    96→
+    97→      if (feeRes?.ok) {
+    98→        const feeData: FeeCalc = await feeRes.json();
+    99→        setFeeCalc(feeData);
+   100→      }
+   101→    } catch {
+   102→      toast.error('পেমেন্ট তথ্য লোড করতে সমস্যা হয়েছে');
+   103→    } finally {
+   104→      setLoading(false);
+   105→    }
+   106→  }, [activeDeal?.amount]);
+   107→
+   108→  useEffect(() => {
+   109→    fetchData();
+   110→  }, [fetchData]);
+   111→
+   112→  /* ─── Derived ─── */
+   113→  const selectedMethod = methods.find((m) => m.id === selectedId);
+   114→  const amount = activeDeal?.amount ?? 0;
+   115→  const fee = feeCalc?.fee ?? 0;
+   116→  const totalAmount = feeCalc?.total ?? amount;
+   117→  const feePercentage = feeCalc?.feePercentage ?? 0;
+   118→  const activeColor = selectedMethod?.color || '#84CC16';
+   119→  const contrastColor = getContrastColor(activeColor);
+   120→
+   121→  const canConfirm =
+   122→    selectedId !== '' && senderNumber.trim() !== '' && txnId.trim() !== '';
+   123→
+   124→  /* ─── Handlers ─── */
+   125→  const handleConfirm = async () => {
+   126→    if (!canConfirm || !activeDeal || !selectedMethod) return;
+   127→
+   128→    setSubmitting(true);
+   129→    try {
+   130→      const res = await fetch('/api/deals/payment', {
+   131→        method: 'POST',
+   132→        headers: { 'Content-Type': 'application/json' },
+   133→        body: JSON.stringify({
+   134→          dealId: activeDeal.id,
+   135→          paymentMethodId: selectedMethod.id,
+   136→          senderNumber: senderNumber.trim(),
+   137→          transactionId: txnId.trim(),
+   138→          amount: totalAmount,
+   139→          fee,
+   140→        }),
+   141→      });
+   142→
+   143→      if (res.ok) {
+   144→        setShowSuccess(true);
+   145→      } else {
+   146→        const data = await res.json().catch(() => ({}));
+   147→        toast.error(data.error || 'পেমেন্ট জমা করতে সমস্যা হয়েছে');
+   148→      }
+   149→    } catch {
+   150→      toast.error('নেটওয়ার্ক সমস্যা। আবার চেষ্টা করুন।');
+   151→    } finally {
+   152→      setSubmitting(false);
+   153→    }
+   154→  };
+   155→
+   156→  /* ─── Success Popup ─── */
+   157→  if (showSuccess) {
+   158→    return (
+   159→      <div className="flex items-center justify-center flex-1 min-h-[60vh]">
+   160→        <motion.div
+   161→          initial={{ opacity: 0, scale: 0.9 }}
+   162→          animate={{ opacity: 1, scale: 1 }}
+   163→          transition={{ duration: 0.35, ease: 'easeOut' }}
+   164→          className="w-full max-w-sm mx-4 rounded-3xl bg-white dark:bg-zinc-900 border border-border/40 shadow-2xl dark:shadow-none p-6 sm:p-8 text-center"
+   165→        >
+   166→          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary/15">
+   167→            <ShieldCheck className="h-8 w-8 text-primary" />
+   168→          </div>
+   169→          <h2 className="text-lg font-bold text-foreground mb-2">
+   170→            পেমেন্ট জমা হয়েছে!
+   171→          </h2>
+   172→          <p className="text-sm text-muted-foreground leading-relaxed">
+   173→            আপনার পেমেন্ট জমা হয়েছে। অ্যাডমিন ভেরিফাইয়ের অপেক্ষায় আছে।
+   174→          </p>
+   175→          <Button
+   176→            onClick={() => {
+   177→              setShowSuccess(false);
+   178→              setDashboardPanel('deal-detail');
+   179→            }}
+   180→            className="mt-6 w-full h-11 rounded-xl font-semibold gap-2"
+   181→          >
+   182→            ডিল দেখুন
+   183→          </Button>
+   184→        </motion.div>
+   185→      </div>
+   186→    );
+   187→  }
+   188→
+   189→  /* ─── No active deal ─── */
+   190→  if (!activeDeal) {
+   191→    return (
+   192→      <div className="flex flex-col items-center justify-center gap-4 py-20">
+   193→        <CreditCard className="h-12 w-12 text-muted-foreground/50" />
+   194→        <p className="text-lg font-medium text-muted-foreground">
+   195→          কোনো সক্রিয় ডিল নেই
+   196→        </p>
+   197→        <Button
+   198→          variant="outline"
+   199→          onClick={() => setDashboardPanel('deal-detail')}
+   200→          className="gap-2"
+   201→        >
+   202→          <ArrowLeft className="h-4 w-4" />
+   203→          ফিরে যান
+   204→        </Button>
+   205→      </div>
+   206→    );
+   207→  }
+   208→
+   209→  /* ─── Loading skeleton ─── */
+   210→  if (loading) {
+   211→    return (
+   212→      <div className="flex flex-col gap-4">
+   213→        <div className="flex items-center gap-2.5">
+   214→          <div className="h-8 w-8 rounded-xl bg-muted animate-pulse" />
+   215→          <div className="space-y-1.5">
+   216→            <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+   217→            <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+   218→          </div>
+   219→        </div>
+   220→        <div className="h-20 rounded-xl bg-white dark:bg-zinc-900 shadow-lg animate-pulse" />
+   221→        <div className="h-32 rounded-xl bg-white dark:bg-zinc-900 shadow-lg animate-pulse" />
+   222→      </div>
+   223→    );
+   224→  }
+   225→
+   226→  return (
+   227→    <div className="flex flex-col gap-4 sm:gap-6 flex-1 min-h-0">
+   228→      {/* ── Top Section: Back Button + Title ── */}
+   229→      <div className="flex items-center gap-2.5 shrink-0">
+   230→        <Button
+   231→          variant="ghost"
+   232→          size="icon"
+   233→          onClick={() => setDashboardPanel('deal-detail')}
+   234→          className="h-9 w-9 rounded-xl hover:bg-accent"
+   235→          aria-label="ফিরে যান"
+   236→        >
+   237→          <ArrowLeft className="h-4 w-4" />
+   238→        </Button>
+   239→        <div>
+   240→          <h1 className="text-base sm:text-2xl font-bold tracking-tight text-foreground">
+   241→            পেমেন্ট করুন
+   242→          </h1>
+   243→          <p className="hidden sm:block mt-0.5 text-sm text-muted-foreground">
+   244→            পেমেন্ট মেথড নির্বাচন করুন এবং তথ্য প্রদান করুন
+   245→          </p>
+   246→        </div>
+   247→      </div>
+   248→
+   249→      {/* ═══════════════════════════════════════════════════════
+   250→          MOBILE: Name-only bank grid → big number → inputs
+   251→          ═══════════════════════════════════════════════════════ */}
+   252→      <div className="flex flex-col gap-3 sm:hidden flex-1 min-h-0">
+   253→        {/* ── Step 1: Bank Selection (name + icon only) ── */}
+   254→        {methods.length > 0 && (
+   255→          <div className="grid grid-cols-2 gap-2.5">
+   256→            {methods.map((method) => {
+   257→              const isSelected = method.id === selectedId;
+   258→              const methodColor = method.color || '#84CC16';
+   259→              return (
+   260→                <button
+   261→                  key={method.id}
+   262→                  type="button"
+   263→                  onClick={() => setSelectedId(method.id)}
+   264→                  className="relative flex items-center gap-2.5 rounded-2xl bg-white dark:bg-zinc-900 shadow-lg px-3.5 py-3 border-2 transition-all duration-200"
+   265→                  style={{
+   266→                    borderColor: isSelected ? methodColor : 'transparent',
+   267→                    backgroundColor: isSelected
+   268→                      ? `color-mix(in srgb, ${methodColor} 8%, white)`
+   269→                      : undefined,
+   270→                  }}
+   271→                >
+   272→                  {method.image ? (
+   273→                    <div className="shrink-0 h-10 w-10 rounded-xl overflow-hidden flex items-center justify-center">
+   274→                      <img src={method.image} alt={method.name} className="h-full w-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+   275→                    </div>
+   276→                  ) : (
+   277→                    <div
+   278→                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+   279→                      style={{
+   280→                        backgroundColor: isSelected
+   281→                          ? `color-mix(in srgb, ${methodColor} 18%, transparent)`
+   282→                          : 'hsl(var(--muted))',
+   283→                        color: isSelected ? methodColor : 'hsl(var(--muted-foreground))',
+   284→                      }}
+   285→                    >
+   286→                      {(() => { const I = getMethodIcon(method.name); return <I className="h-5 w-5" />; })()}
+   287→                    </div>
+   288→                  )}
+   289→                  <p className="text-sm font-bold text-foreground truncate leading-tight">
+   290→                    {method.name}
+   291→                  </p>
+   292→                  {isSelected && (
+   293→                    <div
+   294→                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full flex items-center justify-center shadow-md"
+   295→                      style={{ backgroundColor: methodColor }}
+   296→                    >
+   297→                      <Check className="h-3 w-3 text-white" strokeWidth={3} />
+   298→                    </div>
+   299→                  )}
+   300→                </button>
+   301→              );
+   302→            })}
+   303→          </div>
+   304→        )}
+   305→
+   306→        {methods.length === 0 && (
+   307→          <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-4 text-center">
+   308→            <CreditCard className="mx-auto h-10 w-10 text-muted-foreground/50 mb-2" />
+   309→            <p className="text-sm text-muted-foreground">কোনো সক্রিয় পেমেন্ট মেথড নেই</p>
+   310→          </div>
+   311→        )}
+   312→
+   313→        {/* ── Step 2+3: Number + Inputs + Confirm — all in one card ── */}
+   314→        <AnimatePresence>
+   315→          {selectedMethod && (
+   316→            <motion.div
+   317→              key={selectedMethod.id}
+   318→              initial={{ opacity: 0, y: 8 }}
+   319→              animate={{ opacity: 1, y: 0 }}
+   320→              exit={{ opacity: 0, y: -8 }}
+   321→              transition={{ duration: 0.2 }}
+   322→              className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-4 border-l-4 flex flex-col"
+   323→              style={{ borderLeftColor: activeColor }}
+   324→            >
+   325→              {/* Amount row */}
+   326→              <div className="flex items-center justify-between mb-3">
+   327→                <span className="text-xs text-muted-foreground">
+   328→                  মোট পরিমাণ
+   329→                  {feePercentage > 0 && <span className="ml-1 opacity-70">(+{feePercentage}% ফি)</span>}
+   330→                </span>
+   331→                <span
+   332→                  className="text-2xl font-extrabold"
+   333→                  style={{ color: activeColor }}
+   334→                >
+   335→                  ৳{totalAmount.toLocaleString('bn-BD')}
+   336→                </span>
+   337→              </div>
+   338→
+   339→              {/* BIG account number with copy */}
+   340→              <div className="rounded-xl bg-muted/50 px-4 py-3.5 mb-3">
+   341→                <p className="text-[11px] text-muted-foreground mb-1">
+   342→                  {selectedMethod.name} {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} এ সেন্ড মানি করুন
+   343→                </p>
+   344→                <div className="flex items-center justify-between gap-3">
+   345→                  <p className="text-xl font-extrabold font-mono tracking-widest text-foreground">
+   346→                    {selectedMethod.accountNumber}
+   347→                  </p>
+   348→                  <button
+   349→                    onClick={() => {
+   350→                      navigator.clipboard.writeText(selectedMethod.accountNumber);
+   351→                      setCopied(selectedMethod.id);
+   352→                      toast.success('নম্বর কপি হয়েছে!');
+   353→                      setTimeout(() => setCopied(false), 2000);
+   354→                    }}
+   355→                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all hover:bg-accent hover:scale-110 active:scale-95 shadow-sm"
+   356→                    aria-label="নম্বর কপি করুন"
+   357→                    style={{ color: activeColor }}
+   358→                  >
+   359→                    {copied === selectedMethod.id ? (
+   360→                      <Check className="h-5 w-5" strokeWidth={2.5} />
+   361→                    ) : (
+   362→                      <Copy className="h-5 w-5" />
+   363→                    )}
+   364→                  </button>
+   365→                </div>
+   366→              </div>
+   367→
+   368→              {/* Transaction inputs */}
+   369→              <div className="flex flex-col gap-2.5 mb-3">
+   370→                <div className="relative">
+   371→                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   372→                  <Input
+   373→                    type="tel"
+   374→                    placeholder="প্রেরকের নম্বর"
+   375→                    value={senderNumber}
+   376→                    onChange={(e) => setSenderNumber(e.target.value)}
+   377→                    className="pl-11 h-12 rounded-xl border-border/60 text-sm focus-visible:ring-1"
+   378→                  />
+   379→                </div>
+   380→                <div className="relative">
+   381→                  <Hash className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   382→                  <Input
+   383→                    type="text"
+   384→                    placeholder="ট্রানজেকশন আইডি (TxnID)"
+   385→                    value={txnId}
+   386→                    onChange={(e) => setTxnId(e.target.value)}
+   387→                    className="pl-11 h-12 rounded-xl border-border/60 text-sm focus-visible:ring-1"
+   388→                  />
+   389→                </div>
+   390→              </div>
+   391→
+   392→              {/* Confirm button — inside the card */}
+   393→              <Button
+   394→                onClick={handleConfirm}
+   395→                disabled={!canConfirm || submitting}
+   396→                className="w-full h-13 rounded-xl text-sm font-bold gap-2 shadow-lg transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+   397→                style={{
+   398→                  backgroundColor: canConfirm ? activeColor : 'hsl(var(--muted))',
+   399→                  color: canConfirm ? contrastColor : 'hsl(var(--muted-foreground))',
+   400→                }}
+   401→              >
+   402→                {submitting ? (
+   403→                  <Loader2 className="h-4 w-4 animate-spin" />
+   404→                ) : (
+   405→                  <ShieldCheck className="h-4 w-4" />
+   406→                )}
+   407→                {submitting ? 'জমা হচ্ছে...' : 'কনফার্ম পেমেন্ট'}
+   408→              </Button>
+   409→            </motion.div>
+   410→          )}
+   411→        </AnimatePresence>
+   412→      </div>
+   413→
+   414→      {/* ═══════════════════════════════════════════════════════
+   415→          DESKTOP: Full layout with large cards (scrollable)
+   416→          ═══════════════════════════════════════════════════════ */}
+   417→      <div className="hidden sm:flex flex-col gap-6 flex-1 overflow-y-auto">
+   418→        {/* ── Payment Method Selection Grid ── */}
+   419→        {methods.length > 0 && (
+   420→          <div>
+   421→            <h2 className="mb-3 text-base font-semibold text-foreground">
+   422→              পেমেন্ট মেথড নির্বাচন করুন
+   423→            </h2>
+   424→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   425→              {methods.map((method) => {
+   426→                const isSelected = method.id === selectedId;
+   427→                const methodColor = method.color || '#84CC16';
+   428→
+   429→                return (
+   430→                  <motion.button
+   431→                    key={method.id}
+   432→                    type="button"
+   433→                    onClick={() => setSelectedId(method.id)}
+   434→                    whileHover={{ scale: 1.01 }}
+   435→                    whileTap={{ scale: 0.98 }}
+   436→                    className="relative flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-4 border-2 transition-colors duration-200 cursor-pointer"
+   437→                    style={{
+   438→                      borderColor: isSelected ? methodColor : 'transparent',
+   439→                      backgroundColor: isSelected
+   440→                        ? `color-mix(in srgb, ${methodColor} 8%, white)`
+   441→                        : undefined,
+   442→                    }}
+   443→                  >
+   444→                    {method.image ? (
+   445→                      <div className="shrink-0 h-11 w-11 rounded-xl overflow-hidden flex items-center justify-center">
+   446→                        <img src={method.image} alt={method.name} className="h-full w-full object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+   447→                      </div>
+   448→                    ) : (
+   449→                      <div
+   450→                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+   451→                        style={{
+   452→                          backgroundColor: isSelected
+   453→                            ? `color-mix(in srgb, ${methodColor} 18%, transparent)`
+   454→                            : 'hsl(var(--muted))',
+   455→                          color: isSelected ? methodColor : 'hsl(var(--muted-foreground))',
+   456→                        }}
+   457→                      >
+   458→                        {(() => { const I = getMethodIcon(method.name); return <I className="h-5 w-5" />; })()}
+   459→                      </div>
+   460→                    )}
+   461→                    <p className="text-base font-bold text-foreground truncate">
+   462→                      {method.name}
+   463→                    </p>
+   464→                    <Badge
+   465→                      className={`ml-auto shrink-0 border-0 text-xs font-medium ${
+   466→                        method.accountType === 'merchant'
+   467→                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+   468→                          : 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+   469→                      }`}
+   470→                    >
+   471→                      {method.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
+   472→                    </Badge>
+   473→                  </motion.button>
+   474→                );
+   475→              })}
+   476→            </div>
+   477→          </div>
+   478→        )}
+   479→
+   480→        {methods.length === 0 && !loading && (
+   481→          <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-6 text-center">
+   482→            <CreditCard className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+   483→            <p className="text-sm text-muted-foreground">
+   484→              কোনো সক্রিয় পেমেন্ট মেথড পাওয়া যায়নি
+   485→            </p>
+   486→          </div>
+   487→        )}
+   488→
+   489→        {/* ── Payment Instructions Section ── */}
+   490→        <AnimatePresence>
+   491→          {selectedMethod && (
+   492→            <motion.div
+   493→              key={selectedMethod.id}
+   494→              initial={{ opacity: 0, y: 12 }}
+   495→              animate={{ opacity: 1, y: 0 }}
+   496→              exit={{ opacity: 0, y: -12 }}
+   497→              transition={{ duration: 0.3 }}
+   498→              className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-5 border-l-4"
+   499→              style={{ borderLeftColor: activeColor }}
+   500→            >
+   501→              <h2 className="mb-4 text-base font-semibold text-foreground flex items-center gap-2">
+   502→                <CreditCard className="h-4 w-4" style={{ color: activeColor }} />
+   503→                পেমেন্ট তথ্য
+   504→              </h2>
+   505→              <div className="space-y-3">
+   506→                <div className="flex items-center justify-between">
+   507→                  <span className="text-sm text-muted-foreground">ডিলের পরিমাণ</span>
+   508→                  <span className="text-base font-semibold text-foreground">
+   509→                    ৳{amount.toLocaleString('bn-BD')}
+   510→                  </span>
+   511→                </div>
+   512→                {feeCalc?.matchedRule && (
+   513→                  <div className="flex items-center justify-between rounded-lg bg-primary/5 px-3 py-2">
+   514→                    <span className="text-xs text-muted-foreground">প্রযোজ্য ফি স্ল্যাব</span>
+   515→                    <span className="text-xs font-semibold text-primary">
+   516→                      ৳{feeCalc.matchedRule.minimum_amount.toLocaleString('bn-BD')} — ৳{feeCalc.matchedRule.maximum_amount === 0 ? '∞' : feeCalc.matchedRule.maximum_amount.toLocaleString('bn-BD')}
+   517→                    </span>
+   518→                  </div>
+   519→                )}
+   520→                <div className="flex items-center justify-between">
+   521→                  <span className="text-sm text-muted-foreground">
+   522→                    প্ল্যাটফর্ম ফি
+   523→                    {feePercentage > 0 && (
+   524→                      <span className="text-xs text-muted-foreground/70 ml-1">
+   525→                        (~{feePercentage}%)
+   526→                      </span>
+   527→                    )}
+   528→                  </span>
+   529→                  <span className="text-base font-semibold text-foreground">
+   530→                    ৳{fee.toLocaleString('bn-BD')}
+   531→                  </span>
+   532→                </div>
+   533→                <div className="border-t border-border/60 pt-3">
+   534→                  <div className="flex items-center justify-between">
+   535→                    <span className="text-sm font-medium text-muted-foreground">মোট পরিমাণ</span>
+   536→                    <span
+   537→                      className="text-xl font-bold"
+   538→                      style={{ color: activeColor }}
+   539→                    >
+   540→                      ৳{totalAmount.toLocaleString('bn-BD')}
+   541→                    </span>
+   542→                  </div>
+   543→                </div>
+   544→                {/* BIG account number — prominent display */}
+   545→                <div className="rounded-xl bg-muted/50 px-5 py-5">
+   546→                  <p className="text-xs text-muted-foreground mb-2">{selectedMethod.name} {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} এ সেন্ড মানি করুন</p>
+   547→                  <div className="flex items-center justify-between gap-4">
+   548→                    <span className="text-2xl font-extrabold font-mono tracking-widest text-foreground">
+   549→                      {selectedMethod.accountNumber}
+   550→                    </span>
+   551→                    <button
+   552→                      onClick={() => {
+   553→                        navigator.clipboard.writeText(selectedMethod.accountNumber);
+   554→                        setCopied(selectedMethod.id);
+   555→                        toast.success('নম্বর কপি হয়েছে!');
+   556→                        setTimeout(() => setCopied(false), 2000);
+   557→                      }}
+   558→                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all hover:bg-accent hover:scale-110 active:scale-95 shadow-sm"
+   559→                      aria-label="নম্বর কপি করুন"
+   560→                      style={{ color: activeColor }}
+   561→                    >
+   562→                      {copied === selectedMethod.id ? (
+   563→                        <Check className="h-5 w-5" strokeWidth={2.5} />
+   564→                      ) : (
+   565→                        <Copy className="h-5 w-5" />
+   566→                      )}
+   567→                    </button>
+   568→                  </div>
+   569→                </div>
+   570→              </div>
+   571→            </motion.div>
+   572→          )}
+   573→        </AnimatePresence>
+   574→
+   575→        {/* ── Input Section ── */}
+   576→        <div className="bg-white dark:bg-zinc-900 shadow-lg rounded-2xl p-5">
+   577→          <h2 className="mb-4 text-base font-semibold text-foreground">
+   578→            আপনার পেমেন্ট তথ্য
+   579→          </h2>
+   580→          <div className="space-y-4">
+   581→            <div className="space-y-2">
+   582→              <Label htmlFor="senderNumber" className="text-sm font-medium text-foreground">
+   583→                প্রেরকের নম্বর
+   584→              </Label>
+   585→              <div className="relative">
+   586→                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   587→                <Input
+   588→                  id="senderNumber"
+   589→                  type="tel"
+   590→                  placeholder="আপনার bKash/Nagad/Rocket নম্বর"
+   591→                  value={senderNumber}
+   592→                  onChange={(e) => setSenderNumber(e.target.value)}
+   593→                  className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-1"
+   594→                />
+   595→              </div>
+   596→            </div>
+   597→            <div className="space-y-2">
+   598→              <Label htmlFor="txnId" className="text-sm font-medium text-foreground">
+   599→                ট্রানজেকশন আইডি (TxnID)
+   600→              </Label>
+   601→              <div className="relative">
+   602→                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+   603→                <Input
+   604→                  id="txnId"
+   605→                  type="text"
+   606→                  placeholder="ট্রানজেকশন আইডি লিখুন"
+   607→                  value={txnId}
+   608→                  onChange={(e) => setTxnId(e.target.value)}
+   609→                  className="pl-10 h-11 rounded-xl border-border/60 focus-visible:ring-1"
+   610→                />
+   611→              </div>
+   612→            </div>
+   613→          </div>
+   614→        </div>
+   615→
+   616→        {/* ── Confirm Payment Button ── */}
+   617→        <Button
+   618→          onClick={handleConfirm}
+   619→          disabled={!canConfirm || submitting}
+   620→          className="w-full h-12 rounded-xl text-base font-bold gap-2.5 shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+   621→          style={{
+   622→            backgroundColor: canConfirm ? activeColor : 'hsl(var(--muted))',
+   623→            color: canConfirm ? contrastColor : 'hsl(var(--muted-foreground))',
+   624→          }}
+   625→        >
+   626→          {submitting ? (
+   627→            <Loader2 className="h-5 w-5 animate-spin" />
+   628→          ) : (
+   629→            <ShieldCheck className="h-5 w-5" />
+   630→          )}
+   631→          {submitting ? 'জমা হচ্ছে...' : 'কনফার্ম পেমেন্ট'}
+   632→        </Button>
+   633→      </div>
+   634→    </div>
+   635→  );
+   636→}

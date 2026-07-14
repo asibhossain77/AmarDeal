@@ -1,0 +1,1115 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→import { useQuery } from '@tanstack/react-query';
+     5→import { motion } from 'framer-motion';
+     6→import { useAppStore, type AdminPanel } from '@/lib/store';
+     7→import { Button } from '@/components/ui/button';
+     8→import { Badge } from '@/components/ui/badge';
+     9→import { Input } from '@/components/ui/input';
+    10→import { Label } from '@/components/ui/label';
+    11→import { toast } from 'sonner';
+    12→import { PaymentMethodsPanel } from './payment-methods-panel';
+    13→import { FeeRulesPanel } from './fee-rules-panel';
+    14→import {
+    15→  Bell,
+    16→  ShieldCheck,
+    17→  ShieldX,
+    18→  Handshake,
+    19→  Wallet,
+    20→  Users,
+    21→  Settings,
+    22→  CheckCircle,
+    23→  Loader2,
+    24→  Search,
+    25→  ChevronDown,
+    26→  XCircle,
+    27→  Save,
+    28→} from 'lucide-react';
+    29→
+    30→const emptySubscribe = () => () => {};
+    31→
+    32→/* ─── Types ─── */
+    33→interface DealRow {
+    34→  id: string;
+    35→  title: string;
+    36→  amount: number;
+    37→  status: string;
+    38→  createdAt: string;
+    39→  buyer?: { name: string; email: string } | null;
+    40→  seller?: { name: string; email: string } | null;
+    41→  creator?: { name: string; email: string } | null;
+    42→}
+    43→
+    44→interface UserRow {
+    45→  id: string;
+    46→  name: string;
+    47→  email: string;
+    48→  phone: string;
+    49→  isSeller: boolean;
+    50→  isAdmin: boolean;
+    51→  adminRole: string | null;
+    52→  createdAt: string;
+    53→}
+    54→
+    55→interface AdminStats {
+    56→  totalDeals: number;
+    57→  pendingVerification: number;
+    58→  completedAmount: number;
+    59→}
+    60→
+    61→interface PlatformSettings {
+    62→  platform_name: string;
+    63→  fee_percentage: string;
+    64→  min_deal_amount: string;
+    65→  max_deal_amount: string;
+    66→  support_number: string;
+    67→}
+    68→
+    69→/* ─── Solid Card Helper ─── */
+    70→function SolidCard({
+    71→  children,
+    72→  className = '',
+    73→}: {
+    74→  children: React.ReactNode;
+    75→  className?: string;
+    76→}) {
+    77→  return (
+    78→    <div
+    79→      className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-zinc-900 ${className}`}
+    80→    >
+    81→      {children}
+    82→    </div>
+    83→  );
+    84→}
+    85→
+    86→/* ─── Status Badge Helper ─── */
+    87→function StatusBadge({ status }: { status: string }) {
+    88→  const config: Record<string, { label: string; classes: string }> = {
+    89→    created: {
+    90→      label: 'তৈরি',
+    91→      classes:
+    92→        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    93→    },
+    94→    pending: {
+    95→      label: 'পেন্ডিং',
+    96→      classes:
+    97→        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    98→    },
+    99→    payment_pending: {
+   100→      label: 'পেমেন্ট পেন্ডিং',
+   101→      classes:
+   102→        'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+   103→    },
+   104→    payment_verified: {
+   105→      label: 'ভেরিফাইড',
+   106→      classes:
+   107→        'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+   108→    },
+   109→    in_delivery: {
+   110→      label: 'ডেলিভারি',
+   111→      classes:
+   112→        'bg-primary/15 text-primary dark:bg-primary/20',
+   113→    },
+   114→    delivery_confirmed: {
+   115→      label: 'ডেলিভারি কনফার্মড',
+   116→      classes:
+   117→        'bg-primary/15 text-primary dark:bg-primary/20',
+   118→    },
+   119→    completed: {
+   120→      label: 'সম্পন্ন',
+   121→      classes:
+   122→        'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+   123→    },
+   124→    rejected: {
+   125→      label: 'রিজেক্টেড',
+   126→      classes:
+   127→        'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+   128→    },
+   129→  };
+   130→  const c =
+   131→    config[status] || {
+   132→      label: status,
+   133→      classes:
+   134→        'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400',
+   135→    };
+   136→  return (
+   137→    <Badge className={`${c.classes} border-0 font-medium`}>{c.label}</Badge>
+   138→  );
+   139→}
+   140→
+   141→/* ─── Role Badge Helper ─── */
+   142→function RoleBadge({ isAdmin, isSeller, adminRole }: { isAdmin: boolean; isSeller: boolean; adminRole: string | null }) {
+   143→  if (isAdmin) {
+   144→    const label = adminRole === 'super_admin' ? 'সুপার অ্যাডমিন' : 'সাপোর্ট';
+   145→    return (
+   146→      <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">
+   147→        {label}
+   148→      </Badge>
+   149→    );
+   150→  }
+   151→  if (isSeller) {
+   152→    return (
+   153→      <Badge className="bg-primary/15 text-primary dark:bg-primary/15 border-0 font-medium">
+   154→        বিক্রেতা
+   155→      </Badge>
+   156→    );
+   157→  }
+   158→  return (
+   159→    <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">
+   160→      ইউজার
+   161→    </Badge>
+   162→  );
+   163→}
+   164→
+   165→/* ─── Admin Stat Card Skeleton ─── */
+   166→function AdminStatCardSkeleton() {
+   167→  return (
+   168→    <SolidCard>
+   169→      <div className="flex items-center justify-between">
+   170→        <div className="flex-1 space-y-2">
+   171→          <div className="h-3 w-16 sm:w-24 animate-pulse rounded bg-muted" />
+   172→          <div className="h-6 sm:h-7 w-14 sm:w-16 animate-pulse rounded bg-muted" />
+   173→        </div>
+   174→        <div className="h-10 w-10 sm:h-11 sm:w-11 animate-pulse rounded-xl bg-muted" />
+   175→      </div>
+   176→    </SolidCard>
+   177→  );
+   178→}
+   179→
+   180→/* ─── Loading Spinner ─── */
+   181→function LoadingSpinner() {
+   182→  return (
+   183→    <div className="flex items-center justify-center py-16">
+   184→      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   185→    </div>
+   186→  );
+   187→}
+   188→
+   189→/* ═══════════════════════════════════════════
+   190→   Panel 1: ড্যাশবোর্ড — 3 Stats Cards
+   191→   ═══════════════════════════════════════════ */
+   192→
+   193→function DashboardStatsPanel() {
+   194→  const { data: stats, isLoading } = useQuery<AdminStats>({
+   195→    queryKey: ['admin-dashboard-stats'],
+   196→    queryFn: async () => {
+   197→      const res = await fetch('/api/admin/stats');
+   198→      if (!res.ok) throw new Error('Failed');
+   199→      return res.json();
+   200→    },
+   201→  });
+   202→
+   203→  const cards = stats
+   204→    ? [
+   205→        {
+   206→          label: 'মোট ডিল',
+   207→          value: stats.totalDeals.toLocaleString('bn-BD'),
+   208→          icon: Handshake,
+   209→          color: 'text-primary',
+   210→          bg: 'bg-primary/10',
+   211→        },
+   212→        {
+   213→          label: 'পেন্ডিং ভেরিফিকেশন',
+   214→          value: stats.pendingVerification.toLocaleString('bn-BD'),
+   215→          icon: ShieldCheck,
+   216→          color: 'text-amber-500 dark:text-amber-400',
+   217→          bg: 'bg-amber-500/10',
+   218→        },
+   219→        {
+   220→          label: 'মোট লেনদেন (৳)',
+   221→          value: stats.completedAmount.toLocaleString('bn-BD'),
+   222→          icon: Wallet,
+   223→          color: 'text-emerald-500 dark:text-emerald-400',
+   224→          bg: 'bg-emerald-500/10',
+   225→        },
+   226→      ]
+   227→    : [];
+   228→
+   229→  if (isLoading) {
+   230→    return (
+   231→      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
+   232→        {Array.from({ length: 3 }).map((_, i) => (
+   233→          <AdminStatCardSkeleton key={i} />
+   234→        ))}
+   235→      </div>
+   236→    );
+   237→  }
+   238→
+   239→  return (
+   240→    <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
+   241→      {cards.map((stat, i) => {
+   242→        const Icon = stat.icon;
+   243→        return (
+   244→          <motion.div
+   245→            key={stat.label}
+   246→            initial={{ opacity: 0, y: 16 }}
+   247→            animate={{ opacity: 1, y: 0 }}
+   248→            transition={{ duration: 0.4, delay: i * 0.1 }}
+   249→          >
+   250→            <SolidCard>
+   251→              <div className="flex items-center justify-between text-center sm:text-left">
+   252→                <div className="flex-1 min-w-0">
+   253→                  <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+   254→                  <p className="mt-1 sm:mt-1.5 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+   255→                    {stat.value}
+   256→                  </p>
+   257→                </div>
+   258→                <div
+   259→                  className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
+   260→                >
+   261→                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
+   262→                </div>
+   263→              </div>
+   264→            </SolidCard>
+   265→          </motion.div>
+   266→        );
+   267→      })}
+   268→    </div>
+   269→  );
+   270→}
+   271→
+   272→/* ═══════════════════════════════════════════
+   273→   Panel 2: পেমেন্ট ভেরিফিকেশন (Core)
+   274→   ═══════════════════════════════════════════ */
+   275→
+   276→function PaymentVerifyPanel() {
+   277→  const [deals, setDeals] = useState<DealRow[]>([]);
+   278→  const [loading, setLoading] = useState(true);
+   279→  const [actionLoading, setActionLoading] = useState<string | null>(null);
+   280→
+   281→  const fetchDeals = useCallback(async () => {
+   282→    try {
+   283→      const res = await fetch('/api/admin/deals');
+   284→      if (res.ok) {
+   285→        const data = await res.json();
+   286→        setDeals(data);
+   287→      }
+   288→    } catch {
+   289→      // use fallback
+   290→    } finally {
+   291→      setLoading(false);
+   292→    }
+   293→  }, []);
+   294→
+   295→  useEffect(() => {
+   296→    fetchDeals();
+   297→  }, [fetchDeals]);
+   298→
+   299→  const handleVerify = async (dealId: string) => {
+   300→    setActionLoading(dealId);
+   301→    try {
+   302→      const res = await fetch('/api/admin/verify', {
+   303→        method: 'POST',
+   304→        headers: { 'Content-Type': 'application/json' },
+   305→        body: JSON.stringify({ dealId }),
+   306→      });
+   307→      if (res.ok) {
+   308→        toast.success('পেমেন্ট সফলভাবে ভেরিফাই হয়েছে!');
+   309→        fetchDeals();
+   310→      } else {
+   311→        toast.error('ভেরিফিকেশন ব্যর্থ হয়েছে');
+   312→      }
+   313→    } catch {
+   314→      toast.error('সার্ভারে সমস্যা');
+   315→    } finally {
+   316→      setActionLoading(null);
+   317→    }
+   318→  };
+   319→
+   320→  const handleReject = async (dealId: string) => {
+   321→    setActionLoading(dealId);
+   322→    try {
+   323→      const res = await fetch('/api/admin/reject', {
+   324→        method: 'POST',
+   325→        headers: { 'Content-Type': 'application/json' },
+   326→        body: JSON.stringify({ dealId }),
+   327→      });
+   328→      if (res.ok) {
+   329→        toast.success('ডিল রিজেক্ট করা হয়েছে');
+   330→        fetchDeals();
+   331→      } else {
+   332→        toast.error('রিজেক্ট ব্যর্থ হয়েছে');
+   333→      }
+   334→    } catch {
+   335→      toast.error('সার্ভারে সমস্যা');
+   336→    } finally {
+   337→      setActionLoading(null);
+   338→    }
+   339→  };
+   340→
+   341→  const pendingDeals = deals.filter(
+   342→    (d) =>
+   343→      d.status === 'created' ||
+   344→      d.status === 'pending' ||
+   345→      d.status === 'payment_pending'
+   346→  );
+   347→
+   348→  return (
+   349→    <div>
+   350→      {/* Section Header */}
+   351→      <div className="mb-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+   352→        <div className="text-center sm:text-left">
+   353→          <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   354→            <ShieldCheck className="h-5 w-5 text-primary" />
+   355→            পেমেন্ট ভেরিফিকেশন
+   356→          </h2>
+   357→          <p className="mt-0.5 text-sm text-muted-foreground">
+   358→            ভেরিফিকেশনের অপেক্ষমান ডিলসমূহ পর্যালোচনা করুন
+   359→          </p>
+   360→        </div>
+   361→        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-xs font-medium">
+   362→          {pendingDeals.length} পেন্ডিং
+   363→        </Badge>
+   364→      </div>
+   365→
+   366→      {/* Table Card */}
+   367→      <SolidCard className="!p-0 overflow-hidden">
+   368→        {loading ? (
+   369→          <div className="flex items-center justify-center py-16">
+   370→            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   371→          </div>
+   372→        ) : pendingDeals.length === 0 ? (
+   373→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   374→            <CheckCircle className="mb-3 h-10 w-10 text-primary" />
+   375→            <p className="text-sm font-semibold text-foreground">
+   376→              সব পেমেন্ট ভেরিফাই হয়েছে
+   377→            </p>
+   378→            <p className="mt-1 text-xs text-muted-foreground">
+   379→              বর্তমানে কোনো পেন্ডিং ডিল নেই
+   380→            </p>
+   381→          </div>
+   382→        ) : (
+   383→          <div className="overflow-x-auto">
+   384→            <table className="w-full text-sm min-w-[640px]">
+   385→              <thead>
+   386→                <tr className="border-b border-border bg-muted/30">
+   387→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   388→                    ডিল আইডি
+   389→                  </th>
+   390→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   391→                    ইউজার নেম
+   392→                  </th>
+   393→                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   394→                    পরিমাণ (৳)
+   395→                  </th>
+   396→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   397→                    পেমেন্ট স্ট্যাটাস
+   398→                  </th>
+   399→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   400→                    অ্যাকশন
+   401→                  </th>
+   402→                </tr>
+   403→              </thead>
+   404→              <tbody>
+   405→                {pendingDeals.map((deal) => {
+   406→                  const shortId =
+   407→                    deal.id.length > 10
+   408→                      ? 'DL-' + deal.id.slice(-5)
+   409→                      : deal.id;
+   410→                  const userName =
+   411→                    deal.creator?.name || deal.buyer?.name || 'ইউজার';
+   412→                  const isActing = actionLoading === deal.id;
+   413→
+   414→                  return (
+   415→                    <tr
+   416→                      key={deal.id}
+   417→                      className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0"
+   418→                    >
+   419→                      <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+   420→                        {shortId}
+   421→                      </td>
+   422→                      <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
+   423→                        {userName}
+   424→                      </td>
+   425→                      <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+   426→                        ৳{deal.amount.toLocaleString('bn-BD')}
+   427→                      </td>
+   428→                      <td className="px-5 py-4 text-center whitespace-nowrap">
+   429→                        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
+   430→                          পেন্ডিং
+   431→                        </Badge>
+   432→                      </td>
+   433→                      <td className="px-5 py-4 text-center whitespace-nowrap">
+   434→                        <div className="flex items-center justify-center gap-2">
+   435→                          <Button
+   436→                            size="sm"
+   437→                            disabled={isActing}
+   438→                            onClick={() => handleVerify(deal.id)}
+   439→                            className="h-9 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/25"
+   440→                          >
+   441→                            {isActing ? (
+   442→                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+   443→                            ) : (
+   444→                              <ShieldCheck className="h-3.5 w-3.5" />
+   445→                            )}
+   446→                            পেমেন্ট ভেরিফাই করুন
+   447→                          </Button>
+   448→                          <Button
+   449→                            size="sm"
+   450→                            variant="outline"
+   451→                            disabled={isActing}
+   452→                            onClick={() => handleReject(deal.id)}
+   453→                            className="h-9 gap-1.5 rounded-lg text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
+   454→                          >
+   455→                            {isActing ? (
+   456→                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+   457→                            ) : (
+   458→                              <ShieldX className="h-3.5 w-3.5" />
+   459→                            )}
+   460→                            রিজেক্ট করুন
+   461→                          </Button>
+   462→                        </div>
+   463→                      </td>
+   464→                    </tr>
+   465→                  );
+   466→                })}
+   467→              </tbody>
+   468→            </table>
+   469→          </div>
+   470→        )}
+   471→      </SolidCard>
+   472→    </div>
+   473→  );
+   474→}
+   475→
+   476→/* ═══════════════════════════════════════════
+   477→   Panel 3: সকল ডিল
+   478→   ═══════════════════════════════════════════ */
+   479→
+   480→type DealFilter = 'all' | 'pending' | 'verified' | 'delivery' | 'completed';
+   481→
+   482→const dealFilterTabs: {
+   483→  key: DealFilter;
+   484→  label: string;
+   485→  statuses: string[];
+   486→}[] = [
+   487→  { key: 'all', label: 'সকল', statuses: [] },
+   488→  {
+   489→    key: 'pending',
+   490→    label: 'পেন্ডিং',
+   491→    statuses: ['created', 'pending', 'payment_pending'],
+   492→  },
+   493→  { key: 'verified', label: 'ভেরিফাইড', statuses: ['payment_verified'] },
+   494→  {
+   495→    key: 'delivery',
+   496→    label: 'ডেলিভারি',
+   497→    statuses: ['in_delivery', 'delivery_confirmed'],
+   498→  },
+   499→  { key: 'completed', label: 'সম্পন্ন', statuses: ['completed', 'rejected'] },
+   500→];
+   501→
+   502→function AllDealsPanel() {
+   503→  const [deals, setDeals] = useState<DealRow[]>([]);
+   504→  const [loading, setLoading] = useState(true);
+   505→  const [activeFilter, setActiveFilter] = useState<DealFilter>('all');
+   506→  const [searchQuery, setSearchQuery] = useState('');
+   507→
+   508→  const fetchDeals = useCallback(async () => {
+   509→    try {
+   510→      const res = await fetch('/api/admin/deals');
+   511→      if (res.ok) {
+   512→        const data = await res.json();
+   513→        setDeals(data);
+   514→      }
+   515→    } catch {
+   516→      // silent
+   517→    } finally {
+   518→      setLoading(false);
+   519→    }
+   520→  }, []);
+   521→
+   522→  useEffect(() => {
+   523→    fetchDeals();
+   524→  }, [fetchDeals]);
+   525→
+   526→  const filteredDeals = deals.filter((deal) => {
+   527→    const tab = dealFilterTabs.find((t) => t.key === activeFilter);
+   528→    const matchesStatus =
+   529→      !tab ||
+   530→      tab.statuses.length === 0 ||
+   531→      tab.statuses.includes(deal.status);
+   532→    const matchesSearch =
+   533→      !searchQuery ||
+   534→      deal.title.toLowerCase().includes(searchQuery.toLowerCase());
+   535→    return matchesStatus && matchesSearch;
+   536→  });
+   537→
+   538→  return (
+   539→    <div>
+   540→      {/* Header */}
+   541→      <div className="mb-5">
+   542→        <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   543→          <Handshake className="h-5 w-5 text-primary" />
+   544→          সকল ডিল
+   545→        </h2>
+   546→        <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
+   547→          প্ল্যাটফর্মের সকল ডিলের সম্পূর্ণ তালিকা
+   548→        </p>
+   549→      </div>
+   550→
+   551→      {/* Filter Tabs + Search */}
+   552→      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   553→        <div className="flex flex-wrap justify-center gap-2">
+   554→          {dealFilterTabs.map((tab) => (
+   555→            <button
+   556→              key={tab.key}
+   557→              onClick={() => setActiveFilter(tab.key)}
+   558→              className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
+   559→                activeFilter === tab.key
+   560→                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+   561→                  : 'bg-white text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground dark:bg-zinc-800'
+   562→              }`}
+   563→            >
+   564→              {tab.label}
+   565→            </button>
+   566→          ))}
+   567→        </div>
+   568→        <div className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 dark:bg-zinc-800">
+   569→          <Search className="h-4 w-4 text-muted-foreground" />
+   570→          <input
+   571→            type="text"
+   572→            value={searchQuery}
+   573→            onChange={(e) => setSearchQuery(e.target.value)}
+   574→            placeholder="ডিল শিরোনাম দিয়ে খুঁজুন..."
+   575→            className="w-48 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+   576→          />
+   577→        </div>
+   578→      </div>
+   579→
+   580→      {/* Table Card */}
+   581→      <SolidCard className="!p-0 overflow-hidden">
+   582→        {loading ? (
+   583→          <LoadingSpinner />
+   584→        ) : filteredDeals.length === 0 ? (
+   585→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   586→            <CheckCircle className="mb-3 h-10 w-10 text-primary" />
+   587→            <p className="text-sm font-semibold text-foreground">
+   588→              কোনো ডিল পাওয়া যায়নি
+   589→            </p>
+   590→            <p className="mt-1 text-xs text-muted-foreground">
+   591→              এই ফিল্টারে কোনো ডিল নেই
+   592→            </p>
+   593→          </div>
+   594→        ) : (
+   595→          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+   596→            <table className="w-full text-sm min-w-[700px]">
+   597→              <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+   598→                <tr className="border-b border-border bg-muted/30">
+   599→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   600→                    ডিল আইডি
+   601→                  </th>
+   602→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   603→                    ক্রেতা
+   604→                  </th>
+   605→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   606→                    বিক্রেতা
+   607→                  </th>
+   608→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   609→                    শিরোনাম
+   610→                  </th>
+   611→                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   612→                    পরিমাণ
+   613→                  </th>
+   614→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   615→                    স্ট্যাটাস
+   616→                  </th>
+   617→                </tr>
+   618→              </thead>
+   619→              <tbody>
+   620→                {filteredDeals.map((deal) => {
+   621→                  const shortId =
+   622→                    deal.id.length > 10
+   623→                      ? 'DL-' + deal.id.slice(-5)
+   624→                      : deal.id;
+   625→                  const buyerName = deal.buyer?.name || '—';
+   626→                  const sellerName = deal.seller?.name || 'অনির্ধারিত';
+   627→
+   628→                  return (
+   629→                    <tr
+   630→                      key={deal.id}
+   631→                      className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0"
+   632→                    >
+   633→                      <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+   634→                        {shortId}
+   635→                      </td>
+   636→                      <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
+   637→                        {buyerName}
+   638→                      </td>
+   639→                      <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+   640→                        {sellerName}
+   641→                      </td>
+   642→                      <td className="px-5 py-4 text-foreground max-w-[160px] truncate">
+   643→                        {deal.title}
+   644→                      </td>
+   645→                      <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+   646→                        ৳{deal.amount.toLocaleString('bn-BD')}
+   647→                      </td>
+   648→                      <td className="px-5 py-4 text-center whitespace-nowrap">
+   649→                        <StatusBadge status={deal.status} />
+   650→                      </td>
+   651→                    </tr>
+   652→                  );
+   653→                })}
+   654→              </tbody>
+   655→            </table>
+   656→          </div>
+   657→        )}
+   658→      </SolidCard>
+   659→    </div>
+   660→  );
+   661→}
+   662→
+   663→/* ═══════════════════════════════════════════
+   664→   Panel 4: ইউজার ম্যানেজমেন্ট
+   665→   ═══════════════════════════════════════════ */
+   666→
+   667→function UsersPanel() {
+   668→  const [users, setUsers] = useState<UserRow[]>([]);
+   669→  const [loading, setLoading] = useState(true);
+   670→  const [changingRole, setChangingRole] = useState<string | null>(null);
+   671→  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+   672→
+   673→  const fetchUsers = useCallback(async () => {
+   674→    try {
+   675→      const res = await fetch('/api/admin/users');
+   676→      if (res.ok) {
+   677→        const data = await res.json();
+   678→        setUsers(data);
+   679→      }
+   680→    } catch {
+   681→      // silent
+   682→    } finally {
+   683→      setLoading(false);
+   684→    }
+   685→  }, []);
+   686→
+   687→  useEffect(() => {
+   688→    fetchUsers();
+   689→  }, [fetchUsers]);
+   690→
+   691→  const handleChangeRole = async (userId: string, action: string, value?: string | boolean) => {
+   692→    setChangingRole(userId);
+   693→    try {
+   694→      const res = await fetch('/api/admin/users/role', {
+   695→        method: 'POST',
+   696→        headers: { 'Content-Type': 'application/json' },
+   697→        body: JSON.stringify({ userId, action, value }),
+   698→      });
+   699→      if (res.ok) {
+   700→        toast.success('ভূমিকা সফলভাবে পরিবর্তন হয়েছে');
+   701→        fetchUsers();
+   702→      } else {
+   703→        toast.error('ভূমিকা পরিবর্তন ব্যর্থ হয়েছে');
+   704→      }
+   705→    } catch {
+   706→      toast.error('সার্ভারে সমস্যা');
+   707→    } finally {
+   708→      setChangingRole(null);
+   709→      setOpenDropdown(null);
+   710→    }
+   711→  };
+   712→
+   713→  return (
+   714→    <div>
+   715→      {/* Header */}
+   716→      <div className="mb-5">
+   717→        <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   718→          <Users className="h-5 w-5 text-primary" />
+   719→          ইউজার ম্যানেজমেন্ট
+   720→        </h2>
+   721→        <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
+   722→          সকল নিবন্ধিত ইউজারের তালিকা ও ব্যবস্থাপনা
+   723→        </p>
+   724→      </div>
+   725→
+   726→      {/* Table Card */}
+   727→      <SolidCard className="!p-0 overflow-hidden">
+   728→        {loading ? (
+   729→          <LoadingSpinner />
+   730→        ) : users.length === 0 ? (
+   731→          <div className="flex flex-col items-center justify-center py-16 text-center">
+   732→            <Users className="mb-3 h-10 w-10 text-muted-foreground" />
+   733→            <p className="text-sm font-semibold text-foreground">
+   734→              কোনো ইউজার নেই
+   735→            </p>
+   736→            <p className="mt-1 text-xs text-muted-foreground">
+   737→              এখনো কোনো ইউজার নিবন্ধন করেনি
+   738→            </p>
+   739→          </div>
+   740→        ) : (
+   741→          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+   742→            <table className="w-full text-sm min-w-[700px]">
+   743→              <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+   744→                <tr className="border-b border-border bg-muted/30">
+   745→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   746→                    নাম
+   747→                  </th>
+   748→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   749→                    ইমেইল
+   750→                  </th>
+   751→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   752→                    মোবাইল
+   753→                  </th>
+   754→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   755→                    ভূমিকা
+   756→                  </th>
+   757→                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   758→                    নিবন্ধনের তারিখ
+   759→                  </th>
+   760→                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   761→                    অ্যাকশন
+   762→                  </th>
+   763→                </tr>
+   764→              </thead>
+   765→              <tbody>
+   766→                {users.map((u) => {
+   767→                  const isChanging = changingRole === u.id;
+   768→                  const isOpen = openDropdown === u.id;
+   769→
+   770→                  return (
+   771→                    <tr
+   772→                      key={u.id}
+   773→                      className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0"
+   774→                    >
+   775→                      <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">
+   776→                        {u.name}
+   777→                      </td>
+   778→                      <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+   779→                        {u.email}
+   780→                      </td>
+   781→                      <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">
+   782→                        {u.phone}
+   783→                      </td>
+   784→                      <td className="px-5 py-4 text-center whitespace-nowrap">
+   785→                        <RoleBadge isAdmin={u.isAdmin} isSeller={u.isSeller} adminRole={u.adminRole} />
+   786→                      </td>
+   787→                      <td className="px-5 py-4 text-muted-foreground whitespace-nowrap text-xs">
+   788→                        {new Date(u.createdAt).toLocaleDateString('bn-BD', {
+   789→                          year: 'numeric',
+   790→                          month: 'short',
+   791→                          day: 'numeric',
+   792→                        })}
+   793→                      </td>
+   794→                      <td className="px-5 py-4 text-center whitespace-nowrap">
+   795→                        <div className="relative inline-block">
+   796→                          <Button
+   797→                            size="sm"
+   798→                            variant="outline"
+   799→                            disabled={isChanging}
+   800→                            onClick={() =>
+   801→                              setOpenDropdown(isOpen ? null : u.id)
+   802→                            }
+   803→                            className="h-9 gap-1.5 rounded-lg text-xs font-medium"
+   804→                          >
+   805→                            {isChanging ? (
+   806→                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+   807→                            ) : (
+   808→                              <Settings className="h-3.5 w-3.5" />
+   809→                            )}
+   810→                            পরিবর্তন
+   811→                            <ChevronDown className="h-3 w-3" />
+   812→                          </Button>
+   813→                          {isOpen && (
+   814→                            <motion.div
+   815→                              initial={{ opacity: 0, y: -4 }}
+   816→                              animate={{ opacity: 1, y: 0 }}
+   817→                              className="absolute right-0 top-full z-20 mt-1 min-w-[160px] rounded-xl border border-border bg-white p-1.5 shadow-lg dark:bg-zinc-800"
+   818→                            >
+   819→                              {/* Toggle Seller */}
+   820→                              <button
+   821→                                onClick={() => handleChangeRole(u.id, 'set_seller', !u.isSeller)}
+   822→                                disabled={isChanging}
+   823→                                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+   824→                                  u.isSeller
+   825→                                    ? 'bg-primary/10 text-primary'
+   826→                                    : 'text-foreground hover:bg-muted'
+   827→                                } disabled:opacity-50`}
+   828→                              >
+   829→                                <RoleBadge isAdmin={false} isSeller={!u.isSeller} adminRole={null} />
+   830→                                {u.isSeller ? 'সেলার সরান' : 'সেলার করুন'}
+   831→                              </button>
+   832→
+   833→                              {/* Divider */}
+   834→                              <div className="my-1 h-px bg-border/50" />
+   835→
+   836→                              {/* Set as Support Admin */}
+   837→                              <button
+   838→                                onClick={() => handleChangeRole(u.id, 'set_admin', 'support')}
+   839→                                disabled={u.isAdmin || isChanging}
+   840→                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
+   841→                              >
+   842→                                <RoleBadge isAdmin={!u.isAdmin} isSeller={false} adminRole="support" />
+   843→                                সাপোর্ট অ্যাডমিন
+   844→                              </button>
+   845→
+   846→                              {/* Set as Super Admin */}
+   847→                              <button
+   848→                                onClick={() => handleChangeRole(u.id, 'set_admin', 'super_admin')}
+   849→                                disabled={u.isAdmin || isChanging}
+   850→                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
+   851→                              >
+   852→                                <RoleBadge isAdmin={!u.isAdmin} isSeller={false} adminRole="super_admin" />
+   853→                                সুপার অ্যাডমিন
+   854→                              </button>
+   855→
+   856→                              {/* Remove Admin */}
+   857→                              {u.isAdmin && (
+   858→                                <button
+   859→                                  onClick={() => handleChangeRole(u.id, 'remove_admin')}
+   860→                                  disabled={isChanging}
+   861→                                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50"
+   862→                                >
+   863→                                  <XCircle className="h-3.5 w-3.5" />
+   864→                                  অ্যাডমিন সরান
+   865→                                </button>
+   866→                              )}
+   867→                            </motion.div>
+   868→                          )}
+   869→                        </div>
+   870→                      </td>
+   871→                    </tr>
+   872→                  );
+   873→                })}
+   874→              </tbody>
+   875→            </table>
+   876→          </div>
+   877→        )}
+   878→      </SolidCard>
+   879→    </div>
+   880→  );
+   881→}
+   882→
+   883→/* ═══════════════════════════════════════════
+   884→   Panel 5: ওয়েবসাইট সেটিংস
+   885→   ═══════════════════════════════════════════ */
+   886→
+   887→function SettingsPanel() {
+   888→  const [settings, setSettings] = useState<PlatformSettings>({
+   889→    platform_name: '',
+   890→    fee_percentage: '',
+   891→    min_deal_amount: '',
+   892→    max_deal_amount: '',
+   893→    support_number: '',
+   894→  });
+   895→  const [loading, setLoading] = useState(true);
+   896→  const [saving, setSaving] = useState(false);
+   897→
+   898→  useEffect(() => {
+   899→    const fetchSettings = async () => {
+   900→      try {
+   901→        const res = await fetch('/api/admin/settings');
+   902→        if (res.ok) {
+   903→          const data = await res.json();
+   904→          setSettings(data);
+   905→        }
+   906→      } catch {
+   907→        // silent
+   908→      } finally {
+   909→        setLoading(false);
+   910→      }
+   911→    };
+   912→    fetchSettings();
+   913→  }, []);
+   914→
+   915→  const handleSave = async () => {
+   916→    setSaving(true);
+   917→    try {
+   918→      const res = await fetch('/api/admin/settings', {
+   919→        method: 'POST',
+   920→        headers: { 'Content-Type': 'application/json' },
+   921→        body: JSON.stringify(settings),
+   922→      });
+   923→      if (res.ok) {
+   924→        toast.success('সেটিংস সফলভাবে সংরক্ষণ হয়েছে');
+   925→      } else {
+   926→        toast.error('সেটিংস সংরক্ষণ ব্যর্থ হয়েছে');
+   927→      }
+   928→    } catch {
+   929→      toast.error('সার্ভারে সমস্যা');
+   930→    } finally {
+   931→      setSaving(false);
+   932→    }
+   933→  };
+   934→
+   935→  const fields: {
+   936→    key: keyof PlatformSettings;
+   937→    label: string;
+   938→    type: string;
+   939→    placeholder: string;
+   940→  }[] = [
+   941→    {
+   942→      key: 'platform_name',
+   943→      label: 'প্ল্যাটফর্মের নাম',
+   944→      type: 'text',
+   945→      placeholder: 'আমার ডিল',
+   946→    },
+   947→    {
+   948→      key: 'fee_percentage',
+   949→      label: 'ফি শতাংশ (%)',
+   950→      type: 'number',
+   951→      placeholder: '৩',
+   952→    },
+   953→    {
+   954→      key: 'min_deal_amount',
+   955→      label: 'ন্যূনতম ডিল পরিমাণ (৳)',
+   956→      type: 'number',
+   957→      placeholder: '১০০',
+   958→    },
+   959→    {
+   960→      key: 'max_deal_amount',
+   961→      label: 'সর্বোচ্চ ডিল পরিমাণ (৳)',
+   962→      type: 'number',
+   963→      placeholder: '১০০০০০০',
+   964→    },
+   965→    {
+   966→      key: 'support_number',
+   967→      label: 'সাপোর্ট নাম্বার',
+   968→      type: 'text',
+   969→      placeholder: '০১৭০০০০০০০০',
+   970→    },
+   971→  ];
+   972→
+   973→  if (loading) return <LoadingSpinner />;
+   974→
+   975→  return (
+   976→    <div>
+   977→      {/* Header */}
+   978→      <div className="mb-5">
+   979→        <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   980→          <Settings className="h-5 w-5 text-primary" />
+   981→          ওয়েবসাইট সেটিংস
+   982→        </h2>
+   983→        <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
+   984→          এসক্রো প্ল্যাটফর্মের সাধারণ কনফিগারেশন
+   985→        </p>
+   986→      </div>
+   987→
+   988→      {/* Settings Form Card */}
+   989→      <motion.div
+   990→        initial={{ opacity: 0, y: 16 }}
+   991→        animate={{ opacity: 1, y: 0 }}
+   992→      >
+   993→        <SolidCard>
+   994→          <div className="space-y-5">
+   995→            {fields.map((field) => (
+   996→              <div
+   997→                key={field.key}
+   998→                className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center"
+   999→              >
+  1000→                <Label
+  1001→                  htmlFor={field.key}
+  1002→                  className="text-sm font-medium text-foreground text-center sm:text-left"
+  1003→                >
+  1004→                  {field.label}
+  1005→                </Label>
+  1006→                <Input
+  1007→                  id={field.key}
+  1008→                  type={field.type}
+  1009→                  value={settings[field.key]}
+  1010→                  onChange={(e) =>
+  1011→                    setSettings({ ...settings, [field.key]: e.target.value })
+  1012→                  }
+  1013→                  placeholder={field.placeholder}
+  1014→                  className="max-w-sm"
+  1015→                />
+  1016→              </div>
+  1017→            ))}
+  1018→          </div>
+  1019→
+  1020→          <div className="mt-8 flex justify-center sm:justify-end">
+  1021→            <Button
+  1022→              onClick={handleSave}
+  1023→              disabled={saving}
+  1024→              className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
+  1025→            >
+  1026→              {saving ? (
+  1027→                <Loader2 className="h-4 w-4 animate-spin" />
+  1028→              ) : (
+  1029→                <Save className="h-4 w-4" />
+  1030→              )}
+  1031→              সেটিংস সংরক্ষণ করুন
+  1032→            </Button>
+  1033→          </div>
+  1034→        </SolidCard>
+  1035→      </motion.div>
+  1036→    </div>
+  1037→  );
+  1038→}
+  1039→
+  1040→/* ═══════════════════════════════════════════
+  1041→   Panel Router
+  1042→   ═══════════════════════════════════════════ */
+  1043→
+  1044→function AdminPanelContent({ panel }: { panel: AdminPanel }) {
+  1045→  switch (panel) {
+  1046→    case 'payment-verify':
+  1047→      return <PaymentVerifyPanel />;
+  1048→    case 'payment-methods':
+  1049→      return <PaymentMethodsPanel />;
+  1050→    case 'fee-rules':
+  1051→      return <FeeRulesPanel />;
+  1052→    case 'all-deals':
+  1053→      return <AllDealsPanel />;
+  1054→    case 'users':
+  1055→      return <UsersPanel />;
+  1056→    case 'settings':
+  1057→      return <SettingsPanel />;
+  1058→    default:
+  1059→      return null;
+  1060→  }
+  1061→}
+  1062→
+  1063→/* ═══════════════════════════════════════════
+  1064→   Admin Main (Exported)
+  1065→   ═══════════════════════════════════════════ */
+  1066→
+  1067→export function AdminMain() {
+  1068→  const { adminPanel, user } = useAppStore();
+  1069→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  1070→
+  1071→  if (!mounted) return null;
+  1072→
+  1073→  return (
+  1074→    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+  1075→      {/* ── Top Bar ── */}
+  1076→      <div className="mb-6 flex items-center justify-between">
+  1077→        <div className="text-center lg:text-left">
+  1078→          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center justify-center lg:justify-start gap-2">
+  1079→            <span className="text-primary">আমার ডিল</span>
+  1080→            <span className="text-muted-foreground font-normal text-base">
+  1081→              — অ্যাডমিন প্যানেল
+  1082→            </span>
+  1083→          </h1>
+  1084→          <p className="mt-0.5 text-sm text-muted-foreground">
+  1085→            এসক্রো ম্যানেজমেন্ট ড্যাশবোর্ড
+  1086→          </p>
+  1087→        </div>
+  1088→        <div className="flex items-center gap-2">
+  1089→          {/* Notification Bell */}
+  1090→          <button
+  1091→            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+  1092→            aria-label="নোটিফিকেশন"
+  1093→          >
+  1094→            <Bell className="h-5 w-5" />
+  1095→            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
+  1096→          </button>
+  1097→          {/* Admin Avatar */}
+  1098→          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
+  1099→            {user?.name?.charAt(0) || 'অ'}
+  1100→          </div>
+  1101→        </div>
+  1102→      </div>
+  1103→
+  1104→      {/* ── Stats Cards (Dashboard only) ── */}
+  1105→      {adminPanel === 'dashboard' && (
+  1106→        <div className="mb-6">
+  1107→          <DashboardStatsPanel />
+  1108→        </div>
+  1109→      )}
+  1110→
+  1111→      {/* ── Panel Content ── */}
+  1112→      <AdminPanelContent panel={adminPanel} />
+  1113→    </div>
+  1114→  );
+  1115→}

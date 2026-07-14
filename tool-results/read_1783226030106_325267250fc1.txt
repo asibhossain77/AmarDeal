@@ -1,0 +1,780 @@
+     1→---
+     2→Task ID: 1
+     3→Agent: Main Agent
+     4→Task: Create Bengali Escrow Landing Page (আমাদের ডিল)
+     5→
+     6→Work Log:
+     7→- Read existing project structure, package.json, layout.tsx, globals.css, tailwind.config.ts
+     8→- Updated globals.css with Tiya green (টিয়া কালার) color theme using oklch color space - soft muted green for both light and dark modes
+     9→- Updated layout.tsx to use Hind Siliguri Google Bengali font, added ThemeProvider from next-themes, set lang="bn"
+    10→- Created src/components/landing/navbar.tsx - Sticky navbar with brand logo (Shield icon + আমাদের ডিল), nav links (কিভাবে কাজ করে, নিরাপত্তা, ফি), theme toggle (Sun/Moon), and লগইন/রেজিস্টার button. Mobile hamburger menu using Sheet component.
+    11→- Created src/components/landing/hero.tsx - Hero section with badge, bold Bengali headline "অনলাইনে নিরাপদে লেনদেন করুন", description, dual CTA buttons, and stats row (১০,০০০+ সফল লেনদেন, ৯৯.৯% নিরাপত্তা হার, ২৪/৭ সাপোর্ট). Framer motion animations.
+    12→- Created src/components/landing/how-it-works.tsx - 3-step grid with ০১/০২/০৩ numbering, icons (FileText, Wallet, CheckCircle), Bengali titles and descriptions. Connector lines on desktop. Staggered animation.
+    13→- Created src/components/landing/trust-security.tsx - 6 feature cards in a grid: এন্ড-টু-এন্ড এনক্রিপশন, স্বচ্ছ লেনদেন প্রক্রিয়া, যাচাইকৃত ব্যবহারকারী, নিয়ন্ত্রিত অর্থ প্রদান, দ্রুত বিরোধ নিষ্পত্তি, অর্থ ফেরতের গ্যারান্টি. Staggered animation.
+    14→- Created src/components/landing/footer.tsx - Simple footer with brand, description, সেবা/কোম্পানি link columns, separator, and copyright text.
+    15→- Updated page.tsx to assemble all components with min-h-screen flex layout for sticky footer.
+    16→- Fixed useState → useEffect bug in ThemeToggle.
+    17→- Verified: ESLint clean, no compilation errors, browser-tested light mode, dark mode, mobile viewport, mobile hamburger menu.
+    18→
+    19→Stage Summary:
+    20→- Complete Bengali escrow landing page with 5 sections: Navbar, Hero, How it Works, Trust & Security, Footer
+    21→- Tiya green (টিয়া কালার) theme applied throughout with full light/dark mode support
+    22→- Hind Siliguri Bengali font integrated
+    23→- All Lucide React icons, no emojis
+    24→- Fully responsive (mobile hamburger menu, responsive grids)
+    25→- Framer motion scroll-triggered animations
+    26→- Sticky footer with natural push behavior
+    27→
+    28→---
+    29→Task ID: 2
+    30→Agent: Main Agent
+    31→Task: Redesign Bengali Escrow Landing Page as "আমার ডিল" with parrot green theme and 2-column hero
+    32→
+    33→Work Log:
+    34→- Read all 8 existing component files to understand current state
+    35→- Rewrote globals.css: replaced soft Tiya green with vibrant parrot green (oklch 0.868 0.277 131 ≈ #A3E635). Light mode: pure white/slate-50 bg, dark text. Dark mode: zinc-950 deep black bg, white text. Added glow utilities (glow-lime, glow-text-lime, glow-bg-lime) for dark mode luminous effects.
+    36→- Updated layout.tsx: changed all metadata from "আমাদের ডিল" to "আমার ডিল"
+    37→- Rewrote navbar.tsx: new logo is a rounded green square with Bengali "আ" character in white + "আমার ডিল" bold text. Single nav link "বৈশিষ্ট্য". Button "লগইন / নিবন্ধন". Minimalist theme toggle (Sun/Moon). Fixed React 19 lint error by replacing useState+useEffect with useSyncExternalStore for mounted detection. Mobile hamburger menu with Sheet component.
+    38→- Rewrote hero.tsx: 2-column CSS grid layout. Text content column (Right on desktop / TOP on mobile via order-1 md:order-2). Escrow status card column (Left on desktop / BOTTOM on mobile via order-2 md:order-1). Badge: "নিরাপদ অনলাইন লেনদেন" with pinging green dot. Heading: "আপনার টাকা," + "আমাদের দায়িত্ব" in parrot green. Subtitle about escrow service. Primary CTA "এখনই শুরু করুন" with glow shadow + secondary "আরও জানুন". Escrow card: rounded-2xl with shadow-2xl, header "এসক্রো স্ট্যাটাস" + "সুরক্ষিত" pill, 3-step progress (green/teal/lime badges), ৳৫০,০০০.০₀ amount display. Background: two large soft radial blur-3xl circles of parrot green at 4-7% opacity.
+    39→- Updated how-it-works.tsx: adapted colors, added dark:glow-lime hover effect
+    40→- Updated trust-security.tsx: adapted colors, added dark:glow-lime hover effect
+    41→- Rewrote footer.tsx: "আ" logo + "আমার ডিল" branding, link columns, copyright
+    42→- Verified: ESLint clean (0 errors), dev server no errors, browser-verified desktop light mode, desktop dark mode, mobile dark mode, mobile hamburger menu, column ordering on mobile (text top, card bottom)
+    43→
+    44→Stage Summary:
+    45→- Complete redesign with parrot green (#A3E635) color system for light and dark modes
+    46→- Brand changed to "আমার ডিল" with custom "আ" logo character
+    47→- 2-column hero with proper mobile-first responsive ordering (CSS order classes)
+    48→- Escrow status card with 3-step progress visualization and amount display
+    49→- Dark mode features glowing lime accents via custom CSS utility classes
+    50→- All verified in browser: desktop, mobile, light mode, dark mode, interactions
+    51→---
+    52→Task ID: 3
+    53→Agent: Main Agent
+    54→Task: Refine light mode background and add glassmorphism to escrow card
+    55→
+    56→Work Log:
+    57→- Changed light mode --background from oklch(0.995) (pure white) to oklch(0.975) (zinc-50 / #F8F9FA) for softer, less harsh appearance
+    58→- Replaced escrow card solid background with glassmorphism: bg-white/70 backdrop-blur-md border-white/20 for light mode, bg-zinc-900/70 backdrop-blur-md border-white/10 for dark mode
+    59→- Verified: ESLint clean, zero errors in dev log, browser-tested light mode, dark mode, and mobile viewport with correct column ordering
+    60→
+    61→Stage Summary:
+    62→- Light mode background is now a muted off-white (zinc-50 / #F8F9FA) reducing glare
+    63→- Escrow Status Card has premium glassmorphism with backdrop-blur and semi-transparent backgrounds
+    64→- All three modes verified: desktop light, desktop dark, mobile dark
+    65→---
+    66→Task ID: 3
+    67→Agent: main
+    68→Task: Create New Deal Creation Form & Escrow Workflow Tracker
+    69→
+    70→Work Log:
+    71→- Updated Zustand store with `dashboardPanel` ('overview'|'new-deal'|'deal-detail') and `activeDeal` state
+    72→- Created `/api/deals/create` API route for deal creation with Prisma
+    73→- Created `new-deal-form.tsx` with 6 Bengali-labeled fields, custom dropdown selects, glassmorphic card, and green gradient blob
+    74→- Created `deal-workflow-tracker.tsx` with 6-step progress: horizontal timeline (desktop) and vertical stepper (mobile)
+    75→- Step 3 (অ্যাডমিন পেমেন্ট যাচাই) has pulsing ring animation when active
+    76→- Updated `dashboard-main.tsx` to use panel-based rendering (overview, new-deal, deal-detail)
+    77→- Connected "নতুন ডিল তৈরি করুন" button to open the new deal form
+    78→- Updated sidebar "আমার ডিল" to navigate to deal tracker when activeDeal exists
+    79→
+    80→Stage Summary:
+    81→- All views verified via browser: form (desktop/mobile/dark), workflow tracker (desktop/mobile/dark)
+    82→- Deal creation API working (200, DB insert confirmed)
+    83→- 6-step tracker: steps 1-2 completed (green), step 3 active (pulsing animation), steps 4-6 pending
+    84→- Mobile: form fields centered, vertical stepper with connecting lines and status labels
+    85→- Dark mode: glassmorphism with glow-lime effects on cards
+    86→---
+    87→Task ID: 5
+    88→Agent: full-stack-developer (Admin APIs)
+    89→Task: Create admin API routes for users, settings, stats
+    90→
+    91→Work Log:
+    92→- Read existing admin API routes (deals, verify, reject), schema.prisma, and db.ts to understand patterns
+    93→- Found pre-existing files for all 4 routes; rewrote them to match exact specifications
+    94→- `/api/admin/users/route.ts` — GET all users (id, name, email, phone, role, createdAt) ordered by newest first
+    95→- `/api/admin/users/role/route.ts` — POST to change user role; validates userId/role presence and user existence; returns Bengali success message "ইউজারের ভূমিকা সফলভাবে পরিবর্তন করা হয়েছে"
+    96→- `/api/admin/settings/route.ts` — GET returns hardcoded defaults { feePercent: 2.5, platformName: "আমার ডিল", minDealAmount: 100, maxDealAmount: 10000000, supportPhone: "০১XXXXXXXXX" }; POST accepts settings body and returns success (no DB persistence)
+    97→- `/api/admin/stats/route.ts` — GET returns { totalDeals, pendingDeals (status='created'), completedDeals, totalUsers, totalAmount } via parallel Prisma queries
+    98→- All routes use NextRequest/NextResponse from next/server, Bengali error messages, try/catch error handling
+    99→- Removed dependency on non-existent PlatformSetting model from settings route
+   100→- ESLint clean, dev server compiled with no errors
+   101→
+   102→Stage Summary:
+   103→- 4 admin API routes created/updated following existing codebase patterns
+   104→- Settings route simplified to in-memory defaults (no DB table needed)
+   105→- Stats route now returns completedDeals count and uses status='created' for pending
+   106→- All error messages in Bengali
+   107→---
+   108→Task ID: 4
+   109→Agent: full-stack-developer (Admin Panels)
+   110→Task: Complete admin panel with real data panels
+   111→
+   112→Work Log:
+   113→- Added PlatformSetting model to prisma/schema.prisma (key-value config store)
+   114→- Pushed schema to SQLite database via `bun run db:push`
+   115→- Updated /api/admin/deals to include seller relation in response
+   116→- Created /api/admin/stats/route.ts — GET returns totalDeals, pendingVerification, totalUsers, totalTransactions
+   117→- Created /api/admin/users/route.ts — GET returns all users with id, name, email, phone, role, createdAt
+   118→- Created /api/admin/users/role/route.ts — POST accepts userId + role to update user role
+   119→- Created /api/admin/settings/route.ts — GET returns platform settings, POST upserts all settings
+   120→- Rewrote admin-main.tsx replacing all PlaceholderPanel components:
+   121→  - DashboardStatsPanel: fetches /api/admin/stats, renders 4 animated stat cards (Handshake, ShieldCheck, Users, Wallet)
+   122→  - AllDealsPanel: fetches /api/admin/deals, filter tabs (সকল/পেন্ডিং/ভেরিফাইড/ডেলিভারি/সম্পন্ন), search by title, color-coded status badges
+   123→  - UsersPanel: fetches /api/admin/users, role badges (slate/primary/red), inline role change dropdown, POSTs to /api/admin/users/role
+   124→  - SettingsPanel: fetches /api/admin/settings, 5 form fields in white card, save button POSTs back
+   125→  - PaymentVerifyPanel: kept exactly as existing (unchanged)
+   126→- All cards use bg-white shadow-lg rounded-2xl dark:bg-zinc-900
+   127→- shadcn/ui components: Button, Badge, Input, Label
+   128→- Lucide icons throughout, no emojis
+   129→- Framer motion animations on cards and table rows
+   130→- useSyncExternalStore hydration pattern
+   131→- Toast notifications from sonner for success/error
+   132→- ESLint clean, dev server compiling without errors
+   133→
+   134→Stage Summary:
+   135→- 4 new API routes created (stats, users, users/role, settings GET+POST)
+   136→- 4 real functional admin panels replacing all placeholders
+   137→- Dashboard shows live stats from database
+   138→- All Deals panel with status filtering and search
+   139→- Users panel with inline role management dropdown
+   140→- Settings panel with saveable configuration form
+   141→- Mobile responsive, dark mode compatible, Bengali text throughout
+   142→---
+   143→Task ID: 3
+   144→Agent: full-stack-developer (Seller Dashboard)
+   145→Task: Build seller dashboard components
+   146→
+   147→Work Log:
+   148→- Read 6 existing architecture files: store.ts, dashboard-view.tsx, dashboard-sidebar.tsx, dashboard-main.tsx, new-deal-form.tsx, deal-workflow-tracker.tsx
+   149→- Created /home/z/my-project/src/components/seller/ directory
+   150→- Created seller-view.tsx: same structure as dashboard-view with SellerSidebar + SellerMain, lg:pl-64 layout, useSyncExternalStore hydration guard
+   151→- Created seller-sidebar.tsx: 4 nav items (ড্যাশবোর্ড, ইনকামিং ডিল, চলমান ডিল, আমার পণ্য) mapping to SellerPanel state, NO admin panel button, user info + logout at bottom, white bg sidebar with AnimatePresence mobile overlay
+   152→- Created seller-main.tsx with 4 panels:
+   153→  - overview: top bar (menu + greeting + bell + avatar), 3 stat cards (ইনকামিং ডিল ৩, চলমান ডিল ২, মোট আয় ৳২,৮২,৫০০), recent incoming deals table (4 rows with ডিল আইডি/ক্রেতা/শিরোনাম/পরিমাণ/অবস্থা), quick action card with "ডেলিভারি আপডেট করুন" button
+   154→  - incoming-deals: title/subtitle, 3 deal cards with buyer name/title/amount/date, "গ্রহণ করুন" (accept) and "প্রত্যাখ্যান করুন" (reject) buttons with toast notifications
+   155→  - active-deals: table with ডিল আইডি/শিরোনাম/পরিমাণ/স্ট্যাটাস/অ্যাকশন, 2 mock deals (verified + delivery in progress), "ডেলিভারি কনফার্ম করুন" button on delivery-status deal
+   156→  - my-products: title/subtitle + "নতুন পণ্য যোগ করুন" button, 3-column grid (1 mobile) of 4 product cards (আইফোন ১৫, ম্যাকবুক, এয়ারপডস, অ্যাপল ওয়াচ), each with name/price/status badge/সম্পাদনা button
+   157→- All cards use solid white bg (bg-white shadow-lg rounded-2xl dark:bg-zinc-900), no glassmorphism
+   158→- ESLint clean, dev server compiled without errors
+   159→
+   160→Stage Summary:
+   161→- 3 seller dashboard components created: seller-view.tsx, seller-sidebar.tsx, seller-main.tsx
+   162→- 4 functional panels: overview, incoming-deals, active-deals, my-products
+   163→- Solid white card styling throughout (no glassmorphism)
+   164→- Bengali text, shadcn/ui components, Lucide icons, Framer motion animations
+   165→- Toast notifications from sonner for accept/reject/edit actions
+   166→- Mobile responsive with text-center/text-left patterns, mobile menu button, AnimatePresence sidebar overlay
+   167→
+   168→---
+   169→Task ID: 4
+   170→Agent: Main Agent
+   171→Task: Remove admin from user dashboard + Redesign Admin Dashboard
+   172→
+   173→Work Log:
+   174→- Removed admin panel link from user dashboard sidebar (was between nav items and user info section)
+   175→- Admin link already removed from navbar mobile menu in previous session
+   176→- Updated Zustand store: added 'seller' to AppView type, fixed seller routing to 'seller' view instead of 'dashboard'
+   177→- Imported SellerView in page.tsx, added seller view rendering
+   178→- Removed unused AppView import from dashboard-sidebar.tsx
+   179→- Completely rewrote admin-sidebar.tsx: clean sidebar with 5 nav items (ড্যাশবোর্ড, পেমেন্ট ভেরিফিকেশন, সকল ডিল, ইউজার ম্যানেজমেন্ট, ওয়েবসাইট সেটিংস), ADMIN PANEL badge, user info section, logout button, responsive mobile drawer with Framer Motion
+   180→- Completely rewrote admin-main.tsx: 3 solid stats cards (মোট ডিল, পেন্ডিং ভেরিফিকেশন, মোট লেনদেন ৳), payment verification table with verify/reject buttons, all-deals table with filter tabs and search, user management with role dropdown, platform settings form
+   181→- Fixed AdminStats interface to match API response (totalDeals, pendingDeals, totalAmount)
+   182→- All panels use SolidCard helper (bg-white dark:bg-zinc-900 shadow-lg rounded-2xl)
+   183→- Header shows "আমার ডিল — অ্যাডমিন প্যানেল" with notification bell and admin avatar
+   184→- Browser verified: admin login works, 3 stats cards render, sidebar nav works, mobile drawer works, user dashboard has NO admin link
+   185→- ESLint: 0 errors
+   186→
+   187→Stage Summary:
+   188→- Admin panel is now a separate view accessible ONLY via admin@demo.com login (role='admin')
+   189→- Regular users and sellers see no admin panel link anywhere
+   190→- 3 stats cards: মোট ডিল, পেন্ডিং ভেরিফিকেশন, মোট লেনদেন
+   191→- Payment verification table with green "পেমেন্ট ভেরিফাই করুন" and red "রিজেক্ট করুন" buttons
+   192→- Seller view routing fixed: sellers now see SellerView (not DashboardView)
+   193→- Demo accounts: admin@demo.com/admin123, seller@demo.com/seller123, buyer@demo.com/buyer123
+   194→---
+   195→Task ID: 6
+   196→Agent: full-stack-developer (user-payment-view)
+   197→Task: Build User Payment View with method selection grid and confirm flow
+   198→
+   199→Work Log:
+   200→- Created /home/z/my-project/src/components/dashboard/user-payment-view.tsx
+   201→- Implemented method selection grid (2x2 desktop, 1 col mobile) with dynamic theme color border highlight and background tint
+   202→- Implemented payment instructions with dynamic theme color (border-l-4, amount/fee/total display)
+   203→- Implemented sender number + TxnID inputs with icon prefixes (Phone, Hash)
+   204→- Implemented confirm payment button with theme color background, contrast text, ShieldCheck icon
+   205→- Added loading skeleton, empty state for no methods, no active deal message
+   206→- Used getContrastColor utility for accessible button text color
+   207→- Framer Motion staggered animations throughout
+   208→- ESLint clean (0 errors, 0 warnings), dev server compiled without errors
+   209→
+   210→Stage Summary:
+   211→- UserPaymentView component ready for integration into dashboard-main.tsx
+   212→- Solid white cards (bg-white dark:bg-zinc-900 shadow-lg rounded-2xl) throughout
+   213→- All text in Bengali, Lucide icons only, responsive design
+   214→- Fetches /api/payment-methods and /api/payment-settings on mount
+   215→- POSTs to /api/deals/payment on confirm
+   216→---
+   217→Task ID: 5
+   218→Agent: full-stack-developer (admin-payment-methods)
+   219→Task: Build Admin Payment Methods CRUD Panel with color picker
+   220→
+   221→Work Log:
+   222→- Created /home/z/my-project/src/components/admin/payment-methods-panel.tsx
+   223→- Implemented full CRUD table with add/edit/delete
+   224→- Implemented color picker with real-time preview
+   225→- Integrated with admin API routes
+   226→
+   227→Stage Summary:
+   228→- PaymentMethodsPanel component ready for integration into admin-main.tsx
+   229→
+   230→---
+   231→Task ID: 1
+   232→Agent: main
+   233→Task: Build Manual Payment Method Manager for আমার ডিল
+   234→
+   235→Work Log:
+   236→- Updated Prisma schema: added PaymentMethod model (id, name, accountNumber, accountType, status, sortOrder)
+   237→- Pushed schema to DB with `bun run db:push`
+   238→- Created API routes:
+   239→  - GET/POST /api/admin/payment-methods (CRUD list + create)
+   240→  - PUT/DELETE /api/admin/payment-methods/[id] (update + delete)
+   241→  - GET /api/payment-methods (public, active only)
+   242→  - GET /api/payment-settings (public, returns theme color + fee %)
+   243→  - POST /api/deals/payment (submit payment from user view)
+   244→- Rewrote /api/admin/settings to use PlatformSetting table with upsert
+   245→- Updated Zustand store: added 'payment' to DashboardPanel, 'payment-methods' to AdminPanel
+   246→- Built /src/components/admin/payment-methods-panel.tsx (full CRUD + color picker + live preview)
+   247→- Built /src/components/dashboard/user-payment-view.tsx (method selection grid, instructions, inputs, confirm button)
+   248→- Updated admin-sidebar.tsx: added "পেমেন্ট মেথড" nav item with CreditCard icon
+   249→- Updated admin-main.tsx: added PaymentMethodsPanel import and routing case
+   250→- Updated dashboard-main.tsx: added UserPaymentView import and 'payment' panel case
+   251→- Fixed accountType case mismatch (API returns lowercase, component checked Title case)
+   252→- Seeded DB with 4 default payment methods (bKash, Nagad, Rocket, Bank Transfer) and settings
+   253→
+   254→Stage Summary:
+   255→- Complete Manual Payment Method Manager system built and wired up
+   256→- Admin can CRUD payment methods, change theme color with live preview
+   257→- Users see dynamic payment view with method grid, instructions, and confirm flow
+   258→- All APIs functional, lint clean
+   259→
+   260→---
+   261→Task ID: deal-detail-component
+   262→Agent: main
+   263→Task: Create Deal Detail component with tabs, progress bar, chat, and responsive design
+   264→
+   265→Work Log:
+   266→- Rewrote /src/components/dashboard/deal-workflow-tracker.tsx completely
+   267→- Built container card with header (logo, nav links, profile section)
+   268→- Implemented 2-tab system using shadcn Tabs: "ডিলের তথ্য" and "ডিল চ্যাট"
+   269→- Tab 1 "ডিলের তথ্য": 5-step horizontal progress bar (desktop) / vertical stepper (mobile), 2x2 details grid, terms section, parrot-green "পেমেন্ট করুন" button
+   270→- Tab 2 "ডিল চ্যাট": scrollable message area with buyer (right/green), seller (left/gray), admin (center/muted) alignment, timestamps, fixed input box
+   271→- All verified via agent-browser + VLM screenshot analysis
+   272→- Lint clean, responsive verified on mobile viewport
+   273→
+   274→Stage Summary:
+   275→- DealWorkflowTracker now shows tabbed deal detail with chat capability
+   276→- Mobile: progress bar transforms to vertical stepper, grid stacks vertically
+   277→- Parrot green (#A3E635) used consistently for active steps, buyer bubbles, and CTA button
+   278→---
+   279→Task ID: 1
+   280→Agent: Main Agent
+   281→Task: Implement Deal Escrow Tracker with 5-step linear workflow
+   282→
+   283→Work Log:
+   284→- Updated prisma/schema.prisma: Added terms, paymentMethodId, senderNumber, transactionId, paymentAmount to Deal model; changed default status from "pending" to "created"
+   285→- Ran prisma generate + db push successfully
+   286→- Updated store.ts: Added DealStatus type, expanded DashboardPanel type, updated DealInfo interface with proper fields
+   287→- Created 4 new API routes:
+   288→  - POST /api/deals/deliver — seller marks delivery complete (created→payment_verified→in_delivery)
+   289→  - POST /api/deals/complete — buyer accepts delivery (in_delivery→completed)
+   290→  - POST /api/deals/dispute — buyer raises dispute (in_delivery→disputed)
+   291→  - POST /api/deals/cancel — any party cancels deal (any→cancelled)
+   292→  - GET /api/deals/[id] — fetch full deal with buyer/seller/creator relations
+   293→- Updated existing API routes:
+   294→  - POST /api/deals/payment — now stores payment details, validates status transition
+   295→  - POST /api/deals/create — stores terms, handles seller role properly
+   296→- Completely rewrote deal-workflow-tracker.tsx:
+   297→  - Dynamic 5-step tracker based on DB status (not hardcoded ACTIVE_STEP)
+   298→  - statusToActiveStep() maps DealStatus to step index 0-4
+   299→  - HorizontalStepper (desktop) and VerticalStepper (mobile) with isDisputed/isCancelled support
+   300→  - Role-based conditional action buttons:
+   301→    - Buyer + created → "পেমেন্ট করুন" button
+   302→    - Seller + payment_verified → "কাজ সম্পন্ন" + "ক্যান্সেল করুন" buttons
+   303→    - Buyer + in_delivery → "পণ্য/সার্ভিস পেয়েছি" + "বিরোধ" buttons
+   304→  - Status info boxes for waiting states (payment_pending, in_delivery for opposite role)
+   305→  - Cancelled/Rejected/Disputed visual states with red indicators
+   306→  - Completed success state with green indicator
+   307→  - Real-time DB fetch on mount, status sync back to store
+   308→- Updated new-deal-form.tsx to store real CUID deal ID in activeDeal (not DL-prefixed)
+   309→
+   310→Stage Summary:
+   311→- Full 5-step escrow tracker with linear status progression
+   312→- All status transitions validated server-side
+   313→- Role-based conditional rendering of action buttons
+   314→- Branding: parrot green #A3E635 for completed steps and primary actions
+   315→- ESLint: zero errors
+   316→---
+   317→Task ID: 1
+   318→Agent: Main Agent
+   319→Task: Update Deal Escrow Tracker logic for secure linear workflow
+   320→
+   321→Work Log:
+   322→- Read and analyzed all existing files: prisma schema, store types, deal-workflow-tracker, seller-main, admin-main, all API routes
+   323→- Identified that the DealWorkflowTracker already had correct conditional rendering logic
+   324→- Fixed admin verify API (`/api/admin/verify/route.ts`) to enforce `payment_pending` status check
+   325→- Fixed admin reject API (`/api/admin/reject/route.ts`) to enforce `payment_pending` status check  
+   326→- Fixed cancel API (`/api/deals/cancel/route.ts`) to block cancelling completed/cancelled/rejected deals
+   327→- Verified all 6 status transition APIs enforce linear workflow:
+   328→  - created → payment_pending (payment route)
+   329→  - payment_pending → payment_verified (admin verify)
+   330→  - payment_pending → rejected (admin reject)
+   331→  - payment_verified → in_delivery (seller deliver)
+   332→  - in_delivery → completed (buyer accept)
+   333→  - in_delivery → disputed (buyer dispute)
+   334→  - any → cancelled (cancel, except completed/cancelled/rejected)
+   335→- Created SellerDealTracker component for seller deal-detail view with same 5-step tracker
+   336→- Updated SellerMain to render deal-detail panel with SellerDealTracker
+   337→- Rewrote seller ActiveDealsPanel to fetch real DB data via `/api/seller/deals` API
+   338→- Updated SellerPanel type in store (removed incoming-deals)
+   339→- Updated seller sidebar nav items
+   340→- Created MyDealsPanel component with filter tabs (সকল, চলমান, সম্পন্ন) and real DB data
+   341→- Created ProfilePanel component showing user info
+   342→- Created SettingsPanel component with theme toggle and logout
+   343→- Updated DashboardMain to render my-deals, profile, settings panels
+   344→- Created `/api/seller/deals/route.ts` and `/api/user/deals/route.ts` API routes
+   345→- Verified via agent-browser on desktop (1440x900) and mobile (375x812)
+   346→
+   347→Stage Summary:
+   348→- Secure linear status progression enforced in all API routes
+   349→- Seller view shows "কাজ সম্পন্ন" + "ক্যান্সেল করুন" buttons after admin verification
+   350→- Buyer view shows "পণ্য/সার্ভিস পেয়েছি" + "বিরোধ" buttons after seller delivery
+   351→- 5-step tracker works across all views (buyer, seller, admin) with parrot green (#A3E635) highlights
+   352→- All statuses synced with database - each view fetches fresh data on mount
+   353→- Zero ESLint errors
+   354→- Agent-browser verified: MyDeals panel, seller active deals, deal tracker all rendering correctly
+   355→---
+   356→Task ID: 1
+   357→Agent: Main Agent
+   358→Task: Optimize Desktop UI layout for User and Admin Dashboards - align logo with sidebar
+   359→
+   360→Work Log:
+   361→- Read and analyzed all layout files: navbar.tsx, dashboard-sidebar.tsx, admin-sidebar.tsx, dashboard-view.tsx, admin-view.tsx, page.tsx, store.ts
+   362→- Identified the problem: Logo was duplicated (once in Navbar, once in each sidebar's brand header)
+   363→- Updated dashboard-sidebar.tsx: Added `lg:hidden` to brand header div, removed `lg:hidden` from close button (now only mobile), added `lg:pt-6` to nav for top spacing
+   364→- Updated admin-sidebar.tsx: Same changes as dashboard sidebar
+   365→- Rewrote navbar.tsx: Extracted LogoButton as reusable component, restructured layout with conditional rendering:
+   366→  - Desktop dashboard/admin: Full-width nav with logo in `w-64 pl-5` container aligned with sidebar, no `max-w-6xl`
+   367→  - Landing/auth: Preserved centered `mx-auto max-w-6xl` layout
+   368→  - Mobile: Logo always in main content area with `lg:hidden` wrapper for sidebar views
+   369→- Verified all views with agent-browser + VLM:
+   370→  - Desktop dashboard: ✅ Logo aligned with sidebar, no redundant sidebar logo
+   371→  - Desktop admin: ✅ Logo aligned with sidebar, no redundant sidebar logo
+   372→  - Landing desktop: ✅ Centered layout preserved
+   373→  - Mobile landing: ✅ Logo + hamburger, no sidebar
+   374→  - Mobile dashboard: ✅ Logo + hamburger, mobile sidebar drawer with brand header intact
+   375→
+   376→Stage Summary:
+   377→- 3 files modified: navbar.tsx, dashboard-sidebar.tsx, admin-sidebar.tsx
+   378→- Logo alignment achieved on desktop by placing logo in a `w-64` container matching sidebar width
+   379→- Mobile views remain completely unchanged
+   380→- All VLM verifications passed
+   381→---
+   382→Task ID: 2
+   383→Agent: Main Agent
+   384→Task: Fix mobile sidebar duplication for User and Admin Dashboards
+   385→
+   386→Work Log:
+   387→- Read all layout files to identify duplication: navbar.tsx had a Sheet (right), sidebar components had AnimatePresence drawers (left), dashboard-main/admin-main had separate "মেনু" buttons
+   388→- Simplified dashboard-sidebar.tsx: removed AnimatePresence mobile drawer, brand header, close button, framer-motion import — now desktop-only `<aside>`
+   389→- Simplified admin-sidebar.tsx: same treatment — desktop-only `<aside>`
+   390→- Removed duplicate "মেনু" mobile button from dashboard-main.tsx OverviewPanel (and cleaned up unused Menu import)
+   391→- Removed duplicate "মেনু" mobile button from admin-main.tsx AdminMain (and cleaned up unused Menu import)
+   392→- Rewrote navbar.tsx mobile Sheet with complete navigation:
+   393→  - Dashboard drawer: brand header with "DASHBOARD" label, CTA "নতুন ডিল তৈরি করুন", 5 nav items (ড্যাশবোর্ড, আমার ডিল, লেনদেন, প্রোফাইল, সেটিংস), user info, লগআউট
+   394→  - Admin drawer: brand header with "ADMIN PANEL" label, 6 nav items (ড্যাশবোর্ড, পেমেন্ট ভেরিফিকেশন, পেমেন্ট মেথড, সকল ডিল, ইউজার ম্যানেজমেন্ট, ওয়েবসাইট সেটিংস), user info, এক্সিট অ্যাডমিন
+   395→  - Landing drawer: brand header, বৈশিষ্ট্য link, লগইন / নিবন্ধন button
+   396→
+   397→Stage Summary:
+   398→- 5 files modified: navbar.tsx, dashboard-sidebar.tsx, admin-sidebar.tsx, dashboard-main.tsx, admin-main.tsx
+   399→- Single hamburger menu in header for all mobile views
+   400→- Mobile content area is now clean and full-width
+   401→- Desktop sidebar remains unchanged
+   402→- All VLM verifications passed on both mobile (375px) and desktop (1440px)
+   403→---
+   404→Task ID: 1
+   405→Agent: Main Agent
+   406→Task: Update global theme color from #A3E635 (lime-400) to #84CC16 (lime-500) Forest-Parrot Green
+   407→
+   408→Work Log:
+   409→- Read globals.css — found @theme inline primary already uses oklch(0.768 0.189 131) ≈ #84CC16
+   410→- Discovered glow utilities (.glow-lime, .glow-text-lime, .glow-bg-lime) still used old oklch(0.868 0.277 131) = #A3E635
+   411→- Found 7 source files with 35+ hardcoded #A3E635 hex references in inline styles and Tailwind arbitrary values
+   412→- Updated glow utilities to use oklch(0.768 0.189 131) matching the new primary
+   413→- Replaced all #A3E635 → #84CC16 in: deal-workflow-tracker.tsx, seller-deal-tracker.tsx, profile-panel.tsx, user-payment-view.tsx, payment-methods-panel.tsx, payment-settings/route.ts, admin/settings/route.ts
+   414→- Ran lint: 0 errors
+   415→- Verified with agent-browser: landing page, dashboard, profile panel, deal tracker all show rgb(132, 204, 22) = #84CC16
+   416→- Verified dark mode: same consistent #84CC16 primary
+   417→- Final grep: 0 source code files contain old #A3E635
+   418→
+   419→Stage Summary:
+   420→- All 35+ hardcoded #A3E635 references replaced with #84CC16 across 8 files
+   421→- Glow utilities updated from old bright lime to match new forest-parrot green
+   422→- Both light and dark modes render consistent #84CC16 primary color
+   423→- Zero lint errors, zero old color references in source code
+   424→---
+   425→Task ID: 1
+   426→Agent: Main Agent
+   427→Task: Fix Header and Sidebar layout for User Dashboard in "আমার ডিল"
+   428→
+   429→Work Log:
+   430→- Read and analyzed current navbar.tsx, dashboard-sidebar.tsx, admin-sidebar.tsx, dashboard-view.tsx, admin-view.tsx
+   431→- Identified issue: On desktop, header nav items stayed left instead of far-right (only one child in flex-1 container with justify-between)
+   432→- Identified sidebar misalignment: Nav items at 28px (px-3 + px-4) vs header logo at 20px (pl-5)
+   433→
+   434→Fixes Applied:
+   435→1. **navbar.tsx** — Added `lg:justify-end` to the inner flex container for sidebar views, pushing all desktop nav items (Dashboard, New Deal, Theme, Avatar, Logout) to the far right. Also added `hidden xl:inline` on Bengali text labels for responsive text hiding.
+   436→2. **dashboard-sidebar.tsx** — Changed nav container from `px-3 pt-6` to `pl-5 pr-3 pt-6` and button padding from `px-4` to `px-3`. Bottom section changed from `p-4` to `pl-5 pr-3 pt-4 pb-4`. This aligns sidebar content start at 20px matching the header logo.
+   437→3. **admin-sidebar.tsx** — Same padding alignment changes for consistency.
+   438→
+   439→Verification (Agent Browser):
+   440→- Desktop (1280×800): Logo icon at x=20px, sidebar nav items at x=20px → 0px difference (perfect alignment)
+   441→- Header nav items span from 256px to 1280px (far-right) ✓
+   442→- Mobile (iPhone 14): Hamburger menu preserved, all 5 sidebar nav items + CTA + logout in Sheet ✓
+   443→- ESLint: clean pass, no errors
+   444→
+   445→Stage Summary:
+   446→- Header: Logo far-left (w-64 pl-5), nav/profile far-right (lg:justify-end)
+   447→- Sidebar: Seamless alignment with header logo area (both at 20px from left edge)
+   448→- Mobile: Hamburger menu logic untouched and working correctly
+   449→---
+   450→Task ID: 2
+   451→Agent: Main Agent
+   452→Task: Implement robust data-fetching logic for User and Admin Dashboards
+   453→
+   454→Work Log:
+   455→- Explored codebase: Prisma schema (Deal/User models), existing API routes (admin/stats, user/deals), dashboard components (dashboard-main.tsx, admin-main.tsx)
+   456→- Discovered TanStack Query installed but not configured (no QueryClientProvider)
+   457→- Discovered DB has 17 deals with legacy statuses: "delivery", "verified" alongside standard ones
+   458→
+   459→Implementation:
+   460→1. **TanStack Query Setup** (`src/lib/query-client.tsx`):
+   461→   - Created QueryProvider with 10s staleTime, refetchOnWindowFocus, 15s auto-refresh interval
+   462→   - Wrapped app in QueryProvider inside layout.tsx ThemeProvider
+   463→
+   464→2. **API Routes**:
+   465→   - `POST /api/user/dashboard-stats`: Accepts userId, returns { activeDeals, completedDeals, totalTransactionAmount, availableBalance, heldAmount, totalBalance }. Uses 5 parallel Prisma queries.
+   466→   - `POST /api/user/recent-deals`: Returns up to 20 recent deals for the user with buyer/seller/creator includes
+   467→   - Fixed `GET /api/admin/stats`: Changed from { totalDeals, pendingDeals, totalAmount } to { totalDeals, pendingVerification, completedAmount }. Now counts only payment_pending for pending, sums only completed for total amount.
+   468→
+   469→3. **User Dashboard** (`dashboard-main.tsx`):
+   470→   - Replaced all mock data (stats array, recentDeals array, hardcoded balance)
+   471→   - Added useQuery hooks for stats and recent deals, keyed by userId
+   472→   - Added skeleton loading states: StatCardSkeleton, BalanceRowSkeleton, TableSkeleton
+   473→   - Added getDisplayStatus() mapping (handles both standard + legacy statuses: delivery, verified)
+   474→   - Empty state for no deals (with Handshake icon and CTA text)
+   475→   - Notification bell dot only shows when activeDeals > 0
+   476→   - Balance summary: separator line before total, Bengali number formatting
+   477→
+   478→4. **Admin Dashboard** (`admin-main.tsx`):
+   479→   - Replaced useState/useEffect with useQuery for DashboardStatsPanel
+   480→   - Added AdminStatCardSkeleton component
+   481→   - Updated AdminStats interface to match new API response shape
+   482→   - Skeleton loading replaces the old LoadingSpinner for stat cards
+   483→
+   484→5. **Legacy Status Handling**:
+   485→   - Added "delivery" and "verified" to status mappings in both frontend display and backend queries
+   486→   - API activeStatuses includes: created, payment_pending, payment_verified, verified, in_delivery, delivery
+   487→   - API escrowStatuses includes: payment_verified, verified, in_delivery, delivery
+   488→
+   489→Verification (Agent Browser):
+   490→- User Dashboard (test@amdeal.com): চলতি ডিল=৫, সফল ডিল=১, মোট লেনদেন=৩৫,৫০০, উপলব্ধ=৳০, হোল্ড=৳৩,১২,০০০, মোট=৳৩,১২,০০০
+   491→- Admin Dashboard (admin@demo.com): মোট ডিল=১৭, পেন্ডিং ভেরিফিকেশন=০, মোট লেনদেন=৩৫,৫০০
+   492→- All status badges show Bengali labels (no English leaking)
+   493→- ESLint: clean pass
+   494→- All API routes: 200 responses, Prisma queries efficient
+   495→
+   496→Stage Summary:
+   497→- Real-time data fetching via TanStack Query with 15s auto-refresh
+   498→- Skeleton loading states for all data sections
+   499→- Clean separation: API routes handle DB logic, components handle display
+   500→- Legacy DB statuses handled gracefully
+   501→
+   502→---
+   503→Task ID: 1
+   504→Agent: Main Agent
+   505→Task: Enhance Deal Interface and Chat System with UX/aesthetics improvements
+   506→
+   507→Work Log:
+   508→- Read full deal-workflow-tracker.tsx (1085 lines) to understand existing tab system, chat, and progress stepper
+   509→- Read dashboard-main.tsx, dashboard-view.tsx, store.ts, globals.css, schema.prisma
+   510→- Updated dashboard-main.tsx to add `flex flex-col` wrapper for deal-detail panel (enables full-height chat)
+   511→- Completely rewrote deal-workflow-tracker.tsx with all enhancements:
+   512→  - Replaced shadcn Tabs with custom pill-shaped toggle (spring-animated sliding indicator, #65A30D)
+   513→  - Redesigned InfoCard component: rounded-2xl, border-border/40, hover effects (border highlight, shadow, icon scale)
+   514→  - Created ActionButton component with enhanced hover (scale 1.02, shadow-lg), active (scale 0.98) effects
+   515→  - Updated all progress stepper colors from #84CC16 to #65A30D (parrot green)
+   516→  - Increased stepper circle size (h-9→h-10, 3px→4px track), added glow shadows
+   517→  - Built full-page chat system: chat header (avatar, online status, phone/more buttons), scrollable message area, fixed-bottom input bar
+   518→  - Implemented glassmorphism background with radial gradients on chat area
+   519→  - Redesigned ChatBubble: user bubbles green (#65A30D) with shadow, seller bubbles white with border, admin bubbles center-aligned in distinct card
+   520→  - Added chat input bar with emoji (SmilePlus), attachment (Paperclip), text input, send button (#65A30D)
+   521→  - Added ChatDateDivider component, avatar initials on bubbles, Clock icons on timestamps
+   522→  - Chat expands to full available height when active (flex-1 min-h-0 h-full)
+   523→  - Auto-focus input when switching to chat tab, refocus after sending
+   524→  - All responsive: mobile-optimized input bar, viewport-adaptive layouts
+   525→- Ran lint: clean
+   526→- Browser verification: logged in as test user, navigated to deal detail, verified both tabs, sent test message, tested mobile viewport (iPhone 14)
+   527→- VLM verification on 4 screenshots: all confirmed professional, polished UI
+   528→
+   529→Stage Summary:
+   530→- Files modified: deal-workflow-tracker.tsx (complete rewrite ~750 lines), dashboard-main.tsx (minor update)
+   531→- Key design decisions: #65A30D parrot green for progress, send button, active indicators; pill toggle with spring animation; glassmorphism chat background; center-aligned admin bubbles
+   532→- All requirements met: pill-shaped toggle, card-based layout, full-page chat, glassmorphism, #65A30D accents, responsive mobile layout
+   533→- Zero compilation errors, zero runtime errors
+   534→---
+   535→Task ID: 3
+   536→Agent: Main Agent
+   537→Task: Implement Dynamic Fee Structure system (ফি কাঠামো) — full-stack feature
+   538→
+   539→Work Log:
+   540→- Added FeeRule model to prisma/schema.prisma (id, minimum_amount, maximum_amount, fee, is_active, timestamps)
+   541→- Pushed schema to DB with `bun run db:push`, generated Prisma client
+   542→- Seeded 6 initial fee rules: 1-499→৳10, 500-1999→৳30, 2000-4999→৳50, 5000-9999→৳80, 10000-24999→৳150, 25000+→৳250
+   543→- Created `/api/fee-structure/route.ts` — public GET, returns active rules sorted by minimum_amount
+   544→- Created `/api/admin/fee-rules/route.ts` — admin GET (all rules) + POST (create with validation)
+   545→- Created `/api/admin/fee-rules/[id]/route.ts` — admin PUT (partial update) + DELETE
+   546→- Validation: rejects negative values, max<=min, missing required fields — returns Bengali error messages
+   547→- Created `src/components/landing/fee-structure.tsx` — card-based table, green header, Bengali numerals, 30s auto-refresh poll, responsive (table on desktop, cards on mobile), CTA button → auth
+   548→- Created `src/components/admin/fee-rules-panel.tsx` — admin CRUD panel with add/edit form, toggle active/inactive, desktop table + mobile cards, loading states, toast notifications
+   549→- Updated `src/lib/store.ts` — added 'fee-rules' to AdminPanel type
+   550→- Updated `src/components/admin/admin-sidebar.tsx` — added Receipt icon + 'ফি কাঠামো' nav item
+   551→- Updated `src/components/admin/admin-main.tsx` — imported FeeRulesPanel, added case 'fee-rules'
+   552→- Updated `src/components/landing/navbar.tsx` — added Receipt icon + 'ফি কাঠামো' to admin mobile nav
+   553→- Updated `src/app/page.tsx` — imported FeeStructure, placed between HowItWorks and TrustSecurity
+   554→- Confirmed SheetTitle accessibility fix already in place (navbar.tsx line 208)
+   555→- Disabled Prisma query logging in db.ts to reduce memory overhead
+   556→
+   557→Stage Summary:
+   558→- Full fee structure system implemented end-to-end (DB → API → frontend → admin)
+   559→- API verified: GET/POST/PUT/DELETE all return correct responses
+   560→- Validation verified: 3 error cases tested with proper Bengali error messages
+   561→- Browser verified: Landing page renders fee table with all 6 rules, Bengali numerals, green header, CTA button
+   562→- No console errors in browser (SheetTitle fix confirmed)
+   563→- ESLint clean
+   564→- Footer already had `#fees` link (matched by section id="fees")
+   565→---
+   566→Task ID: 4
+   567→Agent: Main Agent
+   568→Task: Optimize UI design — remove glassmorphism, solid card styling, floating card effects
+   569→
+   570→Work Log:
+   571→- hero.tsx: Removed gradient blob, glassmorphism classes (!bg-white/40, !backdrop-blur-xl, !border-white/60, dark:glow-lime). Card now: rounded-3xl border border-border/40 bg-white shadow-2xl shadow-gray-300/50
+   572→- hero.tsx: Escrow step numbers: h-7 w-7 → h-8 w-8, rounded-lg → rounded-xl, text-xs → text-sm, font-bold → font-black, colors darkened (teal-400→teal-600, lime-300→lime-600)
+   573→- hero.tsx: CTA "এখনই শুরু করুন" now links to auth via useAppStore.getState().setView('auth'), added active:scale-[0.97] and hover:shadow-xl transitions
+   574→- how-it-works.tsx: Cards changed from rounded-2xl bg-card → rounded-3xl bg-white shadow-2xl shadow-gray-300/50. Decorative numbers: text-primary/15 font-bold → text-primary/50 font-black
+   575→- trust-security.tsx: Cards changed from rounded-xl bg-card → rounded-3xl bg-white shadow-2xl shadow-gray-300/50
+   576→- auth-view.tsx: Removed gradient blob behind card. Card: rounded-2xl !bg-white/40 !backdrop-blur-xl → rounded-3xl bg-white shadow-2xl shadow-gray-300/50
+   577→- auth-view.tsx: All inputs: bg-white/50 !backdrop-blur-sm border-white/60 → bg-white border-border
+   578→- auth-view.tsx: TabsList: bg-white/40 backdrop-blur-sm → bg-muted/60
+   579→- auth-view.tsx: Buttons: removed dark:glow-lime
+   580→- Verified all 5 components have zero glassmorphism remnants (rg search: CLEAN)
+   581→- Verified all 6 card containers have rounded-3xl + bg-white + shadow-2xl pattern
+   582→- Browser verified: Hero card, How It Works (3 cards), Trust Security (6 cards), Auth card all render with correct solid styling
+   583→- Browser verified: No console errors
+   584→
+   585→Stage Summary:
+   586→- All glassmorphism/transparency/backdrop-blur effects removed from hero, how-it-works, trust-security, auth-view, and fee-structure
+   587→- All major cards use consistent rounded-3xl, shadow-2xl shadow-gray-300/50, solid bg-white pattern
+   588→- Sharp contrast between card backgrounds and page background (#F2F4F7)
+   589→- ESLint clean for all source files
+   590→---
+   591→Task ID: 5
+   592→Agent: Main Agent
+   593→Task: Fix all errors so website preview works
+   594→
+   595→Work Log:
+   596→- Removed deprecated middleware.ts (Next.js 16 deprecation warning was breaking server stability)
+   597→- Added missing Prisma models: Notification (with type, read fields, userId index) and ChatMessage (with role, senderName, text fields)
+   598→- Added notifications relation to User model
+   599→- Fixed missing type imports: DashboardPanel in dashboard-sidebar.tsx, DashboardPanel+AdminPanel in navbar.tsx
+   600→- Fixed framer motion ease type errors: added `as const` to ease values in how-it-works.tsx, trust-security.tsx, user-payment-view.tsx
+   601→- Fixed DealRow interface in my-deals-panel.tsx: added `id` field to buyer/seller/creator types
+   602→- Fixed DealRow interface in seller-main.tsx: added `id` field to buyer/seller/creator types
+   603→- Fixed deal-guard.ts: added creatorId to the deal select query
+   604→- Fixed use-socket.ts: added @ts-expect-error for optional socket.io-client import
+   605→- Fixed chat route: added required senderId field
+   606→- Ran `bun run db:push` and `npx prisma generate` for new models
+   607→- Built production bundle: `npx next build` compiled successfully with 0 errors
+   608→- Verified: 0 TypeScript errors in src/, 0 ESLint errors
+   609→- Browser verified: page renders with Hero, How It Works, Trust Security sections, zero console errors
+   610→
+   611→Stage Summary:
+   612→- All src/ TypeScript errors: 0 (was 30+)
+   613→- All ESLint errors: 0
+   614→- Build: compiles successfully
+   615→- Page renders correctly when server is alive
+   616→- Dev server starts clean with zero warnings
+   617→---
+   618→Task ID: 6
+   619→Agent: Main Agent
+   620→Task: Fix dev server repeatedly turning off in sandbox environment
+   621→
+   622→Work Log:
+   623→- Diagnosed root cause: sandbox kills Node.js processes that use too much memory or accept too many concurrent connections
+   624→- Discovered `HOSTNAME=127.0.0.1` binding (vs 0.0.0.0) improves process survival
+   625→- Discovered `NODE_OPTIONS="--max-old-space-size=128"` limits V8 heap, keeping process under sandbox memory limits
+   626→- Discovered `UV_THREADPOOL_SIZE=1` limits libuv thread pool, preventing concurrent connection overload
+   627→- Key finding: Caddy gateway proxy (port 81) sends multiple concurrent HTTP requests that kill the backend, even with optimizations
+   628→- Direct browser connection (port 3000) works when server has minimal resource footprint
+   629→- Created `/home/z/my-project/start.sh` as permanent startup script with all optimizations
+   630→- Build: `npx next build` produces working standalone build at `.next/standalone/server.js`
+   631→- Removed deprecated middleware.ts (was causing Next.js 16 deprecation warning)
+   632→
+   633→Stage Summary:
+   634→- Optimal start command: `HOSTNAME=127.0.0.1 NODE_OPTIONS="--max-old-space-size=128" UV_THREADPOOL_SIZE=1 nohup bun run dev </dev/null >/dev/null 2>&1 &`
+   635→- Server survives 60+ seconds with curl requests
+   636→- Direct browser (port 3000) renders full page with all sections
+   637→- Caddy proxy (port 81) kills server due to concurrent connection handling in sandbox
+   638→- `start.sh` script created for easy server restart
+   639→
+   640→---
+   641→Task ID: 1
+   642→Agent: Main Agent
+   643→Task: Fix fee structure admin panel edit not working
+   644→
+   645→Work Log:
+   646→- Investigated the issue by testing admin API endpoints (GET/PUT/DELETE) — all working correctly
+   647→- Used agent-browser to test edit flow on both desktop and mobile viewports
+   648→- Discovered the root cause: `FeeRuleForm` component lacked a `key` prop, causing React to reuse the same component instance when switching between rules to edit. `useState` initial values only apply on first mount, so the form would show stale data from the previously selected rule.
+   649→- Added `key={editing?.id ?? 'new'}` to `FeeRuleForm` to force remount when switching between rules
+   650→- Added NaN validation for `maximum_amount` field to prevent edge case API failures
+   651→- Verified fix: clicking edit on rule 1 (1-499, ৳10) then edit on rule 2 (500-1999, ৳30) without canceling now correctly updates the form to show rule 2's values
+   652→- Verified full edit-submit flow: changed rule 2 fee from ৳30 → ৳35, confirmed table updates, then reverted
+   653→
+   654→Stage Summary:
+   655→- Root cause: Missing React `key` prop on `FeeRuleForm` causing stale form state when switching between rules
+   656→- Fix: Added `key={editing?.id ?? 'new'}` prop + NaN validation for max_amount
+   657→- File modified: `src/components/admin/fee-rules-panel.tsx`
+   658→- All edit operations (add, edit, delete, toggle) verified working on both desktop and mobile
+   659→
+   660→---
+   661→Task ID: 2
+   662→Agent: Main Agent
+   663→Task: Integrate tiered fee structure into deal payment flow
+   664→
+   665→Work Log:
+   666→- Added `platformFee Float?` field to Deal model in prisma/schema.prisma and pushed to DB
+   667→- Created `GET /api/deals/calculate-fee?amount=X` API that matches amount against active FeeRule tiers and returns { amount, fee, total, feePercentage, matchedRule }
+   668→- Updated `user-payment-view.tsx`: replaced flat `feePercentage` from PlatformSetting with tiered fee from calculate-fee API; shows applicable fee slab (e.g. "৳৫,০০০ — ৳৯,৯৯৯"), fee amount, and percentage
+   669→- Updated `new-deal-form.tsx`: added live fee preview that appears when user types deal amount — shows platform fee and total payment with AnimatePresence animation
+   670→- Updated `api/deals/payment/route.ts`: now accepts `fee` in request body and also auto-calculates from FeeRule if not provided; stores `platformFee` on the Deal record
+   671→- Updated `deal-workflow-tracker.tsx`: added `platformFee` to DealInfo type; shows "প্ল্যাটফর্ম ফি" InfoCard in deal detail view when fee > 0; added Receipt icon import
+   672→- Verified all amount ranges in browser: 500→৳30 fee, 5000→৳80 fee, 30000→৳250 fee — all correct
+   673→- Zero console errors
+   674→
+   675→Stage Summary:
+   676→- Fee structure is now fully integrated into deal creation (preview) and payment (exact calculation + storage)
+   677→- Files modified: prisma/schema.prisma, src/app/api/deals/calculate-fee/route.ts (NEW), src/app/api/deals/payment/route.ts, src/components/dashboard/user-payment-view.tsx, src/components/dashboard/new-deal-form.tsx, src/components/dashboard/deal-workflow-tracker.tsx
+   678→
+   679→---
+   680→Task ID: 16
+   681→Agent: Main Agent
+   682→Task: Verify Cancel button next to Complete for seller when admin verifies payment
+   683→
+   684→Work Log:
+   685→- Read deal-workflow-tracker.tsx and confirmed Cancel button already exists at lines 1119-1136
+   686→- Read seller-deal-tracker.tsx and confirmed Cancel button already exists at lines 507-538
+   687→- Both views show "কাজ সম্পন্ন" (Deliver) + "ক্যান্সেল করুন" (Cancel) when status is payment_verified
+   688→- Verified /api/deals/cancel endpoint works for payment_verified status
+   689→- Verified /api/user/deals already has proper user filtering (deal visibility bug was already fixed)
+   690→- Tested via agent-browser, confirmed DB status update works
+   691→- Feature was already implemented - no code changes needed
+   692→
+   693→Stage Summary:
+   694→- No code changes required - Cancel button already exists for seller at payment_verified status
+   695→- Both deal-workflow-tracker.tsx and seller-deal-tracker.tsx have the feature
+   696→---
+   697→Task ID: 3-a
+   698→Agent: API Developer
+   699→Task: Create all payout API routes
+   700→
+   701→Work Log:
+   702→- Created /api/user/payout-accounts/route.ts (GET/POST)
+   703→  - GET: Lists all payout accounts for authenticated user, sorted by isDefault desc then createdAt desc
+   704→  - POST: Creates new payout account with validation (fields, account type, max 5 accounts), handles isDefault unsetting of others
+   705→- Created /api/user/payout-accounts/[id]/route.ts (PATCH/DELETE)
+   706→  - PATCH: Updates account fields with ownership check, handles isDefault toggle
+   707→  - DELETE: Deletes account with ownership verification
+   708→- Created /api/deals/[id]/request-payout/route.ts (POST)
+   709→  - POST: Seller requests payout for completed deal, validates seller role, deal status, checks no duplicate pending payout
+   710→- Created /api/deals/[id]/payout/route.ts (GET)
+   711→  - GET: Returns payout info for a deal (any party with deal access)
+   712→- Created /api/admin/payouts/route.ts (GET)
+   713→  - GET: Lists all payouts with seller name/email and deal title, supports ?status= filter, ordered by createdAt desc
+   714→- Created /api/admin/payouts/[id]/complete/route.ts (POST)
+   715→  - POST: Admin marks payout as paid with admin verification, sets paidAt timestamp
+   716→- All 6 files pass ESLint with zero errors
+   717→- All responses in Bengali
+   718→- All files use requireAuth from @/lib/deal-guard
+   719→- All dynamic params properly awaited (Next.js 16 pattern)
+   720→
+   721→Stage Summary:
+   722→- All 6 API route files created and linting passed
+   723→---
+   724→Task ID: 3-b
+   725→Agent: Frontend Developer
+   726→Task: Build payout frontend components
+   727→
+   728→Work Log:
+   729→- Created payout-accounts-panel.tsx (user payout accounts management with CRUD, inline form, default account support)
+   730→- Created admin-payouts-panel.tsx (admin payout list with filter tabs, mark-as-paid action, responsive card/table layout)
+   731→- Updated dashboard-sidebar.tsx with Wallet icon import and পেআউট nav item after লেনদেন
+   732→- Updated dashboard-main.tsx with PayoutAccountsPanel import and payout panel rendering
+   733→- Updated admin-sidebar.tsx with Wallet icon import and পেআউট nav item after ফি কাঠামো
+   734→- Updated admin-main.tsx with AdminPayoutsPanel import and payouts case in switch
+   735→- Updated deal-workflow-tracker.tsx: added Wallet icon, Label import, payout state variables, useEffect for fetching payout info (placed before early return to satisfy rules-of-hooks), payout submit handler, and seller payout section UI below the completed state message
+   736→- Fixed React hooks ordering: moved useEffect above the `if (!mounted) return null` guard and used raw state values instead of derived variables
+   737→- ESLint passes clean (only pre-existing errors in fix-file.js and reconstruct.js)
+   738→
+   739→Stage Summary:
+   740→- All frontend components created and integrated
+   741→- User can manage payout accounts from sidebar পেআউট panel
+   742→- Admin can manage all payouts from sidebar পেআউট panel
+   743→- Seller sees payout request form in completed deal workflow tracker
+   744→
+   745→---
+   746→Task ID: 17
+   747→Agent: Main Agent
+   748→Task: Create complete payout system (user payout accounts, deal payout requests, admin payout management)
+   749→
+   750→Work Log:
+   751→- Updated Prisma schema with PayoutAccount and Payout models, pushed to DB
+   752→- Updated Zustand store: added 'payout' to DashboardPanel, 'payouts' to AdminPanel
+   753→- Created 6 API routes via subagent:
+   754→  - GET/POST /api/user/payout-accounts (list/create payout accounts)
+   755→  - PATCH/DELETE /api/user/payout-accounts/[id] (update/delete accounts)
+   756→  - POST /api/deals/[id]/request-payout (seller requests payout for completed deal)
+   757→  - GET /api/deals/[id]/payout (get payout info for a deal)
+   758→  - GET /api/admin/payouts (admin lists all payouts with filters)
+   759→  - POST /api/admin/payouts/[id]/complete (admin marks payout as paid)
+   760→- Created 2 frontend components via subagent:
+   761→  - payout-accounts-panel.tsx (user adds/edits/deletes payout accounts)
+   762→  - admin-payouts-panel.tsx (admin views/manages payout requests)
+   763→- Updated 4 existing files:
+   764→  - dashboard-sidebar.tsx (added পেআউট nav item)
+   765→  - dashboard-main.tsx (added PayoutAccountsPanel rendering)
+   766→  - admin-sidebar.tsx (added পেআউট nav item)
+   767→  - admin-main.tsx (added AdminPayoutsPanel case)
+   768→- Updated deal-workflow-tracker.tsx with seller payout section for completed deals
+   769→- Fixed API response parsing (frontend expected arrays, API returns wrapped objects)
+   770→- Fixed Prisma client cache issue by restarting dev server
+   771→- Fixed GET payout API: payout data was wrapped in { payout: {...} }
+   772→
+   773→Stage Summary:
+   774→- Complete payout system built and verified:
+   775→  - Users can add bKash/Nagad/Rocket/Bank payout accounts (max 5, one default)
+   776→  - Sellers see payout form in completed deal view (pre-filled from default account)
+   777→  - Admin sees all payout requests with filters (all/pending/paid)
+   778→  - Admin can mark payouts as paid
+   779→- All APIs tested via curl, all frontend panels tested via agent-browser
+   780→

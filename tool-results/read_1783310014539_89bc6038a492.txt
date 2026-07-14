@@ -1,0 +1,786 @@
+     1→'use client';
+     2→
+     3→import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { Button } from '@/components/ui/button';
+     6→import { Input } from '@/components/ui/input';
+     7→import { Label } from '@/components/ui/label';
+     8→import { Badge } from '@/components/ui/badge';
+     9→import { toast } from 'sonner';
+    10→import {
+    11→  CreditCard,
+    12→  Plus,
+    13→  Pencil,
+    14→  Trash2,
+    15→  Save,
+    16→  X,
+    17→  Palette,
+    18→  Loader2,
+    19→  Eye,
+    20→  Wallet,
+    21→  ImageIcon,
+    22→} from 'lucide-react';
+    23→
+    24→const emptySubscribe = () => () => {};
+    25→
+    26→/* ─── Types ─── */
+    27→interface PaymentMethod {
+    28→  id: string;
+    29→  name: string;
+    30→  accountNumber: string;
+    31→  accountType: string;
+    32→  status: string;
+    33→  sortOrder: number;
+    34→  color: string;
+    35→  image: string | null;
+    36→  createdAt: string;
+    37→}
+    38→
+    39→interface FormData {
+    40→  name: string;
+    41→  accountNumber: string;
+    42→  accountType: string;
+    43→  status: string;
+    44→  sortOrder: number;
+    45→  color: string;
+    46→  image: string;
+    47→}
+    48→
+    49→const emptyForm: FormData = {
+    50→  name: '',
+    51→  accountNumber: '',
+    52→  accountType: 'personal',
+    53→  status: 'active',
+    54→  sortOrder: 0,
+    55→  color: '#84CC16',
+    56→  image: '',
+    57→};
+    58→
+    59→/* ─── Known Gateway Defaults ─── */
+    60→function getGatewayColor(name: string): string {
+    61→  const n = name.toLowerCase();
+    62→  if (n.includes('bkash')) return '#E2136E';
+    63→  if (n.includes('nagad')) return '#F6921E';
+    64→  if (n.includes('rocket')) return '#8C3494';
+    65→  if (n.includes('bank')) return '#0033A0';
+    66→  if (n.includes('upay')) return '#1A9F4B';
+    67→  if (n.includes('dutch') || n.includes('bangla')) return '#FF6600';
+    68→  return '#84CC16';
+    69→}
+    70→
+    71→function getGatewayIcon(name: string) {
+    72→  const n = name.toLowerCase();
+    73→  if (n.includes('bank')) return '🏦';
+    74→  return '💳';
+    75→}
+    76→
+    77→/* ─── Solid Card Helper ─── */
+    78→function SolidCard({
+    79→  children,
+    80→  className = '',
+    81→}: {
+    82→  children: React.ReactNode;
+    83→  className?: string;
+    84→}) {
+    85→  return (
+    86→    <div
+    87→      className={`rounded-3xl bg-white p-5 sm:p-6 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 ${className}`}
+    88→    >
+    89→      {children}
+    90→    </div>
+    91→  );
+    92→}
+    93→
+    94→/* ─── Color Picker Row ─── */
+    95→function ColorPickerRow({
+    96→  color,
+    97→  onChange,
+    98→  label,
+    99→}: {
+   100→  color: string;
+   101→  onChange: (c: string) => void;
+   102→  label?: string;
+   103→}) {
+   104→  return (
+   105→    <div className="space-y-1.5">
+   106→      {label && <Label className="text-sm font-medium">{label}</Label>}
+   107→      <div className="flex items-center gap-3">
+   108→        <div className="relative">
+   109→          <input
+   110→            type="color"
+   111→            value={color}
+   112→            onChange={(e) => onChange(e.target.value)}
+   113→            className="h-10 w-14 cursor-pointer rounded-lg border border-border p-1 bg-transparent"
+   114→          />
+   115→        </div>
+   116→        <Input
+   117→          value={color}
+   118→          onChange={(e) => {
+   119→            const v = e.target.value;
+   120→            if (/^#[0-9a-fA-F]{0,6}$/.test(v)) {
+   121→              onChange(v.length === 7 ? v : color);
+   122→            }
+   123→          }}
+   124→          className="w-32 h-10 font-mono text-sm"
+   125→        />
+   126→        <div
+   127→          className="h-10 w-20 rounded-xl border border-border/50 shrink-0"
+   128→          style={{ backgroundColor: color }}
+   129→        />
+   130→      </div>
+   131→      {/* Quick color presets */}
+   132→      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+   133→        {['#E2136E', '#F6921E', '#8C3494', '#0033A0', '#1A9F4B', '#84CC16', '#65A30D', '#2563EB', '#DC2626', '#7C3AED'].map((c) => (
+   134→          <button
+   135→            key={c}
+   136→            type="button"
+   137→            onClick={() => onChange(c)}
+   138→            className="h-6 w-6 rounded-full border-2 transition-transform hover:scale-110"
+   139→            style={{
+   140→              backgroundColor: c,
+   141→              borderColor: color === c ? 'var(--foreground)' : 'transparent',
+   142→            }}
+   143→            title={c}
+   144→          />
+   145→        ))}
+   146→      </div>
+   147→    </div>
+   148→  );
+   149→}
+   150→
+   151→/* ═══════════════════════════════════════════
+   152→   Admin Payment Methods Panel
+   153→   ═══════════════════════════════════════════ */
+   154→
+   155→export function PaymentMethodsPanel() {
+   156→  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+   157→  const [loading, setLoading] = useState(true);
+   158→  const [dialogOpen, setDialogOpen] = useState(false);
+   159→  const [editingId, setEditingId] = useState<string | null>(null);
+   160→  const [form, setForm] = useState<FormData>(emptyForm);
+   161→  const [saving, setSaving] = useState(false);
+   162→  const [deletingId, setDeletingId] = useState<string | null>(null);
+   163→
+   164→  const fetchMethods = useCallback(async () => {
+   165→    try {
+   166→      const res = await fetch('/api/admin/payment-methods');
+   167→      if (res.ok) setMethods(await res.json());
+   168→    } catch {
+   169→      // silent
+   170→    } finally {
+   171→      setLoading(false);
+   172→    }
+   173→  }, []);
+   174→
+   175→  useEffect(() => {
+   176→    fetchMethods();
+   177→  }, [fetchMethods]);
+   178→
+   179→  // ─── CRUD Handlers ───
+   180→  const openCreate = () => {
+   181→    setEditingId(null);
+   182→    setForm(emptyForm);
+   183→    setDialogOpen(true);
+   184→  };
+   185→
+   186→  const openEdit = (m: PaymentMethod) => {
+   187→    setEditingId(m.id);
+   188→    setForm({
+   189→      name: m.name,
+   190→      accountNumber: m.accountNumber,
+   191→      accountType: m.accountType,
+   192→      status: m.status,
+   193→      sortOrder: m.sortOrder,
+   194→      color: m.color || '#84CC16',
+   195→      image: m.image || '',
+   196→    });
+   197→    setDialogOpen(true);
+   198→  };
+   199→
+   200→  const handleSave = async () => {
+   201→    if (!form.name.trim() || !form.accountNumber.trim()) {
+   202→      toast.error('নাম এবং অ্যাকাউন্ট নম্বর আবশ্যক');
+   203→      return;
+   204→    }
+   205→    setSaving(true);
+   206→    try {
+   207→      const url = editingId
+   208→        ? `/api/admin/payment-methods/${editingId}`
+   209→        : '/api/admin/payment-methods';
+   210→      const method = editingId ? 'PUT' : 'POST';
+   211→      const res = await fetch(url, {
+   212→        method,
+   213→        headers: { 'Content-Type': 'application/json' },
+   214→        body: JSON.stringify(form),
+   215→      });
+   216→      if (res.ok) {
+   217→        toast.success(editingId ? 'মেথড আপডেট হয়েছে' : 'নতুন মেথড যোগ হয়েছে');
+   218→        setDialogOpen(false);
+   219→        fetchMethods();
+   220→      } else {
+   221→        toast.error('সংরক্ষণ ব্যর্থ হয়েছে');
+   222→      }
+   223→    } catch {
+   224→      toast.error('সার্ভারে সমস্যা');
+   225→    } finally {
+   226→      setSaving(false);
+   227→    }
+   228→  };
+   229→
+   230→  const handleDelete = async (id: string) => {
+   231→    setDeletingId(id);
+   232→    try {
+   233→      const res = await fetch(`/api/admin/payment-methods/${id}`, {
+   234→        method: 'DELETE',
+   235→      });
+   236→      if (res.ok) {
+   237→        toast.success('মেথড মুছে ফেলা হয়েছে');
+   238→        fetchMethods();
+   239→      } else {
+   240→        toast.error('মুছে ফেলা ব্যর্থ হয়েছে');
+   241→      }
+   242→    } catch {
+   243→      toast.error('সার্ভারে সমস্যা');
+   244→    } finally {
+   245→      setDeletingId(null);
+   246→    }
+   247→  };
+   248→
+   249→  // Quick color change from table
+   250→  const handleQuickColorChange = async (id: string, color: string) => {
+   251→    try {
+   252→      const res = await fetch(`/api/admin/payment-methods/${id}`, {
+   253→        method: 'PUT',
+   254→        headers: { 'Content-Type': 'application/json' },
+   255→        body: JSON.stringify({ color }),
+   256→      });
+   257→      if (res.ok) {
+   258→        fetchMethods();
+   259→      }
+   260→    } catch {
+   261→      // silent
+   262→    }
+   263→  };
+   264→
+   265→  if (loading)
+   266→    return (
+   267→      <div className="flex items-center justify-center py-16">
+   268→        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+   269→      </div>
+   270→    );
+   271→
+   272→  const activeMethods = methods.filter((m) => m.status === 'active');
+   273→
+   274→  return (
+   275→    <div className="space-y-6">
+   276→      {/* ═══ Section 1: Payment Methods CRUD ═══ */}
+   277→      <div>
+   278→        {/* Header */}
+   279→        <div className="mb-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+   280→          <div className="text-center sm:text-left">
+   281→            <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   282→              <CreditCard className="h-5 w-5 text-primary" />
+   283→              পেমেন্ট গেটওয়ে ম্যানেজমেন্ট
+   284→            </h2>
+   285→            <p className="mt-0.5 text-sm text-muted-foreground">
+   286→              গেটওয়ে তৈরি, সম্পাদনা ও কালার কাস্টমাইজ করুন
+   287→            </p>
+   288→          </div>
+   289→          <Button
+   290→            onClick={openCreate}
+   291→            className="h-9 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
+   292→          >
+   293→            <Plus className="h-4 w-4" />
+   294→            নতুন গেটওয়ে যোগ করুন
+   295→          </Button>
+   296→        </div>
+   297→
+   298→        {/* Table Card */}
+   299→        <motion.div
+   300→          initial={{ opacity: 0, y: 16 }}
+   301→          animate={{ opacity: 1, y: 0 }}
+   302→          transition={{ duration: 0.4 }}
+   303→        >
+   304→          <SolidCard className="!p-0 overflow-hidden">
+   305→            {methods.length === 0 ? (
+   306→              <div className="flex flex-col items-center justify-center py-16 text-center">
+   307→                <CreditCard className="mb-3 h-10 w-10 text-muted-foreground" />
+   308→                <p className="text-sm font-semibold text-foreground">
+   309→                  কোনো পেমেন্ট গেটওয়ে নেই
+   310→                </p>
+   311→                <p className="mt-1 text-xs text-muted-foreground">
+   312→                  নতুন গেটওয়ে যোগ করতে উপরের বাটনে ক্লিক করুন
+   313→                </p>
+   314→              </div>
+   315→            ) : (
+   316→              <div className="overflow-x-auto">
+   317→                <table className="w-full text-sm min-w-[850px]">
+   318→                  <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+   319→                    <tr className="border-b border-border bg-muted/30">
+   320→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   321→                        গেটওয়ে
+   322→                      </th>
+   323→                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   324→                        অ্যাকাউন্ট নম্বর
+   325→                      </th>
+   326→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   327→                        টাইপ
+   328→                      </th>
+   329→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   330→                        কালার
+   331→                      </th>
+   332→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   333→                        স্ট্যাটাস
+   334→                      </th>
+   335→                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
+   336→                        অ্যাকশন
+   337→                      </th>
+   338→                    </tr>
+   339→                  </thead>
+   340→                  <tbody>
+   341→                    {methods.map((m) => (
+   342→                      <tr
+   343→                        key={m.id}
+   344→                        className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0"
+   345→                      >
+   346→                        <td className="px-5 py-4 whitespace-nowrap">
+   347→                          <div className="flex items-center gap-2.5">
+   348→                            <div
+   349→                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm"
+   350→                              style={{
+   351→                                backgroundColor: `${m.color || '#84CC16'}18`,
+   352→                              }}
+   353→                            >
+   354→                              <Wallet
+   355→                                className="h-4 w-4"
+   356→                                style={{ color: m.color || '#84CC16' }}
+   357→                              />
+   358→                            </div>
+   359→                            <div>
+   360→                              <p className="font-medium text-foreground">{m.name}</p>
+   361→                              <p className="text-[11px] text-muted-foreground">
+   362→                                অর্ডার: {m.sortOrder}
+   363→                              </p>
+   364→                            </div>
+   365→                          </div>
+   366→                        </td>
+   367→                        <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
+   368→                          {m.accountNumber}
+   369→                        </td>
+   370→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   371→                          {m.accountType === 'merchant' ? (
+   372→                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
+   373→                              মার্চেন্ট
+   374→                            </Badge>
+   375→                          ) : (
+   376→                            <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">
+   377→                              পার্সোনাল
+   378→                            </Badge>
+   379→                          )}
+   380→                        </td>
+   381→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   382→                          <div className="flex items-center justify-center gap-2">
+   383→                            <div
+   384→                              className="relative h-8 w-8 rounded-lg border border-border/50 cursor-pointer transition-transform hover:scale-110"
+   385→                              style={{ backgroundColor: m.color || '#84CC16' }}
+   386→                              title="ক্লিক করে কালার পরিবর্তন করুন"
+   387→                            >
+   388→                              <input
+   389→                                type="color"
+   390→                                value={m.color || '#84CC16'}
+   391→                                onChange={(e) =>
+   392→                                  handleQuickColorChange(m.id, e.target.value)
+   393→                                }
+   394→                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+   395→                              />
+   396→                            </div>
+   397→                            <span className="font-mono text-[11px] text-muted-foreground">
+   398→                              {m.color || '#84CC16'}
+   399→                            </span>
+   400→                          </div>
+   401→                        </td>
+   402→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   403→                          {m.status === 'active' ? (
+   404→                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">
+   405→                              সক্রিয়
+   406→                            </Badge>
+   407→                          ) : (
+   408→                            <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">
+   409→                              নিষ্ক্রিয়
+   410→                            </Badge>
+   411→                          )}
+   412→                        </td>
+   413→                        <td className="px-5 py-4 text-center whitespace-nowrap">
+   414→                          <div className="flex items-center justify-center gap-2">
+   415→                            <Button
+   416→                              size="sm"
+   417→                              variant="outline"
+   418→                              onClick={() => openEdit(m)}
+   419→                              className="h-8 gap-1.5 rounded-lg text-xs font-medium"
+   420→                            >
+   421→                              <Pencil className="h-3.5 w-3.5" />
+   422→                              সম্পাদনা
+   423→                            </Button>
+   424→                            <Button
+   425→                              size="sm"
+   426→                              variant="outline"
+   427→                              disabled={deletingId === m.id}
+   428→                              onClick={() => handleDelete(m.id)}
+   429→                              className="h-8 gap-1.5 rounded-lg text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
+   430→                            >
+   431→                              {deletingId === m.id ? (
+   432→                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+   433→                              ) : (
+   434→                                <Trash2 className="h-3.5 w-3.5" />
+   435→                              )}
+   436→                              মুছুন
+   437→                            </Button>
+   438→                          </div>
+   439→                        </td>
+   440→                      </tr>
+   441→                    ))}
+   442→                  </tbody>
+   443→                </table>
+   444→              </div>
+   445→            )}
+   446→          </SolidCard>
+   447→        </motion.div>
+   448→      </div>
+   449→
+   450→      {/* ═══ Section 2: Per-Gateway Color Preview ═══ */}
+   451→      {activeMethods.length > 0 && (
+   452→        <motion.div
+   453→          initial={{ opacity: 0, y: 16 }}
+   454→          animate={{ opacity: 1, y: 0 }}
+   455→          transition={{ duration: 0.4, delay: 0.15 }}
+   456→        >
+   457→          <div className="mb-5 text-center sm:text-left">
+   458→            <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
+   459→              <Palette className="h-5 w-5 text-primary" />
+   460→              গেটওয়ে কালার প্রিভিউ
+   461→            </h2>
+   462→            <p className="mt-0.5 text-sm text-muted-foreground">
+   463→              প্রতিটি গেটওয়ের নিজস্ব কালার পেমেন্ট পেজে দেখাবে
+   464→            </p>
+   465→          </div>
+   466→
+   467→          <SolidCard>
+   468→            <div className="space-y-5">
+   469→              {/* Method cards preview with individual colors */}
+   470→              <div className="rounded-xl border border-border/50 bg-muted/30 p-4">
+   471→                <div className="mb-4 flex items-center gap-2">
+   472→                  <Eye className="h-4 w-4 text-muted-foreground" />
+   473→                  <span className="text-sm font-semibold text-foreground">
+   474→                    পেমেন্ট পেজ প্রিভিউ
+   475→                  </span>
+   476→                </div>
+   477→
+   478→                {/* Gateway cards grid */}
+   479→                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
+   480→                  {activeMethods.map((m, i) => {
+   481→                    const c = m.color || '#84CC16';
+   482→                    const isSelected = i === 0;
+   483→                    return (
+   484→                      <motion.button
+   485→                        key={m.id}
+   486→                        type="button"
+   487→                        className="rounded-xl border-2 p-3 text-center transition-all text-xs font-medium"
+   488→                        style={{
+   489→                          borderColor: isSelected ? c : 'hsl(var(--border))',
+   490→                          backgroundColor: isSelected ? `${c}15` : 'transparent',
+   491→                          color: isSelected ? c : 'hsl(var(--foreground))',
+   492→                        }}
+   493→                      >
+   494→                        <div
+   495→                          className="mx-auto mb-1.5 h-9 w-9 rounded-lg flex items-center justify-center text-base"
+   496→                          style={{ backgroundColor: `${c}20` }}
+   497→                        >
+   498→                          {getGatewayIcon(m.name)}
+   499→                        </div>
+   500→                        <p className="font-semibold">{m.name}</p>
+   501→                        <p className="mt-0.5 font-mono text-[10px] opacity-70">
+   502→                          {m.accountNumber}
+   503→                        </p>
+   504→                      </motion.button>
+   505→                    );
+   506→                  })}
+   507→                </div>
+   508→
+   509→                {/* Mini info box with first gateway's color */}
+   510→                {activeMethods.length > 0 && (
+   511→                  <>
+   512→                    <div
+   513→                      className="mb-4 rounded-xl border-l-4 bg-white dark:bg-zinc-800 p-3"
+   514→                      style={{ borderLeftColor: activeMethods[0].color || '#84CC16' }}
+   515→                    >
+   516→                      <div className="flex items-center justify-between text-xs">
+   517→                        <span className="text-muted-foreground">মোট পরিমাণ</span>
+   518→                        <span
+   519→                          className="font-bold"
+   520→                          style={{ color: activeMethods[0].color || '#84CC16' }}
+   521→                        >
+   522→                          ৳১,০৩,০০০.০০
+   523→                        </span>
+   524→                      </div>
+   525→                      <div className="flex items-center justify-between text-xs mt-1">
+   526→                        <span className="text-muted-foreground">
+   527→                          {activeMethods[0].name} এ পেমেন্ট পাঠান
+   528→                        </span>
+   529→                        <span className="font-mono font-medium text-foreground">
+   530→                          {activeMethods[0].accountNumber}
+   531→                        </span>
+   532→                      </div>
+   533→                    </div>
+   534→
+   535→                    {/* Mini confirm button */}
+   536→                    <button
+   537→                      className="w-full h-10 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-transform hover:scale-[1.01] active:scale-[0.99]"
+   538→                      style={{
+   539→                        backgroundColor: activeMethods[0].color || '#84CC16',
+   540→                        color: getContrastColor(activeMethods[0].color || '#84CC16'),
+   541→                      }}
+   542→                    >
+   543→                      <ShieldCheckIcon />
+   544→                      কনফার্ম পেমেন্ট
+   545→                    </button>
+   546→                  </>
+   547→                )}
+   548→              </div>
+   549→            </div>
+   550→          </SolidCard>
+   551→        </motion.div>
+   552→      )}
+   553→
+   554→      {/* ═══ Add/Edit Dialog ═══ */}
+   555→      <AnimatePresence>
+   556→        {dialogOpen && (
+   557→          <>
+   558→            {/* Overlay */}
+   559→            <motion.div
+   560→              initial={{ opacity: 0 }}
+   561→              animate={{ opacity: 1 }}
+   562→              exit={{ opacity: 0 }}
+   563→              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+   564→              onClick={() => setDialogOpen(false)}
+   565→            />
+   566→            {/* Modal */}
+   567→            <motion.div
+   568→              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+   569→              animate={{ opacity: 1, scale: 1, y: 0 }}
+   570→              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+   571→              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+   572→              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+   573→            >
+   574→              <div
+   575→                className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900"
+   576→                onClick={(e) => e.stopPropagation()}
+   577→              >
+   578→                {/* Modal Header */}
+   579→                <div className="mb-5 flex items-center justify-between">
+   580→                  <h3 className="text-base font-bold text-foreground">
+   581→                    {editingId ? 'গেটওয়ে সম্পাদনা করুন' : 'নতুন গেটওয়ে যোগ করুন'}
+   582→                  </h3>
+   583→                  <button
+   584→                    onClick={() => setDialogOpen(false)}
+   585→                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+   586→                  >
+   587→                    <X className="h-4 w-4" />
+   588→                  </button>
+   589→                </div>
+   590→
+   591→                {/* Modal Form */}
+   592→                <div className="space-y-4">
+   593→                  <div className="space-y-1.5">
+   594→                    <Label className="text-sm font-medium">গেটওয়ে নাম</Label>
+   595→                    <Input
+   596→                      value={form.name}
+   597→                      onChange={(e) => {
+   598→                        const name = e.target.value;
+   599→                        setForm({
+   600→                          ...form,
+   601→                          name,
+   602→                          // Auto-suggest color for new gateways
+   603→                          ...(!editingId && { color: getGatewayColor(name) }),
+   604→                        });
+   605→                      }}
+   606→                      placeholder="যেমন: bKash, Nagad, Rocket"
+   607→                    />
+   608→                  </div>
+   609→
+   610→                  <div className="space-y-1.5">
+   611→                    <Label className="text-sm font-medium">
+   612→                      অ্যাকাউন্ট নম্বর
+   613→                    </Label>
+   614→                    <Input
+   615→                      value={form.accountNumber}
+   616→                      onChange={(e) =>
+   617→                        setForm({ ...form, accountNumber: e.target.value })
+   618→                      }
+   619→                      placeholder="০১XXXXXXXXX"
+   620→                    />
+   621→                  </div>
+   622→
+   623→                  <ColorPickerRow
+   624→                    label="গেটওয়ে কালার"
+   625→                    color={form.color}
+   626→                    onChange={(c) => setForm({ ...form, color: c })}
+   627→                  />
+   628→
+   629→                  <div className="grid grid-cols-2 gap-3">
+   630→                    <div className="space-y-1.5">
+   631→                      <Label className="text-sm font-medium">
+   632→                        অ্যাকাউন্ট টাইপ
+   633→                      </Label>
+   634→                      <select
+   635→                        value={form.accountType}
+   636→                        onChange={(e) =>
+   637→                          setForm({ ...form, accountType: e.target.value })
+   638→                        }
+   639→                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+   640→                      >
+   641→                        <option value="personal">পার্সোনাল</option>
+   642→                        <option value="merchant">মার্চেন্ট</option>
+   643→                      </select>
+   644→                    </div>
+   645→
+   646→                    <div className="space-y-1.5">
+   647→                      <Label className="text-sm font-medium">স্ট্যাটাস</Label>
+   648→                      <select
+   649→                        value={form.status}
+   650→                        onChange={(e) =>
+   651→                          setForm({ ...form, status: e.target.value })
+   652→                        }
+   653→                        className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+   654→                      >
+   655→                        <option value="active">সক্রিয়</option>
+   656→                        <option value="inactive">নিষ্ক্রিয়</option>
+   657→                      </select>
+   658→                    </div>
+   659→                  </div>
+   660→
+   661→                  <div className="space-y-1.5">
+   662→                    <Label className="text-sm font-medium">সর্ট অর্ডার</Label>
+   663→                    <Input
+   664→                      type="number"
+   665→                      value={form.sortOrder}
+   666→                      onChange={(e) =>
+   667→                        setForm({
+   668→                          ...form,
+   669→                          sortOrder: parseInt(e.target.value) || 0,
+   670→                        })
+   671→                      }
+   672→                      placeholder="০"
+   673→                    />
+   674→                    <p className="text-xs text-muted-foreground">
+   675→                      কম মান মানে পেমেন্ট পেজে আগে দেখাবে
+   676→                    </p>
+   677→                  </div>
+   678→
+   679→                  <div className="space-y-1.5">
+   680→                    <Label className="text-sm font-medium flex items-center gap-1.5">
+   681→                      <ImageIcon className="h-3.5 w-3.5" />
+   682→                      লোগো ইমেজ লিংক
+   683→                    </Label>
+   684→                    <Input
+   685→                      value={form.image}
+   686→                      onChange={(e) =>
+   687→                        setForm({ ...form, image: e.target.value })
+   688→                      }
+   689→                      placeholder="https://example.com/logo.png"
+   690→                    />
+   691→                    <p className="text-xs text-muted-foreground">
+   692→                      ঐচ্ছিক — লিংক দিলে আইকনের জায়গায় এই ইমেজ দেখাবে
+   693→                    </p>
+   694→                  </div>
+   695→
+   696→                  {/* Live preview of the gateway card */}
+   697→                  <div className="rounded-xl border-2 p-3 text-center transition-all text-xs font-medium"
+   698→                    style={{
+   699→                      borderColor: form.color,
+   700→                      backgroundColor: `${form.color}15`,
+   701→                      color: form.color,
+   702→                    }}
+   703→                  >
+   704→                    <div
+   705→                      className="mx-auto mb-1.5 h-10 w-10 rounded-lg flex items-center justify-center text-lg overflow-hidden"
+   706→                      style={{ backgroundColor: form.image ? 'transparent' : `${form.color}20` }}
+   707→                    >
+   708→                      {form.image ? (
+   709→                        <img
+   710→                          src={form.image}
+   711→                          alt={form.name}
+   712→                          className="h-full w-full object-contain"
+   713→                          onError={(e) => {
+   714→                            (e.target as HTMLImageElement).style.display = 'none';
+   715→                          }}
+   716→                        />
+   717→                      ) : (
+   718→                        getGatewayIcon(form.name || 'Gateway')
+   719→                      )}
+   720→                    </div>
+   721→                    <p className="font-semibold text-sm">
+   722→                      {form.name || 'গেটওয়ে নাম'}
+   723→                    </p>
+   724→                    <p className="mt-0.5 font-mono text-[10px] opacity-70">
+   725→                      {form.accountNumber || 'অ্যাকাউন্ট নম্বর'}
+   726→                    </p>
+   727→                  </div>
+   728→                </div>
+   729→
+   730→                {/* Modal Actions */}
+   731→                <div className="mt-6 flex items-center justify-end gap-3">
+   732→                  <Button
+   733→                    variant="outline"
+   734→                    onClick={() => setDialogOpen(false)}
+   735→                    className="h-10 rounded-xl px-5 text-sm font-medium"
+   736→                  >
+   737→                    বাতিল
+   738→                  </Button>
+   739→                  <Button
+   740→                    onClick={handleSave}
+   741→                    disabled={saving}
+   742→                    className="h-10 gap-2 rounded-xl px-5 text-sm font-semibold shadow-md shadow-primary/20"
+   743→                  >
+   744→                    {saving ? (
+   745→                      <Loader2 className="h-4 w-4 animate-spin" />
+   746→                    ) : (
+   747→                      <Save className="h-4 w-4" />
+   748→                    )}
+   749→                    সংরক্ষণ করুন
+   750→                  </Button>
+   751→                </div>
+   752→              </div>
+   753→            </motion.div>
+   754→          </>
+   755→        )}
+   756→      </AnimatePresence>
+   757→    </div>
+   758→  );
+   759→}
+   760→
+   761→/* ─── Helpers ─── */
+   762→function getContrastColor(hex: string): string {
+   763→  const r = parseInt(hex.slice(1, 3), 16);
+   764→  const g = parseInt(hex.slice(3, 5), 16);
+   765→  const b = parseInt(hex.slice(5, 7), 16);
+   766→  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+   767→  return luminance > 0.6 ? '#18181b' : '#ffffff';
+   768→}
+   769→
+   770→function ShieldCheckIcon() {
+   771→  return (
+   772→    <svg
+   773→      width="16"
+   774→      height="16"
+   775→      viewBox="0 0 24 24"
+   776→      fill="none"
+   777→      stroke="currentColor"
+   778→      strokeWidth="2"
+   779→      strokeLinecap="round"
+   780→      strokeLinejoin="round"
+   781→    >
+   782→      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+   783→      <path d="m9 12 2 2 4-4" />
+   784→    </svg>
+   785→  );
+   786→}

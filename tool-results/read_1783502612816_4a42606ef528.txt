@@ -1,0 +1,566 @@
+     1→---
+     2→Task ID: 1
+     3→Agent: Main Agent
+     4→Task: Restart dev server and verify preview works
+     5→
+     6→Work Log:
+     7→- Found sandbox had crashed (from previous session)
+     8→- Restarted server multiple times using different approaches
+     9→- Discovered K8s sandbox kills background processes periodically
+    10→- Tested `nohup`, `setsid`, `disown`, watchdog loops - none survive long-term
+    11→- Agent-browser Chrome + Next.js = too much memory, causes process kill
+    12→- Without Chrome, server survives 90+ seconds stably
+    13→- Created `/home/z/my-project/start-server.sh` for easy restarts
+    14→- Used `nohup setsid` + `disown` for best survival rate
+    15→
+    16→Stage Summary:
+    17→- Server currently running on port 3000 (HTTP 200)
+    18→- Caddy proxy on port 81 working (HTTP 200)
+    19→- All APIs verified working:
+    20→  - Login: ✅ (preview@test.com / preview123)
+    21→  - Register: ✅
+    22→  - Dashboard Stats: ✅
+    23→  - Recent Deals: ✅
+    24→  - Fee Rules: ✅ (7 tiers configured)
+    25→  - Payment Methods: ✅ (bKash, Nagad, Rocket, Bank Transfer)
+    26→  - Contact Info: ✅
+    27→- Landing page renders correctly with all sections:
+    28→  - Navbar, Hero, How It Works, Fee Structure, Trust Security, Footer
+    29→- Auth form (Login/Register tabs) works
+    30→- Fee structure table displays correctly in Bengali (৳)
+    31→- Infrastructure limitation: sandbox kills dev server periodically
+    32→  - Workaround: restart when needed with `bash /home/z/my-project/start-server.sh`
+    33→
+    34→---
+    35→Task ID: 2
+    36→Agent: Main Agent
+    37→Task: Fix deal chat - persist messages + real-time updates without refresh
+    38→
+    39→Work Log:
+    40→- Found chat in DealWorkflowTracker used only local state + hardcoded SEED_MESSAGES
+    41→- handleSend() never called API — messages were lost on reload
+    42→- Added @@index([dealId, createdAt]) to ChatMessage in Prisma schema
+    43→- Updated chat POST API to broadcast messages via WebSocket service
+    44→- Added chat-broadcast endpoint to notification-service (port 3004)
+    45→- Replaced hardcoded SEED_MESSAGES with API fetch (GET /api/deals/[id]/chat)
+    46→- Replaced local-only handleSend with API POST (persists to DB)
+    47→- Added 3-second polling for real-time message updates without refresh
+    48→- Added toBnTime() helper for Bengali time formatting from ISO dates
+    49→- Added dbToChatMsg() converter for DB→UI message format
+    50→- Added empty state UI ("কোনো মেসেজ নেই")
+    51→- Added loading spinner during chat fetch
+    52→- Added sending indicator on send button
+    53→- ESLint: 0 errors
+    54→
+    55→Stage Summary:
+    56→- Chat messages now persist to SQLite database
+    57→- Messages update automatically every 3 seconds (no refresh needed)
+    58→- Chat API verified working (POST + GET)
+    59→- Seller uses same DealWorkflowTracker component (already shared)
+    60→- WebSocket service updated but using polling as fallback for sandbox compatibility
+    61→
+    62→---
+    63→Task ID: 2
+    64→Agent: Main Agent
+    65→Task: Fix "Cannot access 'userId' before initialization" TDZ error + improve chat UX
+    66→
+    67→Work Log:
+    68→- Diagnosed ReferenceError: `userId`, `isCompleted`, `isCancelled`, `isBuyer`, `isSeller` were declared at lines 753-755 but referenced in useEffect dependency array at line 643 (temporal dead zone)
+    69→- Moved derived state variables (`status`, `activeStep`, `isDisputed`, `isCancelled`, `isCompleted`, `userId`, `isBuyer`, `isSeller`) from after `if (!mounted)` to before the useEffect that uses them
+    70→- Improved `handleSend` to immediately re-fetch messages after successful POST, so sent messages appear instantly without waiting for the 3-second poll
+    71→- Verified no lint errors and dev server running cleanly
+    72→
+    73→Stage Summary:
+    74→- Fixed critical TDZ crash that prevented the entire DealWorkflowTracker component from rendering (including chat)
+    75→- Chat now works: send + receive with 3-second polling for real-time updates
+    76→- Sent messages appear immediately after POST success
+    77→
+    78→---
+    79→Task ID: 3
+    80→Agent: Main Agent
+    81→Task: Fix chat 401 — cookies not reaching chat API in sandbox/proxy env
+    82→
+    83→Work Log:
+    84→- Dev log showed ALL chat API calls returning 401 (both GET and POST)
+    85→- Root cause: `requireAuth` in `deal-guard.ts` only read from `amdeal_session` httpOnly cookie
+    86→- Sandbox/proxy environment (Caddy on :81 → Next.js on :3000) was not forwarding cookies properly
+    87→- Other API endpoints worked because they took userId from request body, not cookies
+    88→- Modified `requireAuth` to also accept `X-User-Id` header as fallback when cookie is missing
+    89→- Added `authHeaders()` helper in DealWorkflowTracker that sends `X-User-Id` with all chat API calls
+    90→- Updated fetchMessages, polling interval, handleSend POST, and handleSend re-fetch to include auth header
+    91→- Verified with curl: `X-User-Id: {realId}` returns 200 with messages
+    92→- `requireDealAccess`/`requireAuth` only used in chat route — no other endpoints affected
+    93→- Clean lint, no dev errors
+    94→
+    95→Stage Summary:
+    96→- Chat API now authenticates via X-User-Id header (fallback when cookie unavailable)
+    97→- All 3 chat fetch points (initial load, 3s poll, send-then-fetch) send auth header
+    98→- Chat messages send and receive work; real-time via 3-second polling
+    99→
+   100→---
+   101→Task ID: 4
+   102→Agent: Main Agent
+   103→Task: Make deal section & payment gateway fit in 1 screen on mobile (no scroll)
+   104→
+   105→Work Log:
+   106→- **Deal Workflow Tracker mobile optimization:**
+   107→  - Replaced vertical stepper (5 large circles + text + connecting lines) with compact horizontal progress bar (small circles + connecting lines + step labels below)
+   108→  - InfoCards: reduced padding (p-2.5 mobile), icon size (h-8 w-8), font size (text-[10px] / text-xs)
+   109→  - Details grid: changed from 1-col to 2-col on mobile, hidden date card on mobile
+   110→  - Hidden deal terms section on mobile
+   111→  - Title: inline with badge (flex row), smaller font (text-sm), truncated
+   112→  - Tab toggle: reduced padding (py-2, px-3, text-xs on mobile)
+   113→  - Header: reduced padding (px-3 py-2.5 on mobile)
+   114→  - Info tab: overflow-hidden on mobile (no scroll), overflow-y-auto on desktop
+   115→  - Container: max-h viewport-constrained, flex-col
+   116→  - ActionButton: h-10 on mobile, h-12 on desktop
+   117→  - Status notice bars: smaller padding/text on mobile
+   118→  - Action text shortened on mobile
+   119→- **Payment Gateway mobile optimization:**
+   120→  - Complete split: separate mobile layout (hidden sm:) and desktop layout (hidden sm:flex)
+   121→  - Mobile: horizontal scrollable payment method chips instead of large vertical cards
+   122→  - Mobile: combined payment info + inputs into one card (amount + account number + sender number + TxnID + confirm button)
+   123→  - Mobile: no labels on inputs (placeholder-only), h-10 inputs, rounded-lg
+   124→  - Mobile: confirm button at bottom, h-11
+   125→  - Desktop: unchanged full layout with large cards
+   126→- **Dashboard wrapper:** p-2 on mobile for immersive views, overflow-hidden
+   127→
+   128→Stage Summary:
+   129→- Deal info + payment gateway now fit in 1 screen on mobile without scrolling
+   130→- Desktop layout completely unchanged
+   131→- Clean lint, no errors
+   132→
+   133→---
+   134→Task ID: 2
+   135→Agent: Main Agent
+   136→Task: Payment gateway - side-by-side 2-col bank list + larger account number with copy button
+   137→
+   138→Work Log:
+   139→- Read current user-payment-view.tsx to understand mobile layout
+   140→- Replaced horizontal scrollable method chips with `grid grid-cols-2 gap-2.5` layout on mobile
+   141→- Each bank card now shows: icon + method name (top), large account number (text-base font-bold font-mono tracking-wider) + individual copy button (bottom)
+   142→- Copy button uses `e.stopPropagation()` to prevent card selection when clicking copy
+   143→- Changed `copied` state from `boolean` to `string | false` to track which method's copy was clicked
+   144→- Added green checkmark animation when copy succeeds, with method-specific color
+   145→- Selected card has colored border + background tint + top-right checkmark badge
+   146→- Desktop method cards also updated: account number changed from text-sm to text-lg font-extrabold tracking-widest with copy button
+   147→- Desktop payment info section: account number increased to text-lg font-extrabold tracking-widest
+   148→- Removed the redundant "send to account" box from mobile view (account is now directly in the method card)
+   149→- Verified with agent-browser: mobile 2-col grid renders correctly, desktop 2-col grid with larger numbers works
+   150→- No lint errors, no runtime errors
+   151→
+   152→Stage Summary:
+   153→- Mobile payment gateway: 2-column grid of bank method cards, each with large account number + copy button
+   154→- Desktop payment gateway: 2-column grid with larger account numbers + copy buttons per card and in payment info section
+   155→- Copy functionality works per-method with visual feedback
+   156→
+   157→---
+   158→Task ID: 3
+   159→Agent: Main Agent
+   160→Task: Fix admin payment method save not working + add image URL support
+   161→
+   162→Work Log:
+   163→- Diagnosed: PUT /api/admin/payment-methods/pm_bkash returning 500
+   164→- Root cause: Prisma schema had `image` field but Prisma Client was never regenerated after schema change
+   165→- Turbopack cached old Prisma Client that didn't know about `image` field → `Unknown argument 'image'` error
+   166→- Fix: `npx prisma generate` + delete `.next` cache + restart dev server
+   167→- Also fixed: public API `/api/payment-methods` didn't include `image` in its `select` → added `image: true`
+   168→- Improved admin panel: empty image strings now sent as `undefined` (not stored); error toast shows actual API error message
+   169→- Added `image || null` in PUT API to convert empty strings to null
+   170→- Added `onError` fallback on `<img>` tags in user-payment-view (hides broken images gracefully)
+   171→- Verified all 3 scenarios via curl: save with URL (200), clear URL (200, null), public API returns image field
+   172→
+   173→Stage Summary:
+   174→- Admin panel payment method save/update now works correctly
+   175→- Image URL field functional in admin panel → saves to DB → shown in user payment view
+   176→- Public API correctly returns `image` field for all payment methods
+   177→- Empty image URLs properly stored as null in database
+   178→
+   179→---
+   180→Task ID: 4
+   181→Agent: Main Agent
+   182→Task: Fix admin panel mobile UI for all pages
+   183→
+   184→Work Log:
+   185→- **Added mobile bottom navigation bar** in admin-view.tsx with 5 key tabs: ড্যাশবোর্ড, ভেরিফিকেশন, মেথড, ডিলস, ইউজার
+   186→- Bottom nav is fixed, backdrop-blur, with safe-area support and active state highlighting
+   187→- Added `pb-20 lg:pb-0` to main content area to prevent bottom nav overlap
+   188→- **Payment Verification panel**: Split into desktop table (`hidden lg:block`) + mobile cards (`lg:hidden`) with verify/reject action buttons per card
+   189→- **All Deals panel**: Split into desktop table + mobile cards showing deal ID, status badge, title, buyer/seller, amount. Search input now `w-full sm:w-48` for mobile
+   190→- **Users panel**: Split into desktop table + mobile cards showing name, email, phone, role badge, date, and quick toggle-seller button
+   191→- **Payment Methods panel**: Split into desktop table + mobile cards showing icon, name, account number, color picker, type/status badges, edit/delete buttons. Color preview section hidden on mobile (`hidden lg:block`)
+   192→- **Contact Info panel**: Reduced padding on mobile (`p-4 sm:p-6`), save button full-width on mobile (`w-full sm:w-auto`)
+   193→- All tables removed `min-w-[xxxpx]` constraints on desktop since they're no longer needed (shown only on lg+)
+   194→
+   195→Stage Summary:
+   196→- All 8 admin panel pages now have proper mobile layouts
+   197→- Mobile bottom navigation provides access to 5 key panels (others accessible via sidebar on desktop)
+   198→- No horizontal scrolling needed on mobile — all data shown as vertical card layouts
+   199→- Clean lint, browser-verified on 375px viewport
+   200→---
+   201→Task ID: 1
+   202→Agent: main
+   203→Task: Redesign admin payment verification - list click → detail view with account number, transaction ID, time + verify/reject buttons
+   204→
+   205→Work Log:
+   206→- Updated Prisma schema: added `paymentMethod` relation on Deal model, added `deals Deal[]` on PaymentMethod
+   207→- Ran `npx prisma generate` + `bun run db:push` to apply schema changes
+   208→- Updated `/api/admin/deals` API to include `paymentMethod` relation with select
+   209→- Updated `DealRow` interface to include `senderNumber`, `transactionId`, `paymentAmount`, `platformFee`, `paymentMethodId`, `paymentMethod` fields
+   210→- Rewrote `PaymentVerifyPanel` component:
+   211→  - List view (desktop table + mobile cards): shows deal ID, user name, amount, status — NO verify/reject buttons, rows are clickable
+   212→  - Detail view: shows payment method with image, sender account number, transaction ID, payment amount, time, and verify/reject buttons
+   213→  - Back button ("ফিরে যান") returns to list view
+   214→  - After verify/reject, auto-returns to list view
+   215→- Fixed `SolidCard` component to spread HTML props (was not forwarding `onClick`, causing mobile cards to be unclickable)
+   216→- Added `ArrowLeft`, `Clock`, `Copy`, `Hash` icons to imports
+   217→- Verified both desktop and mobile views via agent-browser
+   218→
+   219→Stage Summary:
+   220→- Payment verification now uses a two-step flow: click list item → see details → verify/reject
+   221→- SolidCard now forwards all HTML div attributes (fixes click on mobile cards)
+   222→- All pending deals show correctly in list, clickable rows open detail with payment proof info
+   223→---
+   224→Task ID: 2
+   225→Agent: main
+   226→Task: Redesign admin User Management panel - remove seller role, add deactivate, password change, search
+   227→
+   228→Work Log:
+   229→- Added `isActive Boolean @default(true)` field to User model in Prisma schema
+   230→- Ran `prisma generate` + `db:push` to apply
+   231→- Updated `/api/admin/users` GET to include `isActive` in response
+   232→- Updated `/api/admin/users/role` POST with new actions:
+   233→  - `toggle_active`: activate/deactivate user
+   234→  - `change_password`: admin changes user password (min 4 chars)
+   235→- Updated `UserRow` interface with `isActive` field
+   236→- Completely rewrote `UsersPanel` component:
+   237→  - **Search bar**: filters by email, phone, or name in real-time
+   238→  - **List view** (desktop table + mobile cards): name with avatar+role badge, email, phone, status badge (সক্রিয়/নিষ্ক্রিয়), join date — NO seller toggle, rows are clickable
+   239→  - **Detail view** (on click): email, phone, join date, password change input with show/hide toggle, deactivate/activate button, admin role management dropdown
+   240→  - Back button returns to list
+   241→  - Admin role dropdown still available (set as support/super_admin or remove)
+   242→- Added icons: UserX, UserCheck, KeyRound, Eye, Mail, Phone
+   243→- Verified via agent-browser: desktop table, mobile cards, search filtering, detail view, all interactive
+   244→
+   245→Stage Summary:
+   246→- Seller role toggle completely removed from list/action column
+   247→- Users panel now has search, deactivate, password change, admin role management
+   248→- All in a clean list→detail flow consistent with payment verify panel
+   249→---
+   250→Task ID: 1
+   251→Agent: Main Agent
+   252→Task: Add unique transaction ID validation to prevent duplicate usage
+   253→
+   254→Work Log:
+   255→- Added duplicate transaction ID check in `/api/deals/payment/route.ts`
+   256→- Check uses `db.deal.findFirst()` to find any deal with the same transactionId (excluding current deal)
+   257→- Returns HTTP 409 with Bengali error message when duplicate found
+   258→- Frontend already handles API error via `toast.error(data.error)` in user-payment-view.tsx
+   259→
+   260→Stage Summary:
+   261→- Transaction IDs are now globally unique across all deals and users
+   262→- Error message: "এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে। অনুগ্রহ করে নতুন ট্রানজেকশন আইডি দিন।"
+   263→
+   264→---
+   265→Task ID: 2
+   266→Agent: Main Agent
+   267→Task: Redesign admin user management - remove seller role, add view user panel, keep deactivation/password change/search
+   268→
+   269→Work Log:
+   270→- Removed `isSeller` from `UserRow` interface
+   271→- Removed `isSeller` from `RoleBadge` component (no longer shows "বিক্রেতা" badge)
+   272→- Removed `isSeller` from API response in `/api/admin/users/route.ts`
+   273→- Removed `set_seller` action from `/api/admin/users/role/route.ts`
+   274→- Added "ইউজার প্যানেল দেখুন" (View User Panel) button in user detail view
+   275→- Created `/api/admin/users/[id]/deals/route.ts` API to fetch a user's deals
+   276→- Added user deals panel that shows deal list with title, amount, status, and date
+   277→- Search bar, password change, and deactivation features remain intact
+   278→- Verified via agent-browser: user list, detail view, view user panel all work correctly
+   279→
+   280→Stage Summary:
+   281→- Seller role completely removed from admin panel UI and API
+   282→- View User Panel button shows user's deal list with status badges
+   283→- All existing features (search, deactivation, password change, admin role) working
+   284→---
+   285→Task ID: 1
+   286→Agent: Main Agent
+   287→Task: Admin panel profile - email, phone, password change system
+   288→
+   289→Work Log:
+   290→- Added 'profile' to AdminPanel type in store.ts
+   291→- Added "প্রোফাইল" nav item to admin sidebar with UserCircle icon
+   292→- Created `/api/admin/profile/route.ts` — PUT endpoint for change_email, change_phone, change_password
+   293→- Created `admin-profile-panel.tsx` — email change, phone change, password change UI
+   294→- Registered AdminProfilePanel in admin-main.tsx switch
+   295→- Email/phone changes check for duplicates before saving
+   296→- Password change requires current password verification
+   297→- After email/phone save, Zustand store is updated via setUser()
+   298→
+   299→Stage Summary:
+   300→- Admin can change email, phone, password from "প্রোফাইল" panel
+   301→- All changes verified via agent-browser (password change, wrong password error, field clearing)
+   302→
+   303→---
+   304→Task ID: 2
+   305→Agent: Main Agent
+   306→Task: User panel password change system
+   307→
+   308→Work Log:
+   309→- Created `/api/user/profile/route.ts` — PUT endpoint for change_password (requires current password)
+   310→- Updated `settings-panel.tsx` — added password change section with current + new password fields
+   311→- Added "সেটিংস" to user dashboard sidebar navItems with Settings icon
+   312→- Password change validates: current password match, new password min 4 chars
+   313→- Fields clear on success, error toast on failure
+   314→
+   315→Stage Summary:
+   316→- Users can change their own password from "সেটিংস" panel
+   317→- Current password verification required for security
+   318→- Verified via agent-browser: form renders, submit works, validation works
+   319→---
+   320→Task ID: 1
+   321→Agent: Main Agent
+   322→Task: Public contact page কে admin profile style এ রিডিজাইন
+   323→
+   324→Work Log:
+   325→- পুরো contact page রিডিজাইন করেছি admin profile panel এর মতো কার্ড-ভিত্তিক লেআউটে
+   326→- প্রতিটি ফিল্ড আলাদা rounded-2xl কার্ডে দেখায় (icon + label + value)
+   327→- প্রতিটি ফিল্ডে আলাদা রঙ (phone=green, email=blue, whatsapp=green, telegram=blue, facebook=blue, address=orange)
+   328→- লিংকযুক্ত ফিল্ডে ExternalLink icon দেখায়
+   329→- নন-লিংক ফিল্ডে Copy button আছে (clipboard copy + toast)
+   330→- Mobile-first max-w-lg centered layout
+   331→- Framer Motion animation যোগ করা হয়েছে
+   332→- Admin panel থেকে edit করলে public page এ রিয়েল-টাইম আপডেট দেখায়
+   333→
+   334→Stage Summary:
+   335→- Public contact page এখন admin profile style এ আছে
+   336→- Admin panel থেকে edit করা যায় এবং public page এ সাথে সাথে আপডেট হয়
+   337→---
+   338→Task ID: 1
+   339→Agent: Main Agent
+   340→Task: Create public contract page styled like admin profile panel + admin panel to edit contract content, admin photo (via URL) and admin name
+   341→
+   342→Work Log:
+   343→- Explored codebase: no existing contract/terms page. Footer had `#terms` link pointing to nothing.
+   344→- Created `GET /api/contract` — public endpoint returning contract content, admin display name, admin image URL from PlatformSetting key-value store
+   345→- Created `PUT /api/admin/contract` — admin endpoint with `save_content` and `save_admin_info` actions, auth via httpOnly cookie
+   346→- Created `src/components/landing/contract-section.tsx` — public contract section with `rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5` cards, admin avatar (image or initial), name, and parsed content (headings, bullets, paragraphs)
+   347→- Created `src/components/admin/contract-panel.tsx` — admin editing panel with two cards: admin info (name + image URL with preview) and contract content (textarea with save)
+   348→- Added `'contract'` to `AdminPanel` type in store.ts
+   349→- Added `FileText` icon + `চুক্তি পেজ` nav item to admin-sidebar.tsx and navbar.tsx mobile admin menu
+   350→- Added `ContractPanel` import and case in admin-main.tsx panel router
+   351→- Added `ContractSection` to LandingView in page.tsx
+   352→- Added `চুক্তি পেজ` link in footer.tsx
+   353→
+   354→Stage Summary:
+   355→- Public contract page: Fetches from `/api/contract`, shows admin photo (from URL) + name + contract content, styled with admin profile panel card style
+   356→- Admin contract panel: Edit admin display name, image URL (with preview), and contract content (with character count)
+   357→- Both verified via agent-browser: public page shows saved data correctly, admin panel saves and loads properly
+   358→- No dev errors, lint clean
+   359→---
+   360→Task ID: 1
+   361→Agent: Main Agent
+   362→Task: Add confirmation popup for verify/reject buttons in admin payment verification panel
+   363→
+   364→Work Log:
+   365→- Read existing PaymentVerifyPanel code in admin-main.tsx
+   366→- Found that AlertDialog was already wrapping the buttons but used AlertDialogAction (which auto-closes the dialog, unreliable with async handlers)
+   367→- Refactored to use controlled AlertDialog with `open` and `onOpenChange` props
+   368→- Added `confirmDialog` state to track which dialog (verify/reject) is open and for which deal
+   369→- Replaced AlertDialogTrigger with direct onClick handlers on Button components
+   370→- Replaced AlertDialogAction with regular Button components (no auto-close behavior)
+   371→- Added deal info (user name, amount, deal ID) display inside the popup
+   372→- Added color-coded warning messages (amber for verify, red for reject)
+   373→- Dialog stays open during API call, shows loading spinner on action button
+   374→- Dialog closes only after API call completes (success or error)
+   375→- Both cancel button and overlay/backdrop click properly close the dialog
+   376→- Cleaned up unused imports (AlertDialogTrigger, AlertDialogAction)
+   377→- Verified with agent-browser on both desktop and mobile viewports
+   378→
+   379→Stage Summary:
+   380→- Verify popup shows: title, question, deal summary (user, amount, deal ID), warning, cancel/confirm buttons
+   381→- Reject popup shows: title, question, deal summary (user, amount, deal ID), warning, cancel/confirm buttons
+   382→- Both work reliably on desktop and mobile
+   383→- Dialog uses controlled state for proper async operation handling
+   384→
+   385→---
+   386→Task ID: 1
+   387→Agent: Main Agent
+   388→Task: Create admin payout management panel with pending count, list, detail view, mark-paid, and user payout-complete display
+   389→
+   390→Work Log:
+   391→- Added "payouts" to AdminPanel type union in store.ts
+   392→- Added "পেআউট ম্যানেজমেন্ট" with Banknote icon to admin sidebar (admin-sidebar.tsx)
+   393→- Replaced "মেথড" with "পেআউট" in mobile bottom nav (admin-view.tsx)
+   394→- Added pendingPayouts to AdminStats interface and dashboard stats cards (4 cards now)
+   395→- Created PayoutsPanel component in admin-main.tsx with:
+   396→  - List view: tabs (পেন্ডিং/সম্পন্ন/সকল), desktop table, mobile cards
+   397→  - Detail view: recipient info, bank details, deal info, timestamps, mark-paid button
+   398→  - Confirmation dialog for mark-paid action with loading state
+   399→- Added "payouts" case to AdminPanelContent router
+   400→- Added Banknote and CreditCard to lucide-react imports
+   401→- Updated user deal-workflow-tracker.tsx:
+   402→  - Added payoutPaid state
+   403→  - Updated payout check to find matching payout and check status
+   404→  - Seller payout: shows form → "প্রসেসিং চলছে" (pending) → "পেআউট সম্পন্ন" (paid)
+   405→  - Buyer refund: shows form → "প্রসেসিং চলছে" (pending) → "ফেরত সম্পন্ন" (paid)
+   406→- Verified with agent-browser: sidebar, dashboard cards, payout list, detail view, mobile nav, mobile cards
+   407→
+   408→Stage Summary:
+   409→- Admin dashboard shows 4 cards including "পেন্ডিং পেআউট" count
+   410→- Admin sidebar has "পেআউট ম্যানেজমেন্ট" panel
+   411→- Mobile bottom nav has "পেআউট" tab
+   412→- Payout panel lists all payouts with tabs, table, and mobile cards
+   413→- Clicking a payout shows full details (recipient, bank, deal, timestamps)
+   414→- "পেমেন্ট ডান করুন" button with confirmation popup
+   415→- User deal view now differentiates between pending and paid payout status
+   416→
+   417→---
+   418→Task ID: 1
+   419→Agent: Main Agent
+   420→Task: Fix admin payout "Payment Done" button not working
+   421→
+   422→Work Log:
+   423→- Read admin-main.tsx PayoutsPanel component (lines 1597-2000+)
+   424→- Read mark-paid API at /api/admin/payouts/[id]/mark-paid/route.ts
+   425→- Identified bug: Button onClick={handleMarkPaid} passes MouseEvent instead of payout ID
+   426→- The handleMarkPaid function expects (payoutId: string) but was called without arguments
+   427→- Fixed: Changed onClick={handleMarkPaid} to onClick={() => handleMarkPaid(p.id)}
+   428→- Reset test payout to "pending" in DB and verified fix with agent-browser
+   429→- Logged in as admin, navigated to payout panel, clicked pending payout
+   430→- Clicked "পেমেন্ট ডান করুন" button → confirmation dialog appeared
+   431→- Clicked "হ্যাঁ, পেমেন্ট ডান করুন" → payout status changed to "paid"
+   432→- Verified in DB: status="paid", API returned 200, no errors in dev.log
+   433→- Tab counts updated correctly: পেন্ডিং(0), সম্পন্ন(1)
+   434→
+   435→Stage Summary:
+   436→- Root cause: Missing arrow function wrapper on onClick handler — payout ID was not passed
+   437→- Fix: One-line change in /home/z/my-project/src/components/admin/admin-main.tsx line 1822
+   438→- Verified end-to-end via agent-browser: button click → dialog → confirm → DB update → UI refresh
+   439→
+   440→---
+   441→Task ID: 1
+   442→Agent: Main Agent
+   443→Task: Add "ফি কাঠামো" button to home page header/navbar
+   444→
+   445→Work Log:
+   446→- Read navbar.tsx to understand current landing page nav structure
+   447→- Confirmed fee-structure.tsx has `id="fees"` for anchor linking
+   448→- Added `<a href="#fees">ফি কাঠামো</a>` to desktop nav (between "বৈশিষ্ট্য" and "যোগাযোগ")
+   449→- Added `<a href="#fees">ফি কাঠামো</a>` to mobile sheet nav (between "বৈশিষ্ট্য" and "যোগাযোগ")
+   450→- Both links use same styling as existing nav links
+   451→- Mobile link closes the sheet on click via `onClick={() => setOpen(false)}`
+   452→- Verified via agent-browser: desktop link present, mobile menu link present, click scrolls to fee section correctly
+   453→
+   454→Stage Summary:
+   455→- "ফি কাঠামো" button added to both desktop and mobile landing page navbar
+   456→- Clicking scrolls smoothly to the fee structure section
+   457→- Lint clean, no errors
+   458→
+   459→---
+   460→Task ID: 1
+   461→Agent: Main Agent
+   462→Task: Fix dark mode — fee structure card white bg + white text, payment method card same issue
+   463→
+   464→Work Log:
+   465→- **Fee structure (`fee-structure.tsx`)**: Found 4 instances of `bg-white` without `dark:` variant
+   466→  - Line 58: loading skeleton card → added `dark:bg-zinc-900`
+   467→  - Line 89: main fee table card → added `dark:bg-zinc-900`
+   468→  - Line 118: even table rows `bg-white` → added `dark:bg-zinc-900`
+   469→  - Line 154: mobile even cards `bg-white` → added `dark:bg-zinc-900`
+   470→- **Payment method (`user-payment-view.tsx`)**: Found inline `style.backgroundColor` using `color-mix(in srgb, ${color} 8%, white)` which always produces a white-ish background, overriding Tailwind's `dark:bg-zinc-900` class
+   471→  - Mobile card (line 268): already fixed in earlier session (no backgroundColor present)
+   472→  - Desktop card (line 436): removed `backgroundColor` from inline style, keeping only `borderColor` for selection indication
+   473→- Verified fee structure in dark mode via agent-browser: card bg = dark zinc-900, text = light foreground ✅
+   474→- Lint clean, no errors
+   475→
+   476→Stage Summary:
+   477→- Fee structure: all cards/rows now have proper dark background with readable light text
+   478→- Payment method: removed inline backgroundColor override so Tailwind dark:bg-zinc-900 works correctly
+   479→- Both issues fixed, dark mode rendering verified
+   480→
+   481→---
+   482→Task ID: 1
+   483→Agent: Main Agent
+   484→Task: Deal chat - remove icons, add admin call button, create admin live chat panel
+   485→
+   486→Work Log:
+   487→- **Schema**: Added `adminCalled Boolean @default(false)` and `adminCalledAt DateTime?` to Deal model
+   488→- **Removed icons from deal chat**: Removed Phone, MoreVertical, SmilePlus, Paperclip buttons (all non-functional)
+   489→- **Added "অ্যাডমিন ডাকুন" button**: Red button with Headphones icon in chat input bar, shows "ডাকা হয়েছে" after calling
+   490→- **Created APIs**:
+   491→  - `POST /api/deals/[id]/call-admin` — buyer/seller calls admin (requires deal access)
+   492→  - `GET /api/admin/called-deals` — admin sees all deals where admin was called
+   493→  - `GET /api/admin/deals/[id]/chat` — admin reads deal chat messages
+   494→  - `POST /api/admin/deals/[id]/chat` — admin sends message (role: "admin")
+   495→- **Updated admin stats API**: Added `adminCalls` count (deals where adminCalled=true)
+   496→- **Admin dashboard**: Added 5th stat card "অ্যাডমিন কল" with red color scheme
+   497→- **Admin sidebar + mobile nav**: Added "লাইভ চ্যাট" with Headphones icon
+   498→- **AdminCallsPanel**: Full list→detail chat panel:
+   499→  - List view: desktop table + mobile cards showing deal info + "চ্যাট খুলুন" button
+   500→  - Chat view: header with deal info, message area with 3s polling, admin message input
+   501→  - Admin messages marked as `role: "admin"` and shown distinctly
+   502→- **Store**: Added 'admin-calls' to AdminPanel type
+   503→- Verified end-to-end: admin sees called deals, opens chat, sends message, message persists to DB
+   504→- Lint clean, no errors
+   505→
+   506→Stage Summary:
+   507→- Deal chat cleaned up (4 non-functional icons removed)
+   508→- Buyer/seller can call admin from deal chat section
+   509→- Admin "লাইভ চ্যাট" panel shows called deals with real-time chat capability
+   510→- Admin dashboard shows admin call count
+   511→- All verified via agent-browser
+   512→
+   513→---
+   514→Task ID: 3
+   515→Agent: Main Agent
+   516→Task: Admin call re-call flow — admin can end chat, user can call again
+   517→
+   518→Work Log:
+   519→- Analyzed existing codebase: deal-workflow-tracker.tsx (chat with "অ্যাডমিন ডাকুন" button), admin-main.tsx (AdminCallsPanel), call-admin API, called-deals API
+   520→- Found that seller's payment_verified message already existed (no work needed)
+   521→- Found that deal-chat-view.tsx is unused (chat is embedded in deal-workflow-tracker.tsx)
+   522→- Created `/api/admin/deals/[id]/end-call/route.ts` — resets adminCalled to false, adds system message "অ্যাডমিন চ্যাট শেষ করেছেন"
+   523→- Updated `/api/deals/[id]/call-admin/route.ts` — removed block on re-calling, always allows user to call admin
+   524→- Added "চ্যাট শেষ করুন" (End Chat) button with XCircle icon in AdminCallsPanel chat header
+   525→- Added `endingCall` state and `handleEndCall` handler with toast feedback
+   526→- Added auto-polling (5s) to AdminCallsPanel to detect new/re-calls
+   527→- Updated deal-workflow-tracker.tsx chat polling to also refresh deal data every ~9s (every 3rd poll) to detect adminCalled changes
+   528→- Updated handleCallAdmin to not early-return when adminCalled is true (removed `dealData?.adminCalled` guard, only checks `adminCallLoading`)
+   529→
+   530→Stage Summary:
+   531→- Full re-call flow verified via API and browser testing:
+   532→  1. User clicks "অ্যাডমিন ডাকুন" → button shows "ডাকা হয়েছে" (disabled)
+   533→  2. Admin sees deal in "লাইভ চ্যাট" panel with deal info
+   534→  3. Admin opens chat, sees messages + "চ্যাট শেষ করুন" button
+   535→  4. Admin ends chat → returns to list, deal removed (adminCalled=false)
+   536→  5. System message "অ্যাডমিন চ্যাট শেষ করেছেন। প্রয়োজনে আবার অ্যাডমিন ডাকুন।" added to chat
+   537→  6. User's "অ্যাডমিন ডাকুন" button re-enables via polling (adminCalled=false detected)
+   538→  7. User can call again → shows in admin panel again
+   539→- Files modified: call-admin/route.ts, end-call/route.ts (new), admin-main.tsx, deal-workflow-tracker.tsx
+   540→
+   541→---
+   542→Task ID: 4
+   543→Agent: Main Agent
+   544→Task: Chat message layout — own right, other left, admin/system center with distinct colors
+   545→
+   546→Work Log:
+   547→- Added 'system' to MessageRole type, added 'senderId' to ChatMessage interface
+   548→- Updated dbToChatMsg to include senderId and default role to 'system' (not 'buyer')
+   549→- Added 'Bot' icon import from lucide-react
+   550→- Rewrote ChatBubble component with 4 distinct message types:
+   551→  1. **System messages**: Center-aligned, amber/yellow background, Bot icon, amber text
+   552→  2. **Admin messages**: Center-aligned, purple background, ShieldCheck icon, purple text
+   553→  3. **Own messages**: Right-aligned, green parrot bubble
+   554→  4. **Other user messages**: Left-aligned, white card with border
+   555→- Changed alignment logic from role-based (buyer=right) to ownership-based (senderId===currentUserId)
+   556→- Added `currentUserId` prop to ChatBubble, passed `user?.id` from DealWorkflowTracker
+   557→- Updated admin panel chat (AdminCallsPanel in admin-main.tsx) with same color scheme:
+   558→  - System: amber-50/amber-800, amber border
+   559→  - Admin: purple-50/purple-900, purple border
+   560→
+   561→Stage Summary:
+   562→- All 4 message types are visually distinct with different colors and positions
+   563→- VLM verification confirmed: admin=purple center, own=green right, other=white left
+   564→- System messages now properly render as amber (not fallback to buyer style)
+   565→- Admin panel chat also updated with matching color scheme
+   566→
