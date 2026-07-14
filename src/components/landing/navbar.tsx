@@ -186,7 +186,6 @@ export function Navbar() {
                 </a>
               </div>
               <div className="hidden items-center gap-2 md:flex">
-                <ThemeToggle />
                 <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                   FAQ
                 </a>
@@ -200,6 +199,7 @@ export function Navbar() {
                   <LogIn className="h-4 w-4" />
                   লগইন / নিবন্ধন
                 </Button>
+                <ThemeToggle />
               </div>
             </>
           )}
