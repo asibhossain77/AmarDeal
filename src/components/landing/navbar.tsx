@@ -154,7 +154,7 @@ export function Navbar() {
         <div
           className={`flex items-center ${
             isSidebarView
-              ? 'flex-1 justify-between px-4 sm:px-6 lg:px-0 lg:pr-6'
+              ? 'flex-1 justify-end px-4 sm:px-6 lg:px-0 lg:pr-6'
               : ''
           }`}
         >
