@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Send, MessageSquarePlus, Loader2, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Send, MessageSquarePlus, Loader2, User, ChevronLeft, ChevronRight, LogIn, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useAppStore } from '@/lib/store';
 
 interface Review {
   id: string;
@@ -15,6 +15,7 @@ interface Review {
   rating: number;
   comment: string;
   createdAt: string;
+  userId?: string | null;
 }
 
 const PER_PAGE = 4;
@@ -174,18 +175,31 @@ function Pagination({
   );
 }
 
-/* ── Review Form ── */
+/* ── Review Form (auth required) ── */
 function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
-  const [name, setName] = useState('');
+  const user = useAppStore((s) => s.user);
+  const setView = useAppStore((s) => s.setView);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+
+  // Check if user already reviewed
+  const { data: hasReviewed, isLoading: checkingReview } = useQuery<boolean>({
+    queryKey: ['my-review-check', user?.id],
+    queryFn: async () => {
+      const res = await fetch('/api/reviews/my-review');
+      if (res.status === 404) return false;
+      if (res.ok) return true;
+      return false;
+    },
+    enabled: !!user?.id,
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, rating, comment }),
+        body: JSON.stringify({ rating, comment }),
       });
       if (!res.ok) {
         const data = (await res.json()) as { error: string };
@@ -195,7 +209,6 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
     },
     onSuccess: () => {
       toast.success('রিভিউ জমা হয়েছে! ধন্যবাদ 🎉');
-      setName('');
       setRating(0);
       setComment('');
       onSuccess();
@@ -205,8 +218,77 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
-  const isValid = name.trim() && rating >= 1 && comment.trim().length >= 5;
+  const isValid = rating >= 1 && comment.trim().length >= 5;
 
+  // Not logged in — show login prompt
+  if (!user) {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold text-foreground mb-4">
+          <MessageSquarePlus className="h-5 w-5 text-primary" />
+          আপনার মতামত দিন
+        </h3>
+        <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <LogIn className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">রিভিউ দিতে লগইন করুন</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              আপনার নিবন্ধিত একাউন্ট দিয়ে রিভিউ দিন
+            </p>
+          </div>
+          <Button
+            onClick={() => setView('auth')}
+            className="gap-2"
+          >
+            <LogIn className="h-4 w-4" />
+            লগইন / নিবন্ধন
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Checking review status
+  if (checkingReview) {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold text-foreground mb-4">
+          <MessageSquarePlus className="h-5 w-5 text-primary" />
+          আপনার মতামত দিন
+        </h3>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  // Already reviewed
+  if (hasReviewed) {
+    return (
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
+        <h3 className="flex items-center gap-2 text-base font-bold text-foreground mb-4">
+          <MessageSquarePlus className="h-5 w-5 text-primary" />
+          আপনার মতামত দিন
+        </h3>
+        <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">রিভিউ দেওয়া হয়েছে!</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              আপনি ইতিমধ্যে আপনার মতামত দিয়েছেন। ধন্যবাদ!
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Review form for logged-in user
   return (
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
       <h3 className="flex items-center gap-2 text-base font-bold text-foreground mb-4">
@@ -215,20 +297,20 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
       </h3>
 
       <div className="space-y-4">
-        {/* Name */}
+        {/* User Info (read-only, from account) */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            আপনার নাম <span className="text-destructive">*</span>
+            আপনার নাম
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value.slice(0, 50))}
-              placeholder="আপনার নাম লিখুন"
-              className="pl-9"
-            />
+            <div className="flex h-10 w-full items-center rounded-lg border border-border bg-muted/50 pl-9 pr-3 text-sm text-foreground">
+              {user.name}
+            </div>
           </div>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {user.email}
+          </p>
         </div>
 
         {/* Rating */}
@@ -305,6 +387,7 @@ export function ReviewSection() {
   // Reset page when new review is added
   const handleReviewSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['public-reviews'] });
+    queryClient.invalidateQueries({ queryKey: ['my-review-check'] });
     setPage(1);
   };
 

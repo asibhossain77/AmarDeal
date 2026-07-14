@@ -24,6 +24,7 @@ model User {
   dealsCreated  Deal[] @relation("DealCreator")
   admin         Admin?
   notifications Notification[]
+  reviews       Review[]
 }
 
 model Admin {
@@ -169,8 +170,11 @@ model Review {
   rating    Int
   comment   String
   isApproved Boolean  @default(false)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([isApproved, createdAt])
+  @@index([userId])
 }

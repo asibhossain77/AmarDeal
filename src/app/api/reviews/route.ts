@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
 
 // GET /api/reviews — public: approved reviews only
 export async function GET() {
@@ -15,14 +16,17 @@ export async function GET() {
   }
 }
 
-// POST /api/reviews — submit a new review (anyone)
-export async function POST(request: Request) {
+// POST /api/reviews — submit a new review (auth required)
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, rating, comment } = body
+    const auth = await requireAuth(request)
+    if (!auth.ok) return auth.response
 
-    if (!name || !rating || !comment) {
-      return NextResponse.json({ error: 'নাম, রেটিং ও মন্তব্য আবশ্যক' }, { status: 400 })
+    const body = await request.json()
+    const { rating, comment } = body
+
+    if (!rating || !comment) {
+      return NextResponse.json({ error: 'রেটিং ও মন্তব্য আবশ্যক' }, { status: 400 })
     }
 
     if (rating < 1 || rating > 5) {
@@ -33,12 +37,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'মন্তব্য ৫০০ অক্ষরের বেশি হতে পারবে না' }, { status: 400 })
     }
 
-    if (name.length > 50) {
-      return NextResponse.json({ error: 'নাম ৫০ অক্ষরের বেশি হতে পারবে না' }, { status: 400 })
+    // Get user info from account (name is auto-filled, not from input)
+    const user = await db.user.findUnique({
+      where: { id: auth.userId },
+      select: { id: true, name: true },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: 'ইউজার পাওয়া যায়নি' }, { status: 404 })
+    }
+
+    // Check if user already reviewed (one review per user)
+    const existing = await db.review.findFirst({
+      where: { userId: user.id },
+    })
+    if (existing) {
+      return NextResponse.json({ error: 'আপনি ইতিমধ্যে একটি রিভিউ দিয়েছেন' }, { status: 400 })
     }
 
     const review = await db.review.create({
-      data: { name, rating, comment, isApproved: true },
+      data: {
+        name: user.name,
+        rating,
+        comment,
+        userId: user.id,
+        isApproved: true,
+      },
     })
 
     return NextResponse.json(review, { status: 201 })
