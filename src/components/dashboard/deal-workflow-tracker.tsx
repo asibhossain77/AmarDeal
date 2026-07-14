@@ -959,16 +959,14 @@ export function DealWorkflowTracker() {
             const data: DealData = await dealRes.json();
             setDealData((prev) => {
               if (!prev) return data;
-              // Update if adminCalled, status, paymentAmount, or platformFee changed
-              if (
-                prev.adminCalled !== data.adminCalled ||
+              // Update entire deal data if anything changed (admin edits, payment amount, status, etc.)
+              const changed =
                 prev.status !== data.status ||
+                prev.adminCalled !== data.adminCalled ||
                 prev.paymentAmount !== data.paymentAmount ||
-                prev.platformFee !== data.platformFee
-              ) {
-                return { ...prev, adminCalled: data.adminCalled, adminCalledAt: data.adminCalledAt, status: data.status, paymentAmount: data.paymentAmount, platformFee: data.platformFee };
-              }
-              return prev;
+                prev.platformFee !== data.platformFee ||
+                prev.rejectionReason !== data.rejectionReason;
+              return changed ? data : prev;
             });
           }
         } catch {
@@ -1359,6 +1357,13 @@ export function DealWorkflowTracker() {
                     label="ডিলের পরিমাণ"
                     value={`৳${dealAmount.toLocaleString('bn-BD')}`}
                   />
+                  {dealData?.paymentAmount != null && dealData.paymentAmount !== dealData.amount && (
+                    <InfoCard
+                      icon={Banknote}
+                      label="প্রকৃত পেমেন্টের পরিমাণ"
+                      value={`৳${dealData.paymentAmount.toLocaleString('bn-BD')}`}
+                    />
+                  )}
                   {dealData?.platformFee != null && dealData.platformFee > 0 && (
                     <InfoCard
                       icon={Receipt}
