@@ -959,9 +959,14 @@ export function DealWorkflowTracker() {
             const data: DealData = await dealRes.json();
             setDealData((prev) => {
               if (!prev) return data;
-              // Update if adminCalled or status changed
-              if (prev.adminCalled !== data.adminCalled || prev.status !== data.status) {
-                return { ...prev, adminCalled: data.adminCalled, adminCalledAt: data.adminCalledAt, status: data.status };
+              // Update if adminCalled, status, paymentAmount, or platformFee changed
+              if (
+                prev.adminCalled !== data.adminCalled ||
+                prev.status !== data.status ||
+                prev.paymentAmount !== data.paymentAmount ||
+                prev.platformFee !== data.platformFee
+              ) {
+                return { ...prev, adminCalled: data.adminCalled, adminCalledAt: data.adminCalledAt, status: data.status, paymentAmount: data.paymentAmount, platformFee: data.platformFee };
               }
               return prev;
             });

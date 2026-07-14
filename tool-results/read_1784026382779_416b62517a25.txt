@@ -1,0 +1,1934 @@
+     1→'use client';
+     2→
+     3→import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore, type DealStatus } from '@/lib/store';
+     6→import { Button } from '@/components/ui/button';
+     7→import { Badge } from '@/components/ui/badge';
+     8→import { Input } from '@/components/ui/input';
+     9→import { toast } from 'sonner';
+    10→import {
+    11→  ArrowLeft,
+    12→  FileCheck,
+    13→  Send,
+    14→  ShieldCheck,
+    15→  Truck,
+    16→  ThumbsUp,
+    17→  Check,
+    18→  Clock,
+    19→  Banknote,
+    20→  User,
+    21→  CalendarDays,
+    22→  ScrollText,
+    23→  Receipt,
+    24→  SendHorizonal,
+    25→  Shield,
+    26→  Bot,
+    27→  Loader2,
+    28→  PackageCheck,
+    29→  AlertTriangle,
+    30→  XCircle,
+    31→  Ban,
+    32→  MessageCircle,
+    33→  Info,
+    34→  Lock,
+    35→  Headphones,
+    36→} from 'lucide-react';
+    37→
+    38→const emptySubscribe = () => () => {};
+    39→
+    40→/* ── Payout method select (auto-locked to deal's payment method) ── */
+    41→function PayoutMethodSelect({
+    42→  methods,
+    43→  value,
+    44→  onChange,
+    45→  locked,
+    46→}: {
+    47→  methods: { id: string; name: string; accountType: string }[];
+    48→  value: string;
+    49→  onChange: (v: string) => void;
+    50→  locked: boolean;
+    51→}) {
+    52→  const sel = methods.find((m) => m.name === value);
+    53→  return (
+    54→    <>
+    55→      <div className="relative">
+    56→        <select
+    57→          value={value}
+    58→          onChange={(e) => onChange(e.target.value)}
+    59→          disabled={locked}
+    60→          className={`w-full h-10 rounded-xl border border-border/50 bg-background px-3 pr-8 text-sm outline-none transition-colors ${
+    61→            locked
+    62→              ? 'opacity-70 cursor-not-allowed bg-muted/30'
+    63→              : 'focus:border-[rgba(101,163,13,0.4)] focus:ring-1 focus:ring-[rgba(101,163,13,0.15)]'
+    64→          }`}
+    65→        >
+    66→          {methods.map((m) => (
+    67→            <option key={m.id} value={m.name}>
+    68→              {m.name} — {m.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
+    69→            </option>
+    70→          ))}
+    71→        </select>
+    72→        {locked && (
+    73→          <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+    74→        )}
+    75→      </div>
+    76→      {sel && (
+    77→        <div className="flex items-center gap-1.5">
+    78→          <span
+    79→            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+    80→              sel.accountType === 'merchant'
+    81→                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+    82→                : 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
+    83→            }`}
+    84→          >
+    85→            {sel.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
+    86→          </span>
+    87→          {locked && (
+    88→            <span className="text-[10px] text-muted-foreground">ডিলের পেমেন্ট মেথড</span>
+    89→          )}
+    90→        </div>
+    91→      )}
+    92→    </>
+    93→  );
+    94→}
+    95→
+    96→/* ═══════════════════════════════════════════════════════════
+    97→   Color Constants
+    98→   ═══════════════════════════════════════════════════════════ */
+    99→
+   100→const PARROT_GREEN = '#65A30D';
+   101→const PARROT_GREEN_LIGHT = '#84CC16';
+   102→const PARROT_GREEN_MILD = 'rgba(101, 163, 13, 0.10)';
+   103→const PARROT_GREEN_GLOW = '0 4px 16px rgba(101, 163, 13, 0.30)';
+   104→
+   105→/* ═══════════════════════════════════════════════════════════
+   106→   Types & Constants
+   107→   ═══════════════════════════════════════════════════════════ */
+   108→
+   109→/** 5-step escrow progress */
+   110→const STEPS = [
+   111→  { num: '১', label: 'ডিল তৈরি', icon: FileCheck, statusKey: 'created' as const },
+   112→  { num: '২', label: 'পেমেন্ট', icon: Send, statusKey: 'payment_pending' as const },
+   113→  { num: '৩', label: 'ভেরিফিকেশন', icon: ShieldCheck, statusKey: 'payment_verified' as const },
+   114→  { num: '৪', label: 'ডেলিভারি', icon: Truck, statusKey: 'in_delivery' as const },
+   115→  { num: '৫', label: 'ডিল সম্পন্ন', icon: ThumbsUp, statusKey: 'completed' as const },
+   116→];
+   117→
+   118→/**
+   119→ * Maps a deal status to the active step index.
+   120→ * Steps 0-4 correspond to the 5 STEPS.
+   121→ * -1 means no steps are active (cancelled/rejected/disputed before delivery).
+   122→ */
+   123→function statusToActiveStep(status: string): number {
+   124→  switch (status) {
+   125→    case 'created': return 0;
+   126→    case 'payment_pending': return 1;
+   127→    case 'payment_verified': return 2;
+   128→    case 'in_delivery': return 3;
+   129→    case 'completed': return 4;
+   130→    case 'cancelled':
+   131→    case 'rejected': return -1;
+   132→    case 'disputed': return 3;
+   133→    default: return 0;
+   134→  }
+   135→}
+   136→
+   137→/** Bangla status label */
+   138→function getStatusLabel(status: string): string {
+   139→  switch (status) {
+   140→    case 'created': return 'তৈরি হয়েছে';
+   141→    case 'payment_pending': return 'পেমেন্ট পেন্ডিং';
+   142→    case 'payment_verified': return 'ভেরিফাইড';
+   143→    case 'in_delivery': return 'ডেলিভারি চলছে';
+   144→    case 'completed': return 'সম্পন্ন';
+   145→    case 'cancelled': return 'বাতিল';
+   146→    case 'disputed': return 'বিরোধ চলছে';
+   147→    case 'rejected': return 'রিজেক্টেড';
+   148→    default: return status;
+   149→  }
+   150→}
+   151→
+   152→/** Status badge */
+   153→function getStatusBadge(status: string) {
+   154→  switch (status) {
+   155→    case 'created':
+   156→      return <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">তৈরি হয়েছে</Badge>;
+   157→    case 'payment_pending':
+   158→      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">পেমেন্ট পেন্ডিং</Badge>;
+   159→    case 'payment_verified':
+   160→      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">ভেরিফাইড</Badge>;
+   161→    case 'in_delivery':
+   162→      return <Badge className="border-0 font-medium" style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}>ডেলিভারি চলছে</Badge>;
+   163→    case 'completed':
+   164→      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
+   165→    case 'cancelled':
+   166→      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+   167→    case 'disputed':
+   168→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ চলছে</Badge>;
+   169→    case 'rejected':
+   170→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">রিজেক্টেড</Badge>;
+   171→    default:
+   172→      return <Badge variant="outline">{status}</Badge>;
+   173→  }
+   174→}
+   175→
+   176→/** Chat message roles */
+   177→type MessageRole = 'buyer' | 'seller' | 'admin' | 'system';
+   178→
+   179→interface ChatMessage {
+   180→  id: string;
+   181→  role: MessageRole;
+   182→  senderId: string;
+   183→  senderName: string;
+   184→  text: string;
+   185→  timestamp: string;
+   186→}
+   187→
+   188→/** Convert ISO date string to Bengali time */
+   189→function toBnTime(isoString: string): string {
+   190→  try {
+   191→    return new Date(isoString).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+   192→  } catch {
+   193→    return '';
+   194→  }
+   195→}
+   196→
+   197→/** Convert DB message to ChatMessage */
+   198→function dbToChatMsg(m: { id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }): ChatMessage {
+   199→  return {
+   200→    id: m.id,
+   201→    role: (m.role as MessageRole) || 'system',
+   202→    senderId: m.senderId,
+   203→    senderName: m.senderName || 'অজানা',
+   204→    text: m.text,
+   205→    timestamp: toBnTime(m.createdAt),
+   206→  };
+   207→}
+   208→
+   209→/* ═══════════════════════════════════════════════════════════
+   210→   API response type for deal fetch
+   211→   ═══════════════════════════════════════════════════════════ */
+   212→
+   213→interface DealData {
+   214→  id: string;
+   215→  title: string;
+   216→  amount: number;
+   217→  status: DealStatus;
+   218→  terms?: string | null;
+   219→  createdAt: string;
+   220→  buyerId: string;
+   221→  sellerId?: string | null;
+   222→  creatorId: string;
+   223→  paymentMethodId?: string | null;
+   224→  senderNumber?: string | null;
+   225→  transactionId?: string | null;
+   226→  paymentAmount?: number | null;
+   227→  platformFee?: number | null;
+   228→  rejectionReason?: string | null;
+   229→  adminCalled?: boolean | null;
+   230→  adminCalledAt?: string | null;
+   231→  buyer: { id: string; name: string; email: string; phone: string } | null;
+   232→  seller: { id: string; name: string; email: string; phone: string } | null;
+   233→  creator: { id: string; name: string; email: string } | null;
+   234→  paymentMethod?: { id: string; name: string; accountType: string } | null;
+   235→}
+   236→
+   237→/* ═══════════════════════════════════════════════════════════
+   238→   Sub-Components: Progress Steppers
+   239→   ═══════════════════════════════════════════════════════════ */
+   240→
+   241→/**
+   242→ * Horizontal 5-step progress bar (desktop).
+   243→ * Uses parrot green #65A30D for active/completed steps.
+   244→ */
+   245→function HorizontalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+   246→  if (isCancelled) {
+   247→    return (
+   248→      <div className="flex items-center justify-center py-6">
+   249→        <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-6 py-4 border border-red-200 dark:border-red-500/20">
+   250→          <Ban className="h-8 w-8 text-red-500" />
+   251→          <div>
+   252→            <p className="text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল হয়েছে</p>
+   253→            <p className="text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+   254→          </div>
+   255→        </div>
+   256→      </div>
+   257→    );
+   258→  }
+   259→
+   260→  return (
+   261→    <div className="relative flex items-start justify-between py-2">
+   262→      {/* Background track line */}
+   263→      <div className="absolute top-[20px] left-[20px] right-[20px] h-[4px] rounded-full bg-border/40" />
+   264→      {/* Filled progress line */}
+   265→      {activeStep >= 0 && (
+   266→        <div
+   267→          className="absolute top-[20px] left-[20px] h-[4px] rounded-full transition-all duration-700 ease-out"
+   268→          style={{
+   269→            width: activeStep >= STEPS.length - 1
+   270→              ? 'calc(100% - 40px)'
+   271→              : `calc(${(activeStep / (STEPS.length - 1)) * 100}% - 20px)`,
+   272→            backgroundColor: isDisputed ? '#EF4444' : PARROT_GREEN,
+   273→          }}
+   274→        />
+   275→      )}
+   276→
+   277→      {STEPS.map((step, i) => {
+   278→        const Icon = step.icon;
+   279→        const isCompleted = i < activeStep;
+   280→        const isActive = i === activeStep;
+   281→
+   282→        return (
+   283→          <div
+   284→            key={step.num}
+   285→            className="relative z-10 flex flex-col items-center"
+   286→            style={{ width: `${100 / STEPS.length}%` }}
+   287→          >
+   288→            <div className="relative">
+   289→              {/* Pulse rings for active step */}
+   290→              {isActive && (
+   291→                <>
+   292→                  <span
+   293→                    className="absolute -inset-2.5 rounded-full border-2 animate-ping opacity-20"
+   294→                    style={{ borderColor: isDisputed ? '#EF4444' : PARROT_GREEN }}
+   295→                  />
+   296→                  <span
+   297→                    className="absolute -inset-1.5 rounded-full border-2 animate-pulse"
+   298→                    style={{ borderColor: isDisputed ? 'rgba(239,68,68,0.25)' : 'rgba(101,163,13,0.25)' }}
+   299→                  />
+   300→                </>
+   301→              )}
+   302→              <div
+   303→                className="relative flex h-10 w-10 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   304→                style={{
+   305→                  backgroundColor: isCompleted || isActive
+   306→                    ? (isDisputed && isActive ? '#FEE2E2' : PARROT_GREEN)
+   307→                    : 'var(--background)',
+   308→                  borderColor: isCompleted || isActive
+   309→                    ? (isDisputed && isActive ? '#EF4444' : PARROT_GREEN)
+   310→                    : 'var(--border)',
+   311→                  color: isCompleted ? '#fff' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#fff' : 'var(--muted-foreground)')),
+   312→                  boxShadow: (isCompleted || isActive) && !isDisputed ? PARROT_GREEN_GLOW : 'none',
+   313→                }}
+   314→              >
+   315→                {isCompleted ? (
+   316→                  <Check className="h-4 w-4" strokeWidth={3} />
+   317→                ) : isActive && isDisputed ? (
+   318→                  <AlertTriangle className="h-4 w-4" />
+   319→                ) : (
+   320→                  <Icon className="h-4 w-4" />
+   321→                )}
+   322→              </div>
+   323→            </div>
+   324→            <p
+   325→              className="mt-3 text-center text-[11px] font-semibold leading-tight"
+   326→              style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+   327→            >
+   328→              {step.label}
+   329→            </p>
+   330→          </div>
+   331→        );
+   332→      })}
+   333→    </div>
+   334→  );
+   335→}
+   336→
+   337→/**
+   338→ * Vertical 5-step stepper (mobile).
+   339→ */
+   340→function VerticalStepper({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+   341→  if (isCancelled) {
+   342→    return (
+   343→      <div className="flex items-center justify-center py-3 md:py-6">
+   344→        <div className="flex items-center gap-2.5 md:gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-4 py-3 md:px-6 md:py-4 border border-red-200 dark:border-red-500/20 w-full">
+   345→          <Ban className="h-6 w-6 md:h-8 md:w-8 text-red-500 shrink-0" />
+   346→          <div>
+   347→            <p className="text-sm md:text-base font-bold text-red-700 dark:text-red-400">ডিল বাতিল হয়েছে</p>
+   348→            <p className="text-xs md:text-sm text-red-600/70 dark:text-red-400/70">এই ডিল আর সক্রিয় নয়</p>
+   349→          </div>
+   350→        </div>
+   351→      </div>
+   352→    );
+   353→  }
+   354→
+   355→  return (
+   356→    <>
+   357→      {/* ── Mobile: Compact horizontal progress bar ── */}
+   358→      <div className="md:hidden">
+   359→        <div className="flex items-center gap-0">
+   360→          {STEPS.map((step, i) => {
+   361→            const isCompleted = i < activeStep;
+   362→            const isActive = i === activeStep;
+   363→            const isLast = i === STEPS.length - 1;
+   364→            return (
+   365→              <div key={step.num} className="flex items-center flex-1 min-w-0">
+   366→                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+   367→                  <div
+   368→                    className="flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all duration-300"
+   369→                    style={{
+   370→                      backgroundColor: isCompleted || isActive
+   371→                        ? (isDisputed && isActive ? '#FEE2E2' : PARROT_GREEN)
+   372→                        : 'var(--background)',
+   373→                      borderColor: isCompleted || isActive
+   374→                        ? (isDisputed && isActive ? '#EF4444' : PARROT_GREEN)
+   375→                        : 'var(--border)',
+   376→                      color: isCompleted ? '#fff' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#fff' : 'var(--muted-foreground)')),
+   377→                    }}
+   378→                  >
+   379→                    {isCompleted ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <span className="text-[10px] font-bold">{step.num}</span>}
+   380→                  </div>
+   381→                  <span
+   382→                    className="text-[9px] leading-tight text-center truncate max-w-[52px]"
+   383→                    style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+   384→                  >
+   385→                    {step.label}
+   386→                  </span>
+   387→                </div>
+   388→                {!isLast && (
+   389→                  <div className="flex-1 h-[3px] mx-1 rounded-full">
+   390→                    <div
+   391→                      className="h-full rounded-full transition-colors"
+   392→                      style={{ backgroundColor: isCompleted ? PARROT_GREEN : 'var(--border)' }}
+   393→                    />
+   394→                  </div>
+   395→                )}
+   396→              </div>
+   397→            );
+   398→          })}
+   399→        </div>
+   400→        {(isDisputed || (activeStep >= 0 && activeStep < STEPS.length)) && (
+   401→          <div className="flex items-center justify-center gap-1.5 mt-2">
+   402→            {isDisputed && (
+   403→              <span className="flex items-center gap-1 text-[10px] font-medium text-red-500">
+   404→                <AlertTriangle className="h-3 w-3" /> বিরোধ দায়ের হয়েছে
+   405→              </span>
+   406→            )}
+   407→            {!isDisputed && activeStep < STEPS.length - 1 && (
+   408→              <span className="flex items-center gap-1 text-[10px] font-medium text-amber-500">
+   409→                <span className="relative flex h-1.5 w-1.5">
+   410→                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+   411→                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+   412→                </span>
+   413→                {STEPS[activeStep]?.label} — অপেক্ষমান
+   414→              </span>
+   415→            )}
+   416→            {!isDisputed && activeStep === STEPS.length - 1 && (
+   417→              <span className="text-[10px] font-medium" style={{ color: PARROT_GREEN }}>সম্পন্ন ✓</span>
+   418→            )}
+   419→          </div>
+   420→        )}
+   421→      </div>
+   422→
+   423→      {/* ── Desktop: Full vertical stepper ── */}
+   424→      <div className="hidden md:block space-y-0">
+   425→        {STEPS.map((step, i) => {
+   426→          const Icon = step.icon;
+   427→          const isCompleted = i < activeStep;
+   428→          const isActive = i === activeStep;
+   429→          const isLast = i === STEPS.length - 1;
+   430→
+   431→          return (
+   432→            <div key={step.num} className="flex gap-4">
+   433→              <div className="flex flex-col items-center">
+   434→                <div className="relative">
+   435→                  {isActive && (
+   436→                    <span
+   437→                      className="absolute -inset-2 rounded-full border-2 animate-pulse"
+   438→                      style={{ borderColor: isDisputed ? 'rgba(239,68,68,0.25)' : 'rgba(101,163,13,0.25)' }}
+   439→                    />
+   440→                  )}
+   441→                  <div
+   442→                    className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] transition-all duration-300"
+   443→                    style={{
+   444→                      backgroundColor: isCompleted || isActive
+   445→                        ? (isDisputed && isActive ? '#FEE2E2' : PARROT_GREEN)
+   446→                        : 'var(--background)',
+   447→                      borderColor: isCompleted || isActive
+   448→                        ? (isDisputed && isActive ? '#EF4444' : PARROT_GREEN)
+   449→                        : 'var(--border)',
+   450→                      color: isCompleted ? '#fff' : (isActive && isDisputed ? '#EF4444' : (isActive ? '#fff' : 'var(--muted-foreground)')),
+   451→                      boxShadow: (isCompleted || isActive) && !isDisputed ? PARROT_GREEN_GLOW : 'none',
+   452→                    }}
+   453→                  >
+   454→                    {isCompleted ? (
+   455→                      <Check className="h-4 w-4" strokeWidth={3} />
+   456→                    ) : isActive && isDisputed ? (
+   457→                      <AlertTriangle className="h-4 w-4" />
+   458→                    ) : (
+   459→                      <Icon className="h-4 w-4" />
+   460→                    )}
+   461→                  </div>
+   462→                </div>
+   463→                {!isLast && (
+   464→                  <div className="w-[3px] flex-1 min-h-8 my-1.5 rounded-full">
+   465→                    <div
+   466→                      className="h-full w-full rounded-full transition-colors"
+   467→                      style={{ backgroundColor: isCompleted ? PARROT_GREEN : 'var(--border)' }}
+   468→                    />
+   469→                  </div>
+   470→                )}
+   471→              </div>
+   472→
+   473→              <div className={`flex flex-col justify-center ${isLast ? '' : 'pb-4'}`}>
+   474→                <p
+   475→                  className="text-sm font-semibold leading-tight"
+   476→                  style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+   477→                >
+   478→                  {step.label}
+   479→                </p>
+   480→                <div className="mt-1 flex items-center gap-2">
+   481→                  <span className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+   482→                    ধাপ {step.num}
+   483→                  </span>
+   484→                  {isCompleted && (
+   485→                    <span className="text-xs font-medium" style={{ color: PARROT_GREEN }}>সম্পন্ন</span>
+   486→                  )}
+   487→                  {isActive && !isDisputed && (
+   488→                    <span className="flex items-center gap-1 text-xs font-medium text-amber-500 dark:text-amber-400">
+   489→                      <span className="relative flex h-1.5 w-1.5">
+   490→                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+   491→                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+   492→                      </span>
+   493→                      অপেক্ষমান
+   494→                    </span>
+   495→                  )}
+   496→                  {isActive && isDisputed && (
+   497→                    <span className="flex items-center gap-1 text-xs font-medium text-red-500 dark:text-red-400">
+   498→                      <AlertTriangle className="h-3 w-3" />
+   499→                      বিরোধ
+   500→                    </span>
+   501→                  )}
+   502→                </div>
+   503→              </div>
+   504→            </div>
+   505→          );
+   506→        })}
+   507→      </div>
+   508→    </>
+   509→  );
+   510→}
+   511→
+   512→/* ═══════════════════════════════════════════════════════════
+   513→   Sub-Components: Deal Info Section
+   514→   ═══════════════════════════════════════════════════════════ */
+   515→
+   516→/**
+   517→ * Info card used in the 2×2 detail grid.
+   518→ * Soft rounded corners, subtle border, glass-like feel.
+   519→ */
+   520→function InfoCard({
+   521→  icon: Icon,
+   522→  label,
+   523→  value,
+   524→}: {
+   525→  icon: React.ElementType;
+   526→  label: string;
+   527→  value: string;
+   528→}) {
+   529→  return (
+   530→    <div className="group flex items-center gap-3 rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-4 transition-all duration-200 hover:border-[rgba(101,163,13,0.25)] hover:shadow-md hover:shadow-[rgba(101,163,13,0.06)]">
+   531→      <div
+   532→        className="flex h-9 w-9 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-lg md:rounded-xl transition-transform duration-200 group-hover:scale-105"
+   533→        style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+   534→      >
+   535→        <Icon className="h-4 w-4 md:h-5 md:w-5" />
+   536→      </div>
+   537→      <div className="min-w-0">
+   538→        <p className="text-[11px] md:text-xs font-medium text-muted-foreground">
+   539→          {label}
+   540→        </p>
+   541→        <p className="text-xs md:text-sm font-bold truncate text-foreground mt-0.5">
+   542→          {value}
+   543→        </p>
+   544→      </div>
+   545→    </div>
+   546→  );
+   547→}
+   548→
+   549→/**
+   550→ * Action button with enhanced hover effect.
+   551→ */
+   552→function ActionButton({
+   553→  children,
+   554→  onClick,
+   555→  disabled,
+   556→  variant = 'primary',
+   557→  loading = false,
+   558→}: {
+   559→  children: React.ReactNode;
+   560→  onClick: () => void;
+   561→  disabled?: boolean;
+   562→  variant?: 'primary' | 'danger';
+   563→  loading?: boolean;
+   564→}) {
+   565→  const isPrimary = variant === 'primary';
+   566→  return (
+   567→    <Button
+   568→      onClick={onClick}
+   569→      disabled={disabled || loading}
+   570→      variant={isPrimary ? 'default' : 'outline'}
+   571→      className={`
+   572→        w-full flex-1 h-13 md:h-14 rounded-xl md:rounded-2xl text-base md:text-lg font-bold gap-2.5
+   573→        transition-all duration-200
+   574→        hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]
+   575→        ${isPrimary
+   576→          ? ''
+   577→          : 'text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50'
+   578→        }
+   579→      `}
+   580→      style={isPrimary ? {
+   581→        backgroundColor: PARROT_GREEN,
+   582→        color: '#fff',
+   583→        boxShadow: PARROT_GREEN_GLOW,
+   584→      } : undefined}
+   585→    >
+   586→      {loading ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : children}
+   587→    </Button>
+   588→  );
+   589→}
+   590→
+   591→/* ═══════════════════════════════════════════════════════════
+   592→   Sub-Components: Chat System
+   593→   ═══════════════════════════════════════════════════════════ */
+   594→
+   595→/**
+   596→ * Chat message bubble — modern rounded design.
+   597→ * Buyer/Seller: aligned left/right, colored bubbles.
+   598→ * Admin: center-aligned, purple accent.
+   599→ * System: center-aligned, amber/orange accent.
+   600→ */
+   601→function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentUserId?: string }) {
+   602→  const { role, senderName, text, timestamp } = message;
+   603→
+   604→  /* ── System messages: center-aligned, amber accent ── */
+   605→  if (role === 'system') {
+   606→    return (
+   607→      <motion.div
+   608→        initial={{ opacity: 0, y: 8 }}
+   609→        animate={{ opacity: 1, y: 0 }}
+   610→        transition={{ duration: 0.25 }}
+   611→        className="flex justify-center py-1"
+   612→      >
+   613→        <div className="flex flex-col items-center gap-1.5 max-w-[90%] sm:max-w-[75%]">
+   614→          <div className="flex items-start gap-2.5 rounded-2xl border border-amber-200/60 dark:border-amber-500/20 px-4 py-2.5 text-center"
+   615→            style={{
+   616→              backgroundColor: 'rgba(251, 191, 36, 0.08)',
+   617→              boxShadow: '0 1px 3px rgba(251,191,36,0.06)',
+   618→            }}
+   619→          >
+   620→            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/15 mt-0.5">
+   621→              <Bot className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+   622→            </div>
+   623→            <p className="text-[13px] leading-relaxed text-amber-800 dark:text-amber-200/90">
+   624→              {text}
+   625→            </p>
+   626→          </div>
+   627→          <span className="flex items-center gap-1.5 text-[10px] text-amber-500/60 dark:text-amber-400/50">
+   628→            <Clock className="h-2.5 w-2.5" />
+   629→            {timestamp}
+   630→          </span>
+   631→        </div>
+   632→      </motion.div>
+   633→    );
+   634→  }
+   635→
+   636→  /* ── Admin messages: center-aligned, purple accent ── */
+   637→  if (role === 'admin') {
+   638→    return (
+   639→      <motion.div
+   640→        initial={{ opacity: 0, y: 8 }}
+   641→        animate={{ opacity: 1, y: 0 }}
+   642→        transition={{ duration: 0.25 }}
+   643→        className="flex justify-center py-1"
+   644→      >
+   645→        <div className="flex flex-col items-center gap-1.5 max-w-[90%] sm:max-w-[75%]">
+   646→          <div className="flex items-center gap-1.5 mb-0.5">
+   647→            <div className="flex h-4.5 w-4.5 items-center justify-center rounded-md bg-purple-100 dark:bg-purple-500/15">
+   648→              <ShieldCheck className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+   649→            </div>
+   650→            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 tracking-wide uppercase">
+   651→              Admin
+   652→            </span>
+   653→          </div>
+   654→          <div className="rounded-2xl border border-purple-200/60 dark:border-purple-500/20 px-5 py-3 text-center"
+   655→            style={{
+   656→              backgroundColor: 'rgba(147, 51, 234, 0.06)',
+   657→              boxShadow: '0 1px 3px rgba(147,51,234,0.06)',
+   658→            }}
+   659→          >
+   660→            <p className="text-[13px] leading-relaxed text-purple-900 dark:text-purple-200">
+   661→              {text}
+   662→            </p>
+   663→          </div>
+   664→          <span className="flex items-center gap-1.5 text-[10px] text-purple-500/60 dark:text-purple-400/50">
+   665→            <Clock className="h-2.5 w-2.5" />
+   666→            {timestamp}
+   667→          </span>
+   668→        </div>
+   669→      </motion.div>
+   670→    );
+   671→  }
+   672→
+   673→  /* ── Buyer/Seller messages: own → right, other → left ── */
+   674→  const isOwn = currentUserId && message.senderId === currentUserId;
+   675→
+   676→  return (
+   677→    <motion.div
+   678→      initial={{ opacity: 0, y: 8, x: isOwn ? 10 : -10 }}
+   679→      animate={{ opacity: 1, y: 0, x: 0 }}
+   680→      transition={{ duration: 0.25 }}
+   681→      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+   682→    >
+   683→      <div className={`flex flex-col gap-1 max-w-[80%] sm:max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+   684→        <div className="flex items-center gap-2 px-1">
+   685→          {/* Avatar initial */}
+   686→          <div
+   687→            className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
+   688→            style={{
+   689→              backgroundColor: isOwn ? PARROT_GREEN : 'var(--muted)',
+   690→              color: isOwn ? '#fff' : 'var(--muted-foreground)',
+   691→            }}
+   692→          >
+   693→            {senderName.charAt(0)}
+   694→          </div>
+   695→          <span className="text-[11px] font-semibold text-muted-foreground">
+   696→            {senderName}
+   697→          </span>
+   698→        </div>
+   699→
+   700→        <div
+   701→          className="rounded-2xl px-4 py-2.5 transition-transform duration-150 hover:scale-[1.01]"
+   702→          style={{
+   703→            backgroundColor: isOwn ? PARROT_GREEN : 'var(--card)',
+   704→            color: isOwn ? '#fff' : 'var(--foreground)',
+   705→            borderBottomRightRadius: isOwn ? '6px' : '16px',
+   706→            borderBottomLeftRadius: isOwn ? '16px' : '6px',
+   707→            boxShadow: isOwn
+   708→              ? `0 2px 12px ${PARROT_GREEN}30`
+   709→              : '0 1px 3px rgba(0,0,0,0.06)',
+   710→            border: isOwn ? 'none' : '1px solid var(--border)',
+   711→          }}
+   712→        >
+   713→          <p className="text-sm leading-relaxed">{text}</p>
+   714→        </div>
+   715→
+   716→        <span className="flex items-center gap-1 px-1">
+   717→          <Clock className="h-2.5 w-2.5 text-muted-foreground/50" />
+   718→          <span className="text-[10px] text-muted-foreground/60">{timestamp}</span>
+   719→        </span>
+   720→      </div>
+   721→    </motion.div>
+   722→  );
+   723→}
+   724→
+   725→/**
+   726→ * Chat date divider.
+   727→ */
+   728→function ChatDateDivider({ text }: { text: string }) {
+   729→  return (
+   730→    <div className="flex items-center justify-center py-2">
+   731→      <div className="flex items-center gap-3">
+   732→        <div className="h-px flex-1 bg-border/30" />
+   733→        <span className="text-[10px] font-medium text-muted-foreground/60">{text}</span>
+   734→        <div className="h-px flex-1 bg-border/30" />
+   735→      </div>
+   736→    </div>
+   737→  );
+   738→}
+   739→
+   740→/* ═══════════════════════════════════════════════════════════
+   741→   Main Exported Component
+   742→   ═══════════════════════════════════════════════════════════ */
+   743→
+   744→export function DealWorkflowTracker() {
+   745→  const { setDashboardPanel, activeDeal, user } = useAppStore();
+   746→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   747→
+   748→  /* ── Tab state (custom pill toggle) ── */
+   749→  const [activeTab, setActiveTab] = useState<'info' | 'chat'>('info');
+   750→
+   751→  /* ── Deal data from DB ── */
+   752→  const [dealData, setDealData] = useState<DealData | null>(null);
+   753→  const [loading, setLoading] = useState(true);
+   754→  const [actionLoading, setActionLoading] = useState(false);
+   755→
+   756→  /* ── Chat state ── */
+   757→  const [messages, setMessages] = useState<ChatMessage[]>([]);
+   758→  const [chatInput, setChatInput] = useState('');
+   759→  const [chatLoading, setChatLoading] = useState(false);
+   760→  const [sendingMsg, setSendingMsg] = useState(false);
+   761→  const [adminCallLoading, setAdminCallLoading] = useState(false);
+   762→  const chatEndRef = useRef<HTMLDivElement>(null);
+   763→  const chatContainerRef = useRef<HTMLDivElement>(null);
+   764→  const inputRef = useRef<HTMLInputElement>(null);
+   765→  const lastMsgCountRef = useRef(0);
+   766→
+   767→  /* ── Payout form state ── */
+   768→  const [payoutMethods, setPayoutMethods] = useState<{ id: string; name: string; accountType: string }[]>([]);
+   769→  const [payoutAccountType, setPayoutAccountType] = useState('');
+   770→  const [payoutAccountNumber, setPayoutAccountNumber] = useState('');
+   771→  const [payoutAccountName, setPayoutAccountName] = useState('');
+   772→  const [payoutLoading, setPayoutLoading] = useState(false);
+   773→  const [payoutSubmitted, setPayoutSubmitted] = useState(false);
+   774→  const [payoutPaid, setPayoutPaid] = useState(false);
+   775→  const [payoutChecking, setPayoutChecking] = useState(true);
+   776→  const [submittedPayoutInfo, setSubmittedPayoutInfo] = useState<{ accountType: string; accountNumber: string; accountName: string } | null>(null);
+   777→
+   778→  /* ── Derived state ── */
+   779→  const status = dealData?.status || activeDeal?.status || 'created';
+   780→  const activeStep = statusToActiveStep(status);
+   781→  const isDisputed = status === 'disputed';
+   782→  const isCancelled = status === 'cancelled' || status === 'rejected';
+   783→  const isCompleted = status === 'completed';
+   784→  const dealHasPaymentMethod = !!dealData?.paymentMethod?.name;
+   785→  const userId = user?.id;
+   786→  const isBuyer = userId === (dealData?.buyerId || activeDeal?.buyerId) || (userId === activeDeal?.buyerId);
+   787→  const isSeller = userId === (dealData?.sellerId) || userId === activeDeal?.sellerId || (!isBuyer && user?.isSeller);
+   788→
+   789→  /* ── Fetch active payment methods & auto-select deal's method ── */
+   790→  useEffect(() => {
+   791→    fetch('/api/payment-methods')
+   792→      .then((res) => (res.ok ? res.json() : []))
+   793→      .then((data: { id: string; name: string; accountType: string; status: string }[]) => {
+   794→        const active = data.filter((m) => m.status === 'active');
+   795→        setPayoutMethods(active);
+   796→        // Auto-select the deal's own payment method
+   797→        const dealMethodName = dealData?.paymentMethod?.name;
+   798→        if (dealMethodName && active.some((m) => m.name === dealMethodName)) {
+   799→          setPayoutAccountType(dealMethodName);
+   800→        } else if (active.length > 0) {
+   801→          setPayoutAccountType(active[0].name);
+   802→        }
+   803→      })
+   804→      .catch(() => {});
+   805→  }, [dealData?.paymentMethod?.name]);
+   806→
+   807→  /* ── Check if payout already submitted for current deal ── */
+   808→  const checkPayoutStatus = useCallback((showLoading = false) => {
+   809→    if (!dealData?.id || !userId) return;
+   810→    const currentStatus = dealData?.status || activeDeal?.status || 'created';
+   811→    const currentIsCompleted = currentStatus === 'completed';
+   812→    const currentIsCancelled = currentStatus === 'cancelled' || currentStatus === 'rejected';
+   813→    const currentIsBuyer = userId === (dealData?.buyerId || activeDeal?.buyerId) || userId === activeDeal?.buyerId;
+   814→    const currentIsSeller = userId === dealData?.sellerId || userId === activeDeal?.sellerId || (!currentIsBuyer && user?.isSeller);
+   815→    // No refund when admin marked as wrong_info (buyer didn't actually pay)
+   816→    // cancelled_by_admin means deal was voided — buyer CAN request refund
+   817→    const noRefund = dealData?.rejectionReason === 'wrong_info';
+   818→    const checkType = currentIsCompleted && currentIsSeller ? 'seller_payout' : (currentIsCancelled && currentIsBuyer && !noRefund) ? 'buyer_refund' : null;
+   819→    if (!checkType) {
+   820→      setPayoutChecking(false);
+   821→      return;
+   822→    }
+   823→    if (showLoading) setPayoutChecking(true);
+   824→    fetch('/api/user/payouts', {
+   825→      method: 'POST',
+   826→      headers: { 'Content-Type': 'application/json' },
+   827→      body: JSON.stringify({ userId }),
+   828→    })
+   829→      .then((res) => (res.ok ? res.json() : []))
+   830→      .then((payouts: { dealId: string; type: string; status: string; accountType: string; accountNumber: string; accountName: string }[]) => {
+   831→        const match = payouts.find((p) => p.dealId === dealData!.id && p.type === checkType);
+   832→        // Only update states if we found a match — never reset submitted/paid back to false
+   833→        // (prevents polling API hiccups from showing the form again)
+   834→        if (match) {
+   835→          setPayoutSubmitted(true);
+   836→          setPayoutPaid(match.status === 'paid');
+   837→          setSubmittedPayoutInfo({ accountType: match.accountType, accountNumber: match.accountNumber, accountName: match.accountName });
+   838→        }
+   839→      })
+   840→      .catch(() => {})
+   841→      .finally(() => setPayoutChecking(false));
+   842→  }, [dealData?.id, userId, dealData?.status, activeDeal?.buyerId, activeDeal?.sellerId, dealData?.buyerId, dealData?.sellerId, user?.isSeller]);
+   843→
+   844→  // Initial check with loading skeleton
+   845→  useEffect(() => {
+   846→    checkPayoutStatus(true);
+   847→  }, [checkPayoutStatus]);
+   848→
+   849→  /* ── Fetch deal from DB ── */
+   850→  const fetchDeal = useCallback(async () => {
+   851→    if (!activeDeal?.id) {
+   852→      setLoading(false);
+   853→      return;
+   854→    }
+   855→    setLoading(true);
+   856→    try {
+   857→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}`);
+   858→      if (res.ok) {
+   859→        const data: DealData = await res.json();
+   860→        setDealData(data);
+   861→
+   862→        if (data.status !== activeDeal.status) {
+   863→          useAppStore.getState().setActiveDeal({
+   864→            id: data.id,
+   865→            title: data.title,
+   866→            amount: data.amount,
+   867→            status: data.status,
+   868→            createdAt: data.createdAt,
+   869→            buyerId: data.buyerId,
+   870→            sellerId: data.sellerId || undefined,
+   871→            creatorId: data.creatorId,
+   872→            buyerName: data.buyer?.name,
+   873→            sellerName: data.seller?.name,
+   874→            rejectionReason: data.rejectionReason,
+   875→          });
+   876→        }
+   877→      }
+   878→    } catch {
+   879→      // Use store data as fallback
+   880→    } finally {
+   881→      setLoading(false);
+   882→    }
+   883→  }, [activeDeal?.id, activeDeal?.status]);
+   884→
+   885→  useEffect(() => {
+   886→    fetchDeal();
+   887→  }, [fetchDeal]);
+   888→
+   889→  /* Auto-scroll chat — only if user is near bottom */
+   890→  const isNearBottomRef = useRef(true);
+   891→
+   892→  const handleChatScroll = useCallback(() => {
+   893→    const el = chatContainerRef.current;
+   894→    if (!el) return;
+   895→    // Consider "near bottom" if within 80px of the bottom
+   896→    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+   897→  }, []);
+   898→
+   899→  /* No auto-scroll on incoming messages — only on user send */
+   900→
+   901→  /* Focus input when switching to chat tab */
+   902→  useEffect(() => {
+   903→    if (activeTab === 'chat') {
+   904→      setTimeout(() => inputRef.current?.focus(), 100);
+   905→    }
+   906→  }, [activeTab]);
+   907→
+   908→  /* ── Auth headers for API calls ── */
+   909→  const authHeaders = useCallback(() => ({
+   910→    'X-User-Id': user?.id || '',
+   911→  }), [user?.id]);
+   912→
+   913→  /* ── Fetch chat messages from API ── */
+   914→  const fetchMessages = useCallback(async () => {
+   915→    if (!activeDeal?.id) return;
+   916→    setChatLoading(true);
+   917→    try {
+   918→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
+   919→        headers: authHeaders(),
+   920→      });
+   921→      if (res.ok) {
+   922→        const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await res.json();
+   923→        setMessages(data.map(dbToChatMsg));
+   924→      }
+   925→    } catch {
+   926→      // silent
+   927→    } finally {
+   928→      setChatLoading(false);
+   929→    }
+   930→  }, [activeDeal?.id, authHeaders]);
+   931→
+   932→  /* ── Connect to polling for real-time chat + deal status ── */
+   933→  useEffect(() => {
+   934→    if (!activeDeal?.id) return;
+   935→
+   936→    fetchMessages();
+   937→
+   938→    let pollCount = 0;
+   939→    // Poll every 3 seconds for new messages, refresh deal data every 10s
+   940→    const interval = setInterval(async () => {
+   941→      try {
+   942→        const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
+   943→          headers: authHeaders(),
+   944→        });
+   945→        if (res.ok) {
+   946→          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await res.json();
+   947→          setMessages(data.map(dbToChatMsg));
+   948→        }
+   949→      } catch {
+   950→        // silent - will retry on next interval
+   951→      }
+   952→
+   953→      // Refresh deal data + payout status every ~9 seconds (every 3rd poll)
+   954→      pollCount++;
+   955→      if (pollCount % 3 === 0) {
+   956→        try {
+   957→          const dealRes = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}`);
+   958→          if (dealRes.ok) {
+   959→            const data: DealData = await dealRes.json();
+   960→            setDealData((prev) => {
+   961→              if (!prev) return data;
+   962→              // Update if adminCalled or status changed
+   963→              if (prev.adminCalled !== data.adminCalled || prev.status !== data.status) {
+   964→                return { ...prev, adminCalled: data.adminCalled, adminCalledAt: data.adminCalledAt, status: data.status };
+   965→              }
+   966→              return prev;
+   967→            });
+   968→          }
+   969→        } catch {
+   970→          // silent
+   971→        }
+   972→        // Re-check payout status to detect admin mark-paid
+   973→        checkPayoutStatus();
+   974→      }
+   975→    }, 3000);
+   976→
+   977→    return () => clearInterval(interval);
+   978→  }, [activeDeal?.id, fetchMessages, authHeaders, checkPayoutStatus]);
+   979→
+   980→  if (!mounted) return null;
+   981→
+   982→  const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
+   983→  const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
+   984→  const dealDate = (dealData?.createdAt || activeDeal?.createdAt)
+   985→    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })
+   986→    : '---';
+   987→  const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || user?.name || 'ক্রেতা';
+   988→  const sellerName = dealData?.seller?.name || activeDeal?.sellerName || 'বিক্রেতা';
+   989→  const dealTerms = dealData?.terms;
+   990→
+   991→  /* ── Action handlers ── */
+   992→  const handleDeliver = async () => {
+   993→    if (!dealData) return;
+   994→    setActionLoading(true);
+   995→    try {
+   996→      const res = await fetch('/api/deals/deliver', {
+   997→        method: 'POST',
+   998→        headers: { 'Content-Type': 'application/json' },
+   999→        body: JSON.stringify({ dealId: dealData.id }),
+  1000→      });
+  1001→      if (res.ok) {
+  1002→        toast.success('কাজ সম্পন্ন হিসেবে চিহ্নিত হয়েছে! ক্রেতাকে জানানো হচ্ছে।');
+  1003→        fetchDeal();
+  1004→      } else {
+  1005→        const data = await res.json().catch(() => ({}));
+  1006→        toast.error(data.error || 'আপডেট ব্যর্থ হয়েছে');
+  1007→      }
+  1008→    } catch {
+  1009→      toast.error('নেটওয়ার্ক সমস্যা');
+  1010→    } finally {
+  1011→      setActionLoading(false);
+  1012→    }
+  1013→  };
+  1014→
+  1015→  const handleCancel = async () => {
+  1016→    if (!dealData) return;
+  1017→    setActionLoading(true);
+  1018→    try {
+  1019→      const res = await fetch('/api/deals/cancel', {
+  1020→        method: 'POST',
+  1021→        headers: { 'Content-Type': 'application/json' },
+  1022→        body: JSON.stringify({ dealId: dealData.id }),
+  1023→      });
+  1024→      if (res.ok) {
+  1025→        toast.success('ডিলটি বাতিল করা হয়েছে');
+  1026→        fetchDeal();
+  1027→      } else {
+  1028→        const data = await res.json().catch(() => ({}));
+  1029→        toast.error(data.error || 'বাতিল করতে সমস্যা');
+  1030→      }
+  1031→    } catch {
+  1032→      toast.error('নেটওয়ার্ক সমস্যা');
+  1033→    } finally {
+  1034→      setActionLoading(false);
+  1035→    }
+  1036→  };
+  1037→
+  1038→  const handleAccept = async () => {
+  1039→    if (!dealData) return;
+  1040→    setActionLoading(true);
+  1041→    try {
+  1042→      const res = await fetch('/api/deals/complete', {
+  1043→        method: 'POST',
+  1044→        headers: { 'Content-Type': 'application/json' },
+  1045→        body: JSON.stringify({ dealId: dealData.id }),
+  1046→      });
+  1047→      if (res.ok) {
+  1048→        toast.success('পণ্য/সেবা গ্রহণ নিশ্চিত করা হয়েছে! ডিল সম্পন্ন।');
+  1049→        fetchDeal();
+  1050→      } else {
+  1051→        const data = await res.json().catch(() => ({}));
+  1052→        toast.error(data.error || 'নিশ্চিত করতে সমস্যা');
+  1053→      }
+  1054→    } catch {
+  1055→      toast.error('নেটওয়ার্ক সমস্যা');
+  1056→    } finally {
+  1057→      setActionLoading(false);
+  1058→    }
+  1059→  };
+  1060→
+  1061→  const handlePayoutRequest = async () => {
+  1062→    if (!dealData || !userId || !payoutAccountType || !payoutAccountNumber || !payoutAccountName) return;
+  1063→    setPayoutLoading(true);
+  1064→    try {
+  1065→      const res = await fetch(`/api/deals/${encodeURIComponent(dealData.id)}/request-payout`, {
+  1066→        method: 'POST',
+  1067→        headers: { 'Content-Type': 'application/json' },
+  1068→        body: JSON.stringify({
+  1069→          userId,
+  1070→          accountType: payoutAccountType,
+  1071→          accountNumber: payoutAccountNumber,
+  1072→          accountName: payoutAccountName,
+  1073→        }),
+  1074→      });
+  1075→      if (res.ok) {
+  1076→        toast.success(isCompleted ? 'পেআউট অনুরোধ জমা হয়েছে!' : 'ফেরতের অনুরোধ জমা হয়েছে!');
+  1077→        setPayoutSubmitted(true);
+  1078→        setSubmittedPayoutInfo({ accountType: payoutAccountType, accountNumber: payoutAccountNumber, accountName: payoutAccountName });
+  1079→      } else {
+  1080→        const data = await res.json().catch(() => ({}));
+  1081→        toast.error(data.error || 'পেআউট অনুরোধে সমস্যা');
+  1082→      }
+  1083→    } catch {
+  1084→      toast.error('নেটওয়ার্ক সমস্যা');
+  1085→    } finally {
+  1086→      setPayoutLoading(false);
+  1087→    }
+  1088→  };
+  1089→
+  1090→  const handleDispute = async () => {
+  1091→    if (!dealData) return;
+  1092→    setActionLoading(true);
+  1093→    try {
+  1094→      const res = await fetch('/api/deals/dispute', {
+  1095→        method: 'POST',
+  1096→        headers: { 'Content-Type': 'application/json' },
+  1097→        body: JSON.stringify({ dealId: dealData.id }),
+  1098→      });
+  1099→      if (res.ok) {
+  1100→        toast.error('বিরোধ দায়ের করা হয়েছে। অ্যাডমিন পর্যালোচনা করবেন।');
+  1101→        fetchDeal();
+  1102→      } else {
+  1103→        const data = await res.json().catch(() => ({}));
+  1104→        toast.error(data.error || 'বিরোধ দায়েরে সমস্যা');
+  1105→      }
+  1106→    } catch {
+  1107→      toast.error('নেটওয়ার্ক সমস্যা');
+  1108→    } finally {
+  1109→      setActionLoading(false);
+  1110→    }
+  1111→  };
+  1112→
+  1113→  /** Send chat message via API */
+  1114→  const handleSend = async () => {
+  1115→    const trimmed = chatInput.trim();
+  1116→    if (!trimmed || !activeDeal?.id || !user?.id) return;
+  1117→    setSendingMsg(true);
+  1118→    try {
+  1119→      const role = isBuyer ? 'buyer' : 'seller';
+  1120→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
+  1121→        method: 'POST',
+  1122→        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+  1123→        body: JSON.stringify({
+  1124→          role,
+  1125→          senderName: user.name || 'আপনি',
+  1126→          text: trimmed,
+  1127→        }),
+  1128→      });
+  1129→      if (res.ok) {
+  1130→        // Immediately fetch messages so the sent message appears without waiting for poll
+  1131→        const msgRes = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
+  1132→          headers: authHeaders(),
+  1133→        });
+  1134→        if (msgRes.ok) {
+  1135→          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await msgRes.json();
+  1136→          setMessages(data.map(dbToChatMsg));
+  1137→          chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  1138→        }
+  1139→      } else {
+  1140→        toast.error('মেসেজ পাঠাতে সমস্যা হয়েছে');
+  1141→      }
+  1142→    } catch {
+  1143→      toast.error('নেটওয়ার্ক সমস্যা');
+  1144→    } finally {
+  1145→      setChatInput('');
+  1146→      setSendingMsg(false);
+  1147→      setTimeout(() => inputRef.current?.focus(), 50);
+  1148→    }
+  1149→  };
+  1150→
+  1151→  /* ── Call Admin ── */
+  1152→  const handleCallAdmin = async () => {
+  1153→    if (!activeDeal?.id || adminCallLoading) return;
+  1154→    setAdminCallLoading(true);
+  1155→    try {
+  1156→      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/call-admin`, {
+  1157→        method: 'POST',
+  1158→        headers: { 'Content-Type': 'application/json', 'X-User-Id': user?.id || '' },
+  1159→      });
+  1160→      if (res.ok) {
+  1161→        setDealData((prev) => prev ? { ...prev, adminCalled: true } : prev);
+  1162→        // Re-fetch messages so the system message appears
+  1163→        const msgRes = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
+  1164→          headers: authHeaders(),
+  1165→        });
+  1166→        if (msgRes.ok) {
+  1167→          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await msgRes.json();
+  1168→          setMessages(data.map(dbToChatMsg));
+  1169→        }
+  1170→        toast.success('অ্যাডমিনকে ডাকা হয়েছে!');
+  1171→      } else {
+  1172→        toast.error('অ্যাডমিন ডাকতে সমস্যা হয়েছে');
+  1173→      }
+  1174→    } catch {
+  1175→      toast.error('নেটওয়ার্ক সমস্যা');
+  1176→    } finally {
+  1177→      setAdminCallLoading(false);
+  1178→    }
+  1179→  };
+  1180→
+  1181→  /* ── Loading ── */
+  1182→  if (loading) {
+  1183→    return (
+  1184→      <div className="flex items-center justify-center py-20">
+  1185→        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+  1186→      </div>
+  1187→    );
+  1188→  }
+  1189→
+  1190→  /* ═══════════════════════════════════════════════════════════
+  1191→      RENDER
+  1192→      ═══════════════════════════════════════════════════════════ */
+  1193→
+  1194→  const isChatView = activeTab === 'chat';
+  1195→
+  1196→  return (
+  1197→    <motion.div
+  1198→      initial={{ opacity: 0, y: 16 }}
+  1199→      animate={{ opacity: 1, y: 0 }}
+  1200→      transition={{ duration: 0.4 }}
+  1201→      className={`w-full ${isChatView ? 'h-[calc(100dvh-6rem)] sm:h-[calc(100dvh-7rem)] lg:h-[calc(100dvh-8rem)]' : 'flex-1 min-h-0 sm:max-h-[calc(100dvh-7rem)] lg:max-h-[calc(100dvh-8rem)]'} flex flex-col`}
+  1202→    >
+  1203→      {/* ═════════════════════════════════════════
+  1204→          Container Card
+  1205→          ═════════════════════════════════════════ */}
+  1206→      <div
+  1207→        className={`flex flex-col ${isChatView ? 'overflow-hidden h-full' : 'flex-1 min-h-0'} rounded-2xl border border-border/60 shadow-lg ${isChatView ? '!rounded-none border-x-0 border-b-0' : ''}`}
+  1208→        style={{
+  1209→          backgroundColor: 'var(--background)',
+  1210→        }}
+  1211→      >
+  1212→        {/* ── Header ── */}
+  1213→        <div
+  1214→          className="flex items-center justify-between border-b border-border/50 px-4 py-3 sm:px-6"
+  1215→          style={{ backgroundColor: 'var(--card)' }}
+  1216→        >
+  1217→          <div className="flex items-center gap-3">
+  1218→            <button
+  1219→              onClick={() => { useAppStore.getState().setActiveDeal(null); useAppStore.getState().goBack(); }}
+  1220→              className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-accent hover:scale-105"
+  1221→              aria-label="ফিরে যান"
+  1222→            >
+  1223→              <ArrowLeft className="h-4 w-4 text-foreground" />
+  1224→            </button>
+  1225→            <div className="flex items-center gap-2.5">
+  1226→              <div
+  1227→                className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
+  1228→                style={{ backgroundColor: PARROT_GREEN }}
+  1229→              >
+  1230→                <span className="text-sm font-bold text-white">আ</span>
+  1231→              </div>
+  1232→              <div>
+  1233→                <span className="text-base font-bold tracking-tight text-foreground">
+  1234→                  আমার ডিল
+  1235→                </span>
+  1236→                <p className="text-[10px] text-muted-foreground hidden sm:block">
+  1237→                  DL-{(dealData?.id || activeDeal?.id || '').slice(-5)}
+  1238→                </p>
+  1239→              </div>
+  1240→            </div>
+  1241→          </div>
+  1242→
+  1243→          {/* Breadcrumb nav (desktop) */}
+  1244→          <nav className="hidden md:flex items-center gap-1">
+  1245→            <button
+  1246→              onClick={() => { useAppStore.getState().setActiveDeal(null); useAppStore.getState().goBack(); }}
+  1247→              className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+  1248→            >
+  1249→              আমার ডিলসমূহ
+  1250→            </button>
+  1251→            <span className="text-xs text-muted-foreground/40">/</span>
+  1252→            <span className="px-3 py-1.5 text-xs font-medium text-foreground">
+  1253→              {dealTitle}
+  1254→            </span>
+  1255→          </nav>
+  1256→
+  1257→          {/* Avatar */}
+  1258→          <div className="flex items-center gap-2.5">
+  1259→            <span className="hidden sm:block text-xs font-medium text-muted-foreground max-w-[100px] truncate">
+  1260→              {user?.name || 'ইউজার'}
+  1261→            </span>
+  1262→            <div
+  1263→              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+  1264→              style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+  1265→            >
+  1266→              {user?.name?.charAt(0) || 'ই'}
+  1267→            </div>
+  1268→          </div>
+  1269→        </div>
+  1270→
+  1271→        {/* ═════════════════════════════════════════
+  1272→            Pill-Shaped Tab Toggle
+  1273→            ═════════════════════════════════════════ */}
+  1274→        <div className="px-4 pt-3 pb-0 sm:px-6 sm:pt-4">
+  1275→          <div className="relative flex items-center p-1 rounded-xl bg-muted/60 w-fit mx-auto">
+  1276→            {/* Sliding indicator */}
+  1277→            <motion.div
+  1278→              className="absolute top-1 bottom-1 rounded-lg"
+  1279→              style={{ backgroundColor: PARROT_GREEN, boxShadow: PARROT_GREEN_GLOW }}
+  1280→              animate={{
+  1281→                left: activeTab === 'info' ? '4px' : '50%',
+  1282→                width: 'calc(50% - 4px)',
+  1283→              }}
+  1284→              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+  1285→            />
+  1286→            <button
+  1287→              onClick={() => setActiveTab('info')}
+  1288→              className="relative z-10 flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+  1289→              style={{ color: activeTab === 'info' ? '#fff' : 'var(--muted-foreground)' }}
+  1290→            >
+  1291→              <Info className="h-4 w-4" />
+  1292→              ডিলের তথ্য
+  1293→            </button>
+  1294→            <button
+  1295→              onClick={() => setActiveTab('chat')}
+  1296→              className="relative z-10 flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors"
+  1297→              style={{ color: activeTab === 'chat' ? '#fff' : 'var(--muted-foreground)' }}
+  1298→            >
+  1299→              <MessageCircle className="h-4 w-4" />
+  1300→              ডিল চ্যাট
+  1301→              {/* Unread dot indicator */}
+  1302→              <span
+  1303→                className="flex h-2 w-2 rounded-full animate-pulse"
+  1304→                style={{ backgroundColor: activeTab === 'chat' ? '#fff' : PARROT_GREEN }}
+  1305→              />
+  1306→            </button>
+  1307→          </div>
+  1308→        </div>
+  1309→
+  1310→        {/* ═══════════════════════════════════════════════════
+  1311→            TAB CONTENT
+  1312→            ═══════════════════════════════════════════════════ */}
+  1313→        <AnimatePresence mode="wait">
+  1314→          {/* ═══════════════════════════════════════
+  1315→              TAB 1: ডিলের তথ্য (Deal Info)
+  1316→              ═══════════════════════════════════════ */}
+  1317→          {activeTab === 'info' && (
+  1318→            <motion.div
+  1319→              key="deal-info"
+  1320→              initial={{ opacity: 0, y: 8 }}
+  1321→              animate={{ opacity: 1, y: 0 }}
+  1322→              exit={{ opacity: 0, y: -8 }}
+  1323→              transition={{ duration: 0.25 }}
+  1324→              className="flex-1 min-h-0 md:overflow-y-auto"
+  1325→            >
+  1326→              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between">
+  1327→                {/* ── Deal title + status badge ── */}
+  1328→                <div className="flex items-center gap-3 sm:items-center sm:justify-between">
+  1329→                  <div className="min-w-0">
+  1330→                    <h2 className="text-base sm:text-xl font-bold text-foreground truncate">
+  1331→                      {dealTitle}
+  1332→                    </h2>
+  1333→                    <p className="text-xs sm:text-xs text-muted-foreground mt-0.5">
+  1334→                      DL-{(dealData?.id || activeDeal?.id || '').slice(-5)} · {dealDate}
+  1335→                    </p>
+  1336→                  </div>
+  1337→                  <div className="shrink-0">{getStatusBadge(status)}</div>
+  1338→                </div>
+  1339→
+  1340→                {/* ── 5-Step Progress Bar ── */}
+  1341→                <div className="rounded-xl md:rounded-2xl border border-border/40 bg-card/50 p-3.5 sm:p-5">
+  1342→                  <div className="hidden md:block">
+  1343→                    <HorizontalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+  1344→                  </div>
+  1345→                  <div className="md:hidden">
+  1346→                    <VerticalStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+  1347→                  </div>
+  1348→                </div>
+  1349→
+  1350→                {/* ── Details Grid (2-col on mobile) ── */}
+  1351→                <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5 sm:gap-3">
+  1352→                  <InfoCard
+  1353→                    icon={Banknote}
+  1354→                    label="ডিলের পরিমাণ"
+  1355→                    value={`৳${dealAmount.toLocaleString('bn-BD')}`}
+  1356→                  />
+  1357→                  {dealData?.platformFee != null && dealData.platformFee > 0 && (
+  1358→                    <InfoCard
+  1359→                      icon={Receipt}
+  1360→                      label="প্ল্যাটফর্ম ফি"
+  1361→                      value={`৳${dealData.platformFee.toLocaleString('bn-BD')}`}
+  1362→                    />
+  1363→                  )}
+  1364→                  <InfoCard
+  1365→                    icon={User}
+  1366→                    label="ক্রেতা"
+  1367→                    value={buyerName}
+  1368→                  />
+  1369→                  <InfoCard
+  1370→                    icon={User}
+  1371→                    label="বিক্রেতা"
+  1372→                    value={sellerName}
+  1373→                  />
+  1374→                  <div className="hidden sm:block">
+  1375→                    <InfoCard
+  1376→                      icon={CalendarDays}
+  1377→                      label="তৈরির তারিখ"
+  1378→                      value={dealDate}
+  1379→                    />
+  1380→                  </div>
+  1381→                </div>
+  1382→
+  1383→                {/* ── Deal Terms (hidden on mobile) ── */}
+  1384→                {dealTerms && (
+  1385→                  <div className="hidden sm:block rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
+  1386→                    <div className="flex items-center gap-2 mb-2.5">
+  1387→                      <div
+  1388→                        className="flex h-7 w-7 items-center justify-center rounded-lg"
+  1389→                        style={{ backgroundColor: PARROT_GREEN_MILD }}
+  1390→                      >
+  1391→                        <ScrollText className="h-4 w-4" style={{ color: PARROT_GREEN }} />
+  1392→                      </div>
+  1393→                      <h3 className="text-sm font-semibold text-foreground">
+  1394→                        ডিলের শর্তাবলী
+  1395→                      </h3>
+  1396→                    </div>
+  1397→                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line pl-9">
+  1398→                      {dealTerms}
+  1399→                    </p>
+  1400→                  </div>
+  1401→                )}
+  1402→
+  1403→                {/* ═══════════════════════════════════════
+  1404→                    CONDITIONAL ACTION BUTTONS
+  1405→                    ═══════════════════════════════════════ */}
+  1406→
+  1407→                {/* Buyer: Pay (status = created) */}
+  1408→                {isBuyer && status === 'created' && (
+  1409→                  <div className="space-y-3">
+  1410→                    {dealData?.rejectionReason === 'wrong_info' && (
+  1411→                      <div className="flex items-start gap-2.5 rounded-xl md:rounded-2xl bg-amber-50 dark:bg-amber-500/10 px-3.5 py-3 md:px-5 md:py-4 border border-amber-200 dark:border-amber-500/20">
+  1412→                        <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0 mt-0.5" />
+  1413→                        <div className="space-y-1">
+  1414→                          <p className="text-xs md:text-sm font-bold text-amber-700 dark:text-amber-400">
+  1415→                            আপনার পেমেন্ট তথ্যে ভুল পাওয়া গেছে
+  1416→                          </p>
+  1417→                          <p className="text-[11px] md:text-xs text-amber-600 dark:text-amber-500/80">
+  1418→                            অনুগ্রহ করে সঠিক তথ্য দিয়ে আবার পেমেন্ট করুন। পূর্বের পেমেন্টের টাকা এই কারণে রিফান্ড হবে না।
+  1419→                          </p>
+  1420→                        </div>
+  1421→                      </div>
+  1422→                    )}
+  1423→                    <ActionButton onClick={() => setDashboardPanel('payment')} variant="primary">
+  1424→                      <ShieldCheck className="h-5 w-5" />
+  1425→                      পেমেন্ট করুন
+  1426→                    </ActionButton>
+  1427→                  </div>
+  1428→                )}
+  1429→
+  1430→                {/* Buyer: Waiting for verification (status = payment_pending) */}
+  1431→                {isBuyer && status === 'payment_pending' && (
+  1432→                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl bg-amber-50 dark:bg-amber-500/10 px-3.5 py-3 md:px-5 md:py-4 border border-amber-200 dark:border-amber-500/20">
+  1433→                    <Clock className="h-4 w-4 md:h-5 md:w-5 text-amber-500 shrink-0" />
+  1434→                    <p className="text-xs md:text-sm font-medium text-amber-700 dark:text-amber-400">
+  1435→                      পেমেন্ট ভেরিফিকেশনের অপেক্ষায়
+  1436→                    </p>
+  1437→                  </div>
+  1438→                )}
+  1439→
+  1440→                {/* Seller: Deliver + Cancel (status = payment_verified) */}
+  1441→                {isSeller && status === 'payment_verified' && (
+  1442→                  <div className="space-y-2 md:space-y-3">
+  1443→                    <div className="flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+  1444→                      <ShieldCheck className="h-4 w-4 shrink-0" style={{ color: PARROT_GREEN }} />
+  1445→                      <p className="text-xs md:text-sm font-medium text-foreground">
+  1446→                        পেমেন্ট ভেরিফাইড — আপনি কাজ সম্পূর্ণ করুন
+  1447→                      </p>
+  1448→                    </div>
+  1449→                    <div className="flex gap-2 md:gap-3">
+  1450→                      <ActionButton onClick={handleDeliver} loading={actionLoading} variant="primary">
+  1451→                        <PackageCheck className="h-5 w-5" />
+  1452→                        কাজ সম্পন্ন
+  1453→                      </ActionButton>
+  1454→                      <ActionButton onClick={handleCancel} loading={actionLoading} variant="danger">
+  1455→                        <XCircle className="h-5 w-5" />
+  1456→                        ক্যান্সেল করুন
+  1457→                      </ActionButton>
+  1458→                    </div>
+  1459→                  </div>
+  1460→                )}
+  1461→
+  1462→                {/* Buyer: Accept + Dispute (status = in_delivery) */}
+  1463→                {isBuyer && status === 'in_delivery' && (
+  1464→                  <div className="space-y-2 md:space-y-3">
+  1465→                    <p className="text-xs md:text-sm text-center font-medium text-muted-foreground">
+  1466→                      বিক্রেতা ডেলিভারি করেছেন। নিশ্চিত করুন।
+  1467→                    </p>
+  1468→                    <div className="flex gap-2 md:gap-3">
+  1469→                      <ActionButton onClick={handleAccept} loading={actionLoading} variant="primary">
+  1470→                        <ThumbsUp className="h-5 w-5" />
+  1471→                        পণ্য/সার্ভিস পেয়েছি
+  1472→                      </ActionButton>
+  1473→                      <ActionButton onClick={handleDispute} loading={actionLoading} variant="danger">
+  1474→                        <AlertTriangle className="h-5 w-5" />
+  1475→                        বিরোধ
+  1476→                      </ActionButton>
+  1477→                    </div>
+  1478→                  </div>
+  1479→                )}
+  1480→
+  1481→                {/* Seller: Waiting for buyer (status = in_delivery) */}
+  1482→                {isSeller && status === 'in_delivery' && (
+  1483→                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+  1484→                    <Truck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+  1485→                    <p className="text-xs md:text-sm font-medium text-foreground">
+  1486→                      ক্রেতার নিশ্চিতকরণের অপেক্ষায়
+  1487→                    </p>
+  1488→                  </div>
+  1489→                )}
+  1490→
+  1491→                {/* Buyer: Waiting for seller (status = payment_verified, buyer view) */}
+  1492→                {isBuyer && status === 'payment_verified' && (
+  1493→                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+  1494→                    <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+  1495→                    <p className="text-xs md:text-sm font-medium text-foreground">
+  1496→                      পেমেন্ট ভেরিফাইড
+  1497→                    </p>
+  1498→                  </div>
+  1499→                )}
+  1500→
+  1501→                {/* Disputed state */}
+  1502→                {isDisputed && (
+  1503→                  <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-5 py-4 border border-red-200 dark:border-red-500/20">
+  1504→                    <AlertTriangle className="h-5 w-5 text-red-500 shrink-0" />
+  1505→                    <p className="text-sm font-medium text-red-700 dark:text-red-400">
+  1506→                      বিরোধ দায়ের করা হয়েছে। অ্যাডমিন পর্যালোচনা করছেন।
+  1507→                    </p>
+  1508→                  </div>
+  1509→                )}
+  1510→
+  1511→                {/* Completed state – Seller payout */}
+  1512→                {isCompleted && isSeller && (
+  1513→                  <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-4 sm:p-5 space-y-4">
+  1514→                    <div className="flex items-center gap-3">
+  1515→                      <Check className="h-5 w-5 text-emerald-500 shrink-0" />
+  1516→                      <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+  1517→                        ডিল সফলভাবে সম্পন্ন হয়েছে!
+  1518→                      </p>
+  1519→                    </div>
+  1520→                    {payoutChecking ? (
+  1521→                      <div className="space-y-3">
+  1522→                        <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+  1523→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1524→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1525→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1526→                      </div>
+  1527→                    ) : !payoutSubmitted ? (
+  1528→                      <div className="space-y-3">
+  1529→                        <p className="text-xs text-muted-foreground font-medium">আপনার পেমেন্ট পেতে নিচের ফর্ম পূরণ করুন</p>
+  1530→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  1531→                          <div className="space-y-1.5">
+  1532→                            <label className="text-xs font-medium text-muted-foreground">পেমেন্ট পদ্ধতি</label>
+  1533→                            {payoutMethods.length > 0 ? (
+  1534→                              <PayoutMethodSelect
+  1535→                                methods={payoutMethods}
+  1536→                                value={payoutAccountType}
+  1537→                                onChange={setPayoutAccountType}
+  1538→                                locked={dealHasPaymentMethod}
+  1539→                              />
+  1540→                            ) : (
+  1541→                              <p className="text-xs text-amber-600 dark:text-amber-400 py-2">কোনো সক্রিয় পেমেন্ট পদ্ধতি পাওয়া যায়নি</p>
+  1542→                            )}
+  1543→                          </div>
+  1544→                          <div className="space-y-1.5">
+  1545→                            <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্ট নম্বর</label>
+  1546→                            <Input
+  1547→                              value={payoutAccountNumber}
+  1548→                              onChange={(e) => setPayoutAccountNumber(e.target.value)}
+  1549→                              placeholder="০১XXXXXXXXX"
+  1550→                              className="h-10 rounded-xl border-border/50 text-sm"
+  1551→                            />
+  1552→                          </div>
+  1553→                        </div>
+  1554→                        <div className="space-y-1.5">
+  1555→                          <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের নাম</label>
+  1556→                          <Input
+  1557→                            value={payoutAccountName}
+  1558→                            onChange={(e) => setPayoutAccountName(e.target.value)}
+  1559→                            placeholder="আপনার নাম"
+  1560→                            className="h-10 rounded-xl border-border/50 text-sm"
+  1561→                          />
+  1562→                        </div>
+  1563→                        <ActionButton
+  1564→                          onClick={handlePayoutRequest}
+  1565→                          loading={payoutLoading}
+  1566→                          variant="primary"
+  1567→                          disabled={!payoutAccountType || !payoutAccountNumber || !payoutAccountName || payoutMethods.length === 0}
+  1568→                        >
+  1569→                          <Banknote className="h-5 w-5" />
+  1570→                          পেআউট অনুরোধ করুন
+  1571→                        </ActionButton>
+  1572→                      </div>
+  1573→                    ) : payoutPaid ? (
+  1574→                      <div className="space-y-3">
+  1575→                        <div className="flex items-center gap-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 px-4 py-3">
+  1576→                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+  1577→                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+  1578→                            পেআউট সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।
+  1579→                          </p>
+  1580→                        </div>
+  1581→                        {submittedPayoutInfo && (
+  1582→                          <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-2">
+  1583→                            <p className="text-[10px] font-medium text-muted-foreground">জমা দেওয়া একাউন্ট তথ্য</p>
+  1584→                            <div className="grid grid-cols-2 gap-2 text-sm">
+  1585→                              <div>
+  1586→                                <p className="text-[10px] text-muted-foreground">পেমেন্ট মেথড</p>
+  1587→                                <p className="font-semibold text-foreground">{submittedPayoutInfo.accountType}</p>
+  1588→                              </div>
+  1589→                              <div>
+  1590→                                <p className="text-[10px] text-muted-foreground">একাউন্ট নম্বর</p>
+  1591→                                <p className="font-mono font-semibold text-foreground">{submittedPayoutInfo.accountNumber}</p>
+  1592→                              </div>
+  1593→                            </div>
+  1594→                            <div>
+  1595→                              <p className="text-[10px] text-muted-foreground">একাউন্টের নাম</p>
+  1596→                              <p className="text-sm font-semibold text-foreground">{submittedPayoutInfo.accountName}</p>
+  1597→                            </div>
+  1598→                          </div>
+  1599→                        )}
+  1600→                      </div>
+  1601→                    ) : (
+  1602→                      <div className="space-y-3">
+  1603→                        <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
+  1604→                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+  1605→                          <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+  1606→                            পেআউট অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।
+  1607→                          </p>
+  1608→                        </div>
+  1609→                        {submittedPayoutInfo && (
+  1610→                          <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-2">
+  1611→                            <p className="text-[10px] font-medium text-muted-foreground">জমা দেওয়া একাউন্ট তথ্য</p>
+  1612→                            <div className="grid grid-cols-2 gap-2 text-sm">
+  1613→                              <div>
+  1614→                                <p className="text-[10px] text-muted-foreground">পেমেন্ট মেথড</p>
+  1615→                                <p className="font-semibold text-foreground">{submittedPayoutInfo.accountType}</p>
+  1616→                              </div>
+  1617→                              <div>
+  1618→                                <p className="text-[10px] text-muted-foreground">একাউন্ট নম্বর</p>
+  1619→                                <p className="font-mono font-semibold text-foreground">{submittedPayoutInfo.accountNumber}</p>
+  1620→                              </div>
+  1621→                            </div>
+  1622→                            <div>
+  1623→                              <p className="text-[10px] text-muted-foreground">একাউন্টের নাম</p>
+  1624→                              <p className="text-sm font-semibold text-foreground">{submittedPayoutInfo.accountName}</p>
+  1625→                            </div>
+  1626→                          </div>
+  1627→                        )}
+  1628→                      </div>
+  1629→                    )}
+  1630→                  </div>
+  1631→                )}
+  1632→                {/* Completed state – Buyer view (no payout needed) */}
+  1633→                {isCompleted && isBuyer && (
+  1634→                  <div className="flex items-center gap-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 px-5 py-4 border border-emerald-200 dark:border-emerald-500/20">
+  1635→                    <Check className="h-5 w-5 text-emerald-500 shrink-0" />
+  1636→                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+  1637→                      ডিল সফলভাবে সম্পন্ন হয়েছে!
+  1638→                    </p>
+  1639→                  </div>
+  1640→                )}
+  1641→
+  1642→                {/* Cancelled/Rejected state – Buyer */}
+  1643→                {isCancelled && isBuyer && (
+  1644→                  <div className="rounded-2xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-4 sm:p-5 space-y-4">
+  1645→                    <div className="flex items-center gap-3">
+  1646→                      <XCircle className="h-5 w-5 text-red-500 shrink-0" />
+  1647→                      <p className="text-sm font-bold text-red-700 dark:text-red-400">
+  1648→                        ডিল {status === 'rejected' ? 'রিজেক্ট' : 'বাতিল'} হয়েছে
+  1649→                      </p>
+  1650→                    </div>
+  1651→                    {/* No refund when admin marked as wrong_info (buyer didn't actually pay) */}
+  1652→                    {dealData?.rejectionReason === 'wrong_info' ? (
+  1653→                      <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
+  1654→                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+  1655→                        <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+  1656→                          অ্যাডমিন ভুল পেমেন্ট তথ্যের কারণে ডিলটি রিজেক্ট করেছেন। এই ক্ষেত্রে রিফান্ড প্রযোজ্য নয়।
+  1657→                        </p>
+  1658→                      </div>
+  1659→                    ) : payoutChecking ? (
+  1660→                      <div className="space-y-3">
+  1661→                        <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+  1662→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1663→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1664→                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+  1665→                      </div>
+  1666→                    ) : !payoutSubmitted ? (
+  1667→                      <div className="space-y-3">
+  1668→                        <p className="text-xs text-muted-foreground font-medium">আপনার অর্থ ফেরত পেতে নিচের ফর্ম পূরণ করুন</p>
+  1669→                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  1670→                          <div className="space-y-1.5">
+  1671→                            <label className="text-xs font-medium text-muted-foreground">পেমেন্ট পদ্ধতি</label>
+  1672→                            {payoutMethods.length > 0 ? (
+  1673→                              <PayoutMethodSelect
+  1674→                                methods={payoutMethods}
+  1675→                                value={payoutAccountType}
+  1676→                                onChange={setPayoutAccountType}
+  1677→                                locked={dealHasPaymentMethod}
+  1678→                              />
+  1679→                            ) : (
+  1680→                              <p className="text-xs text-amber-600 dark:text-amber-400 py-2">কোনো সক্রিয় পেমেন্ট পদ্ধতি পাওয়া যায়নি</p>
+  1681→                            )}
+  1682→                          </div>
+  1683→                          <div className="space-y-1.5">
+  1684→                            <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্ট নম্বর</label>
+  1685→                            <Input
+  1686→                              value={payoutAccountNumber}
+  1687→                              onChange={(e) => setPayoutAccountNumber(e.target.value)}
+  1688→                              placeholder="০১XXXXXXXXX"
+  1689→                              className="h-10 rounded-xl border-border/50 text-sm"
+  1690→                            />
+  1691→                          </div>
+  1692→                        </div>
+  1693→                        <div className="space-y-1.5">
+  1694→                          <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের নাম</label>
+  1695→                          <Input
+  1696→                            value={payoutAccountName}
+  1697→                            onChange={(e) => setPayoutAccountName(e.target.value)}
+  1698→                            placeholder="আপনার নাম"
+  1699→                            className="h-10 rounded-xl border-border/50 text-sm"
+  1700→                          />
+  1701→                        </div>
+  1702→                        <ActionButton
+  1703→                          onClick={handlePayoutRequest}
+  1704→                          loading={payoutLoading}
+  1705→                          variant="primary"
+  1706→                          disabled={!payoutAccountType || !payoutAccountNumber || !payoutAccountName || payoutMethods.length === 0}
+  1707→                        >
+  1708→                          <Banknote className="h-5 w-5" />
+  1709→                          ফেরতের অনুরোধ করুন
+  1710→                        </ActionButton>
+  1711→                      </div>
+  1712→                    ) : payoutPaid ? (
+  1713→                      <div className="space-y-3">
+  1714→                        <div className="flex items-center gap-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 px-4 py-3">
+  1715→                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+  1716→                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+  1717→                            ফেরত সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।
+  1718→                          </p>
+  1719→                        </div>
+  1720→                        {submittedPayoutInfo && (
+  1721→                          <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-2">
+  1722→                            <p className="text-[10px] font-medium text-muted-foreground">জমা দেওয়া একাউন্ট তথ্য</p>
+  1723→                            <div className="grid grid-cols-2 gap-2 text-sm">
+  1724→                              <div>
+  1725→                                <p className="text-[10px] text-muted-foreground">পেমেন্ট মেথড</p>
+  1726→                                <p className="font-semibold text-foreground">{submittedPayoutInfo.accountType}</p>
+  1727→                              </div>
+  1728→                              <div>
+  1729→                                <p className="text-[10px] text-muted-foreground">একাউন্ট নম্বর</p>
+  1730→                                <p className="font-mono font-semibold text-foreground">{submittedPayoutInfo.accountNumber}</p>
+  1731→                              </div>
+  1732→                            </div>
+  1733→                            <div>
+  1734→                              <p className="text-[10px] text-muted-foreground">একাউন্টের নাম</p>
+  1735→                              <p className="text-sm font-semibold text-foreground">{submittedPayoutInfo.accountName}</p>
+  1736→                            </div>
+  1737→                          </div>
+  1738→                        )}
+  1739→                      </div>
+  1740→                    ) : (
+  1741→                      <div className="space-y-3">
+  1742→                        <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
+  1743→                          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+  1744→                          <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+  1745→                            ফেরতের অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।
+  1746→                          </p>
+  1747→                        </div>
+  1748→                        {submittedPayoutInfo && (
+  1749→                          <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-2">
+  1750→                            <p className="text-[10px] font-medium text-muted-foreground">জমা দেওয়া একাউন্ট তথ্য</p>
+  1751→                            <div className="grid grid-cols-2 gap-2 text-sm">
+  1752→                              <div>
+  1753→                                <p className="text-[10px] text-muted-foreground">পেমেন্ট মেথড</p>
+  1754→                                <p className="font-semibold text-foreground">{submittedPayoutInfo.accountType}</p>
+  1755→                              </div>
+  1756→                              <div>
+  1757→                                <p className="text-[10px] text-muted-foreground">একাউন্ট নম্বর</p>
+  1758→                                <p className="font-mono font-semibold text-foreground">{submittedPayoutInfo.accountNumber}</p>
+  1759→                              </div>
+  1760→                            </div>
+  1761→                            <div>
+  1762→                              <p className="text-[10px] text-muted-foreground">একাউন্টের নাম</p>
+  1763→                              <p className="text-sm font-semibold text-foreground">{submittedPayoutInfo.accountName}</p>
+  1764→                            </div>
+  1765→                          </div>
+  1766→                        )}
+  1767→                      </div>
+  1768→                    )}
+  1769→                  </div>
+  1770→                )}
+  1771→                {/* Cancelled/Rejected state – Seller view (no refund) */}
+  1772→                {isCancelled && isSeller && (
+  1773→                  <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-500/10 px-5 py-4 border border-red-200 dark:border-red-500/20">
+  1774→                    <XCircle className="h-5 w-5 text-red-500 shrink-0" />
+  1775→                    <p className="text-sm font-bold text-red-700 dark:text-red-400">
+  1776→                      ডিল {status === 'rejected' ? 'রিজেক্ট' : 'বাতিল'} হয়েছে
+  1777→                    </p>
+  1778→                  </div>
+  1779→                )}
+  1780→
+  1781→                {/* Seller: Waiting for payment (status = created, seller view) */}
+  1782→                {isSeller && status === 'created' && (
+  1783→                  <div className="flex items-center gap-3 rounded-2xl bg-amber-50 dark:bg-amber-500/10 px-5 py-4 border border-amber-200 dark:border-amber-500/20">
+  1784→                    <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+  1785→                    <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+  1786→                      ক্রেতার পেমেন্টের অপেক্ষায় আছে
+  1787→                    </p>
+  1788→                  </div>
+  1789→                )}
+  1790→              </div>
+  1791→            </motion.div>
+  1792→          )}
+  1793→
+  1794→          {/* ═══════════════════════════════════════
+  1795→              TAB 2: ডিল চ্যাট (Deal Chat)
+  1796→              Full-page immersive chat
+  1797→              ═══════════════════════════════════════ */}
+  1798→          {activeTab === 'chat' && (
+  1799→            <motion.div
+  1800→              key="deal-chat"
+  1801→              initial={{ opacity: 0, y: 8 }}
+  1802→              animate={{ opacity: 1, y: 0 }}
+  1803→              exit={{ opacity: 0, y: -8 }}
+  1804→              transition={{ duration: 0.25 }}
+  1805→              className="flex-1 min-h-0 flex flex-col"
+  1806→            >
+  1807→              {/* ── Chat Header ── */}
+  1808→              <div
+  1809→                className="flex items-center justify-between px-3 sm:px-5 py-3 border-b border-border/30"
+  1810→                style={{ backgroundColor: 'var(--card)' }}
+  1811→              >
+  1812→                <div className="flex items-center gap-3">
+  1813→                  <div
+  1814→                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+  1815→                    style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+  1816→                  >
+  1817→                    {isBuyer ? 'ক' : 'ব'}
+  1818→                  </div>
+  1819→                  <div>
+  1820→                    <p className="text-sm font-semibold text-foreground">
+  1821→                      {isBuyer ? sellerName : buyerName}
+  1822→                    </p>
+  1823→                    <div className="flex items-center gap-1.5 mt-0.5">
+  1824→                      <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+  1825→                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+  1826→                        অনলাইন
+  1827→                      </span>
+  1828→                    </div>
+  1829→                  </div>
+  1830→                </div>
+  1831→              </div>
+  1832→
+  1833→              {/* ── Chat Messages Area (Glassmorphism Background) ── */}
+  1834→              <div
+  1835→                ref={chatContainerRef}
+  1836→                onScroll={handleChatScroll}
+  1837→                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3"
+  1838→                style={{
+  1839→                  /* Glassmorphism: subtle pattern + blur */
+  1840→                  backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(101,163,13,0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(101,163,13,0.02) 0%, transparent 50%)',
+  1841→                  backgroundColor: 'var(--muted)',
+  1842→                  scrollbarWidth: 'thin',
+  1843→                  scrollbarColor: 'var(--border) transparent',
+  1844→                }}
+  1845→              >
+  1846→                {chatLoading && (
+  1847→                  <div className="flex justify-center py-4">
+  1848→                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+  1849→                  </div>
+  1850→                )}
+  1851→
+  1852→                {!chatLoading && messages.length === 0 && (
+  1853→                  <div className="flex flex-col items-center justify-center py-16 gap-3">
+  1854→                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: PARROT_GREEN_MILD }}>
+  1855→                      <MessageCircle className="h-6 w-6" style={{ color: PARROT_GREEN }} />
+  1856→                    </div>
+  1857→                    <p className="text-sm font-medium text-muted-foreground">কোনো মেসেজ নেই</p>
+  1858→                    <p className="text-xs text-muted-foreground/70">প্রথম মেসেজ পাঠান!</p>
+  1859→                  </div>
+  1860→                )}
+  1861→
+  1862→                {!chatLoading && messages.length > 0 && (
+  1863→                  <>
+  1864→                    <ChatDateDivider text="আজ" />
+  1865→                    <AnimatePresence initial={false}>
+  1866→                      {messages.map((msg) => (
+  1867→                        <ChatBubble key={msg.id} message={msg} currentUserId={user?.id} />
+  1868→                      ))}
+  1869→                    </AnimatePresence>
+  1870→                  </>
+  1871→                )}
+  1872→                <div ref={chatEndRef} />
+  1873→              </div>
+  1874→
+  1875→              {/* ── Chat Input Bar (Fixed Bottom) ── */}
+  1876→              <div
+  1877→                className="shrink-0 border-t border-border/30 px-3 sm:px-4 py-3 sm:py-4"
+  1878→                style={{
+  1879→                  backgroundColor: 'var(--card)',
+  1880→                }}
+  1881→              >
+  1882→                <div className="flex items-center gap-2 sm:gap-3">
+  1883→                  {/* Admin ডাকুন button */}
+  1884→                  <button
+  1885→                    onClick={handleCallAdmin}
+  1886→                    disabled={adminCallLoading || dealData?.adminCalled}
+  1887→                    className="flex items-center gap-1.5 h-10 shrink-0 rounded-xl px-3 text-xs font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
+  1888→                    style={{
+  1889→                      backgroundColor: dealData?.adminCalled ? 'hsl(var(--muted))' : 'rgba(239,68,68,0.1)',
+  1890→                      color: dealData?.adminCalled ? 'hsl(var(--muted-foreground))' : '#ef4444',
+  1891→                    }}
+  1892→                    aria-label="অ্যাডমিন ডাকুন"
+  1893→                  >
+  1894→                    <Headphones className="h-4 w-4" />
+  1895→                    <span className="hidden sm:inline">{dealData?.adminCalled ? 'ডাকা হয়েছে' : 'অ্যাডমিন ডাকুন'}</span>
+  1896→                  </button>
+  1897→
+  1898→                  {/* Text input */}
+  1899→                  <div className="flex-1 relative">
+  1900→                    <Input
+  1901→                      ref={inputRef}
+  1902→                      value={chatInput}
+  1903→                      onChange={(e) => setChatInput(e.target.value)}
+  1904→                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
+  1905→                      placeholder="মেসেজ লিখুন..."
+  1906→                      className="w-full h-11 rounded-xl border-border/50 bg-muted/40 text-sm pr-12 focus:border-[rgba(101,163,13,0.4)] focus:ring-[rgba(101,163,13,0.15)] transition-colors"
+  1907→                    />
+  1908→                  </div>
+  1909→
+  1910→                  {/* Send button */}
+  1911→                  <motion.button
+  1912→                    onClick={handleSend}
+  1913→                    disabled={!chatInput.trim() || sendingMsg}
+  1914→                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-40"
+  1915→                    whileHover={{ scale: chatInput.trim() && !sendingMsg ? 1.08 : 1 }}
+  1916→                    whileTap={{ scale: chatInput.trim() && !sendingMsg ? 0.92 : 1 }}
+  1917→                    style={{
+  1918→                      backgroundColor: chatInput.trim() && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
+  1919→                      color: chatInput.trim() && !sendingMsg ? '#fff' : 'var(--muted-foreground)',
+  1920→                      boxShadow: chatInput.trim() && !sendingMsg ? PARROT_GREEN_GLOW : 'none',
+  1921→                    }}
+  1922→                    aria-label="পাঠান"
+  1923→                  >
+  1924→                    {sendingMsg ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizonal className="h-5 w-5" />}
+  1925→                  </motion.button>
+  1926→                </div>
+  1927→              </div>
+  1928→            </motion.div>
+  1929→          )}
+  1930→        </AnimatePresence>
+  1931→      </div>
+  1932→    </motion.div>
+  1933→  );
+  1934→}
