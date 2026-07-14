@@ -491,7 +491,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail' || dashboardPanel === 'payment';
 
   return (
-    <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:p-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:p-8'}`}>
+    <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
       {/* Back button for sub-panels (not overview, not immersive) */}
       {!isImmersive && dashboardPanel !== 'overview' && (
         <div className="mb-4">

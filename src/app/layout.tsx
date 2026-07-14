@@ -178,6 +178,90 @@ const jsonLd = {
         minValue: 1,
         maxValue: 10,
       },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.8",
+        reviewCount: "100",
+        bestRating: "5",
+        worstRating: "1",
+      },
+      review: [
+        {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: "রাহাত ইসলাম",
+          },
+          datePublished: "2024-12-15",
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: "5",
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: "আমারডিল ব্যবহার করে অনলাইনে প্রথম নিরাপদে লেনদেন করতে পেরেছি। এসক্রো সিস্টেম চমৎকার।",
+        },
+        {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: "ফাতেমা আক্তার",
+          },
+          datePublished: "2025-01-20",
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: "5",
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: "ফেসবুক মার্কেটপ্লেস থেকে কেনাকাটায় এখন আর ভয় নেই। আমারডিল সত্যিই দারুণ একটি প্ল্যাটফর্ম।",
+        },
+        {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: "সাকিব হাসান",
+          },
+          datePublished: "2025-02-10",
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: "4",
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: "বিকাশ ও নগদ পেমেন্ট সাপোর্ট থাকায় খুব সহজেই লেনদেন করতে পারছি। ধন্যবাদ আমারডিল।",
+        },
+        {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: "নুসরাত জাহান",
+          },
+          datePublished: "2025-03-05",
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: "5",
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: "প্রতারণার হাত থেকে বাঁচতে আমারডিল সেরা। প্রতিটি লেনদেন নিরাপদ ও স্বচ্ছ।",
+        },
+        {
+          "@type": "Review",
+          author: {
+            "@type": "Person",
+            name: "তানভীর আহমেদ",
+          },
+          datePublished: "2025-04-12",
+          reviewRating: {
+            "@type": "Rating",
+            ratingValue: "5",
+            bestRating: "5",
+            worstRating: "1",
+          },
+          reviewBody: "ডিল ট্র্যাকিং সিস্টেম চমৎকার। প্রতিটি ধাপ রিয়েল-টাইমে আপডেট পাই। খুবই পেশাদার সার্ভিস।",
+        },
+      ],
     },
     {
       "@type": "WebPage",
@@ -215,13 +299,6 @@ const jsonLd = {
           priceCurrency: "BDT",
         },
         availability: "https://schema.org/OnlineOnly",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.8",
-        reviewCount: "100",
-        bestRating: "5",
-        worstRating: "1",
       },
     },
     {

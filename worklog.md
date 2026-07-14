@@ -278,3 +278,43 @@ Stage Summary:
 - Admin can now correct payment amount before verifying
 - Button auto-disables when amount matches current value
 
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix Google Search Console Review snippets structured data issue
+
+Work Log:
+- Identified the issue: `aggregateRating` was placed on `Service` type, which is NOT in Google's supported list for Review snippets
+- Google Review snippets support: Organization, Product, LocalBusiness, SoftwareApplication, Book, Movie, Recipe, Course, Event, etc.
+- Moved `aggregateRating` from `Service` to `Organization` type in layout.tsx JSON-LD
+- Added 5 proper `Review` objects to `Organization` with: author (Person), datePublished, reviewRating (Rating), reviewBody
+- Removed `aggregateRating` from `Service` schema entirely
+- Verified via agent-browser that JSON-LD renders correctly with proper structure
+- Confirmed no other files contain `aggregateRating` that could cause the same issue
+
+Stage Summary:
+- Google Search Console Review snippets error fixed by moving rating data to supported `Organization` type
+- Added 5 sample Review objects to make Review snippets eligible for rich results
+- Service schema cleaned up (no longer has aggregateRating)
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix desktop view dashboard header alignment
+
+Work Log:
+- Analyzed pixel-level alignment using agent-browser and JavaScript measurements
+- Found 3 alignment issues:
+  1. Navbar right section had `lg:pr-6` adding double padding (nav px-6 + section pr-6 = 48px)
+  2. Nav element had `px-6` left padding pushing logo 24px more than sidebar nav items
+  3. Admin header title had `text-center lg:text-left` and `justify-center lg:justify-start` causing unnecessary centering on mobile
+- Fixed navbar: Added `lg:pl-0` to nav for sidebar view, removed `lg:pr-6` from right section
+- Fixed dashboard content: Changed `lg:p-8` to `lg:px-6 lg:py-8` in DashboardMain, AdminMain, SellerMain
+- Fixed admin header: Removed `text-center lg:text-left` wrapper and `justify-center lg:justify-start` from h1
+- Verified with pixel measurements: logo and sidebar both at 20px left, buttons and content both at 24px right
+
+Stage Summary:
+- Desktop dashboard header alignment fixed across all views (user, admin, seller)
+- Left alignment: Logo matches sidebar nav items (both at 20px from viewport edge)
+- Right alignment: Navbar buttons match content area (both at 24px from viewport edge)

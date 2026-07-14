@@ -140,7 +140,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
       <nav
         className={`relative h-16 items-center justify-between px-4 sm:px-6 ${
-          isSidebarView ? 'flex' : 'mx-auto flex max-w-6xl md:px-8'
+          isSidebarView ? 'flex lg:pl-0' : 'mx-auto flex max-w-6xl md:px-8'
         }`}
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
@@ -154,7 +154,7 @@ export function Navbar() {
         <div
           className={`flex items-center ${
             isSidebarView
-              ? 'flex-1 justify-end px-4 sm:px-6 lg:px-0 lg:pr-6'
+              ? 'flex-1 justify-end lg:px-0'
               : ''
           }`}
         >

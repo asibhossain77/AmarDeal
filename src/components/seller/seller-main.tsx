@@ -340,7 +340,7 @@ export function SellerMain() {
   if (!mounted) return null;
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
       {sellerPanel !== 'overview' && sellerPanel !== 'deal-detail' && (
         <div className="mb-4">
           <BackButton />

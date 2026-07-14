@@ -3503,7 +3503,7 @@ export function AdminMain() {
   // Block rendering of unauthorized panels
   if (!hasPanelAccess(adminPanel)) {
       return (
-        <div className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="h-16 w-16 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center mb-4">
               <ShieldX className="h-8 w-8 text-red-500" />
@@ -3516,11 +3516,11 @@ export function AdminMain() {
   }
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
       {/* ── Top Bar ── */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="text-center lg:text-left">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center justify-center lg:justify-start gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <span className="text-primary">{siteName}</span>
             <span className="text-muted-foreground font-normal text-base">
               — অ্যাডমিন প্যানেল
