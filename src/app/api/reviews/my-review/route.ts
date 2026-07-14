@@ -9,12 +9,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'contact প্যারামিটার দিন' }, { status: 400 })
     }
 
-    const trimmed = contact.trim().toLowerCase()
+    const trimmed = contact.trim()
 
+    // SQLite is case-insensitive for ASCII by default, so no mode needed
     const user = await db.user.findFirst({
       where: {
         OR: [
-          { email: { equals: trimmed, mode: 'insensitive' } },
+          { email: trimmed },
           { phone: trimmed },
         ],
       },

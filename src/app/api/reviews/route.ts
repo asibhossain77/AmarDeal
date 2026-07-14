@@ -33,17 +33,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'মন্তব্য ৫০০ অক্ষরের বেশি হতে পারবে না' }, { status: 400 })
     }
 
-    const trimmed = contact.trim().toLowerCase()
+    const trimmed = contact.trim()
 
-    // Find user by email or phone
+    // Find user by email or phone (SQLite default is case-insensitive for ASCII)
     const user = await db.user.findFirst({
       where: {
         OR: [
-          { email: { equals: trimmed, mode: 'insensitive' } },
+          { email: trimmed },
           { phone: trimmed },
         ],
       },
-      select: { id: true, name: true, email: true, phone: true },
+      select: { id: true, name: true },
     })
 
     if (!user) {

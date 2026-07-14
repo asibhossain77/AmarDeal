@@ -132,6 +132,20 @@ CREATE TABLE IF NOT EXISTS "ChatMessage" (
   "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS "ChatMessage_dealId_createdAt_idx" ON "ChatMessage"("dealId", "createdAt");
+
+CREATE TABLE IF NOT EXISTS "Review" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "rating" INTEGER NOT NULL,
+  "comment" TEXT NOT NULL,
+  "isApproved" BOOLEAN NOT NULL DEFAULT 0,
+  "userId" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "Review_isApproved_createdAt_idx" ON "Review"("isApproved", "createdAt");
+CREATE INDEX IF NOT EXISTS "Review_userId_idx" ON "Review"("userId");
 `
 
 // Seed data: admin user + default settings
@@ -197,6 +211,25 @@ export async function GET() {
         }
       } catch (err: any) {
         results.push(`⚠️ Statement error: ${err.message}`)
+      }
+    }
+
+    // Migrations: alter existing tables if columns are missing
+    const MIGRATIONS_SQL = [
+      // Add userId column to Review if missing
+      `ALTER TABLE "Review" ADD COLUMN "userId" TEXT`,
+    ]
+    for (const sql of MIGRATIONS_SQL) {
+      try {
+        await client.execute(sql)
+        results.push(`🔄 Migration applied: ${sql.substring(0, 60)}...`)
+      } catch (err: any) {
+        // Column may already exist — that's fine
+        if (err.message?.includes('duplicate column') || err.message?.includes('already exists')) {
+          results.push(`⏭️ Migration skipped (already exists)`)
+        } else {
+          results.push(`⚠️ Migration error: ${err.message?.substring(0, 100)}`)
+        }
       }
     }
 
