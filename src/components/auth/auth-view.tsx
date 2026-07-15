@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   MailCheck,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -100,11 +101,45 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
 
+  /* ── Live email check state ── */
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'found' | 'not-found' | 'unverified' | 'error'>('idle');
+
   useEffect(() => {
     if (resendTimer <= 0) return;
     const t = setTimeout(() => setResendTimer((p) => p - 1), 1000);
     return () => clearTimeout(t);
   }, [resendTimer]);
+
+  /* Debounced live email check */
+  useEffect(() => {
+    const trimmed = email.trim().toLowerCase();
+    if (step !== 1) return;
+    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+      setEmailStatus('idle');
+      return;
+    }
+    setEmailStatus('checking');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: trimmed }),
+        });
+        const data = await res.json();
+        if (data.exists && !data.emailVerified) {
+          setEmailStatus('unverified');
+        } else if (data.exists) {
+          setEmailStatus('found');
+        } else {
+          setEmailStatus('not-found');
+        }
+      } catch {
+        setEmailStatus('error');
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [email, step]);
 
   const handleSendOtp = useCallback(async () => {
     setError('');
@@ -204,10 +239,35 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
             <div className="space-y-2 text-center">
               <Label className="text-foreground text-sm">আপনার ইমেইল দিন</Label>
               <div className="relative">
-                <Input type="email" placeholder="example@mail.com" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10`} />
+                <Input type="email" placeholder="example@mail.com" value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10 pr-10`} />
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                {emailStatus === 'checking' && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                {emailStatus === 'found' && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
+                {emailStatus === 'not-found' && <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
+                {emailStatus === 'unverified' && <MailCheck className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />}
               </div>
-              <p className="text-xs text-muted-foreground">রেজিস্ট্রেশনের সময় ব্যবহৃত ইমেইল দিন</p>
+              {/* Live email status hint */}
+              {emailStatus === 'found' && (
+                <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  অ্যাকাউন্ট পাওয়া গেছে — কোড পাঠাতে পাশের বাটনে ক্লিক করুন
+                </p>
+              )}
+              {emailStatus === 'not-found' && (
+                <p className="text-xs text-red-500 flex items-center justify-center gap-1">
+                  <XCircle className="h-3 w-3" />
+                  এই ইমেইলে কোনো অ্যাকাউন্ট নেই
+                </p>
+              )}
+              {emailStatus === 'unverified' && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
+                  <MailCheck className="h-3 w-3" />
+                  অ্যাকাউন্ট আছে কিন্তু ইমেইল ভেরিফাইড নয় — পাসওয়ার্ড রিসেট করতে পারবেন না
+                </p>
+              )}
+              {emailStatus === 'idle' && (
+                <p className="text-xs text-muted-foreground">রেজিস্ট্রেশনের সময় ব্যবহৃত ইমেইল দিন</p>
+              )}
             </div>
           </motion.div>
         )}
@@ -240,7 +300,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         <Button variant="outline" onClick={step === 1 ? onBack : () => { setStep((s) => (s - 1) as 1 | 2); setError(''); }} className="h-12 rounded-xl text-sm font-medium gap-2">
           <ArrowLeft className="h-4 w-4" />{step === 1 ? 'ফিরুন' : 'পেছনে'}
         </Button>
-        <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6)} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+        <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
           {step === 1 ? 'কোড পাঠান' : step === 2 ? 'যাচাই করুন' : 'পাসওয়ার্ড পরিবর্তন করুন'}
         </Button>
