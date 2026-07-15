@@ -20,6 +20,9 @@ import {
   Zap,
   Palette,
   Save,
+  Eye,
+  EyeOff,
+  Server,
 } from 'lucide-react';
 
 interface EmailTestResult {
@@ -46,12 +49,18 @@ const EMAIL_TEMPLATES: { type: string; label: string; description: string; icon:
   { type: 'payout_completed', label: 'পেআউট সম্পন্ন', description: 'অ্যাডমিন পেমেন্ট দিলে', icon: '💳' },
 ];
 
-const FIELDS: { key: string; label: string; placeholder: string; description: string }[] = [
+const TEMPLATE_FIELDS = [
   { key: 'email_site_name', label: 'সাইট নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইলের হেডার ও ফুটারে দেখাবে' },
   { key: 'email_from_name', label: 'প্রেরকের নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইল প্রেরকের নাম (From Name)' },
   { key: 'email_site_url', label: 'সাইট URL', placeholder: 'https://example.com', description: 'বাটন ও লিংকে ব্যবহৃত হবে' },
   { key: 'email_header_subtitle', label: 'হেডার সাবটাইটেল', placeholder: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম', description: 'হেডারে নামের নিচে দেখাবে' },
   { key: 'email_footer_tagline', label: 'ফুটার ট্যাগলাইন', placeholder: 'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন', description: 'ফুটারে ব্র্যান্ড নামের নিচে দেখাবে' },
+];
+
+const BREVO_FIELDS = [
+  { key: 'brevo_smtp_key', label: 'SMTP Key', placeholder: 'xkeysib-xxxxxxxxxxxx', description: 'Brevo Dashboard → SMTP & API → তৈরি করুন' },
+  { key: 'brevo_smtp_user', label: 'SMTP User (ইমেইল)', placeholder: 'your@email.com', description: 'আপনার Brevo অ্যাকাউন্টের লগইন ইমেইল' },
+  { key: 'brevo_from_email', label: 'From Email', placeholder: 'noreply@yourdomain.com', description: 'প্রেরকের ইমেইল (খালি থাকলে SMTP User ব্যবহার হবে)' },
 ];
 
 export function EmailSettingsPanel() {
@@ -66,10 +75,11 @@ export function EmailSettingsPanel() {
   const [verifyResult, setVerifyResult] = useState<'idle' | 'success' | 'error'>('idle');
 
   /* ── Template settings state ── */
-  const [templateSettings, setTemplateSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<Record<string, string>>({});
+  const [showSmtpKey, setShowSmtpKey] = useState(false);
 
   // Check email config on mount
   useEffect(() => {
@@ -92,12 +102,12 @@ export function EmailSettingsPanel() {
         setConfigError('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
       });
 
-    // Load template settings
+    // Load all settings
     fetch('/api/admin/email-template-settings')
       .then((res) => res.json())
       .then((data) => {
         if (!data.error) {
-          setTemplateSettings(data);
+          setSettings(data);
           setOriginalSettings(data);
         }
       })
@@ -113,7 +123,6 @@ export function EmailSettingsPanel() {
 
   const sendTestEmail = async (type: string, label: string) => {
     updateResult(type, { status: 'loading' });
-
     try {
       const res = await fetch('/api/email/test', {
         method: 'POST',
@@ -121,7 +130,6 @@ export function EmailSettingsPanel() {
         body: JSON.stringify({ type, to: testEmail || undefined }),
       });
       const data = await res.json();
-
       if (data.success) {
         updateResult(type, { status: 'success', message: data.message });
         toast.success(`${label} — সফল!`);
@@ -129,7 +137,7 @@ export function EmailSettingsPanel() {
         updateResult(type, { status: 'error', message: data.error });
         toast.error(`${label} — ব্যর্থ: ${data.error}`);
       }
-    } catch (err) {
+    } catch {
       updateResult(type, { status: 'error', message: 'নেটওয়ার্ক ত্রুটি' });
       toast.error(`${label} — নেটওয়ার্ক ত্রুটি`);
     }
@@ -175,22 +183,23 @@ export function EmailSettingsPanel() {
     }
   };
 
-  const hasSettingsChanged = Object.keys(FIELDS).some(
-    (f) => templateSettings[f.key] !== originalSettings[f.key],
+  const ALL_FIELDS = [...TEMPLATE_FIELDS, ...BREVO_FIELDS];
+  const hasChanged = ALL_FIELDS.some(
+    (f) => settings[f.key] !== originalSettings[f.key],
   );
 
-  const handleSaveSettings = async () => {
+  const handleSave = async () => {
     setSavingSettings(true);
     try {
       const res = await fetch('/api/admin/email-template-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(templateSettings),
+        body: JSON.stringify(settings),
       });
       const data = await res.json();
       if (data.success) {
-        setOriginalSettings({ ...templateSettings });
-        toast.success('ইমেইল টেমপ্লেট সেটিংস সেভ হয়েছে!');
+        setOriginalSettings({ ...settings });
+        toast.success('সেটিংস সেভ হয়েছে!');
       } else {
         toast.error(data.error || 'সেভ করতে সমস্যা');
       }
@@ -214,13 +223,74 @@ export function EmailSettingsPanel() {
         </p>
       </div>
 
+      {/* ── Brevo SMTP Credentials ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Server className="h-4 w-4" />
+            Brevo SMTP Credentials
+            <Badge variant="outline" className="ml-auto text-xs">
+              DB সংরক্ষিত
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadingSettings ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">লোড হচ্ছে...</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30 p-3">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  <strong>.env ফাইলের পরিবর্তে</strong> এখান থেকে Brevo credentials সেট করুন।
+                  DB-তে সংরক্ষিত থাকবে — Vercel এ সহজে আপডেট করা যাবে।
+                  যদি দুই জায়গায়ই থাকে, DB এর ভ্যালু অগ্রাধিকার পাবে।
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {BREVO_FIELDS.map((f) => (
+                  <div key={f.key} className="space-y-1.5">
+                    <Label className="text-sm font-medium text-foreground">{f.label}</Label>
+                    <div className="relative">
+                      <Input
+                        type={f.key === 'brevo_smtp_key' && !showSmtpKey ? 'password' : 'text'}
+                        value={settings[f.key] || ''}
+                        onChange={(e) =>
+                          setSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
+                        }
+                        placeholder={f.placeholder}
+                        className="h-10 pr-10"
+                      />
+                      {f.key === 'brevo_smtp_key' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpKey(!showSmtpKey)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          tabIndex={-1}
+                        >
+                          {showSmtpKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{f.description}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ── Template Settings Card ── */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Palette className="h-4 w-4" />
             টেমপ্লেট কাস্টমাইজেশন
-            {hasSettingsChanged && (
+            {hasChanged && (
               <Badge variant="outline" className="ml-auto text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
                 পরিবর্তন আছে
               </Badge>
@@ -229,23 +299,22 @@ export function EmailSettingsPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           {loadingSettings ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-6">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">লোড হচ্ছে...</span>
             </div>
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                এই সেটিংসগুলো পরিবর্তন করলে ভবিষ্যতে সব ইমেইলে নতুন তথ্য দেখাবে। ওয়েবসাইটের নাম পরিবর্তন করলে এখানে আপডেট করুন।
+                ওয়েবসাইটের নাম বা ব্র্যান্ডিং পরিবর্তন করলে এখানে আপডেট করুন। কোনো কোড পরিবর্তন লাগবে না।
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {FIELDS.map((f) => (
+                {TEMPLATE_FIELDS.map((f) => (
                   <div key={f.key} className="space-y-1.5">
                     <Label className="text-sm font-medium text-foreground">{f.label}</Label>
                     <Input
-                      value={templateSettings[f.key] || ''}
+                      value={settings[f.key] || ''}
                       onChange={(e) =>
-                        setTemplateSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
+                        setSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
                       }
                       placeholder={f.placeholder}
                       className="h-10"
@@ -254,25 +323,26 @@ export function EmailSettingsPanel() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end pt-2">
-                <Button
-                  onClick={handleSaveSettings}
-                  disabled={savingSettings || !hasSettingsChanged}
-                  size="sm"
-                  className="gap-2"
-                >
-                  {savingSettings ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  সেভ করুন
-                </Button>
-              </div>
             </>
           )}
         </CardContent>
       </Card>
+
+      {/* Save Button (shared for both cards) */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSave}
+          disabled={savingSettings || !hasChanged || loadingSettings}
+          className="gap-2 h-11 px-8"
+        >
+          {savingSettings ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
+          {savingSettings ? 'সেভ হচ্ছে...' : 'সেটিংস সেভ করুন'}
+        </Button>
+      </div>
 
       {/* Config Status + Verify Card */}
       <Card>
@@ -283,7 +353,6 @@ export function EmailSettingsPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Status indicator */}
           <div className="flex items-center gap-3">
             {configStatus === 'loading' ? (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -306,13 +375,12 @@ export function EmailSettingsPanel() {
                 {configStatus === 'loading'
                   ? ''
                   : configStatus === 'configured'
-                    ? 'SMTP Key এবং User পাওয়া গেছে। নিচে থেকে ভেরিফাই করুন।'
+                    ? 'SMTP Key পাওয়া গেছে। নিচে থেকে ভেরিফাই করুন।'
                     : configError}
               </p>
             </div>
           </div>
 
-          {/* Verify Connection */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 border-t border-border/50">
             <div className="flex-1">
               <label className="text-sm font-medium text-foreground mb-1.5 block">
@@ -320,7 +388,7 @@ export function EmailSettingsPanel() {
               </label>
               <Input
                 type="email"
-                placeholder="আপনার ইমেইল দিন (ভেরিফিকেশন ইমেইল পাঠানো হবে)"
+                placeholder="আপনার ইমেইল দিন (টেস্ট ইমেইল পাঠানো হবে)"
                 value={testEmail}
                 onChange={(e) => { setTestEmail(e.target.value); setVerifyResult('idle'); }}
                 className="max-w-sm"
@@ -346,12 +414,11 @@ export function EmailSettingsPanel() {
             </div>
           </div>
 
-          {/* Verify result message */}
           {verifyResult === 'success' && (
             <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-950/30 p-3">
               <Zap className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
               <p className="text-xs text-green-800 dark:text-green-300">
-                <strong>ভেরিফিকেশন সফল!</strong> একটি টেস্ট ইমেইল পাঠানো হয়েছে। আপনার ইনবক্স (এবং স্প্যাম ফোল্ডার) চেক করুন।
+                <strong>ভেরিফিকেশন সফল!</strong> একটি টেস্ট ইমেইল পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার চেক করুন।
               </p>
             </div>
           )}
@@ -359,22 +426,10 @@ export function EmailSettingsPanel() {
             <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-800/50 dark:bg-red-950/30 p-3">
               <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
               <p className="text-xs text-red-800 dark:text-red-300">
-                <strong>ভেরিফিকেশন ব্যর্থ।</strong> SMTP Key বা User সঠিক কিনা চেক করুন। Brevo Dashboard থেকে নতুন SMTP Key তৈরি করতে পারেন।
+                <strong>ভেরিফিকেশন ব্যর্থ।</strong> SMTP Key সঠিক কিনা চেক করুন।
               </p>
             </div>
           )}
-
-          {/* Info box */}
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30 p-3">
-            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-800 dark:text-amber-300">
-              <strong>Brevo SMTP</strong> ব্যবহার করা হচ্ছে। ফ্রি প্ল্যানে দিনে ৩০০ টি ইমেইল পাঠানো যায় (মাসে ~৯,০০০)।
-              <br />
-              <strong>BREVO_SMTP_KEY</strong> = Brevo Dashboard → Settings → SMTP & API থেকে প্রাপ্ত Key (<code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-[11px]">xkeysib-...</code> দিয়ে শুরু হয়)।
-              <br />
-              <strong>BREVO_SMTP_USER</strong> = আপনার Brevo অ্যাকাউন্টের লগইন ইমেইল।
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -398,15 +453,9 @@ export function EmailSettingsPanel() {
               size="sm"
             >
               {sendingAll ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  পাঠানো হচ্ছে...
-                </>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />পাঠানো হচ্ছে...</>
               ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  সব টেস্ট পাঠান
-                </>
+                <><Send className="h-4 w-4 mr-2" />সব টেস্ট পাঠান</>
               )}
             </Button>
             <Button onClick={resetResults} variant="outline" size="sm" disabled={sendingAll}>
@@ -427,15 +476,9 @@ export function EmailSettingsPanel() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-lg">{template.icon}</span>
-                    {result?.status === 'success' && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    )}
-                    {result?.status === 'error' && (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                    {result?.status === 'loading' && (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    )}
+                    {result?.status === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                    {result?.status === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
+                    {result?.status === 'loading' && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
                   </div>
                   <p className="text-sm font-medium text-foreground">{template.label}</p>
                   <p className="text-xs text-muted-foreground">{template.description}</p>

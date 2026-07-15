@@ -9,6 +9,9 @@ const DEFAULTS = {
   email_site_url:        'https://xn--94b8cubil3ej.xn--54b7fta0cc',
   email_header_subtitle: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
   email_footer_tagline:  'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
+  brevo_smtp_key:        '',
+  brevo_smtp_user:       '',
+  brevo_from_email:      '',
 } as const;
 
 const EMAIL_SETTING_KEYS = Object.keys(DEFAULTS);
@@ -50,31 +53,31 @@ function s(key: keyof typeof DEFAULTS): string {
 export function clearEmailSettingsCache() {
   _settingsCache = null;
   _settingsLoadedAt = 0;
+  _transporter = null; // recreate with new creds
 }
 
 const YEAR = new Date().getFullYear();
 
-/* ── Brevo SMTP Transport (lazy init) ── */
+/* ── Brevo SMTP Transport (lazy init — uses DB overrides if set) ── */
 let _transporter: nodemailer.Transporter | null = null;
-function getTransporter(): nodemailer.Transporter | null {
-  if (!process.env.BREVO_SMTP_KEY) return null;
+function getTransporter(settings?: EmailSettings): nodemailer.Transporter | null {
+  const smtpKey = settings?.brevo_smtp_key || process.env.BREVO_SMTP_KEY;
+  if (!smtpKey) return null;
   if (!_transporter) {
+    const smtpUser = settings?.brevo_smtp_user || process.env.BREVO_SMTP_USER || '';
     _transporter = nodemailer.createTransport({
       host: 'smtp-relay.brevo.com',
       port: 587,
       secure: false,
-      auth: {
-        user: process.env.BREVO_SMTP_USER || '',
-        pass: process.env.BREVO_SMTP_KEY,
-      },
+      auth: { user: smtpUser, pass: smtpKey },
     });
   }
   return _transporter;
 }
 
-const FROM_ADDRESS = process.env.BREVO_FROM_EMAIL
-  || process.env.BREVO_SMTP_USER
-  || 'noreply@amardeal.com';
+function getFromAddress(settings?: EmailSettings): string {
+  return settings?.brevo_from_email || process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'noreply@amardeal.com';
+}
 
 /* ═══════════════════════════════════════════════════════════════
    MODERN EMAIL TEMPLATE SYSTEM — আমারডিল.বাংলা
@@ -568,12 +571,12 @@ export function emailVerificationOtpEmail(toName: string, otp: string) {
 type EmailPayload = { subject: string; html: string };
 
 export async function sendEmail(to: string, payload: EmailPayload): Promise<void> {
-  await loadEmailSettings(); // refresh cache if stale
-  const transporter = getTransporter();
-  if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
+  const settings = await loadEmailSettings(); // refresh cache if stale
+  const transporter = getTransporter(settings);
+  if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে বা অ্যাডমিন প্যানেলে যোগ করুন।');
 
   await transporter.sendMail({
-    from: `${s('email_from_name')} <${FROM_ADDRESS}>`,
+    from: `${s('email_from_name')} <${getFromAddress(settings)}>`,
     to,
     subject: payload.subject,
     html: payload.html,

@@ -47,28 +47,24 @@ export async function POST(request: NextRequest) {
     const { type, to } = body;
 
     // Load email settings so templates use DB values
-    await loadEmailSettings();
+    const settings = await loadEmailSettings();
 
-    // Special __check__ type — verify config + test connection
+    // Special __check__ type — verify config
     if (type === '__check__') {
-      if (!process.env.BREVO_SMTP_KEY) {
+      const hasKey = !!(settings.brevo_smtp_key || process.env.BREVO_SMTP_KEY);
+      if (!hasKey) {
         return NextResponse.json(
-          { success: false, error: 'BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।' },
-          { status: 400 }
-        );
-      }
-      if (!process.env.BREVO_SMTP_USER) {
-        return NextResponse.json(
-          { success: false, error: 'BREVO_SMTP_USER সেট করা নেই। .env ফাইলে যোগ করুন।' },
+          { success: false, error: 'SMTP Key সেট করা নেই। অ্যাডমিন প্যানেলে বা .env ফাইলে যোগ করুন।' },
           { status: 400 }
         );
       }
       return NextResponse.json({ success: true, message: 'Brevo SMTP configured' });
     }
 
-    if (!process.env.BREVO_SMTP_KEY) {
+    const hasKey = !!(settings.brevo_smtp_key || process.env.BREVO_SMTP_KEY);
+    if (!hasKey) {
       return NextResponse.json(
-        { success: false, error: 'BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।' },
+        { success: false, error: 'SMTP Key সেট করা নেই। অ্যাডমিন প্যানেলে বা .env ফাইলে যোগ করুন।' },
         { status: 400 }
       );
     }
