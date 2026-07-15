@@ -147,12 +147,12 @@ const base = `
   .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.6}
 
   /* OTP card — enhanced with individual digit boxes */
-  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#ECFCCB 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:18px;padding:30px 24px 24px;text-align:center;margin:22px auto;max-width:300px;position:relative;box-shadow:0 4px 16px rgba(132,204,22,0.08)}
-  .otp-card::before{content:'';position:absolute;top:-1px;left:20%;right:20%;height:2px;background:linear-gradient(to right,transparent,${brandLime},transparent);border-radius:1px}
-  .otp-label{font-size:11px;font-weight:700;color:${brandLabel};letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
-  .otp-digits{display:inline-flex;gap:8px;direction:ltr}
-  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:42px;height:50px;background:#ffffff;border:2px solid ${brandGlow};border-radius:10px;font-size:24px;font-weight:800;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 2px 6px rgba(132,204,22,0.08)}
-  .otp-hint{font-size:11.5px;color:#6b7280;margin-top:14px;line-height:1.4}
+  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#ECFCCB 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:20px;padding:36px 32px 28px;text-align:center;margin:24px auto;max-width:400px;position:relative;box-shadow:0 6px 24px rgba(132,204,22,0.10)}
+  .otp-card::before{content:'';position:absolute;top:-1px;left:15%;right:15%;height:3px;background:linear-gradient(to right,transparent,${brandLime},transparent);border-radius:2px}
+  .otp-label{font-size:12px;font-weight:700;color:${brandLabel};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
+  .otp-digits{display:inline-flex;gap:10px;direction:ltr}
+  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:56px;height:68px;background:#ffffff;border:2.5px solid ${brandGlow};border-radius:12px;font-size:34px;font-weight:900;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 3px 10px rgba(132,204,22,0.10)}
+  .otp-hint{font-size:12px;color:#6b7280;margin-top:16px;line-height:1.5}
 
   /* Legacy OTP fallback (plain text code) */
   .otp-code{font-size:36px;font-weight:900;letter-spacing:10px;color:${brandDark};font-family:'Courier New',monospace;line-height:1.2}
@@ -182,7 +182,8 @@ const base = `
     .email-wrapper{border-radius:0;margin:0}
     .body{padding:24px 20px 20px}
     .header-bg{padding:32px 20px 28px}
-    .otp-digits span{width:36px;height:44px;font-size:20px}
+    .otp-digits span{width:46px;height:56px;font-size:26px;gap:8px}
+    .otp-card{max-width:320px;padding:28px 20px 22px}
     .otp-code{font-size:30px;letter-spacing:7px}
     .btn{padding:12px 28px;font-size:14px}
     .card-green .card-row{flex-direction:column;align-items:flex-start;gap:2px}
