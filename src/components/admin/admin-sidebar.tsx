@@ -61,6 +61,7 @@ const SUPPORT_ALLOWED = new Set<string>([
   'all-deals',
   'contact-info',
   'blog',
+  'email-settings',
 ]);
 
 export function AdminSidebar() {
