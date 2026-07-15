@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
+import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
 import { Navbar } from '@/components/landing/navbar';
 import { Hero } from '@/components/landing/hero';
 import { TrustSecurity } from '@/components/landing/trust-security';
@@ -117,12 +118,10 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   const [checking, setChecking] = useState(true);
   const [minReady, setMinReady] = useState(false);
 
-  // Set initial view on mount (for SEO routes)
+  // Initialise URL ↔ Store sync (address bar reflects current page)
   useEffect(() => {
-    if (initialView) {
-      setView(initialView);
-    }
-  }, [initialView, setView]);
+    initUrlSync();
+  }, []);
 
   // Minimum 1.8s loader display
   useEffect(() => {
@@ -144,6 +143,8 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       })
       .then((user) => {
         setUser(user);
+        // After login, re-apply URL so panel routes work
+        setTimeout(() => reapplyUrlAfterLogin(), 0);
       })
       .catch(() => {})
       .finally(() => setChecking(false));
