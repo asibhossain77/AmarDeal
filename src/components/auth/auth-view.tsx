@@ -75,6 +75,43 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
     }
   }, [email]);
 
+  // Step 2: Verify OTP (server-side)
+  const handleVerifyOtp = useCallback(async () => {
+    setError('');
+    if (otp.length !== 6) {
+      setError('৬ সংখ্যার কোড দিন');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'সমস্যা হয়েছে');
+        // If blocked, go back to step 1
+        if (data.blocked) {
+          setTimeout(() => {
+            setStep(1);
+            setOtp('');
+            setResendTimer(0);
+            setError('');
+          }, 2000);
+        }
+        return;
+      }
+      setStep(3);
+      setError('');
+    } catch {
+      setError('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
+  }, [email, otp]);
+
   // Step 2: Resend OTP
   const handleResend = useCallback(async () => {
     if (resendTimer > 0) return;
@@ -210,7 +247,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
                 placeholder="৬ সংখ্যার কোড"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && setStep(3)}
+                onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && handleVerifyOtp()}
                 className={`${inputClass} text-center text-lg tracking-[0.3em] font-bold`}
               />
               <p className="text-xs text-muted-foreground">
@@ -299,7 +336,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
           {step === 1 ? 'ফিরুন' : 'পেছনে'}
         </Button>
         <Button
-          onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : () => { if (otp.length === 6) { setStep(3); setError(''); } else setError('৬ সংখ্যার কোড দিন'); }) : handleReset}
+          onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset}
           disabled={loading || (step === 2 && otp.length !== 6)}
           className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5"
         >

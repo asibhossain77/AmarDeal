@@ -12,6 +12,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!/^\d{6}$/.test(otp)) {
+      return NextResponse.json(
+        { error: 'ভেরিফিকেশন কোড অবৈধ' },
+        { status: 400 }
+      );
+    }
+
     if (newPassword.length < 6) {
       return NextResponse.json(
         { error: 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে' },
@@ -30,15 +37,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check OTP match and expiry
-    if (
-      !user.resetToken ||
-      user.resetToken !== otp ||
-      !user.resetTokenExpiry ||
-      user.resetTokenExpiry < new Date()
-    ) {
+    // ── Strict OTP verification ──
+    if (!user.resetToken) {
       return NextResponse.json(
-        { error: 'ভেরিফিকেশন কোড অবৈধ বা মেয়াদোত্তীর্ণ হয়েছে' },
+        { error: 'আগে ভেরিফিকেশন কোড নিন' },
+        { status: 400 }
+      );
+    }
+
+    if (user.resetToken !== otp) {
+      // Wrong OTP → invalidate immediately (already verified in step 2, so this = tampering)
+      await db.user.update({
+        where: { id: user.id },
+        data: { resetToken: null, resetTokenExpiry: null },
+      });
+      return NextResponse.json(
+        { error: 'ভেরিফিকেশন কোড অবৈধ। আবার নতুন কোড নিন।' },
+        { status: 400 }
+      );
+    }
+
+    if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { resetToken: null, resetTokenExpiry: null },
+      });
+      return NextResponse.json(
+        { error: 'কোডের মেয়াদ শেষ হয়েছে। আবার নতুন কোড নিন।' },
         { status: 400 }
       );
     }
