@@ -1,7 +1,57 @@
 import nodemailer from 'nodemailer';
 
-const SITE_NAME = 'আমারডিল.বাংলা';
-const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+/* ═══════════════════════════════════════════════════════════════
+   DEFAULTS — overridden by PlatformSetting DB values
+   ═══════════════════════════════════════════════════════════════ */
+const DEFAULTS = {
+  email_site_name:       'আমারডিল.বাংলা',
+  email_from_name:       'আমারডিল.বাংলা',
+  email_site_url:        'https://xn--94b8cubil3ej.xn--54b7fta0cc',
+  email_header_subtitle: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
+  email_footer_tagline:  'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
+} as const;
+
+const EMAIL_SETTING_KEYS = Object.keys(DEFAULTS);
+
+type EmailSettings = Record<string, string>;
+
+/* In-memory cache */
+let _settingsCache: EmailSettings | null = null;
+let _settingsLoadedAt = 0;
+const SETTINGS_TTL = 5 * 60 * 1000; // 5 min
+
+/** Load email settings from DB (call before sending) */
+export async function loadEmailSettings(): Promise<EmailSettings> {
+  const now = Date.now();
+  if (_settingsCache && now - _settingsLoadedAt < SETTINGS_TTL) return _settingsCache;
+  try {
+    const { db } = await import('@/lib/db');
+    const rows = await db.platformSetting.findMany({
+      where: { key: { in: EMAIL_SETTING_KEYS } },
+    });
+    const overrides: EmailSettings = {};
+    for (const r of rows) overrides[r.key] = r.value;
+    _settingsCache = { ...DEFAULTS, ...overrides };
+    _settingsLoadedAt = now;
+  } catch (e) {
+    console.error('[EMAIL SETTINGS] DB load failed, using defaults', e);
+    _settingsCache = { ...DEFAULTS };
+    _settingsLoadedAt = now;
+  }
+  return _settingsCache;
+}
+
+/** Sync getter — must call loadEmailSettings() first */
+function s(key: keyof typeof DEFAULTS): string {
+  return _settingsCache?.[key] ?? DEFAULTS[key];
+}
+
+/** Force clear cache (after admin update) */
+export function clearEmailSettingsCache() {
+  _settingsCache = null;
+  _settingsLoadedAt = 0;
+}
+
 const YEAR = new Date().getFullYear();
 
 /* ── Brevo SMTP Transport (lazy init) ── */
@@ -25,7 +75,6 @@ function getTransporter(): nodemailer.Transporter | null {
 const FROM_ADDRESS = process.env.BREVO_FROM_EMAIL
   || process.env.BREVO_SMTP_USER
   || 'noreply@amardeal.com';
-const FROM_NAME = 'আমারডিল.বাংলা';
 
 /* ═══════════════════════════════════════════════════════════════
    MODERN EMAIL TEMPLATE SYSTEM — আমারডিল.বাংলা
@@ -138,32 +187,32 @@ const base = `
 `;
 
 function wrap(bodyHtml: string): string {
-  return `<!DOCTYPE html><html lang="bn" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${SITE_NAME}</title><style>${base}</style></head><body style="background:#F2F4F7">
+  return `<!DOCTYPE html><html lang="bn" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${s('email_site_name')}</title><style>${base}</style></head><body style="background:#F2F4F7">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F4F7;padding:28px 0">
   <tr><td align="center">
     <div class="email-wrapper">
       <div class="header-bg">
         <div class="header-inner">
-          <div class="header-title">${SITE_NAME}</div>
-          <div class="header-sub">নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম</div>
+          <div class="header-title">${s('email_site_name')}</div>
+          <div class="header-sub">${s('email_header_subtitle')}</div>
         </div>
       </div>
       <div class="header-border"></div>
       <div class="body">${bodyHtml}</div>
       <div class="footer">
-        <div class="footer-brand">${SITE_NAME}</div>
-        <div class="footer-tagline">নিরাপদে কিনুন, নিরাপদে বিক্রি করুন</div>
+        <div class="footer-brand">${s('email_site_name')}</div>
+        <div class="footer-tagline">${s('email_footer_tagline')}</div>
         <div class="footer-links">
-          <a href="${SITE_URL}">ওয়েবসাইট</a>
-          <a href="${SITE_URL}">সাহায্য কেন্দ্র</a>
-          <a href="${SITE_URL}">যোগাযোগ</a>
+          <a href="${s('email_site_url')}">ওয়েবসাইট</a>
+          <a href="${s('email_site_url')}">সাহায্য কেন্দ্র</a>
+          <a href="${s('email_site_url')}">যোগাযোগ</a>
         </div>
         <div class="footer-social">
-          <a href="${SITE_URL}" title="ফেসবুক">📘</a>
-          <a href="${SITE_URL}" title="গ্রুপ">👥</a>
-          <a href="${SITE_URL}" title="ওয়েবসাইট">🌐</a>
+          <a href="${s('email_site_url')}" title="ফেসবুক">📘</a>
+          <a href="${s('email_site_url')}" title="গ্রুপ">👥</a>
+          <a href="${s('email_site_url')}" title="ওয়েবসাইট">🌐</a>
         </div>
-        <div class="footer-copy">© ${YEAR} ${SITE_NAME}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
+        <div class="footer-copy">© ${YEAR} ${s('email_site_name')}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
       </div>
     </div>
   </td></tr>
@@ -185,7 +234,7 @@ function infoCard(title: string, rows: string[]): string {
 
 export function dealCreatedEmail(toName: string, dealTitle: string, amount: number, creatorName: string, role: string) {
   return {
-    subject: `নতুন ডিল অনুরোধ: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `নতুন ডিল অনুরোধ: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>📌 নতুন ডিল অনুরোধ</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -196,14 +245,14 @@ export function dealCreatedEmail(toName: string, dealTitle: string, amount: numb
         infoRow('পক্ষ', role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'),
       ])}
       <p>আপনার ড্যাশবোর্ডে লগইন করে ডিলটি গ্রহণ বা বাতিল করুন।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
 
 export function dealAcceptedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
   return {
-    subject: `ডিল গ্রহণ করা হয়েছে: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `ডিল গ্রহণ করা হয়েছে: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>✅ ডিল গ্রহণ করা হয়েছে</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -213,14 +262,14 @@ export function dealAcceptedEmail(toName: string, dealTitle: string, amount: num
         infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
       ])}
       <p>ড্যাশবোর্ডে গিয়ে পেমেন্ট জমা দিন। টাকা এসক্রোতে সুরক্ষিত থাকবে।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">পেমেন্ট করুন →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">পেমেন্ট করুন →</a></div>
     `),
   };
 }
 
 export function paymentSubmittedEmail(toName: string, dealTitle: string, amount: number) {
   return {
-    subject: `পেমেন্ট জমা হয়েছে: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `পেমেন্ট জমা হয়েছে: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>💰 পেমেন্ট জমা হয়েছে</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -237,7 +286,7 @@ export function paymentSubmittedEmail(toName: string, dealTitle: string, amount:
 export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: number, role: 'buyer' | 'seller') {
   const isBuyer = role === 'buyer';
   return {
-    subject: `পেমেন্ট ভেরিফাইড: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `পেমেন্ট ভেরিফাইড: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>✅ পেমেন্ট ভেরিফাইড</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -250,7 +299,7 @@ export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: 
       ${isBuyer
         ? `<p>বিক্রেতা এখন পণ্য/সেবা ডেলিভারি দেবেন। ডেলিভারি পেলে কনফার্ম করুন।</p>`
         : `<p>আপনার কাজ শুরু করুন! কাজ শেষে ডেলিভারি বাটনে ক্লিক করুন।</p>
-           <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>`
+           <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>`
       }
     `),
   };
@@ -258,7 +307,7 @@ export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: 
 
 export function deliveryStartedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
   return {
-    subject: `ডেলিভারি শুরু: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `ডেলিভারি শুরু: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>📦 ডেলিভারি শুরু হয়েছে</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -269,7 +318,7 @@ export function deliveryStartedEmail(toName: string, dealTitle: string, amount: 
         infoRow('বিক্রেতা', sellerName),
       ])}
       <p>দয়া করে পণ্য/সেবা যাচাই করুন এবং কনফার্ম করুন। কোনো সমস্যা হলে বিরোধ দায়ের করুন।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>
     `),
   };
 }
@@ -277,7 +326,7 @@ export function deliveryStartedEmail(toName: string, dealTitle: string, amount: 
 export function dealCompletedEmail(toName: string, dealTitle: string, amount: number, role: 'buyer' | 'seller') {
   const isSeller = role === 'seller';
   return {
-    subject: `ডিল সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `ডিল সম্পন্ন: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>🎉 ডিল সফলভাবে সম্পন্ন</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -292,8 +341,8 @@ export function dealCompletedEmail(toName: string, dealTitle: string, amount: nu
       ])}
       ${isSeller
         ? `<p>পেআউট রিকোয়েস্ট করুন — টাকা শীঘ্রই আপনার অ্যাকাউন্টে পৌঁছে যাবে।</p>
-           <div class="btn-wrap"><a href="${SITE_URL}" class="btn">পেআউট রিকোয়েস্ট করুন →</a></div>`
-        : `<p>ধন্যবাদ যে ${SITE_NAME} ব্যবহার করেছেন। আপনার সম্পূর্ণ লেনদেন নিরাপদ ছিল!</p>`
+           <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">পেআউট রিকোয়েস্ট করুন →</a></div>`
+        : `<p>ধন্যবাদ যে ${s('email_site_name')} ব্যবহার করেছেন। আপনার সম্পূর্ণ লেনদেন নিরাপদ ছিল!</p>`
       }
     `),
   };
@@ -301,21 +350,21 @@ export function dealCompletedEmail(toName: string, dealTitle: string, amount: nu
 
 export function dealCancelledEmail(toName: string, dealTitle: string, cancelledByName: string) {
   return {
-    subject: `ডিল বাতিল: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `ডিল বাতিল: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>❌ ডিল বাতিল</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p><strong>${cancelledByName}</strong> "${dealTitle}" ডিলটি বাতিল করেছেন।</p>
       <div class="card card-danger"><p>⚠️ এই ডিল আর সক্রিয় নেই।</p></div>
       <p>নতুন ডিল তৈরি করতে ড্যাশবোর্ডে যান।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">নতুন ডিল তৈরি করুন →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">নতুন ডিল তৈরি করুন →</a></div>
     `),
   };
 }
 
 export function disputeRaisedEmail(toName: string, dealTitle: string, buyerName: string, amount: number) {
   return {
-    subject: `⚠️ বিরোধ দায়ের: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `⚠️ বিরোধ দায়ের: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>⚠️ ডিলে বিরোধ দায়ের</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -327,17 +376,17 @@ export function disputeRaisedEmail(toName: string, dealTitle: string, buyerName:
         infoRow('ক্রেতা', buyerName),
       ])}
       <p>অ্যাডমিন উভয় পক্ষের কথা শুনে সিদ্ধান্ত নেবেন।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
 
 export function welcomeEmail(toName: string) {
   return {
-    subject: `স্বাগতম ${SITE_NAME} এ! 🎉`,
+    subject: `স্বাগতম ${s('email_site_name')} এ! 🎉`,
     html: wrap(`
       <h2>🎊 স্বাগতম, ${toName}!</h2>
-      <p class="greeting">${SITE_NAME} পরিবারে আপনাকে স্বাগত জানাই!</p>
+      <p class="greeting">${s('email_site_name')} পরিবারে আপনাকে স্বাগত জানাই!</p>
       <div class="card card-success">
         <div class="check">✅</div>
         <div class="msg">আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে</div>
@@ -351,14 +400,14 @@ export function welcomeEmail(toName: string) {
         infoRow('💬 লাইভ চ্যাট', 'রিয়েল-টাইম যোগাযোগ'),
       ])}
       <p>এখনই আপনার প্রথম ডিল তৈরি করুন!</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">শুরু করুন →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">শুরু করুন →</a></div>
     `),
   };
 }
 
 export function loginNotificationEmail(toName: string, loginTime: string, loginIp: string) {
   return {
-    subject: `🔐 নতুন লগইন সনাক্ত — ${SITE_NAME}`,
+    subject: `🔐 নতুন লগইন সনাক্ত — ${s('email_site_name')}`,
     html: wrap(`
       <h2>🔐 নতুন লগইন সনাক্ত</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -368,7 +417,7 @@ export function loginNotificationEmail(toName: string, loginTime: string, loginI
         infoRow('🌐 আইপি', loginIp),
       ])}
       <div class="card card-warn"><p>⚠️ যদি এটি আপনার করা না হয়, তবে দ্রুত পাসওয়ার্ড পরিবর্তন করুন।</p></div>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
@@ -377,7 +426,7 @@ export function payoutRequestedEmail(toName: string, dealTitle: string, amount: 
   const isSeller = payoutType === 'seller_payout';
   const title = isSeller ? '💰 পেআউট অনুরোধ' : '🔄 রিফান্ড অনুরোধ';
   return {
-    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>${title}</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -395,7 +444,7 @@ export function payoutRequestedEmail(toName: string, dealTitle: string, amount: 
 export function payoutCompletedEmail(toName: string, dealTitle: string, amount: number, accountType: string, accountNumber: string, payoutType: 'seller_payout' | 'buyer_refund') {
   const isSeller = payoutType === 'seller_payout';
   return {
-    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>✅ ${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -416,7 +465,7 @@ export function payoutCompletedEmail(toName: string, dealTitle: string, amount: 
 export function disputeResolvedEmail(toName: string, dealTitle: string, action: 'complete' | 'refund_buyer', adminNote?: string) {
   const isComplete = action === 'complete';
   return {
-    subject: `⚖️ বিরোধ নিষ্পত্তি: "${dealTitle}" — ${SITE_NAME}`,
+    subject: `⚖️ বিরোধ নিষ্পত্তি: "${dealTitle}" — ${s('email_site_name')}`,
     html: wrap(`
       <h2>⚖️ বিরোধ নিষ্পত্তি</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -427,7 +476,7 @@ export function disputeResolvedEmail(toName: string, dealTitle: string, action: 
       }
       ${adminNote ? `<div class="card card-green"><div class="card-icon">📝 অ্যাডমিন নোট</div><div class="card-row" style="display:block"><span class="val" style="font-weight:400;font-size:13.5px">${adminNote}</span></div></div>` : ''}
       <p>বিরোধ সম্পর্কে কোনো প্রশ্ন থাকলে ড্যাশবোর্ড থেকে যোগাযোগ করুন।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
@@ -447,7 +496,7 @@ export function adminNewDealEmail(adminName: string, dealTitle: string, amount: 
         infoRow('বিক্রেতা', sellerName || 'অপেক্ষমান'),
       ])}
       <p>ডিলটি পর্যালোচনা করুন এবং প্রয়োজনীয় ব্যবস্থা গ্রহণ করুন।</p>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
     `),
   };
 }
@@ -466,7 +515,7 @@ export function adminDisputeEmail(adminName: string, dealTitle: string, amount: 
         infoRow('বিক্রেতা', sellerName),
       ])}
       <div class="card card-warn"><p>⏰ দ্রুত ব্যবস্থা নিন — উভয় পক্ষ অপেক্ষমান আছে।</p></div>
-      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
     `),
   };
 }
@@ -478,7 +527,7 @@ function otpDigitsHtml(otp: string): string {
 
 export function passwordResetOtpEmail(toName: string, otp: string) {
   return {
-    subject: `🔑 পাসওয়ার্ড রিসেট কোড — ${SITE_NAME}`,
+    subject: `🔑 পাসওয়ার্ড রিসেট কোড — ${s('email_site_name')}`,
     html: wrap(`
       <h2>🔑 পাসওয়ার্ড রিসেট</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
@@ -488,7 +537,7 @@ export function passwordResetOtpEmail(toName: string, otp: string) {
         ${otpDigitsHtml(otp)}
         <div class="otp-hint">⏱️ কোডটি ৫ মিনিটের জন্য বৈধ</div>
       </div>
-      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>। ${SITE_NAME} কখনো আপনাকে কোড জানতে চাইবে না।</p></div>
+      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>। ${s('email_site_name')} কখনো আপনাকে কোড জানতে চাইবে না।</p></div>
       <p>আপনি পাসওয়ার্ড রিসেট অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
     `),
   };
@@ -496,11 +545,11 @@ export function passwordResetOtpEmail(toName: string, otp: string) {
 
 export function emailVerificationOtpEmail(toName: string, otp: string) {
   return {
-    subject: `✉️ ইমেইল ভেরিফিকেশন কোড — ${SITE_NAME}`,
+    subject: `✉️ ইমেইল ভেরিফিকেশন কোড — ${s('email_site_name')}`,
     html: wrap(`
       <h2>✉️ ইমেইল ভেরিফিকেশন</h2>
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
-      <p>আপনার <strong>${SITE_NAME}</strong> অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
+      <p>আপনার <strong>${s('email_site_name')}</strong> অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
       <div class="otp-card">
         <div class="otp-label">✦ ভেরিফিকেশন কোড</div>
         ${otpDigitsHtml(otp)}
@@ -519,11 +568,12 @@ export function emailVerificationOtpEmail(toName: string, otp: string) {
 type EmailPayload = { subject: string; html: string };
 
 export async function sendEmail(to: string, payload: EmailPayload): Promise<void> {
+  await loadEmailSettings(); // refresh cache if stale
   const transporter = getTransporter();
   if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
 
   await transporter.sendMail({
-    from: `${FROM_NAME} <${FROM_ADDRESS}>`,
+    from: `${s('email_from_name')} <${FROM_ADDRESS}>`,
     to,
     subject: payload.subject,
     html: payload.html,

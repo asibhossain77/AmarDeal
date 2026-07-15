@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, welcomeEmail, dealCreatedEmail, paymentSubmittedEmail, paymentVerifiedEmail, deliveryStartedEmail, dealCompletedEmail, dealCancelledEmail, disputeRaisedEmail, loginNotificationEmail, payoutRequestedEmail, payoutCompletedEmail, disputeResolvedEmail } from '@/lib/email';
+import { sendEmail, loadEmailSettings, welcomeEmail, dealCreatedEmail, paymentSubmittedEmail, paymentVerifiedEmail, deliveryStartedEmail, dealCompletedEmail, dealCancelledEmail, disputeRaisedEmail, loginNotificationEmail, payoutRequestedEmail, payoutCompletedEmail, disputeResolvedEmail, passwordResetOtpEmail, emailVerificationOtpEmail } from '@/lib/email';
 
 export const maxDuration = 30; // Vercel serverless timeout 30s
 
@@ -32,6 +32,10 @@ function getTestPayload(type: string, toName: string) {
       return payoutCompletedEmail(toName, 'টেস্ট ডিল', 5000, 'বিকাশ', '০১৭XXXXXXXXX', 'seller_payout');
     case 'dispute_resolved':
       return disputeResolvedEmail(toName, 'টেস্ট ডিল', 'complete', 'পণ্য সঠিক পাওয়া গেছে।');
+    case 'password_reset_otp':
+      return passwordResetOtpEmail(toName, '123456');
+    case 'email_verification_otp':
+      return emailVerificationOtpEmail(toName, '654321');
     default:
       return null;
   }
@@ -41,6 +45,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const { type, to } = body;
+
+    // Load email settings so templates use DB values
+    await loadEmailSettings();
 
     // Special __check__ type — verify config + test connection
     if (type === '__check__') {

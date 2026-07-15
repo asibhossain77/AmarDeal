@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
@@ -17,6 +18,8 @@ import {
   TestTube,
   ShieldCheck,
   Zap,
+  Palette,
+  Save,
 } from 'lucide-react';
 
 interface EmailTestResult {
@@ -28,6 +31,8 @@ interface EmailTestResult {
 
 const EMAIL_TEMPLATES: { type: string; label: string; description: string; icon: string }[] = [
   { type: 'welcome', label: 'ওয়েলকাম ইমেইল', description: 'নতুন ইউজার রেজিস্ট্রেশন', icon: '🎉' },
+  { type: 'email_verification_otp', label: 'ইমেইল ভেরিফিকেশন OTP', description: 'রেজিস্ট্রেশনের পর', icon: '✉️' },
+  { type: 'password_reset_otp', label: 'পাসওয়ার্ড রিসেট OTP', description: 'ফরগট পাসওয়ার্ড', icon: '🔑' },
   { type: 'deal_created', label: 'ডিল তৈরি', description: 'নতুন ডিল অনুরোধ জানানো', icon: '🤝' },
   { type: 'payment_submitted', label: 'পেমেন্ট জমা', description: 'পেমেন্ট সাবমিট হলে', icon: '💰' },
   { type: 'payment_verified', label: 'পেমেন্ট ভেরিফাইড', description: 'অ্যাডমিন পেমেন্ট ভেরিফাই করলে', icon: '✅' },
@@ -41,16 +46,30 @@ const EMAIL_TEMPLATES: { type: string; label: string; description: string; icon:
   { type: 'payout_completed', label: 'পেআউট সম্পন্ন', description: 'অ্যাডমিন পেমেন্ট দিলে', icon: '💳' },
 ];
 
+const FIELDS: { key: string; label: string; placeholder: string; description: string }[] = [
+  { key: 'email_site_name', label: 'সাইট নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইলের হেডার ও ফুটারে দেখাবে' },
+  { key: 'email_from_name', label: 'প্রেরকের নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইল প্রেরকের নাম (From Name)' },
+  { key: 'email_site_url', label: 'সাইট URL', placeholder: 'https://example.com', description: 'বাটন ও লিংকে ব্যবহৃত হবে' },
+  { key: 'email_header_subtitle', label: 'হেডার সাবটাইটেল', placeholder: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম', description: 'হেডারে নামের নিচে দেখাবে' },
+  { key: 'email_footer_tagline', label: 'ফুটার ট্যাগলাইন', placeholder: 'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন', description: 'ফুটারে ব্র্যান্ড নামের নিচে দেখাবে' },
+];
+
 export function EmailSettingsPanel() {
   const [testEmail, setTestEmail] = useState('');
   const [sendingAll, setSendingAll] = useState(false);
   const [results, setResults] = useState<EmailTestResult[]>(
-    EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' }))
+    EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' })),
   );
   const [configStatus, setConfigStatus] = useState<'loading' | 'configured' | 'not-configured' | 'error'>('loading');
   const [configError, setConfigError] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<'idle' | 'success' | 'error'>('idle');
+
+  /* ── Template settings state ── */
+  const [templateSettings, setTemplateSettings] = useState<Record<string, string>>({});
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [originalSettings, setOriginalSettings] = useState<Record<string, string>>({});
 
   // Check email config on mount
   useEffect(() => {
@@ -72,6 +91,18 @@ export function EmailSettingsPanel() {
         setConfigStatus('error');
         setConfigError('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
       });
+
+    // Load template settings
+    fetch('/api/admin/email-template-settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) {
+          setTemplateSettings(data);
+          setOriginalSettings(data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingSettings(false));
   }, []);
 
   const updateResult = (type: string, update: Partial<EmailTestResult>) => {
@@ -108,7 +139,6 @@ export function EmailSettingsPanel() {
     setSendingAll(true);
     for (const template of EMAIL_TEMPLATES) {
       await sendTestEmail(template.type, template.label);
-      // Small delay between sends to avoid rate limiting
       await new Promise((r) => setTimeout(r, 500));
     }
     setSendingAll(false);
@@ -145,6 +175,32 @@ export function EmailSettingsPanel() {
     }
   };
 
+  const hasSettingsChanged = Object.keys(FIELDS).some(
+    (f) => templateSettings[f.key] !== originalSettings[f.key],
+  );
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/admin/email-template-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(templateSettings),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOriginalSettings({ ...templateSettings });
+        toast.success('ইমেইল টেমপ্লেট সেটিংস সেভ হয়েছে!');
+      } else {
+        toast.error(data.error || 'সেভ করতে সমস্যা');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -154,9 +210,69 @@ export function EmailSettingsPanel() {
           ইমেইল সেটিংস
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Brevo SMTP ইমেইল কনফিগারেশন, ভেরিফিকেশন এবং টেমপ্লেট টেস্টিং
+          Brevo SMTP কনফিগারেশন, টেমপ্লেট কাস্টমাইজেশন ও টেস্টিং
         </p>
       </div>
+
+      {/* ── Template Settings Card ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            টেমপ্লেট কাস্টমাইজেশন
+            {hasSettingsChanged && (
+              <Badge variant="outline" className="ml-auto text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
+                পরিবর্তন আছে
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadingSettings ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">লোড হচ্ছে...</span>
+            </div>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                এই সেটিংসগুলো পরিবর্তন করলে ভবিষ্যতে সব ইমেইলে নতুন তথ্য দেখাবে। ওয়েবসাইটের নাম পরিবর্তন করলে এখানে আপডেট করুন।
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {FIELDS.map((f) => (
+                  <div key={f.key} className="space-y-1.5">
+                    <Label className="text-sm font-medium text-foreground">{f.label}</Label>
+                    <Input
+                      value={templateSettings[f.key] || ''}
+                      onChange={(e) =>
+                        setTemplateSettings((prev) => ({ ...prev, [f.key]: e.target.value }))
+                      }
+                      placeholder={f.placeholder}
+                      className="h-10"
+                    />
+                    <p className="text-[11px] text-muted-foreground">{f.description}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings || !hasSettingsChanged}
+                  size="sm"
+                  className="gap-2"
+                >
+                  {savingSettings ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  সেভ করুন
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Config Status + Verify Card */}
       <Card>
