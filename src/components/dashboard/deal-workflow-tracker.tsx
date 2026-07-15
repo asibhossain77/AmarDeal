@@ -812,10 +812,10 @@ export function DealWorkflowTracker() {
     const currentIsCancelled = currentStatus === 'cancelled' || currentStatus === 'rejected';
     const currentIsBuyer = userId === (dealData?.buyerId || activeDeal?.buyerId) || userId === activeDeal?.buyerId;
     const currentIsSeller = userId === dealData?.sellerId || userId === activeDeal?.sellerId || (!currentIsBuyer && user?.isSeller);
-    // No refund when admin marked as wrong_info (buyer didn't actually pay)
-    // cancelled_by_admin means deal was voided — buyer CAN request refund
-    const noRefund = dealData?.rejectionReason === 'wrong_info';
-    const checkType = currentIsCompleted && currentIsSeller ? 'seller_payout' : (currentIsCancelled && currentIsBuyer && !noRefund) ? 'buyer_refund' : null;
+    // No refund for rejected deals (admin rejected = wrong/invalid transaction)
+    // Only cancelled deals allow buyer refund
+    const noRefund = currentStatus === 'rejected';
+    const checkType = currentIsCompleted && currentIsSeller ? 'seller_payout' : (currentStatus === 'cancelled' && currentIsBuyer && !noRefund) ? 'buyer_refund' : null;
     if (!checkType) {
       setPayoutChecking(false);
       return;
@@ -1658,12 +1658,12 @@ export function DealWorkflowTracker() {
                         ডিল {status === 'rejected' ? 'রিজেক্ট' : 'বাতিল'} হয়েছে
                       </p>
                     </div>
-                    {/* No refund when admin marked as wrong_info (buyer didn't actually pay) */}
-                    {dealData?.rejectionReason === 'wrong_info' ? (
+                    {/* No refund for rejected deals — admin rejected = wrong/invalid transaction */}
+                    {status === 'rejected' ? (
                       <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
                         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                          অ্যাডমিন ভুল পেমেন্ট তথ্যের কারণে ডিলটি রিজেক্ট করেছেন। এই ক্ষেত্রে রিফান্ড প্রযোজ্য নয়।
+                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে নতুন ডিল তৈরি করুন।
                         </p>
                       </div>
                     ) : payoutChecking ? (

@@ -39,18 +39,15 @@ export async function POST(
 
     if (deal.status === 'completed' && deal.sellerId === userId) {
       payoutType = 'seller_payout'
-    } else if (
-      (deal.status === 'cancelled' || deal.status === 'rejected') &&
-      deal.buyerId === userId
-    ) {
-      // Block refund only for wrong_info — buyer didn't actually pay, just submitted wrong info
-      if (deal.rejectionReason === 'wrong_info') {
-        return NextResponse.json(
-          { error: 'এই ডিলে রিফান্ডের অনুমতি নেই' },
-          { status: 403 }
-        )
-      }
+    } else if (deal.status === 'cancelled' && deal.buyerId === userId) {
+      // Refund only for cancelled deals — rejected deals mean wrong/invalid transaction
       payoutType = 'buyer_refund'
+    } else if (deal.status === 'rejected' && deal.buyerId === userId) {
+      // Admin rejected the payment — buyer cannot get refund (wrong/invalid transaction)
+      return NextResponse.json(
+        { error: 'অ্যাডমিন পেমেন্ট রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়।' },
+        { status: 403 }
+      )
     }
 
     if (!payoutType) {
