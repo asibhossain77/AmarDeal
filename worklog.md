@@ -385,3 +385,21 @@ Stage Summary:
 - Mobile admin navigation now fully functional with Sheet-based menu
 - All admin panels including "ইমেইল সেটিংস" are accessible on mobile
 - No lint errors introduced
+---
+Task ID: 2
+Agent: Main Agent
+Task: Group admin sidebar nav items into categories (desktop + mobile)
+
+Work Log:
+- Created shared config file `admin-nav-config.ts` with 5 groups and shared permission logic
+- Groups: পরিচালনা (5 items), ডিল ও ইউজার (2), অর্থ ও ফি (2), সেটিংস ও কন্টেন্ট (5), অ্যাকাউন্ট (1)
+- Refactored `admin-sidebar.tsx` to import from shared config, render grouped headings
+- Refactored `admin-view.tsx` mobile Sheet nav to use same grouped config
+- Added `filterNavGroups()` utility that filters by role and removes empty groups
+- Verified both mobile (375px) and desktop (1440px) — all 5 group labels visible, items properly categorized
+
+Stage Summary:
+- New file: `src/components/admin/admin-nav-config.ts`
+- Modified: `src/components/admin/admin-sidebar.tsx` (simplified, uses shared config)
+- Modified: `src/components/admin/admin-view.tsx` (simplified, uses shared config)
+- Zero lint errors, zero runtime errors
