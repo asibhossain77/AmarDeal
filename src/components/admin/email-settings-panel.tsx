@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Key,
   TestTube,
+  ShieldCheck,
+  Zap,
 } from 'lucide-react';
 
 interface EmailTestResult {
@@ -45,8 +47,10 @@ export function EmailSettingsPanel() {
   const [results, setResults] = useState<EmailTestResult[]>(
     EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' }))
   );
-  const [configStatus, setConfigStatus] = useState<'loading' | 'configured' | 'not-configured'>('loading');
+  const [configStatus, setConfigStatus] = useState<'loading' | 'configured' | 'not-configured' | 'error'>('loading');
   const [configError, setConfigError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Check email config on mount
   useEffect(() => {
@@ -56,15 +60,18 @@ export function EmailSettingsPanel() {
       body: JSON.stringify({ type: '__check__' }),
     })
       .then(async (res) => {
-        if (res.ok || res.status === 400) {
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
           setConfigStatus('configured');
         } else {
-          const data = await res.json().catch(() => ({}));
-          setConfigError(data.error || '');
+          setConfigError(data.error || 'কনফিগারেশন পাওয়া যায়নি');
           setConfigStatus('not-configured');
         }
       })
-      .catch(() => setConfigStatus('not-configured'));
+      .catch(() => {
+        setConfigStatus('error');
+        setConfigError('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+      });
   }, []);
 
   const updateResult = (type: string, update: Partial<EmailTestResult>) => {
@@ -110,6 +117,32 @@ export function EmailSettingsPanel() {
 
   const resetResults = () => {
     setResults(EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' })));
+    setVerifyResult('idle');
+  };
+
+  const verifyConnection = async () => {
+    setVerifying(true);
+    setVerifyResult('idle');
+    try {
+      const res = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: '__verify__', to: testEmail || undefined }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVerifyResult('success');
+        toast.success('✅ ইমেইল ভেরিফিকেশন সফল! ইনবক্স চেক করুন।');
+      } else {
+        setVerifyResult('error');
+        toast.error(`ভেরিফিকেশন ব্যর্থ: ${data.error}`);
+      }
+    } catch {
+      setVerifyResult('error');
+      toast.error('ভেরিফিকেশন ব্যর্থ: নেটওয়ার্ক ত্রুটি');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
@@ -121,19 +154,20 @@ export function EmailSettingsPanel() {
           ইমেইল সেটিংস
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Brevo SMTP ইমেইল কনফিগারেশন এবং টেমপ্লেট টেস্টিং
+          Brevo SMTP ইমেইল কনফিগারেশন, ভেরিফিকেশন এবং টেমপ্লেট টেস্টিং
         </p>
       </div>
 
-      {/* Config Status Card */}
+      {/* Config Status + Verify Card */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Key className="h-4 w-4" />
-            কনফিগারেশন স্ট্যাটাস
+            কনফিগারেশন ও ভেরিফিকেশন
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Status indicator */}
           <div className="flex items-center gap-3">
             {configStatus === 'loading' ? (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -147,94 +181,126 @@ export function EmailSettingsPanel() {
                 {configStatus === 'loading'
                   ? 'চেক করা হচ্ছে...'
                   : configStatus === 'configured'
-                    ? 'Brevo SMTP সক্রিয়'
-                    : 'Brevo SMTP কী সেট করা নেই'}
+                    ? 'Brevo SMTP কনফিগার আছে'
+                    : configStatus === 'error'
+                      ? 'সার্ভার ত্রুটি'
+                      : 'Brevo SMTP কনফিগার নেই'}
               </p>
               <p className="text-xs text-muted-foreground">
-                {configStatus === 'configured'
-                  ? 'ইমেইল পাঠানো সম্ভব। টেমপ্লেট টেস্ট করুন।'
-                  : configError
-                    ? configError
-                    : '.env ফাইলে BREVO_SMTP_KEY এবং BREVO_SMTP_USER যোগ করুন'}
+                {configStatus === 'loading'
+                  ? ''
+                  : configStatus === 'configured'
+                    ? 'SMTP Key এবং User পাওয়া গেছে। নিচে থেকে ভেরিফাই করুন।'
+                    : configError}
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Test Email Input */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <TestTube className="h-4 w-4" />
-            ইমেইল টেস্ট
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              টেস্ট ইমেইল ঠিকানা
-            </label>
-            <div className="flex gap-2">
+          {/* Verify Connection */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-2 border-t border-border/50">
+            <div className="flex-1">
+              <label className="text-sm font-medium text-foreground mb-1.5 block">
+                ইমেইল ঠিকানা
+              </label>
               <Input
                 type="email"
-                placeholder="আপনার ইমেইল দিন (ঐচ্ছিক)"
+                placeholder="আপনার ইমেইল দিন (ভেরিফিকেশন ইমেইল পাঠানো হবে)"
                 value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
+                onChange={(e) => { setTestEmail(e.target.value); setVerifyResult('idle'); }}
                 className="max-w-sm"
               />
+            </div>
+            <div className="flex gap-2 shrink-0 mt-2 sm:mt-6">
               <Button
-                onClick={sendAllTests}
-                disabled={sendingAll}
-                variant="default"
+                onClick={verifyConnection}
+                disabled={verifying || configStatus !== 'configured'}
+                className="gap-2"
               >
-                {sendingAll ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    পাঠানো হচ্ছে...
-                  </>
+                {verifying ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : verifyResult === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : verifyResult === 'error' ? (
+                  <XCircle className="h-4 w-4" />
                 ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    সব টেস্ট পাঠান
-                  </>
+                  <ShieldCheck className="h-4 w-4" />
                 )}
-              </Button>
-              <Button onClick={resetResults} variant="outline" disabled={sendingAll}>
-                রিসেট
+                {verifying ? 'যাচাই হচ্ছে...' : 'ভেরিফাই করুন'}
               </Button>
             </div>
-            {!testEmail && (
-              <p className="text-xs text-muted-foreground mt-1.5">
-                ⚡ ইমেইল না দিলে admin@demo.com এ পাঠানো হবে
-              </p>
-            )}
           </div>
 
+          {/* Verify result message */}
+          {verifyResult === 'success' && (
+            <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-950/30 p-3">
+              <Zap className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-green-800 dark:text-green-300">
+                <strong>ভেরিফিকেশন সফল!</strong> একটি টেস্ট ইমেইল পাঠানো হয়েছে। আপনার ইনবক্স (এবং স্প্যাম ফোল্ডার) চেক করুন।
+              </p>
+            </div>
+          )}
+          {verifyResult === 'error' && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-800/50 dark:bg-red-950/30 p-3">
+              <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-800 dark:text-red-300">
+                <strong>ভেরিফিকেশন ব্যর্থ।</strong> SMTP Key বা User সঠিক কিনা চেক করুন। Brevo Dashboard থেকে নতুন SMTP Key তৈরি করতে পারেন।
+              </p>
+            </div>
+          )}
+
+          {/* Info box */}
           <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30 p-3">
             <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <p className="text-xs text-amber-800 dark:text-amber-300">
               <strong>Brevo SMTP</strong> ব্যবহার করা হচ্ছে। ফ্রি প্ল্যানে দিনে ৩০০ টি ইমেইল পাঠানো যায় (মাসে ~৯,০০০)।
-              কাস্টম ডোমেইন যুক্ত করতে Brevo Dashboard → Settings → Senders, Domains & IP এ যান।
-              <strong>BREVO_SMTP_USER</strong> = আপনার Brevo অ্যাকাউন্টের লগইন ইমেইল (যেটি দিয়ে brevo.com এ লগইন করেন)।
-              <strong>BREVO_SMTP_KEY</strong> = Brevo থেকে প্রাপ্ত SMTP Key (xsmtpsib-... দিয়ে শুরু হয়)।
+              <br />
+              <strong>BREVO_SMTP_KEY</strong> = Brevo Dashboard → Settings → SMTP & API থেকে প্রাপ্ত Key (<code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded text-[11px]">xkeysib-...</code> দিয়ে শুরু হয়)।
+              <br />
+              <strong>BREVO_SMTP_USER</strong> = আপনার Brevo অ্যাকাউন্টের লগইন ইমেইল।
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* Email Templates Grid */}
+      {/* Test All Templates */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            ইমেইল টেমপ্লেটসমূহ
+            <TestTube className="h-4 w-4" />
+            টেমপ্লেট টেস্ট
             <Badge variant="secondary" className="ml-auto">
               {EMAIL_TEMPLATES.length}টি টেমপ্লেট
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={sendAllTests}
+              disabled={sendingAll || configStatus !== 'configured'}
+              variant="default"
+              size="sm"
+            >
+              {sendingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  পাঠানো হচ্ছে...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  সব টেস্ট পাঠান
+                </>
+              )}
+            </Button>
+            <Button onClick={resetResults} variant="outline" size="sm" disabled={sendingAll}>
+              রিসেট
+            </Button>
+            {configStatus !== 'configured' && (
+              <p className="text-xs text-red-500">প্রথমে SMTP কনফিগার করুন</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {EMAIL_TEMPLATES.map((template) => {
               const result = results.find((r) => r.type === template.type);
@@ -266,7 +332,7 @@ export function EmailSettingsPanel() {
                     size="sm"
                     variant="outline"
                     className="mt-auto w-full"
-                    disabled={result?.status === 'loading' || sendingAll}
+                    disabled={result?.status === 'loading' || sendingAll || configStatus !== 'configured'}
                     onClick={() => sendTestEmail(template.type, template.label)}
                   >
                     {result?.status === 'loading' ? (

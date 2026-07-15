@@ -42,7 +42,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { type, to } = body;
 
-    // Config check — return 400 (not 500) so UI knows config is present
+    // Special __check__ type — verify config + test connection
+    if (type === '__check__') {
+      if (!process.env.BREVO_SMTP_KEY) {
+        return NextResponse.json(
+          { success: false, error: 'BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।' },
+          { status: 400 }
+        );
+      }
+      if (!process.env.BREVO_SMTP_USER) {
+        return NextResponse.json(
+          { success: false, error: 'BREVO_SMTP_USER সেট করা নেই। .env ফাইলে যোগ করুন।' },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ success: true, message: 'Brevo SMTP configured' });
+    }
+
     if (!process.env.BREVO_SMTP_KEY) {
       return NextResponse.json(
         { success: false, error: 'BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।' },
@@ -50,9 +66,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Special __check__ type — just verify config
-    if (type === '__check__') {
-      return NextResponse.json({ success: true, message: 'Brevo SMTP configured' });
+    // Special __verify__ type — actually send a test email to verify connection
+    if (type === '__verify__') {
+      const recipient = to || TEST_TO_FALLBACK;
+      const testPayload = welcomeEmail('Admin',);
+      await sendEmail(recipient, testPayload);
+      return NextResponse.json({
+        success: true,
+        message: `ভেরিফিকেশন ইমেইল পাঠানো হয়েছে → ${recipient}`,
+      });
     }
 
     if (!type) {
