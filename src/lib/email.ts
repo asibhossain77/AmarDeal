@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 
 const SITE_NAME = 'AmarDeal আমারডিল';
 const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+const YEAR = new Date().getFullYear();
 
 /* ── Brevo SMTP Transport (lazy init) ── */
 let _transporter: nodemailer.Transporter | null = null;
@@ -21,62 +22,151 @@ function getTransporter(): nodemailer.Transporter | null {
   return _transporter;
 }
 
-/* From address — uses Brevo verified sender or fallback */
 const FROM_ADDRESS = process.env.BREVO_FROM_EMAIL
   || process.env.BREVO_SMTP_USER
   || 'noreply@amardeal.com';
 const FROM_NAME = `${SITE_NAME}`;
 
-/* ── Common email styles ── */
-const baseStyles = `
-  body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  .container { max-width: 480px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-  .header { background: #16a34a; padding: 24px 32px; text-align: center; }
-  .header h1 { margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; }
-  .content { padding: 32px; }
-  .content h2 { margin: 0 0 12px; font-size: 18px; color: #18181b; }
-  .content p { margin: 0 0 12px; font-size: 15px; color: #52525b; line-height: 1.6; }
-  .info-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
-  .info-box p { margin: 0; font-size: 14px; color: #166534; }
-  .info-box .label { font-weight: 600; color: #15803d; }
-  .info-box .value { font-size: 16px; font-weight: 700; color: #166534; }
-  .btn { display: inline-block; background: #16a34a; color: #ffffff !important; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; margin-top: 16px; }
-  .btn:hover { background: #15803d; }
-  .footer { padding: 20px 32px; border-top: 1px solid #e4e4e7; text-align: center; }
-  .footer p { margin: 0; font-size: 12px; color: #a1a1aa; }
-  .footer a { color: #16a34a; text-decoration: none; }
-  .warning-box { background: #fff7ed; border-left: 4px solid #ea580c; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
-  .warning-box p { margin: 0; font-size: 14px; color: #9a3412; }
-  .danger-box { background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
-  .danger-box p { margin: 0; font-size: 14px; color: #991b1b; }
-  .success-box { background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; }
-  .success-box p { margin: 0; font-size: 14px; color: #166534; }
+/* ═══════════════════════════════════════════════════════════════
+   MODERN EMAIL TEMPLATE SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+const brandGreen = '#059669';
+const brandDark = '#064e3b';
+const brandLight = '#ecfdf5';
+const textDark = '#1a1a2e';
+const textMuted = '#64748b';
+const borderColor = '#e2e8f0';
+
+/* Reusable style blocks */
+const reset = `*{margin:0;padding:0;box-sizing:border-box}body{margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',system-ui,-apple-system,Tahoma,sans-serif;-webkit-font-smoothing:antialiased}`;
+const base = `
+  ${reset}
+  img{border:none;outline:none;text-decoration:none}
+  a{text-decoration:none;color:${brandGreen}}
+  .email-wrapper{max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+  .header-bg{background:linear-gradient(135deg,#059669 0%,#047857 50%,#065f46 100%);padding:36px 32px 32px;text-align:center}
+  .header-logo{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;backdrop-filter:blur(4px)}
+  .header-logo span{font-size:22px}
+  .header-title{color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.3px;margin:0}
+  .header-sub{color:rgba(255,255,255,0.75);font-size:13px;margin-top:4px;font-weight:400}
+
+  .body{padding:32px 28px 28px}
+  .body h2{font-size:20px;font-weight:700;color:${textDark};margin-bottom:6px;line-height:1.3}
+  .body .greeting{font-size:15px;color:${textDark};margin-bottom:16px;line-height:1.65}
+  .body .greeting strong{font-weight:600}
+  .body p{font-size:14px;color:${textMuted};line-height:1.7;margin-bottom:14px}
+
+  /* Info card — green */
+  .card{border-radius:12px;padding:18px 20px;margin:18px 0}
+  .card-green{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #bbf7d0}
+  .card-green .card-icon{font-size:13px;margin-bottom:8px;color:#16a34a;font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13.5px}
+  .card-green .card-row .lbl{color:#15803d;font-weight:500}
+  .card-green .card-row .val{color:${brandDark};font-weight:700;font-size:14px}
+
+  /* Success card */
+  .card-success{background:linear-gradient(135deg,#f0fdf4 0%,#d1fae5 100%);border:1px solid #a7f3d0;text-align:center;padding:20px}
+  .card-success .check{font-size:28px;margin-bottom:6px}
+  .card-success .msg{font-size:15px;color:#166534;font-weight:600;line-height:1.5}
+
+  /* Warning card */
+  .card-warn{background:linear-gradient(135deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:12px;padding:16px 20px;margin:18px 0}
+  .card-warn p{margin:0;font-size:13.5px;color:#92400e;line-height:1.6}
+  .card-warn p strong{font-weight:600}
+
+  /* Danger card */
+  .card-danger{background:linear-gradient(135deg,#fef2f2 0%,#fecaca 100%);border:1px solid #fca5a5;border-radius:12px;padding:16px 20px;margin:18px 0}
+  .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.6}
+
+  /* OTP card — the star */
+  .otp-card{background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 50%,#f0fdf4 100%);border:2px dashed #86efac;border-radius:16px;padding:28px 24px;text-align:center;margin:20px auto;max-width:280px;position:relative}
+  .otp-card::before{content:'';position:absolute;inset:-1px;border-radius:17px;background:linear-gradient(135deg,rgba(5,150,105,0.1),rgba(16,185,129,0.05));z-index:-1}
+  .otp-label{font-size:11px;font-weight:700;color:#16a34a;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+  .otp-code{font-size:36px;font-weight:900;letter-spacing:10px;color:${brandDark};font-family:'Courier New',monospace;line-height:1.2}
+  .otp-hint{font-size:11px;color:#6b7280;margin-top:10px}
+
+  /* CTA button */
+  .btn-wrap{text-align:center;margin:22px 0 8px}
+  .btn{display:inline-block;background:linear-gradient(135deg,#059669 0%,#047857 100%);color:#ffffff !important;padding:13px 36px;border-radius:12px;font-weight:600;font-size:15px;letter-spacing:0.2px;box-shadow:0 4px 14px rgba(5,150,105,0.35);transition:all 0.2s}
+  .btn:hover{box-shadow:0 6px 20px rgba(5,150,105,0.45);transform:translateY(-1px)}
+
+  /* Divider */
+  .divider{height:1px;background:linear-gradient(to right,transparent,${borderColor},transparent);margin:20px 0}
+
+  /* Footer */
+  .footer{background:#f8fafc;border-top:1px solid ${borderColor};padding:24px 28px;text-align:center}
+  .footer-brand{font-size:15px;font-weight:700;color:${textDark};margin-bottom:4px}
+  .footer-tagline{font-size:12px;color:${textMuted};margin-bottom:12px}
+  .footer-links{display:inline-flex;gap:20px;margin-bottom:14px}
+  .footer-links a{font-size:12px;color:#94a3b8;text-decoration:none;font-weight:500}
+  .footer-links a:hover{color:${brandGreen}}
+  .footer-copy{font-size:11px;color:#cbd5e1;line-height:1.5}
+  .footer-copy a{color:#94a3b8}
+
+  @media only screen and (max-width:520px){
+    .email-wrapper{border-radius:0;margin:0}
+    .body{padding:24px 20px 20px}
+    .header-bg{padding:28px 20px 24px}
+    .otp-code{font-size:30px;letter-spacing:7px}
+    .btn{padding:12px 28px;font-size:14px}
+    .card-green .card-row{flex-direction:column;align-items:flex-start;gap:2px}
+  }
 `;
 
-function wrapHtml(bodyHtml: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${baseStyles}</style></head><body>
-<div class="container">
-  <div class="header"><h1>${SITE_NAME}</h1></div>
-  <div class="content">${bodyHtml}</div>
-  <div class="footer"><p>© ${new Date().getFullYear()} ${SITE_NAME} — নিরাপদ অনলাইন লেনদেন<br><a href="${SITE_URL}">${SITE_URL}</a></p></div>
-</div></body></html>`;
+function wrap(bodyHtml: string): string {
+  return `<!DOCTYPE html><html lang="bn" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${SITE_NAME}</title><style>${base}</style></head><body style="background:#f1f5f9">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px 0">
+  <tr><td align="center">
+    <div class="email-wrapper">
+      <div class="header-bg">
+        <div class="header-logo"><span>🛡️</span></div>
+        <div class="header-title">${SITE_NAME}</div>
+        <div class="header-sub">নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম</div>
+      </div>
+      <div class="body">${bodyHtml}</div>
+      <div class="footer">
+        <div class="footer-brand">${SITE_NAME}</div>
+        <div class="footer-tagline">নিরাপদে কিনুন, নিরাপদে বিক্রি করুন</div>
+        <div class="footer-links">
+          <a href="${SITE_URL}">ওয়েবসাইট</a>
+          <a href="${SITE_URL}">সাহায্য কেন্দ্র</a>
+          <a href="${SITE_URL}">যোগাযোগ</a>
+        </div>
+        <div class="footer-copy">© ${YEAR} ${SITE_NAME}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
+      </div>
+    </div>
+  </td></tr>
+</table></body></html>`;
 }
 
-/* ── Template functions ── */
+/* ── Helper: info card rows ── */
+function infoRow(label: string, value: string): string {
+  return `<div class="card-row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
+}
+
+function infoCard(title: string, rows: string[]): string {
+  return `<div class="card card-green"><div class="card-icon">${title}</div>${rows.join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EMAIL TEMPLATES
+   ═══════════════════════════════════════════════════════════════ */
 
 export function dealCreatedEmail(toName: string, dealTitle: string, amount: number, creatorName: string, role: string) {
   return {
     subject: `নতুন ডিল অনুরোধ: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>নতুন ডিল অনুরোধ</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p><strong>${creatorName}</strong> আপনাকে ${role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'} হিসেবে একটি নতুন ডিল পাঠিয়েছেন:</p>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
+    html: wrap(`
+      <h2>📌 নতুন ডিল অনুরোধ</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+      <p><strong>${creatorName}</strong> আপনাকে <strong>${role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'}</strong> হিসেবে একটি নতুন ডিল পাঠিয়েছেন:</p>
+      ${infoCard('ডিলের বিবরণ', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পক্ষ', role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'),
+      ])}
       <p>আপনার ড্যাশবোর্ডে লগইন করে ডিলটি গ্রহণ বা বাতিল করুন।</p>
-      <a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
@@ -84,16 +174,16 @@ export function dealCreatedEmail(toName: string, dealTitle: string, amount: numb
 export function dealAcceptedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
   return {
     subject: `ডিল গ্রহণ করা হয়েছে: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ডিল গ্রহণ করা হয়েছে ✅</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    html: wrap(`
+      <h2>✅ ডিল গ্রহণ করা হয়েছে</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p><strong>${sellerName}</strong> আপনার ডিলটি গ্রহণ করেছেন। এখন পেমেন্ট করুন:</p>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
+      ${infoCard('ডিলের তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+      ])}
       <p>ড্যাশবোর্ডে গিয়ে পেমেন্ট জমা দিন। টাকা এসক্রোতে সুরক্ষিত থাকবে।</p>
-      <a href="${SITE_URL}" class="btn">পেমেন্ট করুন</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">পেমেন্ট করুন →</a></div>
     `),
   };
 }
@@ -101,16 +191,15 @@ export function dealAcceptedEmail(toName: string, dealTitle: string, amount: num
 export function paymentSubmittedEmail(toName: string, dealTitle: string, amount: number) {
   return {
     subject: `পেমেন্ট জমা হয়েছে: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>পেমেন্ট জমা হয়েছে 💰</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p>"${dealTitle}" ডিলে পেমেন্ট সফলভাবে জমা হয়েছে। অ্যাডমিন এখন ভেরিফিকেশন করছেন।</p>
-      <div class="info-box">
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
-      <div class="warning-box">
-        <p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত ১-২ ঘন্টার মধ্যে ভেরিফাই হয়।</p>
-      </div>
+    html: wrap(`
+      <h2>💰 পেমেন্ট জমা হয়েছে</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+      <p>"${dealTitle}" ডিলে পেমেন্ট সফলভাবে জমা হয়েছে।</p>
+      ${infoCard('পেমেন্ট তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+      ])}
+      <div class="card card-warn"><p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে ভেরিফাই হয়।</p></div>
     `),
   };
 }
@@ -119,17 +208,19 @@ export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: 
   const isBuyer = role === 'buyer';
   return {
     subject: `পেমেন্ট ভেরিফাইড: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>পেমেন্ট ভেরিফাইড ✅</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    html: wrap(`
+      <h2>✅ পেমেন্ট ভেরিফাইড</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>"${dealTitle}" ডিলের পেমেন্ট অ্যাডমিন কর্তৃক ভেরিফাইড হয়েছে।</p>
-      <div class="info-box">
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
+      ${infoCard('পেমেন্ট তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('অবস্থা', '✅ ভেরিফাইড'),
+      ])}
       ${isBuyer
         ? `<p>বিক্রেতা এখন পণ্য/সেবা ডেলিভারি দেবেন। ডেলিভারি পেলে কনফার্ম করুন।</p>`
         : `<p>আপনার কাজ শুরু করুন! কাজ শেষে ডেলিভারি বাটনে ক্লিক করুন।</p>
-           <a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন</a>`
+           <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>`
       }
     `),
   };
@@ -138,16 +229,17 @@ export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: 
 export function deliveryStartedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
   return {
     subject: `ডেলিভারি শুরু: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ডেলিভারি শুরু হয়েছে 📦</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    html: wrap(`
+      <h2>📦 ডেলিভারি শুরু হয়েছে</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p><strong>${sellerName}</strong> "${dealTitle}" ডিলের কাজ সম্পন্ন করেছেন।</p>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
+      ${infoCard('ডিলের তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('বিক্রেতা', sellerName),
+      ])}
       <p>দয়া করে পণ্য/সেবা যাচাই করুন এবং কনফার্ম করুন। কোনো সমস্যা হলে বিরোধ দায়ের করুন।</p>
-      <a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>
     `),
   };
 }
@@ -156,19 +248,21 @@ export function dealCompletedEmail(toName: string, dealTitle: string, amount: nu
   const isSeller = role === 'seller';
   return {
     subject: `ডিল সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ডিল সফলভাবে সম্পন্ন 🎉</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p>"${dealTitle}" ডিলটি সফলভাবে সম্পন্ন হয়েছে!</p>
-      <div class="success-box">
-        <p>✅ লেনদেন নিরাপদে সম্পন্ন</p>
+    html: wrap(`
+      <h2>🎉 ডিল সফলভাবে সম্পন্ন</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+      <div class="card card-success">
+        <div class="check">🏆</div>
+        <div class="msg">লেনদেন নিরাপদে সম্পন্ন হয়েছে!</div>
       </div>
-      <div class="info-box">
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-      </div>
+      ${infoCard('সারাংশ', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('অবস্থা', '✅ সম্পন্ন'),
+      ])}
       ${isSeller
         ? `<p>পেআউট রিকোয়েস্ট করুন — টাকা শীঘ্রই আপনার অ্যাকাউন্টে পৌঁছে যাবে।</p>
-           <a href="${SITE_URL}" class="btn">পেআউট রিকোয়েস্ট করুন</a>`
+           <div class="btn-wrap"><a href="${SITE_URL}" class="btn">পেআউট রিকোয়েস্ট করুন →</a></div>`
         : `<p>ধন্যবাদ যে ${SITE_NAME} ব্যবহার করেছেন। আপনার সম্পূর্ণ লেনদেন নিরাপদ ছিল!</p>`
       }
     `),
@@ -178,15 +272,13 @@ export function dealCompletedEmail(toName: string, dealTitle: string, amount: nu
 export function dealCancelledEmail(toName: string, dealTitle: string, cancelledByName: string) {
   return {
     subject: `ডিল বাতিল: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ডিল বাতিল ❌</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    html: wrap(`
+      <h2>❌ ডিল বাতিল</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p><strong>${cancelledByName}</strong> "${dealTitle}" ডিলটি বাতিল করেছেন।</p>
-      <div class="danger-box">
-        <p>এই ডিল আর সক্রিয় নেই।</p>
-      </div>
+      <div class="card card-danger"><p>⚠️ এই ডিল আর সক্রিয় নেই।</p></div>
       <p>নতুন ডিল তৈরি করতে ড্যাশবোর্ডে যান।</p>
-      <a href="${SITE_URL}" class="btn">নতুন ডিল তৈরি করুন</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">নতুন ডিল তৈরি করুন →</a></div>
     `),
   };
 }
@@ -194,103 +286,98 @@ export function dealCancelledEmail(toName: string, dealTitle: string, cancelledB
 export function disputeRaisedEmail(toName: string, dealTitle: string, buyerName: string, amount: number) {
   return {
     subject: `⚠️ বিরোধ দায়ের: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ডিলে বিরোধ দায়ের ⚠️</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    html: wrap(`
+      <h2>⚠️ ডিলে বিরোধ দায়ের</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p><strong>${buyerName}</strong> "${dealTitle}" ডিলে বিরোধ দায়ের করেছেন। অ্যাডমিন এখন পর্যালোচনা করবেন।</p>
-      <div class="danger-box">
-        <p>ডিলের পরিমাণ: ৳${amount.toLocaleString('bn-BD')}</p>
-      </div>
-      <p>অ্যাডমিন উভয় পক্ষের কথা শুনে সিদ্ধান্ত নেবেন। দয়া করে ড্যাশবোর্ডে চেক করুন।</p>
-      <a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান</a>
+      <div class="card card-danger"><p>⚡ বিরোধিত পরিমাণ: <strong>৳${amount.toLocaleString('bn-BD')}</strong></p></div>
+      ${infoCard('ডিলের তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('ক্রেতা', buyerName),
+      ])}
+      <p>অ্যাডমিন উভয় পক্ষের কথা শুনে সিদ্ধান্ত নেবেন।</p>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
 
 export function welcomeEmail(toName: string) {
   return {
-    subject: `স্বাগতম ${SITE_NAME} এ! — রেজিস্ট্রেশন সফল 🎉`,
-    html: wrapHtml(`
-      <h2>স্বাগতম ${toName}! 🎉</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p>${SITE_NAME} এ সফলভাবে রেজিস্ট্রেশন সম্পন্ন হয়েছে। আমরা আপনাকে পরিবারে স্বাগত জানাই!</p>
-      <div class="success-box">
-        <p>✅ আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে।</p>
+    subject: `স্বাগতম ${SITE_NAME} এ! 🎉`,
+    html: wrap(`
+      <h2>🎊 স্বাগতম, ${toName}!</h2>
+      <p class="greeting">${SITE_NAME} পরিবারে আপনাকে স্বাগত জানাই!</p>
+      <div class="card card-success">
+        <div class="check">✅</div>
+        <div class="msg">আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে</div>
       </div>
-      <div class="info-box">
-        <p>🛡️ <span class="label">এসক্রো সুরক্ষা:</span> প্রতিটি লেনদেন নিরাপদ এসক্রো সিস্টেমে সুরক্ষিত</p>
-        <p>🔒 <span class="label">সুরক্ষিত লেনদেন:</span> ক্রেতা ও বিক্রেতা উভয়ের জন্য সম্পূর্ণ নিরাপত্তা</p>
-        <p>⚡ <span class="label">দ্রুত পেআউট:</span> ডিল সম্পন্ন হলে দ্রুত পেমেন্ট পান</p>
-      </div>
-      <p>এখনই আপনার প্রথম ডিল তৈরি করুন এবং নিরাপদে লেনদেন শুরু করুন!</p>
-      <a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান</a>
+      <div class="divider"></div>
+      <p style="font-weight:600;color:${textDark};font-size:14px;margin-bottom:12px">আপনি যা পাচ্ছেন:</p>
+      ${infoCard('বিশেষ সুবিধা', [
+        infoRow('🛡️ এসক্রো সুরক্ষা', 'প্রতিটি লেনদেন নিরাপদ'),
+        infoRow('🔒 দ্বৈত সুরক্ষা', 'ক্রেতা ও বিক্রেতা উভয়ের জন্য'),
+        infoRow('⚡ দ্রুত পেআউট', 'ডিল সম্পন্নে দ্রুত পেমেন্ট'),
+        infoRow('💬 লাইভ চ্যাট', 'রিয়েল-টাইম যোগাযোগ'),
+      ])}
+      <p>এখনই আপনার প্রথম ডিল তৈরি করুন!</p>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">শুরু করুন →</a></div>
     `),
   };
 }
 
 export function loginNotificationEmail(toName: string, loginTime: string, loginIp: string) {
   return {
-    subject: `নতুন লগইন সনাক্ত — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>নতুন লগইন সনাক্ত 🔐</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    subject: `🔐 নতুন লগইন সনাক্ত — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>🔐 নতুন লগইন সনাক্ত</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>আপনার অ্যাকাউন্টে একটি নতুন লগইন সনাক্ত করা হয়েছে।</p>
-      <div class="info-box">
-        <p><span class="label">সময়:</span> <span class="value">${loginTime}</span></p>
-        <p><span class="label">আইপি ঠিকানা:</span> <span class="value">${loginIp}</span></p>
-      </div>
-      <div class="warning-box">
-        <p>⚠️ যদি এটি আপনার করা না হয়, তবে দ্রুত আপনার পাসওয়ার্ড পরিবর্তন করুন এবং অ্যাকাউন্ট সুরক্ষিত করুন।</p>
-      </div>
-      <a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান</a>
+      ${infoCard('লগইন তথ্য', [
+        infoRow('🕐 সময়', loginTime),
+        infoRow('🌐 আইপি', loginIp),
+      ])}
+      <div class="card card-warn"><p>⚠️ যদি এটি আপনার করা না হয়, তবে দ্রুত পাসওয়ার্ড পরিবর্তন করুন।</p></div>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
 
 export function payoutRequestedEmail(toName: string, dealTitle: string, amount: number, accountType: string, accountNumber: string, payoutType: 'seller_payout' | 'buyer_refund') {
-  const isSellerPayout = payoutType === 'seller_payout';
+  const isSeller = payoutType === 'seller_payout';
+  const title = isSeller ? '💰 পেআউট অনুরোধ' : '🔄 রিফান্ড অনুরোধ';
   return {
-    subject: isSellerPayout
-      ? `পেআউট অনুরোধ: "${dealTitle}" — ${SITE_NAME}`
-      : `রিফান্ড অনুরোধ: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>${isSellerPayout ? 'পেআউট অনুরোধ' : 'রিফান্ড অনুরোধ'} 💰</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p>${isSellerPayout
-        ? `"${dealTitle}" ডিলের জন্য আপনার পেআউট অনুরোধ গ্রহণ করা হয়েছে। অ্যাডমিন এখন প্রক্রিয়া করবেন।`
-        : `"${dealTitle}" ডিলের জন্য আপনার রিফান্ড অনুরোধ গ্রহণ করা হয়েছে। অ্যাডমিন এখন প্রক্রিয়া করবেন।`
-      }</p>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">${isSellerPayout ? 'পেআউট' : 'রিফান্ড'} পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-        <p><span class="label">অ্যাকাউন্ট ধরন:</span> <span class="value">${accountType}</span></p>
-        <p><span class="label">অ্যাকাউন্ট নম্বর:</span> <span class="value">${accountNumber}</span></p>
-      </div>
-      <div class="warning-box">
-        <p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত ১-২ ঘন্টার মধ্যে ${isSellerPayout ? 'পেআউট' : 'রিফান্ড'} প্রক্রিয়া সম্পন্ন হয়।</p>
-      </div>
+    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ: "${dealTitle}" — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>${title}</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+      <p>"${dealTitle}" ডিলের জন্য আপনার ${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ গ্রহণ করা হয়েছে।</p>
+      ${infoCard(`${isSeller ? 'পেআউট' : 'রিফান্ড'} তথ্য`, [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),
+      ])}
+      <div class="card card-warn"><p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে প্রক্রিয়া সম্পন্ন হয়।</p></div>
     `),
   };
 }
 
 export function payoutCompletedEmail(toName: string, dealTitle: string, amount: number, accountType: string, accountNumber: string, payoutType: 'seller_payout' | 'buyer_refund') {
-  const isSellerPayout = payoutType === 'seller_payout';
+  const isSeller = payoutType === 'seller_payout';
   return {
-    subject: isSellerPayout
-      ? `পেআউট সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`
-      : `রিফান্ড সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>${isSellerPayout ? 'পেআউট সম্পন্ন' : 'রিফান্ড সম্পন্ন'} ✅</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
-      <p>${isSellerPayout
-        ? `"${dealTitle}" ডিলের পেআউট সফলভাবে সম্পন্ন হয়েছে! টাকা আপনার অ্যাকাউন্টে পাঠানো হয়েছে।`
-        : `"${dealTitle}" ডিলের রিফান্ড সফলভাবে সম্পন্ন হয়েছে! টাকা আপনার অ্যাকাউন্টে ফেরত পাঠানো হয়েছে।`
-      }</p>
-      <div class="success-box">
-        <p>✅ ${isSellerPayout ? 'পেআউট' : 'রিফান্ড'} সফলভাবে সম্পন্ন হয়েছে</p>
-        <p><span class="label">পরিমাণ:</span> <span class="value">৳${amount.toLocaleString('bn-BD')}</span></p>
-        <p><span class="label">অ্যাকাউন্ট:</span> ${accountType} — ${accountNumber}</p>
+    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন: "${dealTitle}" — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>✅ ${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+      <p>"${dealTitle}" ডিলের ${isSeller ? 'পেআউট' : 'রিফান্ড'} সফলভাবে সম্পন্ন হয়েছে!</p>
+      <div class="card card-success">
+        <div class="check">💵</div>
+        <div class="msg">৳${amount.toLocaleString('bn-BD')} — আপনার অ্যাকাউন্টে পাঠানো হয়েছে</div>
       </div>
+      ${infoCard('বিবরণ', [
+        infoRow('ডিল', dealTitle),
+        infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),
+      ])}
       <p>অ্যাকাউন্টে টাকা পৌঁছাতে কিছুটা সময় লাগতে পারে। সমস্যা হলে আমাদের জানান।</p>
     `),
   };
@@ -299,85 +386,74 @@ export function payoutCompletedEmail(toName: string, dealTitle: string, amount: 
 export function disputeResolvedEmail(toName: string, dealTitle: string, action: 'complete' | 'refund_buyer', adminNote?: string) {
   const isComplete = action === 'complete';
   return {
-    subject: `বিরোধ নিষ্পত্তি: "${dealTitle}" — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>বিরোধ নিষ্পত্তি ⚖️</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    subject: `⚖️ বিরোধ নিষ্পত্তি: "${dealTitle}" — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>⚖️ বিরোধ নিষ্পত্তি</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>"${dealTitle}" ডিলে দায়ের করা বিরোধটি অ্যাডমিন কর্তৃক নিষ্পত্তি করা হয়েছে।</p>
-      <div class="${isComplete ? 'success-box' : 'info-box'}">
-        <p>${isComplete
-          ? `✅ অ্যাডমিন সিদ্ধান্ত নিয়েছেন: <strong>ডিল কমপ্লিট</strong> — বিক্রেতাকে পেমেন্ট দেওয়া হবে।`
-          : `🔄 অ্যাডমিন সিদ্ধান্ত নিয়েছেন: <strong>ক্রেতাকে রিফান্ড</strong> — ক্রেতার টাকা ফেরত দেওয়া হবে।`
-        }</p>
-      </div>
-      ${adminNote
-        ? `<div class="info-box">
-            <p><span class="label">অ্যাডমিন নোট:</span> ${adminNote}</p>
-          </div>`
-        : ''
+      ${isComplete
+        ? `<div class="card card-success"><div class="check">✅</div><div class="msg">সিদ্ধান্ত: ডিল কমপ্লিট — বিক্রেতাকে পেমেন্ট দেওয়া হবে</div></div>`
+        : `<div class="card card-warn"><p>🔄 সিদ্ধান্ত: <strong>ক্রেতাকে রিফান্ড</strong> — ক্রেতার টাকা ফেরত দেওয়া হবে</p></div>`
       }
+      ${adminNote ? `<div class="card card-green"><div class="card-icon">📝 অ্যাডমিন নোট</div><div class="card-row" style="display:block"><span class="val" style="font-weight:400;font-size:13.5px">${adminNote}</span></div></div>` : ''}
       <p>বিরোধ সম্পর্কে কোনো প্রশ্ন থাকলে ড্যাশবোর্ড থেকে যোগাযোগ করুন।</p>
-      <a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">ড্যাশবোর্ডে যান →</a></div>
     `),
   };
 }
 
 export function adminNewDealEmail(adminName: string, dealTitle: string, amount: string, creatorName: string, buyerName: string, sellerName: string) {
   return {
-    subject: `🆕 নতুন ডিল তৈরি: "${dealTitle}" — ${SITE_NAME} অ্যাডমিন`,
-    html: wrapHtml(`
-      <h2>নতুন ডিল তৈরি হয়েছে 🆕</h2>
-      <p>হ্যালো <strong>${adminName}</strong>,</p>
-      <p>প্ল্যাটফর্মে একটি নতুন ডিল তৈরি হয়েছে। বিস্তারিত নিচে দেওয়া হলো:</p>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">পরিমাণ:</span> <span class="value">${amount}</span></p>
-        <p><span class="label">তৈরিকারক:</span> <span class="value">${creatorName}</span></p>
-        <p><span class="label">ক্রেতা:</span> <span class="value">${buyerName}</span></p>
-        <p><span class="label">বিক্রেতা:</span> <span class="value">${sellerName}</span></p>
-      </div>
+    subject: `🆕 নতুন ডিল: "${dealTitle}" — অ্যাডমিন`,
+    html: wrap(`
+      <h2>🆕 নতুন ডিল তৈরি হয়েছে</h2>
+      <p class="greeting">হ্যালো <strong>${adminName}</strong>,</p>
+      <p>প্ল্যাটফর্মে একটি নতুন ডিল তৈরি হয়েছে।</p>
+      ${infoCard('ডিলের বিবরণ', [
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', amount),
+        infoRow('তৈরিকারক', creatorName),
+        infoRow('ক্রেতা', buyerName),
+        infoRow('বিক্রেতা', sellerName || 'অপেক্ষমান'),
+      ])}
       <p>ডিলটি পর্যালোচনা করুন এবং প্রয়োজনীয় ব্যবস্থা গ্রহণ করুন।</p>
-      <a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান</a>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
     `),
   };
 }
 
 export function adminDisputeEmail(adminName: string, dealTitle: string, amount: string, buyerName: string, sellerName: string) {
   return {
-    subject: `⚠️ নতুন বিরোধ দায়ের: "${dealTitle}" — ${SITE_NAME} অ্যাডমিন`,
-    html: wrapHtml(`
-      <h2>নতুন বিরোধ দায়ের ⚠️</h2>
-      <p>হ্যালো <strong>${adminName}</strong>,</p>
-      <p>প্ল্যাটফর্মে একটি নতুন বিরোধ দায়ের করা হয়েছে। দ্রুত পর্যালোচনা প্রয়োজন।</p>
-      <div class="danger-box">
-        <p>⚠️ ডিলের পরিমাণ: ${amount}</p>
-      </div>
-      <div class="info-box">
-        <p><span class="label">ডিল:</span> <span class="value">${dealTitle}</span></p>
-        <p><span class="label">ক্রেতা:</span> <span class="value">${buyerName}</span></p>
-        <p><span class="label">বিক্রেতা:</span> <span class="value">${sellerName}</span></p>
-      </div>
-      <div class="warning-box">
-        <p>⏰ দ্রুত ব্যবস্থা নিন — উভয় পক্ষ অপেক্ষমান আছে।</p>
-      </div>
-      <a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান</a>
+    subject: `🚨 নতুন বিরোধ: "${dealTitle}" — অ্যাডমিন`,
+    html: wrap(`
+      <h2>🚨 নতুন বিরোধ দায়ের</h2>
+      <p class="greeting">হ্যালো <strong>${adminName}</strong>,</p>
+      <p>প্ল্যাটফর্মে একটি নতুন বিরোধ দায়ের করা হয়েছে। <strong>দ্রুত পর্যালোচনা প্রয়োজন।</strong></p>
+      <div class="card card-danger"><p>⚡ ডিলের পরিমাণ: <strong>${amount}</strong></p></div>
+      ${infoCard('দলের তথ্য', [
+        infoRow('ডিল', dealTitle),
+        infoRow('ক্রেতা', buyerName),
+        infoRow('বিক্রেতা', sellerName),
+      ])}
+      <div class="card card-warn"><p>⏰ দ্রুত ব্যবস্থা নিন — উভয় পক্ষ অপেক্ষমান আছে।</p></div>
+      <div class="btn-wrap"><a href="${SITE_URL}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
     `),
   };
 }
 
 export function passwordResetOtpEmail(toName: string, otp: string) {
   return {
-    subject: `পাসওয়ার্ড রিসেট কোড — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>পাসওয়ার্ড রিসেট 🔑</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    subject: `🔑 পাসওয়ার্ড রিসেট কোড — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>🔑 পাসওয়ার্ড রিসেট</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তনের জন্য একটি ভেরিফিকেশন কোড পাঠানো হয়েছে।</p>
-      <div class="info-box" style="text-align: center; padding: 24px;">
-        <p style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #16a34a;">${otp}</p>
+      <div class="otp-card">
+        <div class="otp-label">ভেরিফিকেশন কোড</div>
+        <div class="otp-code">${otp}</div>
+        <div class="otp-hint">কোডটি ৫ মিনিটের জন্য বৈধ</div>
       </div>
-      <div class="warning-box">
-        <p>⏳ এই কোডটি <strong>৫ মিনিট</strong>ের জন্য বৈধ। কাউকে এই কোড শেয়ার করবেন না।</p>
-      </div>
+      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>। ${SITE_NAME} কখনো আপনাকে কোড জানতে চাইবে না।</p></div>
       <p>আপনি পাসওয়ার্ড রিসেট অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
     `),
   };
@@ -385,35 +461,31 @@ export function passwordResetOtpEmail(toName: string, otp: string) {
 
 export function emailVerificationOtpEmail(toName: string, otp: string) {
   return {
-    subject: `ইমেইল ভেরিফিকেশন কোড — ${SITE_NAME}`,
-    html: wrapHtml(`
-      <h2>ইমেইল ভেরিফিকেশন ✉️</h2>
-      <p>হ্যালো <strong>${toName}</strong>,</p>
+    subject: `✉️ ইমেইল ভেরিফিকেশন কোড — ${SITE_NAME}`,
+    html: wrap(`
+      <h2>✉️ ইমেইল ভেরিফিকেশন</h2>
+      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>আপনার ${SITE_NAME} অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
-      <div class="info-box" style="text-align: center; padding: 24px;">
-        <p style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #16a34a;">${otp}</p>
+      <div class="otp-card">
+        <div class="otp-label">ভেরিফিকেশন কোড</div>
+        <div class="otp-code">${otp}</div>
+        <div class="otp-hint">কোডটি ১০ মিনিটের জন্য বৈধ</div>
       </div>
-      <div class="warning-box">
-        <p>⏳ এই কোডটি <strong>১০ মিনিট</strong>ের জন্য বৈধ। কাউকে এই কোড শেয়ার করবেন না।</p>
-      </div>
+      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>।</p></div>
       <p>আপনি অ্যাকাউন্ট তৈরি করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
     `),
   };
 }
 
-/* ── Send helper ── */
+/* ═══════════════════════════════════════════════════════════════
+   SEND HELPERS
+   ═══════════════════════════════════════════════════════════════ */
 
 type EmailPayload = { subject: string; html: string };
 
-/**
- * Send an email via Brevo SMTP. Throws on error (use in test endpoints).
- * For production fire-and-forget, use fireEmails() instead.
- */
 export async function sendEmail(to: string, payload: EmailPayload): Promise<void> {
   const transporter = getTransporter();
-  if (!transporter) {
-    throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
-  }
+  if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
 
   await transporter.sendMail({
     from: `${FROM_NAME} <${FROM_ADDRESS}>`,
@@ -424,10 +496,8 @@ export async function sendEmail(to: string, payload: EmailPayload): Promise<void
   console.log(`[EMAIL SENT] → ${to}: ${payload.subject}`);
 }
 
-/* ── Convenience: fire-and-forget multiple emails (production use) ── */
 export function fireEmails(emails: Array<{ to: string; payload: EmailPayload }>) {
   for (const e of emails) {
-    // fire-and-forget: don't await, silently catch
     sendEmail(e.to, e.payload).catch((err) => {
       console.error(`[EMAIL ERROR] → ${e.to}:`, err);
     });
