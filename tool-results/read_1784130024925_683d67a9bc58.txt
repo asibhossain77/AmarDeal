@@ -1,0 +1,594 @@
+     1→     1→import nodemailer from 'nodemailer';
+     2→     2→
+     3→     3→/* ═══════════════════════════════════════════════════════════════
+     4→     4→   DEFAULTS — overridden by PlatformSetting DB values
+     5→     5→   ═══════════════════════════════════════════════════════════════ */
+     6→     6→const DEFAULTS = {
+     7→     7→  email_site_name:       'আমারডিল.বাংলা',
+     8→     8→  email_from_name:       'আমারডিল.বাংলা',
+     9→     9→  email_site_url:        'https://xn--94b8cubil3ej.xn--54b7fta0cc',
+    10→    10→  email_header_subtitle: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
+    11→    11→  email_footer_tagline:  'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
+    12→    12→  brevo_smtp_key:        '',
+    13→    13→  brevo_smtp_user:       '',
+    14→    14→  brevo_from_email:      '',
+    15→    15→} as const;
+    16→    16→
+    17→    17→const EMAIL_SETTING_KEYS = Object.keys(DEFAULTS);
+    18→    18→
+    19→    19→type EmailSettings = Record<string, string>;
+    20→    20→
+    21→    21→/* In-memory cache */
+    22→    22→let _settingsCache: EmailSettings | null = null;
+    23→    23→let _settingsLoadedAt = 0;
+    24→    24→const SETTINGS_TTL = 5 * 60 * 1000; // 5 min
+    25→    25→
+    26→    26→/** Load email settings from DB (call before sending) */
+    27→    27→export async function loadEmailSettings(): Promise<EmailSettings> {
+    28→    28→  const now = Date.now();
+    29→    29→  if (_settingsCache && now - _settingsLoadedAt < SETTINGS_TTL) return _settingsCache;
+    30→    30→  try {
+    31→    31→    const { db } = await import('@/lib/db');
+    32→    32→    const rows = await db.platformSetting.findMany({
+    33→    33→      where: { key: { in: EMAIL_SETTING_KEYS } },
+    34→    34→    });
+    35→    35→    const overrides: EmailSettings = {};
+    36→    36→    for (const r of rows) overrides[r.key] = r.value;
+    37→    37→    _settingsCache = { ...DEFAULTS, ...overrides };
+    38→    38→    _settingsLoadedAt = now;
+    39→    39→  } catch (e) {
+    40→    40→    console.error('[EMAIL SETTINGS] DB load failed, using defaults', e);
+    41→    41→    _settingsCache = { ...DEFAULTS };
+    42→    42→    _settingsLoadedAt = now;
+    43→    43→  }
+    44→    44→  return _settingsCache;
+    45→    45→}
+    46→    46→
+    47→    47→/** Sync getter — must call loadEmailSettings() first */
+    48→    48→function s(key: keyof typeof DEFAULTS): string {
+    49→    49→  return _settingsCache?.[key] ?? DEFAULTS[key];
+    50→    50→}
+    51→    51→
+    52→    52→/** Force clear cache (after admin update) */
+    53→    53→export function clearEmailSettingsCache() {
+    54→    54→  _settingsCache = null;
+    55→    55→  _settingsLoadedAt = 0;
+    56→    56→  _transporter = null; // recreate with new creds
+    57→    57→}
+    58→    58→
+    59→    59→const YEAR = new Date().getFullYear();
+    60→    60→
+    61→    61→/* ── Brevo SMTP Transport (lazy init — uses DB overrides if set) ── */
+    62→    62→let _transporter: nodemailer.Transporter | null = null;
+    63→    63→function getTransporter(settings?: EmailSettings): nodemailer.Transporter | null {
+    64→    64→  const smtpKey = settings?.brevo_smtp_key || process.env.BREVO_SMTP_KEY;
+    65→    65→  if (!smtpKey) return null;
+    66→    66→  if (!_transporter) {
+    67→    67→    const smtpUser = settings?.brevo_smtp_user || process.env.BREVO_SMTP_USER || '';
+    68→    68→    _transporter = nodemailer.createTransport({
+    69→    69→      host: 'smtp-relay.brevo.com',
+    70→    70→      port: 587,
+    71→    71→      secure: false,
+    72→    72→      auth: { user: smtpUser, pass: smtpKey },
+    73→    73→    });
+    74→    74→  }
+    75→    75→  return _transporter;
+    76→    76→}
+    77→    77→
+    78→    78→function getFromAddress(settings?: EmailSettings): string {
+    79→    79→  return settings?.brevo_from_email || process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'noreply@amardeal.com';
+    80→    80→}
+    81→    81→
+    82→    82→/* ═══════════════════════════════════════════════════════════════
+    83→    83→   MODERN EMAIL TEMPLATE SYSTEM — আমারডিল.বাংলা
+    84→    84→   ═══════════════════════════════════════════════════════════════ */
+    85→    85→
+    86→    86→/* Website-matched palette — Parrot/Lime Green #84CC16 */
+    87→    87→const brandLime   = '#84CC16';
+    88→    88→const brandDark   = '#365314';
+    89→    89→const brandDeep   = '#1a2e05';
+    90→    90→const brandLight  = '#F7FEE7';
+    91→    91→const brandMint   = '#ECFCCB';
+    92→    92→const brandGlow   = '#BEF264';
+    93→    93→const brandLabel  = '#4D7C0F';
+    94→    94→const brandRowLbl = '#65A30D';
+    95→    95→const brandSuccTxt= '#3F6212';
+    96→    96→const textDark    = '#1a1a2e';
+    97→    97→const textMuted   = '#64748b';
+    98→    98→const borderColor = '#e2e8f0';
+    99→    99→
+   100→   100→/* Reusable style blocks */
+   101→   101→const reset = `*{margin:0;padding:0;box-sizing:border-box}body{margin:0;padding:0;background:#F2F4F7;font-family:'Segoe UI',system-ui,-apple-system,Tahoma,sans-serif;-webkit-font-smoothing:antialiased}`;
+   102→   102→const base = `
+   103→   103→  ${reset}
+   104→   104→  img{border:none;outline:none;text-decoration:none}
+   105→   105→  a{text-decoration:none;color:${brandLime}}
+   106→   106→
+   107→   107→  /* ── Outer wrapper ── */
+   108→   108→  .email-wrapper{max-width:540px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(132,204,22,0.08),0 1px 3px rgba(0,0,0,0.04)}
+   109→   109→
+   110→   110→  /* ── Header (no logo, name only) ── */
+   111→   111→  .header-bg{background:linear-gradient(145deg,#84CC16 0%,#65A30D 50%,#4D7C0F 100%);padding:44px 32px 38px;text-align:center;position:relative;overflow:hidden}
+   112→   112→  .header-bg::before{content:'';position:absolute;top:-50%;right:-25%;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%);border-radius:50%}
+   113→   113→  .header-bg::after{content:'';position:absolute;bottom:-35%;left:-15%;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);border-radius:50%}
+   114→   114→  .header-inner{position:relative;z-index:1}
+   115→   115→  .header-title{color:#ffffff;font-size:28px;font-weight:900;letter-spacing:-0.5px;margin:0;line-height:1.2}
+   116→   116→  .header-sub{color:rgba(255,255,255,0.85);font-size:13px;margin-top:8px;font-weight:400;letter-spacing:0.3px}
+   117→   117→  .header-border{height:4px;background:linear-gradient(to right,${brandGlow},${brandLime},${brandGlow})}
+   118→   118→
+   119→   119→  /* ── Body ── */
+   120→   120→  .body{padding:32px 30px 28px}
+   121→   121→  .body h2{font-size:20px;font-weight:700;color:${textDark};margin-bottom:6px;line-height:1.3}
+   122→   122→  .body .greeting{font-size:15px;color:${textDark};margin-bottom:16px;line-height:1.65}
+   123→   123→  .body .greeting strong{font-weight:600}
+   124→   124→  .body p{font-size:14px;color:${textMuted};line-height:1.75;margin-bottom:14px}
+   125→   125→
+   126→   126→  /* Info card — lime green */
+   127→   127→  .card{border-radius:14px;padding:18px 22px;margin:18px 0}
+   128→   128→  .card-green{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;box-shadow:0 1px 4px rgba(132,204,22,0.06)}
+   129→   129→  .card-green .card-icon{font-size:12.5px;margin-bottom:10px;color:${brandLabel};font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
+   130→   130→  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13.5px;border-bottom:1px solid rgba(132,204,22,0.1)}
+   131→   131→  .card-green .card-row:last-child{border-bottom:none}
+   132→   132→  .card-green .card-row .lbl{color:${brandRowLbl};font-weight:500}
+   133→   133→  .card-green .card-row .val{color:${brandDark};font-weight:700;font-size:14px}
+   134→   134→
+   135→   135→  /* Success card */
+   136→   136→  .card-success{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;text-align:center;padding:24px 20px;box-shadow:0 2px 8px rgba(132,204,22,0.08)}
+   137→   137→  .card-success .check{font-size:32px;margin-bottom:8px}
+   138→   138→  .card-success .msg{font-size:15px;color:${brandSuccTxt};font-weight:600;line-height:1.5}
+   139→   139→
+   140→   140→  /* Warning card */
+   141→   141→  .card-warn{background:linear-gradient(145deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:14px;padding:16px 22px;margin:18px 0}
+   142→   142→  .card-warn p{margin:0;font-size:13.5px;color:#92400e;line-height:1.6}
+   143→   143→  .card-warn p strong{font-weight:600}
+   144→   144→
+   145→   145→  /* Danger card */
+   146→   146→  .card-danger{background:linear-gradient(145deg,#fef2f2 0%,#fecaca 100%);border:1px solid #fca5a5;border-radius:14px;padding:16px 22px;margin:18px 0}
+   147→   147→  .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.6}
+   148→   148→
+   149→   149→  /* OTP card — enhanced with individual digit boxes */
+   150→   150→  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#ECFCCB 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:20px;padding:36px 32px 28px;text-align:center;margin:24px auto;max-width:400px;position:relative;box-shadow:0 6px 24px rgba(132,204,22,0.10)}
+   151→   151→  .otp-card::before{content:'';position:absolute;top:-1px;left:15%;right:15%;height:3px;background:linear-gradient(to right,transparent,${brandLime},transparent);border-radius:2px}
+   152→   152→  .otp-label{font-size:12px;font-weight:700;color:${brandLabel};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
+   153→   153→  .otp-digits{display:inline-flex;gap:10px;direction:ltr}
+   154→   154→  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:56px;height:68px;background:#ffffff;border:2.5px solid ${brandGlow};border-radius:12px;font-size:34px;font-weight:900;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 3px 10px rgba(132,204,22,0.10)}
+   155→   155→  .otp-hint{font-size:12px;color:#6b7280;margin-top:16px;line-height:1.5}
+   156→   156→
+   157→   157→  /* Legacy OTP fallback (plain text code) */
+   158→   158→  .otp-code{font-size:36px;font-weight:900;letter-spacing:10px;color:${brandDark};font-family:'Courier New',monospace;line-height:1.2}
+   159→   159→
+   160→   160→  /* CTA button */
+   161→   161→  .btn-wrap{text-align:center;margin:24px 0 10px}
+   162→   162→  .btn{display:inline-block;background:linear-gradient(145deg,#84CC16 0%,#65A30D 100%);color:#ffffff !important;padding:14px 40px;border-radius:14px;font-weight:600;font-size:15px;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(132,204,22,0.3),0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s}
+   163→   163→  .btn:hover{box-shadow:0 6px 24px rgba(132,204,22,0.4);transform:translateY(-1px)}
+   164→   164→
+   165→   165→  /* Divider */
+   166→   166→  .divider{height:1px;background:linear-gradient(to right,transparent,${borderColor},transparent);margin:22px 0}
+   167→   167→
+   168→   168→  /* Footer */
+   169→   169→  .footer{background:linear-gradient(to bottom,#f8fafc,#f1f5f9);border-top:1px solid ${borderColor};padding:28px 30px;text-align:center}
+   170→   170→  .footer-brand{font-size:16px;font-weight:800;color:${brandDark};margin-bottom:3px;letter-spacing:-0.2px}
+   171→   171→  .footer-tagline{font-size:12px;color:${textMuted};margin-bottom:14px}
+   172→   172→  .footer-links{display:inline-flex;gap:22px;margin-bottom:16px}
+   173→   173→  .footer-links a{font-size:12px;color:#94a3b8;text-decoration:none;font-weight:500}
+   174→   174→  .footer-links a:hover{color:${brandLime}}
+   175→   175→  .footer-copy{font-size:11px;color:#cbd5e1;line-height:1.5}
+   176→   176→  .footer-copy a{color:#94a3b8}
+   177→   177→  .footer-social{display:inline-flex;gap:12px;margin-top:14px}
+   178→   178→  .footer-social a{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(132,204,22,0.08);border-radius:8px;font-size:14px;text-decoration:none;transition:background 0.2s}
+   179→   179→  .footer-social a:hover{background:rgba(132,204,22,0.15)}
+   180→   180→
+   181→   181→  @media only screen and (max-width:520px){
+   182→   182→    .email-wrapper{border-radius:0;margin:0}
+   183→   183→    .body{padding:24px 20px 20px}
+   184→   184→    .header-bg{padding:32px 20px 28px}
+   185→   185→    .otp-digits span{width:46px;height:56px;font-size:26px;gap:8px}
+   186→   186→    .otp-card{max-width:320px;padding:28px 20px 22px}
+   187→   187→    .otp-code{font-size:30px;letter-spacing:7px}
+   188→   188→    .btn{padding:12px 28px;font-size:14px}
+   189→   189→    .card-green .card-row{flex-direction:column;align-items:flex-start;gap:2px}
+   190→   190→  }
+   191→   191→`;
+   192→   192→
+   193→   193→function wrap(bodyHtml: string): string {
+   194→   194→  return `<!DOCTYPE html><html lang="bn" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${s('email_site_name')}</title><style>${base}</style></head><body style="background:#F2F4F7">
+   195→   195→<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F4F7;padding:28px 0">
+   196→   196→  <tr><td align="center">
+   197→   197→    <div class="email-wrapper">
+   198→   198→      <div class="header-bg">
+   199→   199→        <div class="header-inner">
+   200→   200→          <div class="header-title">${s('email_site_name')}</div>
+   201→   201→          <div class="header-sub">${s('email_header_subtitle')}</div>
+   202→   202→        </div>
+   203→   203→      </div>
+   204→   204→      <div class="header-border"></div>
+   205→   205→      <div class="body">${bodyHtml}</div>
+   206→   206→      <div class="footer">
+   207→   207→        <div class="footer-brand">${s('email_site_name')}</div>
+   208→   208→        <div class="footer-tagline">${s('email_footer_tagline')}</div>
+   209→   209→        <div class="footer-links">
+   210→   210→          <a href="${s('email_site_url')}">ওয়েবসাইট</a>
+   211→   211→          <a href="${s('email_site_url')}">সাহায্য কেন্দ্র</a>
+   212→   212→          <a href="${s('email_site_url')}">যোগাযোগ</a>
+   213→   213→        </div>
+   214→   214→        <div class="footer-social">
+   215→   215→          <a href="${s('email_site_url')}" title="ফেসবুক">📘</a>
+   216→   216→          <a href="${s('email_site_url')}" title="গ্রুপ">👥</a>
+   217→   217→          <a href="${s('email_site_url')}" title="ওয়েবসাইট">🌐</a>
+   218→   218→        </div>
+   219→   219→        <div class="footer-copy">© ${YEAR} ${s('email_site_name')}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
+   220→   220→      </div>
+   221→   221→    </div>
+   222→   222→  </td></tr>
+   223→   223→</table></body></html>`;
+   224→   224→}
+   225→   225→
+   226→   226→/* ── Helper: info card rows ── */
+   227→   227→function infoRow(label: string, value: string): string {
+   228→   228→  return `<div class="card-row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
+   229→   229→}
+   230→   230→
+   231→   231→function infoCard(title: string, rows: string[]): string {
+   232→   232→  return `<div class="card card-green"><div class="card-icon">${title}</div>${rows.join('')}</div>`;
+   233→   233→}
+   234→   234→
+   235→   235→/* ═══════════════════════════════════════════════════════════════
+   236→   236→   EMAIL TEMPLATES
+   237→   237→   ═══════════════════════════════════════════════════════════════ */
+   238→   238→
+   239→   239→export function dealCreatedEmail(toName: string, dealTitle: string, amount: number, creatorName: string, role: string) {
+   240→   240→  return {
+   241→   241→    subject: `নতুন ডিল অনুরোধ: "${dealTitle}" — ${s('email_site_name')}`,
+   242→   242→    html: wrap(`
+   243→   243→      <h2>📌 নতুন ডিল অনুরোধ</h2>
+   244→   244→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   245→   245→      <p><strong>${creatorName}</strong> আপনাকে <strong>${role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'}</strong> হিসেবে একটি নতুন ডিল পাঠিয়েছেন:</p>
+   246→   246→      ${infoCard('ডিলের বিবরণ', [
+   247→   247→        infoRow('ডিল', dealTitle),
+   248→   248→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   249→   249→        infoRow('পক্ষ', role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'),
+   250→   250→      ])}
+   251→   251→      <p>আপনার ড্যাশবোর্ডে লগইন করে ডিলটি গ্রহণ বা বাতিল করুন।</p>
+   252→   252→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+   253→   253→    `),
+   254→   254→  };
+   255→   255→}
+   256→   256→
+   257→   257→export function dealAcceptedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
+   258→   258→  return {
+   259→   259→    subject: `ডিল গ্রহণ করা হয়েছে: "${dealTitle}" — ${s('email_site_name')}`,
+   260→   260→    html: wrap(`
+   261→   261→      <h2>✅ ডিল গ্রহণ করা হয়েছে</h2>
+   262→   262→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   263→   263→      <p><strong>${sellerName}</strong> আপনার ডিলটি গ্রহণ করেছেন। এখন পেমেন্ট করুন:</p>
+   264→   264→      ${infoCard('ডিলের তথ্য', [
+   265→   265→        infoRow('ডিল', dealTitle),
+   266→   266→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   267→   267→      ])}
+   268→   268→      <p>ড্যাশবোর্ডে গিয়ে পেমেন্ট জমা দিন। টাকা এসক্রোতে সুরক্ষিত থাকবে।</p>
+   269→   269→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">পেমেন্ট করুন →</a></div>
+   270→   270→    `),
+   271→   271→  };
+   272→   272→}
+   273→   273→
+   274→   274→export function paymentSubmittedEmail(toName: string, dealTitle: string, amount: number) {
+   275→   275→  return {
+   276→   276→    subject: `পেমেন্ট জমা হয়েছে: "${dealTitle}" — ${s('email_site_name')}`,
+   277→   277→    html: wrap(`
+   278→   278→      <h2>💰 পেমেন্ট জমা হয়েছে</h2>
+   279→   279→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   280→   280→      <p>"${dealTitle}" ডিলে পেমেন্ট সফলভাবে জমা হয়েছে।</p>
+   281→   281→      ${infoCard('পেমেন্ট তথ্য', [
+   282→   282→        infoRow('ডিল', dealTitle),
+   283→   283→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   284→   284→      ])}
+   285→   285→      <div class="card card-warn"><p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে ভেরিফাই হয়।</p></div>
+   286→   286→    `),
+   287→   287→  };
+   288→   288→}
+   289→   289→
+   290→   290→export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: number, role: 'buyer' | 'seller') {
+   291→   291→  const isBuyer = role === 'buyer';
+   292→   292→  return {
+   293→   293→    subject: `পেমেন্ট ভেরিফাইড: "${dealTitle}" — ${s('email_site_name')}`,
+   294→   294→    html: wrap(`
+   295→   295→      <h2>✅ পেমেন্ট ভেরিফাইড</h2>
+   296→   296→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   297→   297→      <p>"${dealTitle}" ডিলের পেমেন্ট অ্যাডমিন কর্তৃক ভেরিফাইড হয়েছে।</p>
+   298→   298→      ${infoCard('পেমেন্ট তথ্য', [
+   299→   299→        infoRow('ডিল', dealTitle),
+   300→   300→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   301→   301→        infoRow('অবস্থা', '✅ ভেরিফাইড'),
+   302→   302→      ])}
+   303→   303→      ${isBuyer
+   304→   304→        ? `<p>বিক্রেতা এখন পণ্য/সেবা ডেলিভারি দেবেন। ডেলিভারি পেলে কনফার্ম করুন।</p>`
+   305→   305→        : `<p>আপনার কাজ শুরু করুন! কাজ শেষে ডেলিভারি বাটনে ক্লিক করুন।</p>
+   306→   306→           <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>`
+   307→   307→      }
+   308→   308→    `),
+   309→   309→  };
+   310→   310→}
+   311→   311→
+   312→   312→export function deliveryStartedEmail(toName: string, dealTitle: string, amount: number, sellerName: string) {
+   313→   313→  return {
+   314→   314→    subject: `ডেলিভারি শুরু: "${dealTitle}" — ${s('email_site_name')}`,
+   315→   315→    html: wrap(`
+   316→   316→      <h2>📦 ডেলিভারি শুরু হয়েছে</h2>
+   317→   317→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   318→   318→      <p><strong>${sellerName}</strong> "${dealTitle}" ডিলের কাজ সম্পন্ন করেছেন।</p>
+   319→   319→      ${infoCard('ডিলের তথ্য', [
+   320→   320→        infoRow('ডিল', dealTitle),
+   321→   321→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   322→   322→        infoRow('বিক্রেতা', sellerName),
+   323→   323→      ])}
+   324→   324→      <p>দয়া করে পণ্য/সেবা যাচাই করুন এবং কনফার্ম করুন। কোনো সমস্যা হলে বিরোধ দায়ের করুন।</p>
+   325→   325→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি কনফার্ম করুন →</a></div>
+   326→   326→    `),
+   327→   327→  };
+   328→   328→}
+   329→   329→
+   330→   330→export function dealCompletedEmail(toName: string, dealTitle: string, amount: number, role: 'buyer' | 'seller') {
+   331→   331→  const isSeller = role === 'seller';
+   332→   332→  return {
+   333→   333→    subject: `ডিল সম্পন্ন: "${dealTitle}" — ${s('email_site_name')}`,
+   334→   334→    html: wrap(`
+   335→   335→      <h2>🎉 ডিল সফলভাবে সম্পন্ন</h2>
+   336→   336→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   337→   337→      <div class="card card-success">
+   338→   338→        <div class="check">🏆</div>
+   339→   339→        <div class="msg">লেনদেন নিরাপদে সম্পন্ন হয়েছে!</div>
+   340→   340→      </div>
+   341→   341→      ${infoCard('সারাংশ', [
+   342→   342→        infoRow('ডিল', dealTitle),
+   343→   343→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   344→   344→        infoRow('অবস্থা', '✅ সম্পন্ন'),
+   345→   345→      ])}
+   346→   346→      ${isSeller
+   347→   347→        ? `<p>পেআউট রিকোয়েস্ট করুন — টাকা শীঘ্রই আপনার অ্যাকাউন্টে পৌঁছে যাবে।</p>
+   348→   348→           <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">পেআউট রিকোয়েস্ট করুন →</a></div>`
+   349→   349→        : `<p>ধন্যবাদ যে ${s('email_site_name')} ব্যবহার করেছেন। আপনার সম্পূর্ণ লেনদেন নিরাপদ ছিল!</p>`
+   350→   350→      }
+   351→   351→    `),
+   352→   352→  };
+   353→   353→}
+   354→   354→
+   355→   355→export function dealCancelledEmail(toName: string, dealTitle: string, cancelledByName: string) {
+   356→   356→  return {
+   357→   357→    subject: `ডিল বাতিল: "${dealTitle}" — ${s('email_site_name')}`,
+   358→   358→    html: wrap(`
+   359→   359→      <h2>❌ ডিল বাতিল</h2>
+   360→   360→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   361→   361→      <p><strong>${cancelledByName}</strong> "${dealTitle}" ডিলটি বাতিল করেছেন।</p>
+   362→   362→      <div class="card card-danger"><p>⚠️ এই ডিল আর সক্রিয় নেই।</p></div>
+   363→   363→      <p>নতুন ডিল তৈরি করতে ড্যাশবোর্ডে যান।</p>
+   364→   364→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">নতুন ডিল তৈরি করুন →</a></div>
+   365→   365→    `),
+   366→   366→  };
+   367→   367→}
+   368→   368→
+   369→   369→export function disputeRaisedEmail(toName: string, dealTitle: string, buyerName: string, amount: number) {
+   370→   370→  return {
+   371→   371→    subject: `⚠️ বিরোধ দায়ের: "${dealTitle}" — ${s('email_site_name')}`,
+   372→   372→    html: wrap(`
+   373→   373→      <h2>⚠️ ডিলে বিরোধ দায়ের</h2>
+   374→   374→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   375→   375→      <p><strong>${buyerName}</strong> "${dealTitle}" ডিলে বিরোধ দায়ের করেছেন। অ্যাডমিন এখন পর্যালোচনা করবেন।</p>
+   376→   376→      <div class="card card-danger"><p>⚡ বিরোধিত পরিমাণ: <strong>৳${amount.toLocaleString('bn-BD')}</strong></p></div>
+   377→   377→      ${infoCard('ডিলের তথ্য', [
+   378→   378→        infoRow('ডিল', dealTitle),
+   379→   379→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   380→   380→        infoRow('ক্রেতা', buyerName),
+   381→   381→      ])}
+   382→   382→      <p>অ্যাডমিন উভয় পক্ষের কথা শুনে সিদ্ধান্ত নেবেন।</p>
+   383→   383→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+   384→   384→    `),
+   385→   385→  };
+   386→   386→}
+   387→   387→
+   388→   388→export function welcomeEmail(toName: string) {
+   389→   389→  return {
+   390→   390→    subject: `স্বাগতম ${s('email_site_name')} এ! 🎉`,
+   391→   391→    html: wrap(`
+   392→   392→      <h2>🎊 স্বাগতম, ${toName}!</h2>
+   393→   393→      <p class="greeting">${s('email_site_name')} পরিবারে আপনাকে স্বাগত জানাই!</p>
+   394→   394→      <div class="card card-success">
+   395→   395→        <div class="check">✅</div>
+   396→   396→        <div class="msg">আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে</div>
+   397→   397→      </div>
+   398→   398→      <div class="divider"></div>
+   399→   399→      <p style="font-weight:600;color:${textDark};font-size:14px;margin-bottom:12px">আপনি যা পাচ্ছেন:</p>
+   400→   400→      ${infoCard('বিশেষ সুবিধা', [
+   401→   401→        infoRow('🛡️ এসক্রো সুরক্ষা', 'প্রতিটি লেনদেন নিরাপদ'),
+   402→   402→        infoRow('🔒 দ্বৈত সুরক্ষা', 'ক্রেতা ও বিক্রেতা উভয়ের জন্য'),
+   403→   403→        infoRow('⚡ দ্রুত পেআউট', 'ডিল সম্পন্নে দ্রুত পেমেন্ট'),
+   404→   404→        infoRow('💬 লাইভ চ্যাট', 'রিয়েল-টাইম যোগাযোগ'),
+   405→   405→      ])}
+   406→   406→      <p>এখনই আপনার প্রথম ডিল তৈরি করুন!</p>
+   407→   407→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">শুরু করুন →</a></div>
+   408→   408→    `),
+   409→   409→  };
+   410→   410→}
+   411→   411→
+   412→   412→export function loginNotificationEmail(toName: string, loginTime: string, loginIp: string) {
+   413→   413→  return {
+   414→   414→    subject: `🔐 নতুন লগইন সনাক্ত — ${s('email_site_name')}`,
+   415→   415→    html: wrap(`
+   416→   416→      <h2>🔐 নতুন লগইন সনাক্ত</h2>
+   417→   417→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   418→   418→      <p>আপনার অ্যাকাউন্টে একটি নতুন লগইন সনাক্ত করা হয়েছে।</p>
+   419→   419→      ${infoCard('লগইন তথ্য', [
+   420→   420→        infoRow('🕐 সময়', loginTime),
+   421→   421→        infoRow('🌐 আইপি', loginIp),
+   422→   422→      ])}
+   423→   423→      <div class="card card-warn"><p>⚠️ যদি এটি আপনার করা না হয়, তবে দ্রুত পাসওয়ার্ড পরিবর্তন করুন।</p></div>
+   424→   424→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+   425→   425→    `),
+   426→   426→  };
+   427→   427→}
+   428→   428→
+   429→   429→export function payoutRequestedEmail(toName: string, dealTitle: string, amount: number, accountType: string, accountNumber: string, payoutType: 'seller_payout' | 'buyer_refund') {
+   430→   430→  const isSeller = payoutType === 'seller_payout';
+   431→   431→  const title = isSeller ? '💰 পেআউট অনুরোধ' : '🔄 রিফান্ড অনুরোধ';
+   432→   432→  return {
+   433→   433→    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ: "${dealTitle}" — ${s('email_site_name')}`,
+   434→   434→    html: wrap(`
+   435→   435→      <h2>${title}</h2>
+   436→   436→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   437→   437→      <p>"${dealTitle}" ডিলের জন্য আপনার ${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ গ্রহণ করা হয়েছে।</p>
+   438→   438→      ${infoCard(`${isSeller ? 'পেআউট' : 'রিফান্ড'} তথ্য`, [
+   439→   439→        infoRow('ডিল', dealTitle),
+   440→   440→        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+   441→   441→        infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),
+   442→   442→      ])}
+   443→   443→      <div class="card card-warn"><p>⏳ অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে প্রক্রিয়া সম্পন্ন হয়।</p></div>
+   444→   444→    `),
+   445→   445→  };
+   446→   446→}
+   447→   447→
+   448→   448→export function payoutCompletedEmail(toName: string, dealTitle: string, amount: number, accountType: string, accountNumber: string, payoutType: 'seller_payout' | 'buyer_refund') {
+   449→   449→  const isSeller = payoutType === 'seller_payout';
+   450→   450→  return {
+   451→   451→    subject: `${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন: "${dealTitle}" — ${s('email_site_name')}`,
+   452→   452→    html: wrap(`
+   453→   453→      <h2>✅ ${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন</h2>
+   454→   454→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   455→   455→      <p>"${dealTitle}" ডিলের ${isSeller ? 'পেআউট' : 'রিফান্ড'} সফলভাবে সম্পন্ন হয়েছে!</p>
+   456→   456→      <div class="card card-success">
+   457→   457→        <div class="check">💵</div>
+   458→   458→        <div class="msg">৳${amount.toLocaleString('bn-BD')} — আপনার অ্যাকাউন্টে পাঠানো হয়েছে</div>
+   459→   459→      </div>
+   460→   460→      ${infoCard('বিবরণ', [
+   461→   461→        infoRow('ডিল', dealTitle),
+   462→   462→        infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),
+   463→   463→      ])}
+   464→   464→      <p>অ্যাকাউন্টে টাকা পৌঁছাতে কিছুটা সময় লাগতে পারে। সমস্যা হলে আমাদের জানান।</p>
+   465→   465→    `),
+   466→   466→  };
+   467→   467→}
+   468→   468→
+   469→   469→export function disputeResolvedEmail(toName: string, dealTitle: string, action: 'complete' | 'refund_buyer', adminNote?: string) {
+   470→   470→  const isComplete = action === 'complete';
+   471→   471→  return {
+   472→   472→    subject: `⚖️ বিরোধ নিষ্পত্তি: "${dealTitle}" — ${s('email_site_name')}`,
+   473→   473→    html: wrap(`
+   474→   474→      <h2>⚖️ বিরোধ নিষ্পত্তি</h2>
+   475→   475→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   476→   476→      <p>"${dealTitle}" ডিলে দায়ের করা বিরোধটি অ্যাডমিন কর্তৃক নিষ্পত্তি করা হয়েছে।</p>
+   477→   477→      ${isComplete
+   478→   478→        ? `<div class="card card-success"><div class="check">✅</div><div class="msg">সিদ্ধান্ত: ডিল কমপ্লিট — বিক্রেতাকে পেমেন্ট দেওয়া হবে</div></div>`
+   479→   479→        : `<div class="card card-warn"><p>🔄 সিদ্ধান্ত: <strong>ক্রেতাকে রিফান্ড</strong> — ক্রেতার টাকা ফেরত দেওয়া হবে</p></div>`
+   480→   480→      }
+   481→   481→      ${adminNote ? `<div class="card card-green"><div class="card-icon">📝 অ্যাডমিন নোট</div><div class="card-row" style="display:block"><span class="val" style="font-weight:400;font-size:13.5px">${adminNote}</span></div></div>` : ''}
+   482→   482→      <p>বিরোধ সম্পর্কে কোনো প্রশ্ন থাকলে ড্যাশবোর্ড থেকে যোগাযোগ করুন।</p>
+   483→   483→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ড্যাশবোর্ডে যান →</a></div>
+   484→   484→    `),
+   485→   485→  };
+   486→   486→}
+   487→   487→
+   488→   488→export function adminNewDealEmail(adminName: string, dealTitle: string, amount: string, creatorName: string, buyerName: string, sellerName: string) {
+   489→   489→  return {
+   490→   490→    subject: `🆕 নতুন ডিল: "${dealTitle}" — অ্যাডমিন`,
+   491→   491→    html: wrap(`
+   492→   492→      <h2>🆕 নতুন ডিল তৈরি হয়েছে</h2>
+   493→   493→      <p class="greeting">হ্যালো <strong>${adminName}</strong>,</p>
+   494→   494→      <p>প্ল্যাটফর্মে একটি নতুন ডিল তৈরি হয়েছে।</p>
+   495→   495→      ${infoCard('ডিলের বিবরণ', [
+   496→   496→        infoRow('ডিল', dealTitle),
+   497→   497→        infoRow('পরিমাণ', amount),
+   498→   498→        infoRow('তৈরিকারক', creatorName),
+   499→   499→        infoRow('ক্রেতা', buyerName),
+   500→   500→        infoRow('বিক্রেতা', sellerName || 'অপেক্ষমান'),
+   501→   501→      ])}
+   502→   502→      <p>ডিলটি পর্যালোচনা করুন এবং প্রয়োজনীয় ব্যবস্থা গ্রহণ করুন।</p>
+   503→   503→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
+   504→   504→    `),
+   505→   505→  };
+   506→   506→}
+   507→   507→
+   508→   508→export function adminDisputeEmail(adminName: string, dealTitle: string, amount: string, buyerName: string, sellerName: string) {
+   509→   509→  return {
+   510→   510→    subject: `🚨 নতুন বিরোধ: "${dealTitle}" — অ্যাডমিন`,
+   511→   511→    html: wrap(`
+   512→   512→      <h2>🚨 নতুন বিরোধ দায়ের</h2>
+   513→   513→      <p class="greeting">হ্যালো <strong>${adminName}</strong>,</p>
+   514→   514→      <p>প্ল্যাটফর্মে একটি নতুন বিরোধ দায়ের করা হয়েছে। <strong>দ্রুত পর্যালোচনা প্রয়োজন।</strong></p>
+   515→   515→      <div class="card card-danger"><p>⚡ ডিলের পরিমাণ: <strong>${amount}</strong></p></div>
+   516→   516→      ${infoCard('দলের তথ্য', [
+   517→   517→        infoRow('ডিল', dealTitle),
+   518→   518→        infoRow('ক্রেতা', buyerName),
+   519→   519→        infoRow('বিক্রেতা', sellerName),
+   520→   520→      ])}
+   521→   521→      <div class="card card-warn"><p>⏰ দ্রুত ব্যবস্থা নিন — উভয় পক্ষ অপেক্ষমান আছে।</p></div>
+   522→   522→      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">অ্যাডমিন প্যানেলে যান →</a></div>
+   523→   523→    `),
+   524→   524→  };
+   525→   525→}
+   526→   526→
+   527→   527→function otpDigitsHtml(otp: string): string {
+   528→   528→  const digits = otp.split('');
+   529→   529→  return `<div class="otp-digits">${digits.map((d) => `<span>${d}</span>`).join('')}</div>`;
+   530→   530→}
+   531→   531→
+   532→   532→export function passwordResetOtpEmail(toName: string, otp: string) {
+   533→   533→  return {
+   534→   534→    subject: `🔑 পাসওয়ার্ড রিসেট কোড — ${s('email_site_name')}`,
+   535→   535→    html: wrap(`
+   536→   536→      <h2>🔑 পাসওয়ার্ড রিসেট</h2>
+   537→   537→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   538→   538→      <p>আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তনের জন্য একটি ভেরিফিকেশন কোড পাঠানো হয়েছে।</p>
+   539→   539→      <div class="otp-card">
+   540→   540→        <div class="otp-label">✦ ভেরিফিকেশন কোড</div>
+   541→   541→        ${otpDigitsHtml(otp)}
+   542→   542→        <div class="otp-hint">⏱️ কোডটি ৫ মিনিটের জন্য বৈধ</div>
+   543→   543→      </div>
+   544→   544→      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>। ${s('email_site_name')} কখনো আপনাকে কোড জানতে চাইবে না।</p></div>
+   545→   545→      <p>আপনি পাসওয়ার্ড রিসেট অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+   546→   546→    `),
+   547→   547→  };
+   548→   548→}
+   549→   549→
+   550→   550→export function emailVerificationOtpEmail(toName: string, otp: string) {
+   551→   551→  return {
+   552→   552→    subject: `✉️ ইমেইল ভেরিফিকেশন কোড — ${s('email_site_name')}`,
+   553→   553→    html: wrap(`
+   554→   554→      <h2>✉️ ইমেইল ভেরিফিকেশন</h2>
+   555→   555→      <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
+   556→   556→      <p>আপনার <strong>${s('email_site_name')}</strong> অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
+   557→   557→      <div class="otp-card">
+   558→   558→        <div class="otp-label">✦ ভেরিফিকেশন কোড</div>
+   559→   559→        ${otpDigitsHtml(otp)}
+   560→   560→        <div class="otp-hint">⏱️ কোডটি ১০ মিনিটের জন্য বৈধ</div>
+   561→   561→      </div>
+   562→   562→      <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>।</p></div>
+   563→   563→      <p>আপনি অ্যাকাউন্ট তৈরি করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+   564→   564→    `),
+   565→   565→  };
+   566→   566→}
+   567→   567→
+   568→   568→/* ═══════════════════════════════════════════════════════════════
+   569→   569→   SEND HELPERS
+   570→   570→   ═══════════════════════════════════════════════════════════════ */
+   571→   571→
+   572→   572→type EmailPayload = { subject: string; html: string };
+   573→   573→
+   574→   574→export async function sendEmail(to: string, payload: EmailPayload): Promise<void> {
+   575→   575→  const settings = await loadEmailSettings(); // refresh cache if stale
+   576→   576→  const transporter = getTransporter(settings);
+   577→   577→  if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে বা অ্যাডমিন প্যানেলে যোগ করুন।');
+   578→   578→
+   579→   579→  await transporter.sendMail({
+   580→   580→    from: `${s('email_from_name')} <${getFromAddress(settings)}>`,
+   581→   581→    to,
+   582→   582→    subject: payload.subject,
+   583→   583→    html: payload.html,
+   584→   584→  });
+   585→   585→  console.log(`[EMAIL SENT] → ${to}: ${payload.subject}`);
+   586→   586→}
+   587→   587→
+   588→   588→export function fireEmails(emails: Array<{ to: string; payload: EmailPayload }>) {
+   589→   589→  for (const e of emails) {
+   590→   590→    sendEmail(e.to, e.payload).catch((err) => {
+   591→   591→      console.error(`[EMAIL ERROR] → ${e.to}:`, err);
+   592→   592→    });
+   593→   593→  }
+   594→   594→}

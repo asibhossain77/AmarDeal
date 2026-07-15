@@ -93,8 +93,8 @@ const brandGlow   = '#BEF264';
 const brandLabel  = '#4D7C0F';
 const brandRowLbl = '#65A30D';
 const brandSuccTxt= '#3F6212';
-const textDark    = '#1a1a2e';
-const textMuted   = '#64748b';
+const textDark    = '#0f172a';
+const textMuted   = '#475569';
 const borderColor = '#e2e8f0';
 
 /* Reusable style blocks */
@@ -105,88 +105,137 @@ const base = `
   a{text-decoration:none;color:${brandLime}}
 
   /* ── Outer wrapper ── */
-  .email-wrapper{max-width:540px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(132,204,22,0.08),0 1px 3px rgba(0,0,0,0.04)}
+  .email-wrapper{max-width:560px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.08),0 4px 16px rgba(132,204,22,0.06)}
 
-  /* ── Header (no logo, name only) ── */
-  .header-bg{background:linear-gradient(145deg,#84CC16 0%,#65A30D 50%,#4D7C0F 100%);padding:44px 32px 38px;text-align:center;position:relative;overflow:hidden}
-  .header-bg::before{content:'';position:absolute;top:-50%;right:-25%;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%);border-radius:50%}
-  .header-bg::after{content:'';position:absolute;bottom:-35%;left:-15%;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);border-radius:50%}
+  /* ── Header — premium gradient with mesh pattern ── */
+  .header-bg{background:linear-gradient(135deg,#a3e635 0%,#84CC16 25%,#65A30D 60%,#4D7C0F 100%);padding:48px 36px 42px;text-align:center;position:relative;overflow:hidden}
+  .header-bg::before{content:'';position:absolute;top:-60%;right:-20%;width:320px;height:320px;background:radial-gradient(circle,rgba(255,255,255,0.18) 0%,transparent 65%);border-radius:50%}
+  .header-bg::after{content:'';position:absolute;bottom:-40%;left:-10%;width:240px;height:240px;background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 65%);border-radius:50%}
   .header-inner{position:relative;z-index:1}
-  .header-title{color:#ffffff;font-size:28px;font-weight:900;letter-spacing:-0.5px;margin:0;line-height:1.2}
-  .header-sub{color:rgba(255,255,255,0.85);font-size:13px;margin-top:8px;font-weight:400;letter-spacing:0.3px}
-  .header-border{height:4px;background:linear-gradient(to right,${brandGlow},${brandLime},${brandGlow})}
+  .header-title{color:#ffffff;font-size:30px;font-weight:900;letter-spacing:-0.6px;margin:0;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,0.15)}
+  .header-sub{color:rgba(255,255,255,0.9);font-size:13.5px;margin-top:10px;font-weight:500;letter-spacing:0.4px}
+  .header-border{height:4px;background:linear-gradient(90deg,${brandGlow},${brandLime} 30%,#ffffff 50%,${brandLime} 70%,${brandGlow})}
 
   /* ── Body ── */
-  .body{padding:32px 30px 28px}
-  .body h2{font-size:20px;font-weight:700;color:${textDark};margin-bottom:6px;line-height:1.3}
-  .body .greeting{font-size:15px;color:${textDark};margin-bottom:16px;line-height:1.65}
-  .body .greeting strong{font-weight:600}
-  .body p{font-size:14px;color:${textMuted};line-height:1.75;margin-bottom:14px}
+  .body{padding:36px 34px 30px}
+  .body h2{font-size:21px;font-weight:800;color:${textDark};margin-bottom:8px;line-height:1.35;letter-spacing:-0.2px}
+  .body .greeting{font-size:15.5px;color:${textDark};margin-bottom:18px;line-height:1.7}
+  .body .greeting strong{font-weight:700}
+  .body p{font-size:14.5px;color:${textMuted};line-height:1.8;margin-bottom:14px}
 
-  /* Info card — lime green */
-  .card{border-radius:14px;padding:18px 22px;margin:18px 0}
-  .card-green{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;box-shadow:0 1px 4px rgba(132,204,22,0.06)}
-  .card-green .card-icon{font-size:12.5px;margin-bottom:10px;color:${brandLabel};font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
-  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13.5px;border-bottom:1px solid rgba(132,204,22,0.1)}
+  /* Info card — lime green with premium depth */
+  .card{border-radius:16px;padding:20px 24px;margin:20px 0}
+  .card-green{background:linear-gradient(160deg,#F7FEE7 0%,#ECFCCB 60%,#D9F99D 100%);border:1px solid #D9F99D;border-left:4px solid ${brandLime};box-shadow:0 2px 8px rgba(132,204,22,0.08),inset 0 1px 0 rgba(255,255,255,0.8)}
+  .card-green .card-icon{font-size:12px;margin-bottom:12px;color:${brandLabel};font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13.5px;border-bottom:1px solid rgba(132,204,22,0.12)}
   .card-green .card-row:last-child{border-bottom:none}
-  .card-green .card-row .lbl{color:${brandRowLbl};font-weight:500}
-  .card-green .card-row .val{color:${brandDark};font-weight:700;font-size:14px}
+  .card-green .card-row .lbl{color:${brandRowLbl};font-weight:600}
+  .card-green .card-row .val{color:${brandDark};font-weight:800;font-size:14.5px}
 
-  /* Success card */
-  .card-success{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;text-align:center;padding:24px 20px;box-shadow:0 2px 8px rgba(132,204,22,0.08)}
-  .card-success .check{font-size:32px;margin-bottom:8px}
-  .card-success .msg{font-size:15px;color:${brandSuccTxt};font-weight:600;line-height:1.5}
+  /* Success card — elevated feel */
+  .card-success{background:linear-gradient(160deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;text-align:center;padding:28px 24px;border-radius:18px;box-shadow:0 4px 20px rgba(132,204,22,0.12),inset 0 1px 0 rgba(255,255,255,0.8)}
+  .card-success .check{font-size:36px;margin-bottom:10px}
+  .card-success .msg{font-size:16px;color:${brandSuccTxt};font-weight:700;line-height:1.5}
 
   /* Warning card */
-  .card-warn{background:linear-gradient(145deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:14px;padding:16px 22px;margin:18px 0}
-  .card-warn p{margin:0;font-size:13.5px;color:#92400e;line-height:1.6}
-  .card-warn p strong{font-weight:600}
+  .card-warn{background:linear-gradient(160deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:16px;padding:16px 22px;margin:18px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)}
+  .card-warn p{margin:0;font-size:13.5px;color:#92400e;line-height:1.65}
+  .card-warn p strong{font-weight:700}
 
   /* Danger card */
-  .card-danger{background:linear-gradient(145deg,#fef2f2 0%,#fecaca 100%);border:1px solid #fca5a5;border-radius:14px;padding:16px 22px;margin:18px 0}
-  .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.6}
+  .card-danger{background:linear-gradient(160deg,#fef2f2 0%,#fecaca 100%);border:1px solid #fca5a5;border-left:4px solid #ef4444;border-radius:16px;padding:16px 22px;margin:18px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.8)}
+  .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.65}
 
-  /* OTP card — enhanced with individual digit boxes */
-  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#ECFCCB 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:20px;padding:36px 32px 28px;text-align:center;margin:24px auto;max-width:400px;position:relative;box-shadow:0 6px 24px rgba(132,204,22,0.10)}
-  .otp-card::before{content:'';position:absolute;top:-1px;left:15%;right:15%;height:3px;background:linear-gradient(to right,transparent,${brandLime},transparent);border-radius:2px}
-  .otp-label{font-size:12px;font-weight:700;color:${brandLabel};letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
-  .otp-digits{display:inline-flex;gap:10px;direction:ltr}
-  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:56px;height:68px;background:#ffffff;border:2.5px solid ${brandGlow};border-radius:12px;font-size:34px;font-weight:900;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 3px 10px rgba(132,204,22,0.10)}
-  .otp-hint{font-size:12px;color:#6b7280;margin-top:16px;line-height:1.5}
+  /* ══════════════════════════════════════════
+     OTP CARD — Bold Premium Design
+     ══════════════════════════════════════════ */
+  .otp-card{
+    background:linear-gradient(165deg,${brandDeep} 0%,#1a3a05 25%,${brandDark} 50%,#2d5016 75%,#3f6212 100%);
+    border-radius:24px;
+    padding:42px 36px 32px;
+    text-align:center;
+    margin:28px auto;
+    max-width:420px;
+    position:relative;
+    box-shadow:0 12px 40px rgba(54,83,20,0.25),0 4px 12px rgba(0,0,0,0.1),inset 0 1px 0 rgba(255,255,255,0.1);
+    overflow:hidden
+  }
+  .otp-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:4px;
+    background:linear-gradient(90deg,transparent,${brandGlow},${brandLime},${brandGlow},transparent)
+  }
+  .otp-card::after{
+    content:'';position:absolute;bottom:-50%;right:-30%;width:300px;height:300px;
+    background:radial-gradient(circle,rgba(132,204,22,0.15) 0%,transparent 65%);border-radius:50%
+  }
+  .otp-label{
+    position:relative;z-index:1;
+    font-size:11.5px;font-weight:800;
+    color:${brandGlow};
+    letter-spacing:3px;
+    text-transform:uppercase;
+    margin-bottom:24px;
+    text-shadow:0 0 20px rgba(190,242,100,0.3)
+  }
+  .otp-digits{
+    position:relative;z-index:1;
+    display:inline-flex;gap:12px;direction:ltr
+  }
+  .otp-digits span{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:60px;height:74px;
+    background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
+    border:2px solid rgba(190,242,100,0.5);
+    border-bottom:4px solid ${brandLime};
+    border-radius:14px;
+    font-size:38px;font-weight:900;
+    color:${brandDeep};
+    font-family:'Courier New','SF Mono',monospace;
+    box-shadow:0 4px 16px rgba(0,0,0,0.15),0 1px 3px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,1);
+    letter-spacing:0
+  }
+  .otp-hint{
+    position:relative;z-index:1;
+    font-size:12.5px;color:rgba(190,242,100,0.85);
+    margin-top:20px;line-height:1.5;font-weight:500
+  }
 
   /* Legacy OTP fallback (plain text code) */
-  .otp-code{font-size:36px;font-weight:900;letter-spacing:10px;color:${brandDark};font-family:'Courier New',monospace;line-height:1.2}
+  .otp-code{font-size:38px;font-weight:900;letter-spacing:12px;color:${brandDark};font-family:'Courier New',monospace;line-height:1.2}
 
-  /* CTA button */
-  .btn-wrap{text-align:center;margin:24px 0 10px}
-  .btn{display:inline-block;background:linear-gradient(145deg,#84CC16 0%,#65A30D 100%);color:#ffffff !important;padding:14px 40px;border-radius:14px;font-weight:600;font-size:15px;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(132,204,22,0.3),0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s}
-  .btn:hover{box-shadow:0 6px 24px rgba(132,204,22,0.4);transform:translateY(-1px)}
+  /* CTA button — elevated glass effect */
+  .btn-wrap{text-align:center;margin:28px 0 12px}
+  .btn{display:inline-block;background:linear-gradient(145deg,#a3e635 0%,#84CC16 40%,#65A30D 100%);color:#ffffff !important;padding:15px 44px;border-radius:14px;font-weight:700;font-size:15px;letter-spacing:0.3px;box-shadow:0 6px 24px rgba(132,204,22,0.35),0 2px 4px rgba(0,0,0,0.06),inset 0 1px 0 rgba(255,255,255,0.25);transition:all 0.2s;border:1px solid rgba(255,255,255,0.15)}
+  .btn:hover{box-shadow:0 8px 32px rgba(132,204,22,0.45);transform:translateY(-1px)}
 
-  /* Divider */
-  .divider{height:1px;background:linear-gradient(to right,transparent,${borderColor},transparent);margin:22px 0}
+  /* Divider — subtle gradient */
+  .divider{height:1px;background:linear-gradient(to right,transparent,${borderColor} 30%,#cbd5e1 50%,${borderColor} 70%,transparent);margin:24px 0}
 
-  /* Footer */
-  .footer{background:linear-gradient(to bottom,#f8fafc,#f1f5f9);border-top:1px solid ${borderColor};padding:28px 30px;text-align:center}
-  .footer-brand{font-size:16px;font-weight:800;color:${brandDark};margin-bottom:3px;letter-spacing:-0.2px}
-  .footer-tagline{font-size:12px;color:${textMuted};margin-bottom:14px}
-  .footer-links{display:inline-flex;gap:22px;margin-bottom:16px}
-  .footer-links a{font-size:12px;color:#94a3b8;text-decoration:none;font-weight:500}
-  .footer-links a:hover{color:${brandLime}}
-  .footer-copy{font-size:11px;color:#cbd5e1;line-height:1.5}
+  /* Footer — refined */
+  .footer{background:linear-gradient(to bottom,#f8fafc,#f1f5f9);border-top:1px solid ${borderColor};padding:32px 34px;text-align:center}
+  .footer-brand{font-size:17px;font-weight:900;color:${brandDark};margin-bottom:4px;letter-spacing:-0.3px}
+  .footer-tagline{font-size:12.5px;color:${textMuted};margin-bottom:16px;font-weight:500}
+  .footer-links{display:inline-flex;gap:24px;margin-bottom:18px}
+  .footer-links a{font-size:12.5px;color:#94a3b8;text-decoration:none;font-weight:600;border-bottom:1px solid transparent;transition:border-color 0.2s}
+  .footer-links a:hover{color:${brandLime};border-bottom-color:${brandLime}}
+  .footer-copy{font-size:11px;color:#cbd5e1;line-height:1.6}
   .footer-copy a{color:#94a3b8}
-  .footer-social{display:inline-flex;gap:12px;margin-top:14px}
-  .footer-social a{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(132,204,22,0.08);border-radius:8px;font-size:14px;text-decoration:none;transition:background 0.2s}
-  .footer-social a:hover{background:rgba(132,204,22,0.15)}
+  .footer-social{display:inline-flex;gap:12px;margin-top:16px}
+  .footer-social a{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(132,204,22,0.08);border-radius:10px;font-size:14px;text-decoration:none;border:1px solid rgba(132,204,22,0.06)}
+  .footer-social a:hover{background:rgba(132,204,22,0.16)}
 
   @media only screen and (max-width:520px){
     .email-wrapper{border-radius:0;margin:0}
-    .body{padding:24px 20px 20px}
-    .header-bg{padding:32px 20px 28px}
-    .otp-digits span{width:46px;height:56px;font-size:26px;gap:8px}
-    .otp-card{max-width:320px;padding:28px 20px 22px}
+    .body{padding:28px 22px 22px}
+    .header-bg{padding:36px 22px 32px}
+    .header-title{font-size:26px}
+    .otp-digits span{width:48px;height:60px;font-size:30px;border-radius:12px}
+    .otp-digits{gap:8px}
+    .otp-card{max-width:340px;padding:32px 24px 26px;border-radius:20px}
     .otp-code{font-size:30px;letter-spacing:7px}
-    .btn{padding:12px 28px;font-size:14px}
-    .card-green .card-row{flex-direction:column;align-items:flex-start;gap:2px}
+    .btn{padding:13px 30px;font-size:14px}
+    .card-green .card-row{flex-direction:column;align-items:flex-start;gap:3px}
+    .footer{padding:24px 22px}
   }
 `;
 
@@ -537,9 +586,9 @@ export function passwordResetOtpEmail(toName: string, otp: string) {
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তনের জন্য একটি ভেরিফিকেশন কোড পাঠানো হয়েছে।</p>
       <div class="otp-card">
-        <div class="otp-label">✦ ভেরিফিকেশন কোড</div>
+        <div class="otp-label">✦ VERIFICATION CODE</div>
         ${otpDigitsHtml(otp)}
-        <div class="otp-hint">⏱️ কোডটি ৫ মিনিটের জন্য বৈধ</div>
+        <div class="otp-hint">⏱ কোডটি ৫ মিনিটের জন্য বৈধ</div>
       </div>
       <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>। ${s('email_site_name')} কখনো আপনাকে কোড জানতে চাইবে না।</p></div>
       <p>আপনি পাসওয়ার্ড রিসেট অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
@@ -555,9 +604,9 @@ export function emailVerificationOtpEmail(toName: string, otp: string) {
       <p class="greeting">হ্যালো <strong>${toName}</strong>,</p>
       <p>আপনার <strong>${s('email_site_name')}</strong> অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
       <div class="otp-card">
-        <div class="otp-label">✦ ভেরিফিকেশন কোড</div>
+        <div class="otp-label">✦ VERIFICATION CODE</div>
         ${otpDigitsHtml(otp)}
-        <div class="otp-hint">⏱️ কোডটি ১০ মিনিটের জন্য বৈধ</div>
+        <div class="otp-hint">⏱ কোডটি ১০ মিনিটের জন্য বৈধ</div>
       </div>
       <div class="card card-warn"><p>🔒 কাউকে এই কোড <strong>শেয়ার করবেন না</strong>।</p></div>
       <p>আপনি অ্যাকাউন্ট তৈরি করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
