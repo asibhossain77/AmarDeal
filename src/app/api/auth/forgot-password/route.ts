@@ -13,11 +13,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await db.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    const normalized = email.trim().toLowerCase();
+    const user = await db.user.findUnique({ where: { email: normalized } });
 
-    // Always return success to prevent email enumeration
     if (!user) {
-      return NextResponse.json({ success: true, message: 'ইমেইল পাঠানো হয়েছে' });
+      return NextResponse.json(
+        { error: 'এই ইমেইলে কোনো অ্যাকাউন্ট পাওয়া যায়নি' },
+        { status: 404 }
+      );
+    }
+
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { error: 'আপনার ইমেইল এখনো ভেরিফাইড হয়নি। প্রথমে ইমেইল ভেরিফাই করুন।' },
+        { status: 403 }
+      );
     }
 
     // Generate 6-digit OTP
