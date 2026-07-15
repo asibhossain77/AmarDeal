@@ -365,6 +365,24 @@ export function adminDisputeEmail(adminName: string, dealTitle: string, amount: 
   };
 }
 
+export function passwordResetOtpEmail(toName: string, otp: string) {
+  return {
+    subject: `পাসওয়ার্ড রিসেট কোড — ${SITE_NAME}`,
+    html: wrapHtml(`
+      <h2>পাসওয়ার্ড রিসেট 🔑</h2>
+      <p>হ্যালো <strong>${toName}</strong>,</p>
+      <p>আপনার অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তনের জন্য একটি ভেরিফিকেশন কোড পাঠানো হয়েছে।</p>
+      <div class="info-box" style="text-align: center; padding: 24px;">
+        <p style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #16a34a;">${otp}</p>
+      </div>
+      <div class="warning-box">
+        <p>⏳ এই কোডটি <strong>৫ মিনিট</strong>ের জন্য বৈধ। কাউকে এই কোড শেয়ার করবেন না।</p>
+      </div>
+      <p>আপনি পাসওয়ার্ড রিসেট অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+    `),
+  };
+}
+
 /* ── Send helper ── */
 
 type EmailPayload = { subject: string; html: string };

@@ -14,9 +14,11 @@ model User {
   phone     String   @unique
   email     String   @unique
   password  String
-  isSeller  Boolean  @default(false)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  isSeller        Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  resetToken      String?
+  resetTokenExpiry DateTime?
+  createdAt       DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   dealsAsBuyer  Deal[] @relation("DealBuyer")
