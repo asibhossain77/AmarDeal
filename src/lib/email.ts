@@ -31,13 +31,16 @@ const FROM_NAME = 'আমারডিল.বাংলা';
    MODERN EMAIL TEMPLATE SYSTEM — আমারডিল.বাংলা
    ═══════════════════════════════════════════════════════════════ */
 
-/* Website-matched palette */
-const brandGreen  = '#059669';
-const brandDark   = '#064e3b';
-const brandDeep   = '#022c22';
-const brandLight  = '#ecfdf5';
-const brandMint   = '#d1fae5';
-const brandGlow   = '#a7f3d0';
+/* Website-matched palette — Parrot/Lime Green #84CC16 */
+const brandLime   = '#84CC16';
+const brandDark   = '#365314';
+const brandDeep   = '#1a2e05';
+const brandLight  = '#F7FEE7';
+const brandMint   = '#ECFCCB';
+const brandGlow   = '#BEF264';
+const brandLabel  = '#4D7C0F';
+const brandRowLbl = '#65A30D';
+const brandSuccTxt= '#3F6212';
 const textDark    = '#1a1a2e';
 const textMuted   = '#64748b';
 const borderColor = '#e2e8f0';
@@ -47,21 +50,19 @@ const reset = `*{margin:0;padding:0;box-sizing:border-box}body{margin:0;padding:
 const base = `
   ${reset}
   img{border:none;outline:none;text-decoration:none}
-  a{text-decoration:none;color:${brandGreen}}
+  a{text-decoration:none;color:${brandLime}}
 
   /* ── Outer wrapper ── */
-  .email-wrapper{max-width:540px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(5,150,105,0.08),0 1px 3px rgba(0,0,0,0.04)}
+  .email-wrapper{max-width:540px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(132,204,22,0.08),0 1px 3px rgba(0,0,0,0.04)}
 
-  /* ── Header ── */
-  .header-bg{background:linear-gradient(145deg,#059669 0%,#047857 40%,#065f46 100%);padding:40px 32px 34px;text-align:center;position:relative;overflow:hidden}
-  .header-bg::before{content:'';position:absolute;top:-60%;right:-30%;width:260px;height:260px;background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);border-radius:50%}
-  .header-bg::after{content:'';position:absolute;bottom:-40%;left:-20%;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.07) 0%,transparent 70%);border-radius:50%}
+  /* ── Header (no logo, name only) ── */
+  .header-bg{background:linear-gradient(145deg,#84CC16 0%,#65A30D 50%,#4D7C0F 100%);padding:44px 32px 38px;text-align:center;position:relative;overflow:hidden}
+  .header-bg::before{content:'';position:absolute;top:-50%;right:-25%;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 70%);border-radius:50%}
+  .header-bg::after{content:'';position:absolute;bottom:-35%;left:-15%;width:220px;height:220px;background:radial-gradient(circle,rgba(255,255,255,0.1) 0%,transparent 70%);border-radius:50%}
   .header-inner{position:relative;z-index:1}
-  .header-badge{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.25);border-radius:16px;margin-bottom:14px;backdrop-filter:blur(6px)}
-  .header-badge span{font-size:24px}
-  .header-title{color:#ffffff;font-size:24px;font-weight:800;letter-spacing:-0.3px;margin:0;line-height:1.3}
-  .header-sub{color:rgba(255,255,255,0.8);font-size:13px;margin-top:6px;font-weight:400;letter-spacing:0.2px}
-  .header-border{height:4px;background:linear-gradient(to right,${brandGlow},${brandGreen},${brandGlow})}
+  .header-title{color:#ffffff;font-size:28px;font-weight:900;letter-spacing:-0.5px;margin:0;line-height:1.2}
+  .header-sub{color:rgba(255,255,255,0.85);font-size:13px;margin-top:8px;font-weight:400;letter-spacing:0.3px}
+  .header-border{height:4px;background:linear-gradient(to right,${brandGlow},${brandLime},${brandGlow})}
 
   /* ── Body ── */
   .body{padding:32px 30px 28px}
@@ -70,19 +71,19 @@ const base = `
   .body .greeting strong{font-weight:600}
   .body p{font-size:14px;color:${textMuted};line-height:1.75;margin-bottom:14px}
 
-  /* Info card — green */
+  /* Info card — lime green */
   .card{border-radius:14px;padding:18px 22px;margin:18px 0}
-  .card-green{background:linear-gradient(145deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #bbf7d0;box-shadow:0 1px 4px rgba(5,150,105,0.06)}
-  .card-green .card-icon{font-size:12.5px;margin-bottom:10px;color:#16a34a;font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
-  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13.5px;border-bottom:1px solid rgba(5,150,105,0.08)}
+  .card-green{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;box-shadow:0 1px 4px rgba(132,204,22,0.06)}
+  .card-green .card-icon{font-size:12.5px;margin-bottom:10px;color:${brandLabel};font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
+  .card-green .card-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13.5px;border-bottom:1px solid rgba(132,204,22,0.1)}
   .card-green .card-row:last-child{border-bottom:none}
-  .card-green .card-row .lbl{color:#15803d;font-weight:500}
+  .card-green .card-row .lbl{color:${brandRowLbl};font-weight:500}
   .card-green .card-row .val{color:${brandDark};font-weight:700;font-size:14px}
 
   /* Success card */
-  .card-success{background:linear-gradient(145deg,#f0fdf4 0%,#d1fae5 100%);border:1px solid #a7f3d0;text-align:center;padding:24px 20px;box-shadow:0 2px 8px rgba(5,150,105,0.08)}
+  .card-success{background:linear-gradient(145deg,#F7FEE7 0%,#ECFCCB 100%);border:1px solid #D9F99D;text-align:center;padding:24px 20px;box-shadow:0 2px 8px rgba(132,204,22,0.08)}
   .card-success .check{font-size:32px;margin-bottom:8px}
-  .card-success .msg{font-size:15px;color:#166534;font-weight:600;line-height:1.5}
+  .card-success .msg{font-size:15px;color:${brandSuccTxt};font-weight:600;line-height:1.5}
 
   /* Warning card */
   .card-warn{background:linear-gradient(145deg,#fffbeb 0%,#fef3c7 100%);border:1px solid #fde68a;border-radius:14px;padding:16px 22px;margin:18px 0}
@@ -94,11 +95,11 @@ const base = `
   .card-danger p{margin:0;font-size:13.5px;color:#991b1b;line-height:1.6}
 
   /* OTP card — enhanced with individual digit boxes */
-  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#f0fdf4 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:18px;padding:30px 24px 24px;text-align:center;margin:22px auto;max-width:300px;position:relative;box-shadow:0 4px 16px rgba(5,150,105,0.08)}
-  .otp-card::before{content:'';position:absolute;top:-1px;left:20%;right:20%;height:2px;background:linear-gradient(to right,transparent,${brandGreen},transparent);border-radius:1px}
-  .otp-label{font-size:11px;font-weight:700;color:#16a34a;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+  .otp-card{background:linear-gradient(145deg,${brandLight} 0%,#ECFCCB 50%,${brandLight} 100%);border:2px solid ${brandGlow};border-radius:18px;padding:30px 24px 24px;text-align:center;margin:22px auto;max-width:300px;position:relative;box-shadow:0 4px 16px rgba(132,204,22,0.08)}
+  .otp-card::before{content:'';position:absolute;top:-1px;left:20%;right:20%;height:2px;background:linear-gradient(to right,transparent,${brandLime},transparent);border-radius:1px}
+  .otp-label{font-size:11px;font-weight:700;color:${brandLabel};letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
   .otp-digits{display:inline-flex;gap:8px;direction:ltr}
-  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:42px;height:50px;background:#ffffff;border:2px solid ${brandGlow};border-radius:10px;font-size:24px;font-weight:800;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 2px 6px rgba(5,150,105,0.08)}
+  .otp-digits span{display:inline-flex;align-items:center;justify-content:center;width:42px;height:50px;background:#ffffff;border:2px solid ${brandGlow};border-radius:10px;font-size:24px;font-weight:800;color:${brandDark};font-family:'Courier New',monospace;box-shadow:0 2px 6px rgba(132,204,22,0.08)}
   .otp-hint{font-size:11.5px;color:#6b7280;margin-top:14px;line-height:1.4}
 
   /* Legacy OTP fallback (plain text code) */
@@ -106,8 +107,8 @@ const base = `
 
   /* CTA button */
   .btn-wrap{text-align:center;margin:24px 0 10px}
-  .btn{display:inline-block;background:linear-gradient(145deg,#059669 0%,#047857 100%);color:#ffffff !important;padding:14px 40px;border-radius:14px;font-weight:600;font-size:15px;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(5,150,105,0.3),0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s}
-  .btn:hover{box-shadow:0 6px 24px rgba(5,150,105,0.4);transform:translateY(-1px)}
+  .btn{display:inline-block;background:linear-gradient(145deg,#84CC16 0%,#65A30D 100%);color:#ffffff !important;padding:14px 40px;border-radius:14px;font-weight:600;font-size:15px;letter-spacing:0.2px;box-shadow:0 4px 16px rgba(132,204,22,0.3),0 1px 3px rgba(0,0,0,0.06);transition:all 0.2s}
+  .btn:hover{box-shadow:0 6px 24px rgba(132,204,22,0.4);transform:translateY(-1px)}
 
   /* Divider */
   .divider{height:1px;background:linear-gradient(to right,transparent,${borderColor},transparent);margin:22px 0}
@@ -118,12 +119,12 @@ const base = `
   .footer-tagline{font-size:12px;color:${textMuted};margin-bottom:14px}
   .footer-links{display:inline-flex;gap:22px;margin-bottom:16px}
   .footer-links a{font-size:12px;color:#94a3b8;text-decoration:none;font-weight:500}
-  .footer-links a:hover{color:${brandGreen}}
+  .footer-links a:hover{color:${brandLime}}
   .footer-copy{font-size:11px;color:#cbd5e1;line-height:1.5}
   .footer-copy a{color:#94a3b8}
   .footer-social{display:inline-flex;gap:12px;margin-top:14px}
-  .footer-social a{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(5,150,105,0.08);border-radius:8px;font-size:14px;text-decoration:none;transition:background 0.2s}
-  .footer-social a:hover{background:rgba(5,150,105,0.15)}
+  .footer-social a{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(132,204,22,0.08);border-radius:8px;font-size:14px;text-decoration:none;transition:background 0.2s}
+  .footer-social a:hover{background:rgba(132,204,22,0.15)}
 
   @media only screen and (max-width:520px){
     .email-wrapper{border-radius:0;margin:0}
@@ -143,7 +144,6 @@ function wrap(bodyHtml: string): string {
     <div class="email-wrapper">
       <div class="header-bg">
         <div class="header-inner">
-          <div class="header-badge"><span>🛡️</span></div>
           <div class="header-title">${SITE_NAME}</div>
           <div class="header-sub">নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম</div>
         </div>
