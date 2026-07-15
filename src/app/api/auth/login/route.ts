@@ -28,6 +28,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Block unverified users
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        {
+          error: 'আপনার ইমেইল এখনো ভেরিফাই হয়নি। ইমেইলে পাঠানো কোড দিয়ে ভেরিফাই করুন।',
+          needsVerification: true,
+          userId: user.id,
+          email: user.email,
+        },
+        { status: 403 }
+      )
+    }
+
     const adminPermissions = user.admin?.permissions ? JSON.parse(user.admin.permissions) : []
 
     const response = NextResponse.json({

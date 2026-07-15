@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { sendEmail, welcomeEmail } from '@/lib/email'
+import { sendEmail, emailVerificationOtpEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,35 +33,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Generate 6-digit OTP for email verification (10 min expiry)
+    const otp = String(Math.floor(100000 + Math.random() * 900000))
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000)
+
     const user = await db.user.create({
-      data: { name, phone, email, password },
+      data: {
+        name,
+        phone,
+        email,
+        password,
+        emailVerified: false,
+        resetToken: otp,
+        resetTokenExpiry: otpExpiry,
+      },
     })
 
-    // Welcome email
-    if (user.email) {
-      sendEmail(user.email, welcomeEmail(user.name || 'ইউজার')).catch(() => {})
-    }
+    // Send verification OTP email (fire-and-forget)
+    sendEmail(user.email, emailVerificationOtpEmail(user.name, otp)).catch((err) => {
+      console.error('[REG VERIFY EMAIL ERROR]', err)
+    })
 
-    const response = NextResponse.json({
+    // Return user info but DO NOT set session cookie — user must verify first
+    return NextResponse.json({
       id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,
-      isAdmin: false,
-      adminRole: null,
-      isSeller: false,
+      needsVerification: true,
     })
-
-    // Set session cookie so refresh keeps the user logged in
-    response.cookies.set('amdeal_session', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    })
-
-    return response
   } catch {
     return NextResponse.json(
       { error: 'নিবন্ধনে সমস্যা হয়েছে' },

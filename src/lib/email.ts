@@ -383,6 +383,24 @@ export function passwordResetOtpEmail(toName: string, otp: string) {
   };
 }
 
+export function emailVerificationOtpEmail(toName: string, otp: string) {
+  return {
+    subject: `ইমেইল ভেরিফিকেশন কোড — ${SITE_NAME}`,
+    html: wrapHtml(`
+      <h2>ইমেইল ভেরিফিকেশন ✉️</h2>
+      <p>হ্যালো <strong>${toName}</strong>,</p>
+      <p>আপনার ${SITE_NAME} অ্যাকাউন্ট যাচাই করতে নিচের কোডটি ব্যবহার করুন।</p>
+      <div class="info-box" style="text-align: center; padding: 24px;">
+        <p style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #16a34a;">${otp}</p>
+      </div>
+      <div class="warning-box">
+        <p>⏳ এই কোডটি <strong>১০ মিনিট</strong>ের জন্য বৈধ। কাউকে এই কোড শেয়ার করবেন না।</p>
+      </div>
+      <p>আপনি অ্যাকাউন্ট তৈরি করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+    `),
+  };
+}
+
 /* ── Send helper ── */
 
 type EmailPayload = { subject: string; html: string };
