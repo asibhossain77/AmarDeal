@@ -335,3 +335,32 @@ Stage Summary:
 - All 8 route pages now render actual HTML content server-side
 - Google can now crawl and index unique content on each page
 - Metadata, OpenGraph, and BreadcrumbList JSON-LD preserved
+---
+Task ID: 1
+Agent: Main
+Task: Update email template brand name to "আমারডিল.বাংলা" and enhance visual design
+
+Work Log:
+- Read current email.ts template and website globals.css to identify color palette
+- Website primary: oklch(0.768 0.189 131) ≈ #059669 (emerald-600) — already matched in email
+- Changed SITE_NAME from 'AmarDeal আমারডিল' to 'আমারডিল.বাংলা'
+- Changed FROM_NAME to 'আমারডিল.বাংলা'
+- Enhanced email template design:
+  - Header: Added radial gradient light circles (decorative bokeh), badge with glassmorphism border, gradient border bar below header
+  - Body: Increased padding, refined line-height to 1.75
+  - Info cards: Added subtle box-shadows, row separator borders, increased border-radius to 14px
+  - Success cards: Larger emoji (32px), more padding
+  - OTP card: Redesigned with individual digit boxes (6 white boxes with green borders, each digit in its own box), top gradient accent line, refined shadows
+  - CTA button: Larger border-radius (14px), dual box-shadow for depth
+  - Footer: Gradient background, social icons row, larger brand text
+  - Background: Changed to match website #F2F4F7
+  - Overall wrapper: Larger max-width (540px), green-tinted shadow
+- Created otpDigitsHtml() helper to render 6-digit OTP as individual styled boxes
+- Updated both passwordResetOtpEmail and emailVerificationOtpEmail to use digit boxes
+
+Stage Summary:
+- Email template now shows "আমারডিল.বাংলা" in header and footer
+- Theme colors match website (emerald green palette)
+- OTP codes now display in 6 individual digit boxes instead of plain monospace text
+- Enhanced visual design with decorative elements, better shadows, and refined typography
+- No lint errors introduced
