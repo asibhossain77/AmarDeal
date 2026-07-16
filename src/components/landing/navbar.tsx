@@ -258,9 +258,10 @@ export function Navbar() {
           </div>
         )}
 
-        {/* ── Mobile Menu (single hamburger for all views) ── */}
+        {/* ── Mobile Menu (hamburger for landing/auth/dashboard — admin has its own) ── */}
           <div className="flex items-center gap-2 md:hidden">
             <ThemeToggle />
+            {!isAdmin && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <button className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="মেনু খুলুন">
@@ -424,6 +425,7 @@ export function Navbar() {
                 </nav>
               </SheetContent>
             </Sheet>
+            )}
           </div>
       </nav>
     </header>
