@@ -20,10 +20,11 @@ export function BackButton({ label = 'ফিরে যান', className = '', v
   const _prevSellerPanel = useAppStore((s) => s._prevSellerPanel);
 
   // Determine if back is available
+  const isBackToPublicView = _prevView === 'landing' || _prevView === 'auth';
   const canGoBack =
-    _prevView ||
     (view === 'dashboard' && _prevDashPanel) ||
-    (view === 'seller' && _prevSellerPanel);
+    (view === 'seller' && _prevSellerPanel) ||
+    (Boolean(_prevView) && !isBackToPublicView);
 
   if (!canGoBack) return null;
 

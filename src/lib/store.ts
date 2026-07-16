@@ -85,9 +85,9 @@ export const useAppStore = create<AppState>((set) => ({
     if (!user) return set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null })
     // Ensure permissions always has a valid default
     const safeUser = { ...user, permissions: user.permissions ?? [] };
-    if (safeUser.isAdmin) return set({ user: safeUser, view: 'admin', sidebarOpen: false, adminPanel: 'dashboard' })
-    if (safeUser.isSeller) return set({ user: safeUser, view: 'seller', sidebarOpen: false, sellerPanel: 'overview' })
-    return set({ user: safeUser, view: 'dashboard', sidebarOpen: false, dashboardPanel: 'overview' })
+    if (safeUser.isAdmin) return set({ user: safeUser, view: 'admin', sidebarOpen: false, adminPanel: 'dashboard', _prevView: null })
+    if (safeUser.isSeller) return set({ user: safeUser, view: 'seller', sidebarOpen: false, sellerPanel: 'overview', _prevView: null })
+    return set({ user: safeUser, view: 'dashboard', sidebarOpen: false, dashboardPanel: 'overview', _prevView: null })
   },
   logout: () => set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null }),
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
@@ -126,6 +126,10 @@ export const useAppStore = create<AppState>((set) => ({
       return { sellerPanel: target, _prevSellerPanel: null };
     }
     if (s._prevView) {
+      // Guard: logged-in user should never go back to landing/auth
+      if (s.user && (s._prevView === 'landing' || s._prevView === 'auth')) {
+        return { dashboardPanel: 'overview', _prevDashPanel: null, _prevView: null };
+      }
       const target = s._prevView;
       return { view: target, _prevView: null, sidebarOpen: false };
     }
