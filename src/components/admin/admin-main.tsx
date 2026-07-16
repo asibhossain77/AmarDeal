@@ -592,10 +592,7 @@ function PaymentVerifyPanel() {
   };
 
   const pendingDeals = deals.filter(
-    (d) =>
-      d.status === 'created' ||
-      d.status === 'pending' ||
-      d.status === 'payment_pending'
+    (d) => d.status === 'payment_pending'
   );
 
   /* ─── Detail View (shown when a deal is selected) ─── */
