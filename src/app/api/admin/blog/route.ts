@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 
 // GET /api/admin/blog — all posts (admin)
 export async function GET() {
@@ -14,9 +15,11 @@ export async function GET() {
 }
 
 // POST /api/admin/blog — create post
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
+    const body = await req.json()
     const { title, slug, excerpt, content, coverImage, published } = body
 
     if (!title || !slug || !content) {
@@ -38,9 +41,11 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/admin/blog — update post
-export async function PUT(request: Request) {
+export async function PUT(req: NextRequest) {
   try {
-    const body = await request.json()
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
+    const body = await req.json()
     const { id, title, slug, excerpt, content, coverImage, published } = body
 
     if (!id) {
@@ -63,9 +68,11 @@ export async function PUT(request: Request) {
 }
 
 // DELETE /api/admin/blog — delete post
-export async function DELETE(request: Request) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
+    const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
     if (!id) {
       return NextResponse.json({ error: 'ID আবশ্যক' }, { status: 400 })

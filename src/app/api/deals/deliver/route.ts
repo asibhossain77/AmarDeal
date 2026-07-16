@@ -1,9 +1,13 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, deliveryStartedEmail } from '@/lib/email'
+import { requireAuth } from '@/lib/deal-guard'
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+
     const { dealId } = await req.json()
 
     if (!dealId) {

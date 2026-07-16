@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, emailVerificationOtpEmail } from '@/lib/email'
+import { hashPassword } from '@/lib/password'
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,12 +38,15 @@ export async function POST(req: NextRequest) {
     const otp = String(Math.floor(100000 + Math.random() * 900000))
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000)
 
+    // Hash the password before storing
+    const hashedPassword = await hashPassword(password)
+
     const user = await db.user.create({
       data: {
         name,
         phone,
         email,
-        password,
+        password: hashedPassword,
         emailVerified: false,
         resetToken: otp,
         resetTokenExpiry: otpExpiry,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/admin-guard';
 
 const ALL_KEYS = [
   'email_site_name',
@@ -23,8 +24,10 @@ const TEMPLATE_DEFAULTS: Record<string, string> = {
   brevo_from_email:      '',
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const rows = await db.platformSetting.findMany({
       where: { key: { in: [...ALL_KEYS] } },
     });
@@ -45,6 +48,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const body = await req.json();
 
     for (const key of ALL_KEYS) {

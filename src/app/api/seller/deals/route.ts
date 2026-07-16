@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
 
 /**
  * POST /api/seller/deals
@@ -9,10 +10,9 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json()
-    if (!userId) {
-      return NextResponse.json({ error: 'userId প্রয়োজন' }, { status: 400 })
-    }
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     const deals = await db.deal.findMany({
       where: {

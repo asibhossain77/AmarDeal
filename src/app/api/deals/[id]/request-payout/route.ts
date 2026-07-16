@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, payoutRequestedEmail } from '@/lib/email'
+import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function POST(
   req: NextRequest,
@@ -9,12 +10,12 @@ export async function POST(
   try {
     const { id: dealId } = await params
 
-    const body = await req.json()
-    const { userId, accountType, accountNumber, accountName } = body
+    const guard = await requireDealAccess(req, dealId)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
-    if (!userId) {
-      return NextResponse.json({ error: 'ইউজার আইডি প্রয়োজন' }, { status: 400 })
-    }
+    const body = await req.json()
+    const { accountType, accountNumber, accountName } = body
 
     if (!accountType || !accountNumber || !accountName) {
       return NextResponse.json(

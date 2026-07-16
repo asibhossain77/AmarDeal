@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { hashPassword } from '@/lib/password';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.resetToken !== otp) {
-      // Wrong OTP → invalidate immediately (already verified in step 2, so this = tampering)
+      // Wrong OTP → invalidate immediately
       await db.user.update({
         where: { id: user.id },
         data: { resetToken: null, resetTokenExpiry: null },
@@ -68,11 +69,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update password and clear reset token
+    // Hash the new password and clear reset token
+    const hashedPassword = await hashPassword(newPassword);
+
     await db.user.update({
       where: { id: user.id },
       data: {
-        password: newPassword,
+        password: hashedPassword,
         resetToken: null,
         resetTokenExpiry: null,
       },

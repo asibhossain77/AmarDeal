@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const payouts = await db.payout.findMany({
       orderBy: { createdAt: 'desc' },
     })

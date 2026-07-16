@@ -1,11 +1,16 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
 
 export async function POST(req: NextRequest) {
   try {
-    const { title, role, amount, partyIdentifier, terms, userId } = await req.json()
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
-    if (!title || !amount || !userId || !partyIdentifier) {
+    const { title, role, amount, partyIdentifier, terms } = await req.json()
+
+    if (!title || !amount || !partyIdentifier) {
       return NextResponse.json(
         { error: 'সকল প্রয়োজনীয় তথ্য প্রদান করুন' },
         { status: 400 }
@@ -122,10 +127,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('userId')
-    if (!userId) {
-      return NextResponse.json({ error: 'userId প্রয়োজন' }, { status: 400 })
-    }
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     const deals = await db.deal.findMany({
       where: {

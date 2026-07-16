@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const rules = await db.feeRule.findMany({
       orderBy: { minimum_amount: 'asc' },
     })
@@ -12,9 +15,11 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
+    const body = await req.json()
     const { minimum_amount, maximum_amount, fee, is_active } = body
 
     if (minimum_amount === undefined || fee === undefined) {

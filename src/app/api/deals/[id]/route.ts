@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function GET(
   req: NextRequest,
@@ -11,23 +12,19 @@ export async function GET(
     // Support both raw CUID IDs and "DL-XXXXX" formatted IDs
     let dealId = id
     if (id.startsWith('DL-')) {
-      // Try to find deal by last chars of ID
       const shortId = id.replace('DL-', '')
-      const deals = await db.deal.findMany({
+      const match = await db.deal.findFirst({
         where: { id: { endsWith: shortId } },
-        include: {
-          buyer: { select: { id: true, name: true, email: true, phone: true } },
-          seller: { select: { id: true, name: true, email: true, phone: true } },
-          creator: { select: { id: true, name: true, email: true } },
-          paymentMethod: { select: { id: true, name: true, accountType: true } },
-        },
-        take: 1,
+        select: { id: true },
       })
-      if (deals.length === 0) {
+      if (!match) {
         return NextResponse.json({ error: 'ডিল পাওয়া যায়নি' }, { status: 404 })
       }
-      return NextResponse.json(deals[0])
+      dealId = match.id
     }
+
+    const guard = await requireDealAccess(req, dealId)
+    if (!guard.ok) return guard.response
 
     const deal = await db.deal.findUnique({
       where: { id: dealId },

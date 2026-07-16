@@ -1,15 +1,13 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
+import { comparePassword, hashPassword, needsRehash } from '@/lib/password'
 
 export async function PUT(req: NextRequest) {
   try {
-    const userId = req.headers.get('X-User-Id')
-    const cookie = req.cookies.get('amdeal_session')?.value
-    const id = userId || cookie
-
-    if (!id) {
-      return NextResponse.json({ error: 'অনুমোদন নেই' }, { status: 401 })
-    }
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const id = guard.userId
 
     const body = await req.json()
     const { action, currentPassword, newPassword, email, phone } = body
@@ -24,15 +22,19 @@ export async function PUT(req: NextRequest) {
       if (!currentPassword || !newPassword) {
         return NextResponse.json({ error: 'বর্তমান ও নতুন পাসওয়ার্ড দিন' }, { status: 400 })
       }
-      if (currentPassword !== user.password) {
+      if (newPassword.length < 8) {
+        return NextResponse.json({ error: 'নতুন পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে' }, { status: 400 })
+      }
+
+      const match = await comparePassword(currentPassword, user.password)
+      if (!match) {
         return NextResponse.json({ error: 'বর্তমান পাসওয়ার্ড ভুল হয়েছে' }, { status: 401 })
       }
-      if (newPassword.length < 4) {
-        return NextResponse.json({ error: 'নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে' }, { status: 400 })
-      }
+
+      const hashedPassword = await hashPassword(newPassword)
       await db.user.update({
         where: { id },
-        data: { password: newPassword },
+        data: { password: hashedPassword },
       })
       return NextResponse.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে' })
     }

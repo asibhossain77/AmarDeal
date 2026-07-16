@@ -22,16 +22,9 @@ export type AuthGuardResult =
  */
 export async function requireAuth(req: NextRequest): Promise<AuthGuardResult> {
   try {
-    // Try cookie first, then fall back to X-User-Id header (for sandbox/proxy envs)
-    let userId: string | undefined
-
     const cookieStore = await cookies()
     const sessionCookie = cookieStore.get(SESSION_COOKIE)
-    if (sessionCookie?.value) {
-      userId = sessionCookie.value
-    } else {
-      userId = req.headers.get('x-user-id') || undefined
-    }
+    const userId = sessionCookie?.value
 
     if (!userId) {
       return {

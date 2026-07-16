@@ -1,12 +1,17 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
+import { requireAuth } from '@/lib/deal-guard'
 
 export async function POST(req: NextRequest) {
   try {
-    const { title, role, amount, partyEmail, terms, userId } = await req.json()
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
-    if (!title || !amount || !userId || !partyEmail) {
+    const { title, role, amount, partyEmail, terms } = await req.json()
+
+    if (!title || !amount || !partyEmail) {
       return NextResponse.json(
         { error: 'সকল প্রয়োজনীয় তথ্য প্রদান করুন' },
         { status: 400 }

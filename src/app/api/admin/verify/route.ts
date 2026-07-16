@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { dealId } = await req.json()
 
     if (!dealId) {

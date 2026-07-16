@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, disputeRaisedEmail, adminDisputeEmail } from '@/lib/email'
+import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function POST(
   req: NextRequest,
@@ -8,7 +9,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { buyerId } = await req.json()
+    const guard = await requireDealAccess(req, id)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     const deal = await db.deal.findUnique({
       where: { id },
@@ -29,7 +32,7 @@ export async function POST(
       )
     }
 
-    if (deal.buyerId !== buyerId) {
+    if (deal.buyerId !== userId) {
       return NextResponse.json({ error: 'আপনি এই ডিলের ক্রেতা নন' }, { status: 403 })
     }
 

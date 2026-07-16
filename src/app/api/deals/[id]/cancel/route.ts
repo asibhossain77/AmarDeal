@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCancelledEmail } from '@/lib/email'
+import { requireDealAccess } from '@/lib/deal-guard'
 
 const CANCELLABLE_STATUSES = ['created', 'payment_verified']
 
@@ -10,7 +11,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params
-    const { userId } = await req.json()
+    const guard = await requireDealAccess(req, id)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     const deal = await db.deal.findUnique({
       where: { id },
@@ -31,10 +34,7 @@ export async function POST(
       )
     }
 
-    // Only buyer or seller can cancel
-    if (deal.buyerId !== userId && deal.sellerId !== userId) {
-      return NextResponse.json({ error: 'আপনি এই ডিলের অংশীদার নন' }, { status: 403 })
-    }
+    // Ownership already verified by requireDealAccess
 
     const updated = await db.deal.update({
       where: { id },

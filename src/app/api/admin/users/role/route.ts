@@ -1,8 +1,12 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
+import { hashPassword } from '@/lib/password'
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { userId, action, value } = await req.json()
 
     if (!userId || !action) {
@@ -36,15 +40,16 @@ export async function POST(req: NextRequest) {
     /* ─── Change Password ─── */
     if (action === 'change_password') {
       const newPassword = typeof value === 'string' ? value.trim() : ''
-      if (!newPassword || newPassword.length < 4) {
+      if (!newPassword || newPassword.length < 8) {
         return NextResponse.json(
-          { error: 'পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে' },
+          { error: 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে' },
           { status: 400 }
         )
       }
+      const hashedPassword = await hashPassword(newPassword)
       await db.user.update({
         where: { id: userId },
-        data: { password: newPassword },
+        data: { password: hashedPassword },
       })
       return NextResponse.json({
         success: true,

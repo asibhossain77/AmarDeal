@@ -1,12 +1,12 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
 
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('userId')
-    if (!userId) {
-      return NextResponse.json({ error: 'userId প্রয়োজন' }, { status: 400 })
-    }
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     const notifications = await db.notification.findMany({
       where: { userId },

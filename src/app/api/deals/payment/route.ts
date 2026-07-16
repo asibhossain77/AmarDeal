@@ -1,10 +1,11 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
+import { requireDealAccess } from '@/lib/deal-guard'
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await req.json()
     const { dealId, paymentMethodId, senderNumber, transactionId, amount, fee } = body
 
     if (!dealId || !senderNumber || !transactionId) {
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
+
+    const guard = await requireDealAccess(req, dealId)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
 
     // Check deal exists and is in correct state
     const existing = await db.deal.findUnique({ where: { id: dealId } })

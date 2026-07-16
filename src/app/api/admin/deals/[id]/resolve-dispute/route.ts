@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, disputeResolvedEmail } from '@/lib/email'
+import { requireAdmin } from '@/lib/admin-guard'
 
 /**
  * POST /api/admin/deals/[id]/resolve-dispute
@@ -11,6 +12,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { id } = await params
     const { action } = await req.json()
 

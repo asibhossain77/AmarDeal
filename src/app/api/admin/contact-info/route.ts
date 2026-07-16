@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export async function GET() {
   try {
@@ -26,6 +27,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const body = await req.json();
     const { phone, email, whatsapp, telegram, facebook, facebookGroup, address } = body;
 

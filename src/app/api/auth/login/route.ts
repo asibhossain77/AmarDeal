@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, loginNotificationEmail } from '@/lib/email'
+import { comparePassword, hashPassword, needsRehash } from '@/lib/password'
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,6 @@ export async function POST(req: NextRequest) {
     const user = await db.user.findFirst({
       where: {
         OR: [{ email: identifier }, { phone: identifier }],
-        password,
       },
       include: { admin: true },
     })
@@ -28,17 +28,32 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Compare password (handles both bcrypt hash and legacy plaintext)
+    const match = await comparePassword(password, user.password)
+    if (!match) {
+      return NextResponse.json(
+        { error: 'ইমেইল/মোবাইল বা পাসওয়ার্ড ভুল হয়েছে' },
+        { status: 401 }
+      )
+    }
+
     // Block unverified users
     if (!user.emailVerified) {
       return NextResponse.json(
         {
-          error: 'আপনার ইমেইল এখনো ভেরিফাই হয়নি। ইমেইলে পাঠানো কোড দিয়ে ভেরিফাই করুন।',
+          error: 'আপনার ইমেইল এখনো ভেরিফাই হয়েনি। ইমেইলে পাঠানো কোড দিয়ে ভেরিফাই করুন।',
           needsVerification: true,
           userId: user.id,
           email: user.email,
         },
         { status: 403 }
       )
+    }
+
+    // Auto-migrate: if password is still plaintext, re-hash it now
+    if (needsRehash(user.password)) {
+      const hashed = await hashPassword(password)
+      db.user.update({ where: { id: user.id }, data: { password: hashed } }).catch(() => {})
     }
 
     const adminPermissions = user.admin?.permissions ? JSON.parse(user.admin.permissions) : []
