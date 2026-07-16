@@ -16,7 +16,7 @@ export function AdminSidebar() {
   const groups = filterNavGroups(user?.adminRole, user?.permissions ?? []);
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
       <div className="flex h-full flex-col">
         <nav className="flex-1 overflow-y-auto pl-5 pr-3 pt-6">
           {groups.map((group) => (

@@ -31,12 +31,12 @@ export function AdminView() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
       {/* Desktop Sidebar — fully hidden on mobile */}
-      <div className="hidden lg:block">
+      <div className="hidden md:block">
         <AdminSidebar />
       </div>
 
       {/* Mobile Top Bar */}
-      <div className="lg:hidden fixed top-16 left-0 right-0 z-30 bg-white dark:bg-zinc-900 border-b border-border/50">
+      <div className="md:hidden fixed top-16 left-0 right-0 z-30 bg-white dark:bg-zinc-900 border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-12">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -101,7 +101,7 @@ export function AdminView() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:pl-64 pt-12 lg:pt-0">
+      <div className="flex-1 md:pl-64 pt-12 md:pt-0">
         <AdminMain />
       </div>
     </div>
