@@ -35,7 +35,7 @@ export function DashboardSidebar() {
   if (!mounted) return null;
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
       <div className="flex h-full flex-col">
         {/* Navigation — pl-5 aligns with header logo area */}
         <nav className="flex-1 space-y-1 pl-5 pr-3 pt-6">

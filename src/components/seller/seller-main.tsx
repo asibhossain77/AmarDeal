@@ -125,12 +125,12 @@ function SellerOverviewPanel() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors md:hidden"
             aria-label="মেনু"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="text-center lg:text-left">
+          <div className="text-center md:text-left">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               স্বাগতম, {user?.name?.split(' ')[0] || 'বিক্রেতা'}
             </h1>
@@ -243,7 +243,7 @@ function ActiveDealsPanel() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-      <div className="text-center lg:text-left">
+      <div className="text-center md:text-left">
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">চলমান ডিলসমূহ</h2>
         <p className="mt-1 text-sm text-muted-foreground">বর্তমানে চলমান সকল ডিলের তালিকা</p>
       </div>

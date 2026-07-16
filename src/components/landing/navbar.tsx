@@ -140,12 +140,12 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
       <nav
         className={`relative h-16 items-center justify-between px-4 sm:px-6 ${
-          isSidebarView ? 'flex lg:pl-0' : 'mx-auto flex max-w-6xl md:px-8'
+          isSidebarView ? 'flex md:pl-0' : 'mx-auto flex max-w-6xl md:px-8'
         }`}
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
         {isSidebarView && (
-          <div className="hidden lg:flex lg:w-64 lg:shrink-0 lg:pl-5">
+          <div className="hidden md:flex md:w-64 md:shrink-0 md:pl-5">
             <LogoButton onClick={handleLogoClick} />
           </div>
         )}
@@ -154,7 +154,7 @@ export function Navbar() {
         <div
           className={`flex items-center ${
             isSidebarView
-              ? 'flex-1 lg:justify-end lg:px-0'
+              ? 'flex-1 md:justify-end md:px-0'
               : ''
           }`}
         >
@@ -163,7 +163,7 @@ export function Navbar() {
 
           {/* Mobile-only logo for dashboard / admin */}
           {isSidebarView && (
-            <div className="lg:hidden">
+            <div className="md:hidden">
               <LogoButton onClick={handleLogoClick} />
             </div>
           )}

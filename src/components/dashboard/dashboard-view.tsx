@@ -14,7 +14,7 @@ export function DashboardView() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
       <DashboardSidebar />
-      <div className="flex-1 lg:pl-64">
+      <div className="flex-1 md:pl-64">
         <DashboardMain />
       </div>
     </div>

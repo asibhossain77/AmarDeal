@@ -54,7 +54,7 @@ export function SellerSidebar() {
         </div>
         <button
           onClick={() => setSidebarOpen(false)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors lg:hidden"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors md:hidden"
           aria-label="বন্ধ করুন"
         >
           <X className="h-5 w-5" />
@@ -111,7 +111,7 @@ export function SellerSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
         {sidebarContent}
       </aside>
 
@@ -124,7 +124,7 @@ export function SellerSidebar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
             <motion.aside
@@ -132,7 +132,7 @@ export function SellerSidebar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border/50 bg-white dark:bg-zinc-900 lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border/50 bg-white dark:bg-zinc-900 md:hidden"
             >
               {sidebarContent}
             </motion.aside>

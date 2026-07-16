@@ -14,7 +14,7 @@ export function SellerView() {
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
       <SellerSidebar />
-      <div className="flex-1 lg:pl-64">
+      <div className="flex-1 md:pl-64">
         <SellerMain />
       </div>
     </div>
