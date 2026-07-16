@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         buyer: { select: { id: true, name: true, email: true, phone: true } },
         seller: { select: { id: true, name: true, email: true, phone: true } },
         creator: { select: { id: true, name: true, email: true } },
+        paymentMethod: { select: { id: true, name: true, accountNumber: true, accountType: true, color: true, image: true } },
       },
       orderBy: { createdAt: 'desc' },
     })

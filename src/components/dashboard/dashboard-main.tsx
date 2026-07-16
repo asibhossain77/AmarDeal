@@ -488,7 +488,7 @@ export function DashboardMain() {
   if (!mounted) return null;
 
   // Deal-detail and payment panels fill full height on mobile for no-scroll layout
-  const isImmersive = dashboardPanel === 'deal-detail' || dashboardPanel === 'payment';
+  const isImmersive = dashboardPanel === 'deal-detail';
 
   return (
     <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
