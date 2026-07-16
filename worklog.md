@@ -403,3 +403,21 @@ Stage Summary:
 - Modified: `src/components/admin/admin-sidebar.tsx` (simplified, uses shared config)
 - Modified: `src/components/admin/admin-view.tsx` (simplified, uses shared config)
 - Zero lint errors, zero runtime errors
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix admin mobile duplicate sidebar + email template OTP size and header logo removal
+
+Work Log:
+- Diagnosed admin-view.tsx: AdminSidebar had internal `hidden lg:flex` but needed parent-level enforcement
+- Wrapped AdminSidebar in `<div className="hidden lg:block">` in admin-view.tsx to guarantee mobile hiding
+- Updated email template OTP styling: font-size 42px→56px, letter-spacing 14px→18px, font-weight 800→900, margin increased
+- Updated mobile responsive OTP: font-size 34px→44px, letter-spacing 10px→12px
+- Removed logo placeholder (green square) from email header, kept only site name text
+- Removed .header-logo, .header-logo img, .header-logo-placeholder CSS rules
+- Increased header name font-weight from 700→800 and font-size from 22px→24px
+
+Stage Summary:
+- Mobile admin panel: only Sheet-based mobile nav will show on small screens, desktop sidebar fully hidden via parent wrapper
+- Email OTP numbers are now significantly larger (56px desktop, 44px mobile)
+- Email header shows only the site name in green, no logo/image placeholder

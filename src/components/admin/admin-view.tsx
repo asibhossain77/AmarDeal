@@ -30,8 +30,10 @@ export function AdminView() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      {/* Desktop Sidebar */}
-      <AdminSidebar />
+      {/* Desktop Sidebar — fully hidden on mobile */}
+      <div className="hidden lg:block">
+        <AdminSidebar />
+      </div>
 
       {/* Mobile Top Bar */}
       <div className="lg:hidden fixed top-16 left-0 right-0 z-30 bg-white dark:bg-zinc-900 border-b border-border/50">

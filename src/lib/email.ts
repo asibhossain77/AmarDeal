@@ -99,10 +99,7 @@ const base = `
 
   /* ── Header ── */
   .header{text-align:center;padding:36px 32px 28px}
-  .header-logo{display:inline-flex;align-items:center;gap:10px}
-  .header-logo img{width:32px;height:32px}
-  .header-logo-placeholder{width:32px;height:32px;background:${primary};border-radius:8px;display:inline-block}
-  .header-name{font-size:22px;font-weight:700;color:${primary};letter-spacing:-0.3px}
+  .header-name{font-size:24px;font-weight:800;color:${primary};letter-spacing:-0.3px}
   .header-divider{height:1px;background:#f0f0f0;margin:0 32px}
 
   /* ── Body ── */
@@ -121,10 +118,10 @@ const base = `
   .info-table .val{color:${textDark};font-weight:600;text-align:right}
 
   /* ── OTP — Plain text, no boxes ── */
-  .otp-section{text-align:center;margin:28px 0}
-  .otp-label{font-size:14px;color:${textBody};margin-bottom:12px}
-  .otp-code{font-size:42px;font-weight:800;color:${primary};letter-spacing:14px;font-family:'Courier New',monospace;line-height:1.3}
-  .otp-hint{font-size:12px;color:${textMuted};margin-top:12px}
+  .otp-section{text-align:center;margin:32px 0}
+  .otp-label{font-size:15px;color:${textBody};margin-bottom:16px}
+  .otp-code{font-size:56px;font-weight:900;color:${primary};letter-spacing:18px;font-family:'Courier New',monospace;line-height:1.3}
+  .otp-hint{font-size:12px;color:${textMuted};margin-top:14px}
 
   /* ── Simple Alert ── */
   .alert{padding:14px 18px;border-radius:8px;margin:20px 0;font-size:13.5px;line-height:1.6}
@@ -153,9 +150,9 @@ const base = `
   @media only screen and (max-width:520px){
     .wrapper{margin:0;border-radius:0}
     .header{padding:28px 24px 22px}
-    .header-name{font-size:20px}
+    .header-name{font-size:21px}
     .body{padding:24px}
-    .otp-code{font-size:34px;letter-spacing:10px}
+    .otp-code{font-size:44px;letter-spacing:12px}
     .info-table .lbl,.info-table .val{display:block;width:100%;text-align:left}
     .info-table .lbl{padding-bottom:2px;font-size:12px}
     .info-table .val{padding-top:0}
@@ -169,10 +166,7 @@ function wrap(bodyHtml: string): string {
   <tr><td align="center">
     <div class="wrapper">
       <div class="header">
-        <div class="header-logo">
-          <span class="header-logo-placeholder"></span>
-          <span class="header-name">${s('email_site_name')}</span>
-        </div>
+        <span class="header-name">${s('email_site_name')}</span>
       </div>
       <div class="header-divider"></div>
       <div class="body">${bodyHtml}</div>
