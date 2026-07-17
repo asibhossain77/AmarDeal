@@ -202,18 +202,34 @@ export function LiveSupportButton() {
       </AnimatePresence>
 
       {/* FAB Button — Square with curved corners, auto-hides to right */}
-      <motion.button
-        animate={{
-          x: isHidden && !isOpen ? 52 : 0,
-          opacity: isHidden && !isOpen ? 0.7 : 1,
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer"
-        aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'লাইভ সাপোর্ট'}
-      >
+      <div className="flex items-center gap-2">
+        {/* Tooltip label — shows when button is hidden */}
+        <AnimatePresence>
+          {isHidden && !isOpen && (
+            <motion.span
+              initial={{ opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 8 }}
+              transition={{ duration: 0.2 }}
+              className="text-xs font-semibold text-primary whitespace-nowrap bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl shadow-md border border-primary/20 select-none pointer-events-none"
+            >
+              লাইভ সাপোর্ট
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          animate={{
+            x: isHidden && !isOpen ? 52 : 0,
+            opacity: isHidden && !isOpen ? 0.7 : 1,
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsOpen(!isOpen)}
+          className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer shrink-0"
+          aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'লাইভ সাপোর্ট'}
+        >
         <AnimatePresence mode="wait">
           {isOpen ? (
             <motion.div
@@ -242,7 +258,8 @@ export function LiveSupportButton() {
         {!isOpen && !isHidden && (
           <span className="absolute inset-0 rounded-2xl bg-primary animate-ping opacity-20" />
         )}
-      </motion.button>
+        </motion.button>
+      </div>
     </div>
   );
 }
