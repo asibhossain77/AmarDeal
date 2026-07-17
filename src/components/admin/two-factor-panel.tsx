@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { useAppStore } from '@/lib/store';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -73,10 +72,8 @@ function SectionHeader({
    ═══════════════════════════════════════════ */
 
 export function TwoFactorPanel() {
-  const user = useAppStore((s) => s.user);
-
   const [totpEnabled, setTotpEnabled] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [statusLoaded, setStatusLoaded] = useState(false);
   const [settingUp, setSettingUp] = useState(false);
   const [disabling, setDisabling] = useState(false);
 
@@ -93,29 +90,23 @@ export function TwoFactorPanel() {
   // Copy secret
   const [copied, setCopied] = useState(false);
 
-  const fetchStatus = useCallback(async () => {
-    if (!user?.id) return;
-    try {
-      const res = await fetch('/api/admin/2fa/status');
-      if (res.ok) {
-        const data = await res.json();
-        setTotpEnabled(data.totpEnabled);
-      } else {
-        console.warn('2FA status fetch failed:', res.status);
-      }
-    } catch (err) {
-      console.warn('2FA status fetch error:', err);
-    }
-    setLoading(false);
-  }, [user?.id]);
-
+  // Fetch status on mount
   useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+    let cancelled = false;
+    fetch('/api/admin/2fa/status')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setTotpEnabled(!!d.totpEnabled);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setStatusLoaded(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Setup: Generate QR ──
   const handleSetup = async () => {
-    setLoading(true);
     try {
       const res = await fetch('/api/admin/2fa/setup', {
         method: 'POST',
@@ -132,8 +123,6 @@ export function TwoFactorPanel() {
       toast.success('QR কোড তৈরি হয়েছে');
     } catch {
       toast.error('সার্ভার ত্রুটি');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -210,14 +199,6 @@ export function TwoFactorPanel() {
     setVerifyCode('');
   };
 
-  if (loading) {
-    return (
-      <SolidCard className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </SolidCard>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* ── Header ── */}
@@ -226,14 +207,18 @@ export function TwoFactorPanel() {
         title="টু-ফ্যাক্টর অথেনটিকেশন (2FA)"
         desc="Google Authenticator দিয়ে আপনার অ্যাকাউন্ট সুরক্ষিত রাখুন"
         badge={
-          totpEnabled ? (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-              <ShieldCheck className="h-3 w-3" /> সক্রিয়
-            </span>
+          statusLoaded ? (
+            totpEnabled ? (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                <ShieldCheck className="h-3 w-3" /> সক্রিয়
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                নিষ্ক্রিয়
+              </span>
+            )
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-              নিষ্ক্রিয়
-            </span>
+            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
           )
         }
       />
@@ -428,9 +413,8 @@ export function TwoFactorPanel() {
                 <Button
                   onClick={handleSetup}
                   className="w-full gap-2 shadow-lg shadow-primary/20"
-                  disabled={loading}
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  <ShieldCheck className="h-4 w-4" />
                   Google Authenticator সেটআপ করুন
                 </Button>
               </>
