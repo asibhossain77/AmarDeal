@@ -96,28 +96,15 @@ export function TwoFactorPanel() {
   const fetchStatus = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const res = await fetch('/api/admin/2fa/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        // If 2FA already enabled, the setup endpoint returns error
-        // So we check the admin status differently
-      }
-    } catch {
-      // silent
-    }
-    // Fetch current status from user's admin record
-    try {
-      const res = await fetch('/api/admin/2fa/status?userId=' + user.id);
+      const res = await fetch('/api/admin/2fa/status');
       if (res.ok) {
         const data = await res.json();
         setTotpEnabled(data.totpEnabled);
+      } else {
+        console.warn('2FA status fetch failed:', res.status);
       }
-    } catch {
-      // If status endpoint doesn't exist, assume disabled
+    } catch (err) {
+      console.warn('2FA status fetch error:', err);
     }
     setLoading(false);
   }, [user?.id]);
@@ -133,7 +120,6 @@ export function TwoFactorPanel() {
       const res = await fetch('/api/admin/2fa/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -162,7 +148,7 @@ export function TwoFactorPanel() {
       const res = await fetch('/api/admin/2fa/enable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id, code: verifyCode }),
+        body: JSON.stringify({ code: verifyCode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -193,7 +179,7 @@ export function TwoFactorPanel() {
       const res = await fetch('/api/admin/2fa/disable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user!.id, code: disableCode }),
+        body: JSON.stringify({ code: disableCode }),
       });
       const data = await res.json();
       if (!res.ok) {

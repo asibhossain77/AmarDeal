@@ -1,21 +1,25 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 import * as otplib from 'otplib'
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, code } = await req.json()
+    const guard = await requireAdmin(req)
+    if (!guard.ok) return guard.response
 
-    if (!userId || !code) {
+    const { code } = await req.json()
+
+    if (!code) {
       return NextResponse.json(
-        { error: 'ইউজার আইডি এবং কোড দিন' },
+        { error: 'কোড দিন' },
         { status: 400 }
       )
     }
 
     // Verify user is admin and has 2FA enabled
     const admin = await db.admin.findFirst({
-      where: { userId },
+      where: { userId: guard.admin.userId },
       include: { user: true },
     })
 

@@ -1,22 +1,17 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
 import * as otplib from 'otplib'
 import QRCode from 'qrcode'
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json()
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'ইউজার আইডি দিন' },
-        { status: 400 }
-      )
-    }
+    const guard = await requireAdmin(req)
+    if (!guard.ok) return guard.response
 
     // Verify user exists and is an admin
     const admin = await db.admin.findFirst({
-      where: { userId },
+      where: { userId: guard.admin.userId },
       include: { user: true },
     })
 
