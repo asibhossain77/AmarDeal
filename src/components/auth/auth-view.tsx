@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   MailCheck,
   XCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -435,6 +436,12 @@ function LoginForm({
   const [error, setError] = useState('');
   const setUser = useAppStore((s) => s.setUser);
 
+  // 2FA state
+  const [pending2FA, setPending2FA] = useState<{ userId: string; name: string; email: string } | null>(null);
+  const [totpCode, setTotpCode] = useState('');
+  const [totpLoading, setTotpLoading] = useState(false);
+  const [totpError, setTotpError] = useState('');
+
   const handleLogin = useCallback(async () => {
     setError('');
     if (!identifier.trim() || !password.trim()) { setError('সকল ফিল্ড পূরণ করুন'); return; }
@@ -453,11 +460,47 @@ function LoginForm({
         setError(data.error || 'লগইন ব্যর্থ হয়েছে');
         return;
       }
+      // Check if 2FA required
+      if (data.requires2FA) {
+        setPending2FA({ userId: data.userId, name: data.name, email: data.email });
+        return;
+      }
       toast.success('সফলভাবে লগইন হয়েছে!');
       setUser(data);
     } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
     finally { setLoading(false); }
   }, [identifier, password, setUser, onNeedsVerification]);
+
+  // 2FA verification handler
+  const handle2FAVerify = useCallback(async () => {
+    if (!pending2FA || totpCode.length !== 6) {
+      setTotpError('6 ডিজিটের কোড দিন');
+      return;
+    }
+    setTotpLoading(true);
+    setTotpError('');
+    try {
+      const res = await fetch('/api/admin/2fa/login-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: pending2FA.userId, code: totpCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTotpError(data.error || 'ভুল কোড');
+        setTotpLoading(false);
+        return;
+      }
+      toast.success('সফলভাবে লগইন হয়েছে!');
+      setUser(data);
+      setPending2FA(null);
+      setTotpCode('');
+    } catch {
+      setTotpError('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setTotpLoading(false);
+    }
+  }, [pending2FA, totpCode, setUser]);
 
   return (
     <div className="space-y-5">
@@ -482,10 +525,75 @@ function LoginForm({
           <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-center text-sm text-destructive">{error}</motion.p>
         )}
       </AnimatePresence>
-      <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
-        লগইন করুন
-      </Button>
+
+      {/* 2FA Verification Step */}
+      {pending2FA ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-5"
+        >
+          <div className="text-center space-y-2">
+            <div className="flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                <ShieldAlert className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+            <h3 className="text-base font-bold text-foreground">
+              টু-ফ্যাক্টর ভেরিফিকেশন
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {pending2FA.name} ({pending2FA.email})
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Google Authenticator থেকে 6 ডিজিটের কোড দিন
+            </p>
+          </div>
+
+          <Input
+            type="text"
+            inputMode="numeric"
+            placeholder="0 0 0 0 0 0"
+            value={totpCode}
+            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onKeyDown={(e) => e.key === 'Enter' && handle2FAVerify()}
+            className="text-center font-mono text-2xl tracking-[0.5em] h-14"
+            maxLength={6}
+            autoFocus
+          />
+
+          <AnimatePresence>
+            {totpError && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm text-destructive">
+                {totpError}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => { setPending2FA(null); setTotpCode(''); setTotpError(''); }}
+              className="flex-1 h-11"
+            >
+              ফিরে যান
+            </Button>
+            <Button
+              onClick={handle2FAVerify}
+              disabled={totpCode.length !== 6 || totpLoading}
+              className="flex-1 h-11 gap-2"
+            >
+              {totpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+              ভেরিফাই করুন
+            </Button>
+          </div>
+        </motion.div>
+      ) : (
+        <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
+          লগইন করুন
+        </Button>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   BookOpen,
   Mail,
+  ShieldAlert,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -67,6 +68,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: 'অ্যাকাউন্ট',
     items: [
       { label: 'প্রোফাইল', icon: UserCircle, panel: 'profile' },
+      { label: 'টু-ফ্যাক্টর অথেনটিকেশন', icon: ShieldAlert, panel: 'two-factor' },
     ],
   },
 ];
@@ -75,12 +77,13 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
 export const ALL_NAV_ITEMS: NavItem[] = ADMIN_NAV_GROUPS.flatMap((g) => g.items);
 
 /** Panels always accessible to any admin/staff/support */
-export const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile']);
+export const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile', 'two-factor']);
 
 /** Support admin: predefined permissions — no sensitive settings */
 export const SUPPORT_ALLOWED = new Set<string>([
   'dashboard',
   'profile',
+  'two-factor',
   'payment-verify',
   'payouts',
   'admin-calls',

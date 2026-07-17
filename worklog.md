@@ -487,3 +487,51 @@ Stage Summary:
 - Fixed /home/z/my-project/src/components/dashboard/dashboard-view.tsx: added `min-w-0` to flex container and `min-w-0 overflow-x-hidden` to flex child
 - Root cause: flexbox `min-width: auto` preventing shrink below `shrink-0` children intrinsic width
 - Mobile viewport: 375px, all elements now fit correctly
+
+---
+Task ID: 2fa-api-routes
+Agent: Main Agent
+Task: Create 4 admin 2FA API route files for TOTP-based two-factor authentication
+
+Work Log:
+- Read existing login route for cookie/session patterns
+- Read Prisma schema to confirm Admin model fields (totpSecret, totpEnabled)
+- Created `/api/admin/2fa/setup/route.ts` — generates TOTP secret, stores it, returns secret + QR code data URI
+- Created `/api/admin/2fa/enable/route.ts` — verifies TOTP code then enables 2FA
+- Created `/api/admin/2fa/disable/route.ts` — verifies current TOTP code then disables 2FA and clears secret
+- Created `/api/admin/2fa/login-verify/route.ts` — verifies TOTP code after password login, sets session cookie and returns user data
+- All endpoints use Bengali error messages
+- All endpoints use `otplib.authenticator` (sync API)
+- login-verify uses same cookie pattern as login route (amdeal_session, httpOnly, secure in prod, sameSite lax, 7 days)
+- Lint passes (no new errors; pre-existing errors in db.ts/watchdog.js unrelated)
+
+Stage Summary:
+- 4 API routes created for complete 2FA lifecycle: setup → enable → disable → login-verify
+- QR code generation via `qrcode.toDataURL()` for Google Authenticator scanning
+- otpauth URL uses project name "AmarDeal (আমারডিল)" with percent-encoded Bengali text
+---
+Task ID: 6
+Agent: Main Agent
+Task: Add Google Authenticator 2FA for admin/support/staff accounts
+
+Work Log:
+- Installed otplib (TOTP generation/verification) and qrcode (QR code generation)
+- Added totpSecret (String?) and totpEnabled (Boolean) fields to Admin model in Prisma
+- Created 5 API routes under /api/admin/2fa/:
+  - setup: generates TOTP secret, stores in DB, returns QR code data URI + secret
+  - enable: verifies TOTP code and activates 2FA
+  - disable: requires current TOTP code, then clears secret and disables
+  - login-verify: verifies TOTP code after password login, sets session cookie
+  - status: returns current totpEnabled boolean
+- Modified login route: if admin has totpEnabled=true, returns requires2FA instead of session
+- Modified auth-view.tsx: added 2FA verification step UI after password (6-digit code input)
+- Created two-factor-panel.tsx: admin settings panel with QR scan, manual secret, enable/disable
+- Added "টু-ফ্যাক্টর অথেনটিকেশন" nav item to admin sidebar (all roles can access)
+- Added "two-factor" to AdminPanel type, ALWAYS_ALLOWED and SUPPORT_ALLOWED sets
+
+Stage Summary:
+- DB: Admin.totpSecret + Admin.totpEnabled
+- APIs: setup, enable, disable, login-verify, status (5 routes)
+- Frontend: admin 2FA settings panel + login 2FA verification step
+- Security: proxy.ts protects all /api/admin/* routes (session required)
+- Flow: Password → (if admin+2FA) → 6-digit TOTP code → Session created

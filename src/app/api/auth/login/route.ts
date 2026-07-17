@@ -56,6 +56,16 @@ export async function POST(req: NextRequest) {
       db.user.update({ where: { id: user.id }, data: { password: hashed } }).catch(() => {})
     }
 
+    // 2FA check for admin/support/staff accounts with TOTP enabled
+    if (user.admin?.totpEnabled) {
+      return NextResponse.json({
+        requires2FA: true,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+      })
+    }
+
     const adminPermissions = user.admin?.permissions ? JSON.parse(user.admin.permissions) : []
 
     const response = NextResponse.json({

@@ -27,6 +27,7 @@ import { AdminProfilePanel } from './admin-profile-panel';
 import { ContractPanel } from './contract-panel';
 import { BlogPanel } from './blog-panel';
 import { EmailSettingsPanel } from './email-settings-panel';
+import { TwoFactorPanel } from './two-factor-panel';
 import {
   Bell,
   ShieldCheck,
@@ -3461,6 +3462,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <DisputesPanel />;
     case 'email-settings':
       return <EmailSettingsPanel />;
+    case 'two-factor':
+      return <TwoFactorPanel />;
     default:
       return null;
   }

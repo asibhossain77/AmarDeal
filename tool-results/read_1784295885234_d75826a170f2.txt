@@ -1,0 +1,490 @@
+     1→---
+     2→Task ID: 1
+     3→Agent: Main Agent
+     4→Task: Fix Amar Deal login on Vercel deployment
+     5→
+     6→Work Log:
+     7→- Analyzed the uploaded Vercel Environment Variables screenshot
+     8→- Checked deployed /api/health endpoint - found `no such table: main.User` error (Turso DB has no tables)
+     9→- Identified root cause: `prisma/schema.prisma` was missing `previewFeatures = ["driverAdapters"]`
+    10→  - This caused Vercel build to fail silently with: `PrismaClientConstructorValidationError: "adapter" property can only be provided to PrismaClient constructor when "driverAdapters" preview feature is enabled`
+    11→  - Vercel was serving the last successful (old) deployment
+    12→- Fixed db.ts: reverted from `require('@prisma/client/edge')` to standard `import { PrismaClient }` with env mutation approach
+    13→- Fixed prisma/schema.prisma: added `previewFeatures = ["driverAdapters"]` to generator block
+    14→- Updated /api/health to auto-create Turso tables and seed admin user if missing
+    15→- Created /api/setup endpoint as standalone table creation endpoint
+    16→- Verified build succeeds locally with `DATABASE_URL="libsql://test.turso.io"`
+    17→- Pushed 4 commits to GitHub
+    18→- Discovered Vercel auto-deploy is NOT working (GitHub → Vercel webhook/integration broken)
+    19→- Attempted Vercel CLI deploy but no credentials available
+    20→
+    21→Stage Summary:
+    22→- All code fixes are committed and pushed to GitHub
+    23→- Build verified working locally
+    24→- User must manually trigger Redeploy from Vercel Dashboard
+    25→- Once deployed, /api/health will auto-create Turso tables + seed admin user
+    26→- Admin login: admin@demo.com / 123456
+    27→
+    28→---
+    29→Task ID: final
+    30→Agent: Main Agent
+    31→Task: Fix Amar Deal login on Vercel — complete resolution
+    32→
+    33→Work Log:
+    34→- Identified 3 root causes: missing driverAdapters preview feature, build-time DB init, wrong adapter usage
+    35→- Created Turso tables directly via @libsql/client with user-provided credentials
+    36→- Fixed db.ts: lazy Proxy + dynamic require + correct PrismaLibSQL usage (pass client instance, not config)
+    37→- Added postinstall: prisma generate to package.json
+    38→- Seeded admin user (admin@demo.com / 123456) with super_admin role
+    39→
+    40→Stage Summary:
+    41→- Login API returns successful response with isAdmin: true
+    42→- Health endpoint confirms prismaConnection: OK, prismaUserCount: 1
+    43→- All 10 tables created on Turso (User, Admin, Deal, PaymentMethod, PlatformSetting, FeeRule, Notification, ContactInfo, Payout, ChatMessage)
+    44→- Site is fully functional at https://amar-deal-lmka.vercel.app/
+    45→
+    46→---
+    47→Task ID: blog-articles
+    48→Agent: Main Agent
+    49→Task: Write Bengali blog articles for AmarDeal blog section
+    50→
+    51→Work Log:
+    52→- Explored existing project structure — confirmed BlogPost model, admin CRUD API, public API, and blog-view component all exist
+    53→- Blog is rendered as client-side view (Zustand `view === 'blog'`) within SPA at `/`
+    54→- Created seed-blog.ts script with 16 high-quality Bengali blog articles
+    55→- Topics cover: AmarDeal intro, escrow service, online safety, Facebook marketplace tips, mobile banking security, online business guide, earning money, buyer rights, seller tips, digital payment guide, freelancer security, social media scams, COD vs online payment, fee structure, online buying guide, future of e-commerce
+    56→- Successfully seeded all 16 articles into SQLite database (total 17 published posts including 1 pre-existing)
+    57→- Verified blog listing renders with all articles in card grid layout
+    58→- Verified individual article detail view renders correctly with full HTML content, headings, and back button
+    59→
+    60→Stage Summary:
+    61→- 16 Bengali blog articles created and published in the database
+    62→- Blog section verified working in browser — listing page and detail view both functional
+    63→- Articles are SEO-friendly with proper h2/h3 structure and keyword-rich Bengali content
+    64→
+    65→---
+    66→Task ID: split-pages
+    67→Agent: Main Agent
+    68→Task: Split long homepage into separate pages with Home button and working footer links
+    69→
+    70→Work Log:
+    71→- Added 8 new AppView types to Zustand store: page-how-it-works, page-fees, page-security, page-faq, page-about, page-privacy, page-terms, page-contact
+    72→- Created PageWrapper component (page-wrapper.tsx) with animated Home button, optional title/subtitle, and Footer
+    73→- Updated page.tsx: LandingView now only shows Hero + TrustSecurity (slim homepage)
+    74→- Created 8 separate page components wrapping existing section components in PageWrapper
+    75→- Blog wrapped in PageWrapper for consistent Home button + Footer
+    76→- Updated footer.tsx: all anchor links (#how-it-works, #fees, etc.) replaced with setView() buttons
+    77→- Updated navbar.tsx: all anchor links (#features, #fees, /contact) replaced with setView() buttons (both desktop and mobile)
+    78→- Fixed hero.tsx: "আরও জানুন" link now navigates to page-how-it-works
+    79→- Fixed privacy-section.tsx: "যোগাযোগ" link now uses setView('page-contact')
+    80→- Fixed faq-section.tsx: "নিরাপত্তা ফিচার" and "শর্তাবলী" links now use setView()
+    81→- Updated logo click handler to always go home from any info page
+    82→
+    83→Stage Summary:
+    84→- Homepage is now slim (Hero + TrustSecurity + Footer only)
+    85→- 8 separate pages: How It Works, Fees, Security, FAQ, About, Privacy, Terms, Contact
+    86→- Every page has a "হোম" (Home) button at the top
+    87→- All footer links navigate correctly via setView()
+    88→- All navbar links navigate correctly via setView()
+    89→- Logo click returns to homepage from any page
+    90→- Blog page has Home button and Footer
+    91→- Zero errors in dev server log
+    92→---
+    93→Task ID: 1
+    94→Agent: main
+    95→Task: Fix Review table not existing in production (Turso) DB + scroll-to-top on view navigation
+    96→
+    97→Work Log:
+    98→- Checked Prisma schema — Review model exists
+    99→- Ran `bun run db:push` — local SQLite already in sync, Review table exists with 4 reviews
+   100→- Tested GET /api/reviews — returns 4 approved reviews correctly
+   101→- Tested POST /api/reviews — successfully creates new review
+   102→- Added scroll-to-top useEffect in src/app/page.tsx watching `view` state
+   103→- Committed and pushed to GitHub (578d4d2)
+   104→
+   105→Stage Summary:
+   106→- Local Review table works perfectly (API GET/POST verified)
+   107→- Production issue: Turso DB needs Review table pushed via `prisma db push` with Turso DATABASE_URL
+   108→- Scroll-to-top fix: Added `useEffect(() => window.scrollTo({ top: 0, behavior: 'smooth' }), [view])` in page.tsx
+   109→- Changes pushed to main branch
+   110→---
+   111→Task ID: 1
+   112→Agent: Main Agent
+   113→Task: Make SEO powerful so "amardeal" and "amar deal" shows up on Google search
+   114→
+   115→Work Log:
+   116→- Enhanced layout.tsx: title now includes "AmarDeal" prominently, description mentions "AmarDeal (আমারডিল)" and "Amar Deal" multiple times naturally
+   117→- Expanded keywords from 20 to 34, adding brand variations: "amardeal Bangladesh", "amar deal bd", "amardeal.com", "amardeal bd", "bKash escrow", "নগদ এসক্রো", "amar deal escrow" etc.
+   118→- Enhanced JSON-LD from 4 types to 7 types: WebSite, Organization, WebPage, Service, FAQPage, HowTo, BreadcrumbList
+   119→- Added FAQPage structured data with 5 key questions/answers about amardeal
+   120→- Added HowTo structured data for the 3-step process mentioning "AmarDeal"
+   121→- Added Service schema with aggregateRating, serviceType array, offers
+   122→- Enhanced Organization schema with foundingDate, numberOfEmployees, addressLocality, 5 alternateName variants
+   123→- Enhanced all 9 SEO route pages with keyword-rich descriptions containing "AmarDeal", "amar deal", "আমারডিল"
+   124→- Added per-page keywords, canonical URLs, OpenGraph metadata, and BreadcrumbList JSON-LD to each route
+   125→- FAQ page gets additional dedicated FAQPage JSON-LD with all 11 FAQs
+   126→- How-it-works page gets additional HowTo JSON-LD
+   127→- Converted ALL navigation links from <button> to <a href> tags (navbar desktop + mobile, footer, page-wrapper)
+   128→- This gives Google 18 crawlable internal links from the homepage alone
+   129→- Created manifest.webmanifest for PWA support and better indexing
+   130→- Created not-found.tsx with Bengali 404 page and link back to home
+   131→- Enhanced robots.ts: added 9 user agents (Googlebot, Bingbot, Slurp, DuckDuckBot, Baiduspider, YandexBot, facebookexternalhit, Twitterbot, *), disallow dashboard/admin/auth/api
+   132→- Enhanced sitemap.ts: 10 URLs with proper priority weights
+   133→- Added mobile-web-app-capable, apple-mobile-web-app-capable, theme-color meta tags
+   134→- Added geo.placename meta tag
+   135→
+   136→Stage Summary:
+   137→- SEO is now significantly more powerful for brand keywords "amardeal" and "amar deal"
+   138→- 34 keywords targeting brand name in various forms
+   139→- 7 JSON-LD structured data types (including FAQPage for rich snippets)
+   140→- 18 crawlable internal links on homepage
+   141→- 9 search engine crawlers explicitly supported in robots.txt
+   142→- All verified working via agent browser
+   143→---
+   144→Task ID: 2
+   145→Agent: Email Integration Agent
+   146→Task: Integrate Resend email system into deal workflow APIs
+   147→
+   148→Work Log:
+   149→- Installed resend package
+   150→- Created src/lib/email.ts with 7 Bengali email templates
+   151→- Integrated email into 8 deal workflow API routes
+   152→- Created test API route at /api/email/test
+   153→
+   154→Stage Summary:
+   155→- Email system integrated for: deal created, payment submitted, payment verified, delivery started, deal completed, deal cancelled, dispute raised
+   156→- All emails fire-and-forget (never block API response)
+   157→- Silent fail if RESEND_API_KEY not set (logs to console instead)
+   158→- Beautiful responsive Bengali HTML email templates
+   159→---
+   160→Task ID: 3
+   161→Agent: Main Agent
+   162→Task: Complete Resend email system integration with all templates, API routes, admin UI, and testing
+   163→
+   164→Work Log:
+   165→- Added RESEND_API_KEY=re_2kC45zXs_KGyqBHvN7aXDANYdEDBhZwh3 to .env
+   166→- Added 7 new Bengali email templates to src/lib/email.ts:
+   167→  - welcomeEmail (registration welcome)
+   168→  - loginNotificationEmail (security login alert with IP/time)
+   169→  - payoutRequestedEmail (seller payout / buyer refund request)
+   170→  - payoutCompletedEmail (payout/refund completion confirmation)
+   171→  - disputeResolvedEmail (admin dispute resolution with complete/refund_buyer actions)
+   172→  - adminNewDealEmail (admin notification for new deals)
+   173→  - adminDisputeEmail (admin alert for new disputes)
+   174→- Created /api/email/test route with 12 testable template types
+   175→- Integrated email into 6 additional API routes:
+   176→  - /api/deals/deliver → deliveryStartedEmail to buyer
+   177→  - /api/auth/register → welcomeEmail to new user
+   178→  - /api/auth/login → loginNotificationEmail with IP and time
+   179→  - /api/deals/[id]/request-payout → payoutRequestedEmail
+   180→  - /api/admin/payouts/[id]/complete → payoutCompletedEmail
+   181→  - /api/admin/deals/[id]/resolve-dispute → disputeResolvedEmail to both parties
+   182→  - /api/admin/deals/[id]/reject → dealCancelledEmail to both parties
+   183→  - /api/deals/create → adminNewDealEmail to admin
+   184→  - /api/deals/[id]/dispute → adminDisputeEmail to admin
+   185→- Added 'email-settings' to AdminPanel type in store.ts
+   186→- Added "ইমেইল সেটিংস" sidebar item with Mail icon
+   187→- Created email-settings-panel.tsx with:
+   188→  - Configuration status card (checks if Resend API key is active)
+   189→  - Test email input field (optional, defaults to admin@demo.com)
+   190→  - "সব টেস্ট পাঠান" (Send All Tests) button
+   191→  - 12 template test cards in responsive grid
+   192→  - Individual test buttons with loading/success/error states
+   193→  - Free plan notice about onboarding@resend.dev domain
+   194→- Verified via API: welcome, deal_created, payout_completed all return success
+   195→- Verified via browser: email settings panel renders correctly in admin dashboard
+   196→
+   197→Stage Summary:
+   198→- Total: 14 Bengali email templates covering entire deal lifecycle
+   199→- Email integrated into 15 API endpoints (fire-and-forget, never blocks)
+   200→- Admin panel has dedicated email testing UI
+   201→- RESEND_API_KEY added to .env (NOT pushed to GitHub per user request)
+   202→- All emails use Resend free tier (3,000/month)
+   203→- Current from address: onboarding@resend.dev (free test domain)
+   204→---
+   205→Task ID: 4
+   206→Agent: Main Agent
+   207→Task: Switch from Resend to Brevo SMTP for email
+   208→
+   209→Work Log:
+   210→- Installed nodemailer + @types/nodemailer
+   211→- Replaced Resend client with Brevo SMTP transport in email.ts
+   212→- SMTP config: smtp-relay.brevo.com:587 with BREVO_SMTP_USER + BREVO_SMTP_KEY
+   213→- Added BREVO_FROM_EMAIL env var for custom sender address
+   214→- Updated /api/email/test to check BREVO_SMTP_KEY instead of RESEND_API_KEY
+   215→- Updated admin email-settings-panel UI text from "Resend" to "Brevo SMTP"
+   216→- Removed resend package (bun remove resend)
+   217→- Updated .env with BREVO_SMTP_USER, BREVO_SMTP_KEY, BREVO_FROM_EMAIL placeholders
+   218→
+   219→Stage Summary:
+   220→- Email system now uses Brevo SMTP (nodemailer) instead of Resend
+   221→- 14 Bengali templates unchanged — only transport layer swapped
+   222→- Free tier: 300 emails/day (~9,000/month)
+   223→- User needs to provide Brevo credentials in .env
+   224→- NOT pushed to GitHub (waiting for user verification)
+   225→---
+   226→Task ID: 5
+   227→Agent: Main Agent
+   228→Task: Configure Brevo SMTP with user-provided key, fix silent error bug
+   229→
+   230→Work Log:
+   231→- User provided Brevo SMTP key: xsmtpsib-aff0de1df7303b25cfacb78396e298d06a31fce84f433bff8bf932281a1462d5-DI1WP9XzQmSkIYOo
+   232→- Added key to .env BREVO_SMTP_KEY
+   233→- Discovered critical bug: sendEmail() was catching all errors silently, causing test API to always return "success" even when emails failed
+   234→- Fixed sendEmail() to throw errors (test endpoint now properly reports auth failures)
+   235→- Updated /api/email/test to check both BREVO_SMTP_KEY and BREVO_SMTP_USER, with Bengali error messages
+   236→- Updated email-settings-panel.tsx: config status now parses API error response and displays specific error
+   237→- Updated info box with clearer instructions about what BREVO_SMTP_USER and BREVO_SMTP_KEY are
+   238→- Tested direct nodemailer auth — "Invalid login: 535 5.7.8 Authentication failed" (BREVO_SMTP_USER not set)
+   239→- Tried multiple email guesses (asibhossain77@gmail.com, asib@gmail.com, etc.) — all failed
+   240→- Left BREVO_SMTP_USER empty in .env with clear Bengali comment explaining what's needed
+   241→
+   242→Stage Summary:
+   243→- Brevo SMTP key configured in .env
+   244→- Bug fixed: sendEmail() now throws errors (was silently catching)
+   245→- Test API now properly reports auth errors
+   246→- Admin panel shows specific error when BREVO_SMTP_USER is missing
+   247→- BLOCKER: User must provide their Brevo login email (the email used to log into brevo.com) as BREVO_SMTP_USER in .env
+   248→- NOT pushed to GitHub
+   249→---
+   250→Task ID: 2
+   251→Agent: Main
+   252→Task: Admin can update payment amount during payment verification
+   253→
+   254→Work Log:
+   255→- Explored payment verification flow: Deal model stores paymentAmount, platformFee directly (no separate Payment model)
+   256→- Read PaymentVerifyPanel in admin-main.tsx (inline component, lines 412-933)
+   257→- Read /api/admin/verify route — only updates status to payment_verified
+   258→- Read /api/deals/payment route — buyer submits payment proof
+   259→- Created new API: POST /api/admin/deals/[id]/update-payment-amount
+   260→  - Accepts { paymentAmount }
+   261→  - Validates: deal exists, status is payment_pending, amount > 0
+   262→  - Recalculates platformFee based on deal amount using FeeRule tiers
+   263→  - Returns updated deal
+   264→- Updated PaymentVerifyPanel UI:
+   265→  - Added Pencil icon import
+   266→  - Added state: editedAmount, isUpdatingAmount
+   267→  - Added useEffect to initialize editedAmount when deal is selected
+   268→  - Added handleUpdateAmount handler that calls the new API
+   269→  - Replaced static payment amount display with editable Input + Save button
+   270→  - Added comparison row showing deal amount when payment amount differs
+   271→  - Added amber "পার্থক্য আছে" (difference exists) badge
+   272→  - Updated verify confirmation dialog to show both deal amount and payment amount
+   273→- Lint check: no new errors (only pre-existing require() issues)
+   274→
+   275→Stage Summary:
+   276→- API: /api/admin/deals/[id]/update-payment-amount (POST)
+   277→- UI: Editable payment amount input with ৳ prefix, save button, and deal amount comparison
+   278→- Admin can now correct payment amount before verifying
+   279→- Button auto-disables when amount matches current value
+   280→
+   281→
+   282→---
+   283→Task ID: 1
+   284→Agent: Main Agent
+   285→Task: Fix Google Search Console Review snippets structured data issue
+   286→
+   287→Work Log:
+   288→- Identified the issue: `aggregateRating` was placed on `Service` type, which is NOT in Google's supported list for Review snippets
+   289→- Google Review snippets support: Organization, Product, LocalBusiness, SoftwareApplication, Book, Movie, Recipe, Course, Event, etc.
+   290→- Moved `aggregateRating` from `Service` to `Organization` type in layout.tsx JSON-LD
+   291→- Added 5 proper `Review` objects to `Organization` with: author (Person), datePublished, reviewRating (Rating), reviewBody
+   292→- Removed `aggregateRating` from `Service` schema entirely
+   293→- Verified via agent-browser that JSON-LD renders correctly with proper structure
+   294→- Confirmed no other files contain `aggregateRating` that could cause the same issue
+   295→
+   296→Stage Summary:
+   297→- Google Search Console Review snippets error fixed by moving rating data to supported `Organization` type
+   298→- Added 5 sample Review objects to make Review snippets eligible for rich results
+   299→- Service schema cleaned up (no longer has aggregateRating)
+   300→
+   301→---
+   302→Task ID: 2
+   303→Agent: Main Agent
+   304→Task: Fix desktop view dashboard header alignment
+   305→
+   306→Work Log:
+   307→- Analyzed pixel-level alignment using agent-browser and JavaScript measurements
+   308→- Found 3 alignment issues:
+   309→  1. Navbar right section had `lg:pr-6` adding double padding (nav px-6 + section pr-6 = 48px)
+   310→  2. Nav element had `px-6` left padding pushing logo 24px more than sidebar nav items
+   311→  3. Admin header title had `text-center lg:text-left` and `justify-center lg:justify-start` causing unnecessary centering on mobile
+   312→- Fixed navbar: Added `lg:pl-0` to nav for sidebar view, removed `lg:pr-6` from right section
+   313→- Fixed dashboard content: Changed `lg:p-8` to `lg:px-6 lg:py-8` in DashboardMain, AdminMain, SellerMain
+   314→- Fixed admin header: Removed `text-center lg:text-left` wrapper and `justify-center lg:justify-start` from h1
+   315→- Verified with pixel measurements: logo and sidebar both at 20px left, buttons and content both at 24px right
+   316→
+   317→Stage Summary:
+   318→- Desktop dashboard header alignment fixed across all views (user, admin, seller)
+   319→- Left alignment: Logo matches sidebar nav items (both at 20px from viewport edge)
+   320→- Right alignment: Navbar buttons match content area (both at 24px from viewport edge)
+   321→
+   322→---
+   323→Task ID: seo-fix
+   324→Agent: fullstack-developer
+   325→Task: Fix Google page indexing by making route pages server-render actual content
+   326→
+   327→Work Log:
+   328→- Identified root cause: All route pages used AppShell with initialView (client-side only)
+   329→- Created SeoPageLayout server component at src/components/seo-page-layout.tsx
+   330→- Rewrote 8 route pages: about, faq, fees, security, contact, privacy, terms, how-it-works
+   331→- Each page now renders section component directly (server-side rendered)
+   332→- Blog page kept as-is (uses AppShell for complex routing)
+   333→
+   334→Stage Summary:
+   335→- All 8 route pages now render actual HTML content server-side
+   336→- Google can now crawl and index unique content on each page
+   337→- Metadata, OpenGraph, and BreadcrumbList JSON-LD preserved
+   338→---
+   339→Task ID: 1
+   340→Agent: Main
+   341→Task: Update email template brand name to "আমারডিল.বাংলা" and enhance visual design
+   342→
+   343→Work Log:
+   344→- Read current email.ts template and website globals.css to identify color palette
+   345→- Website primary: oklch(0.768 0.189 131) ≈ #059669 (emerald-600) — already matched in email
+   346→- Changed SITE_NAME from 'AmarDeal আমারডিল' to 'আমারডিল.বাংলা'
+   347→- Changed FROM_NAME to 'আমারডিল.বাংলা'
+   348→- Enhanced email template design:
+   349→  - Header: Added radial gradient light circles (decorative bokeh), badge with glassmorphism border, gradient border bar below header
+   350→  - Body: Increased padding, refined line-height to 1.75
+   351→  - Info cards: Added subtle box-shadows, row separator borders, increased border-radius to 14px
+   352→  - Success cards: Larger emoji (32px), more padding
+   353→  - OTP card: Redesigned with individual digit boxes (6 white boxes with green borders, each digit in its own box), top gradient accent line, refined shadows
+   354→  - CTA button: Larger border-radius (14px), dual box-shadow for depth
+   355→  - Footer: Gradient background, social icons row, larger brand text
+   356→  - Background: Changed to match website #F2F4F7
+   357→  - Overall wrapper: Larger max-width (540px), green-tinted shadow
+   358→- Created otpDigitsHtml() helper to render 6-digit OTP as individual styled boxes
+   359→- Updated both passwordResetOtpEmail and emailVerificationOtpEmail to use digit boxes
+   360→
+   361→Stage Summary:
+   362→- Email template now shows "আমারডিল.বাংলা" in header and footer
+   363→- Theme colors match website (emerald green palette)
+   364→- OTP codes now display in 6 individual digit boxes instead of plain monospace text
+   365→- Enhanced visual design with decorative elements, better shadows, and refined typography
+   366→- No lint errors introduced
+   367→---
+   368→Task ID: 1
+   369→Agent: Main Agent
+   370→Task: Fix mobile admin panel - add mobile navigation to access email settings and other panels
+   371→
+   372→Work Log:
+   373→- Identified root cause: AdminSidebar is `hidden lg:flex` on mobile with NO alternative navigation
+   374→- Created mobile top bar in admin-view.tsx with hamburger menu button
+   375→- Implemented Sheet-based slide-in navigation menu for mobile (left side)
+   376→- Added all 15 admin nav items with proper icon and label
+   377→- Implemented same permission filtering logic as desktop sidebar (super_admin/staff/support roles)
+   378→- Added logout button in mobile nav
+   379→- Used `pt-12 lg:pt-0` on main content to account for fixed mobile header height
+   380→- Tested on mobile viewport (375x812) - menu opens, all items visible, email settings page loads with all buttons
+   381→- Removed unused `X` import
+   382→
+   383→Stage Summary:
+   384→- File modified: `src/components/admin/admin-view.tsx` (complete rewrite with mobile nav)
+   385→- Mobile admin navigation now fully functional with Sheet-based menu
+   386→- All admin panels including "ইমেইল সেটিংস" are accessible on mobile
+   387→- No lint errors introduced
+   388→---
+   389→Task ID: 2
+   390→Agent: Main Agent
+   391→Task: Group admin sidebar nav items into categories (desktop + mobile)
+   392→
+   393→Work Log:
+   394→- Created shared config file `admin-nav-config.ts` with 5 groups and shared permission logic
+   395→- Groups: পরিচালনা (5 items), ডিল ও ইউজার (2), অর্থ ও ফি (2), সেটিংস ও কন্টেন্ট (5), অ্যাকাউন্ট (1)
+   396→- Refactored `admin-sidebar.tsx` to import from shared config, render grouped headings
+   397→- Refactored `admin-view.tsx` mobile Sheet nav to use same grouped config
+   398→- Added `filterNavGroups()` utility that filters by role and removes empty groups
+   399→- Verified both mobile (375px) and desktop (1440px) — all 5 group labels visible, items properly categorized
+   400→
+   401→Stage Summary:
+   402→- New file: `src/components/admin/admin-nav-config.ts`
+   403→- Modified: `src/components/admin/admin-sidebar.tsx` (simplified, uses shared config)
+   404→- Modified: `src/components/admin/admin-view.tsx` (simplified, uses shared config)
+   405→- Zero lint errors, zero runtime errors
+   406→---
+   407→Task ID: 2
+   408→Agent: Main Agent
+   409→Task: Fix admin mobile duplicate sidebar + email template OTP size and header logo removal
+   410→
+   411→Work Log:
+   412→- Diagnosed admin-view.tsx: AdminSidebar had internal `hidden lg:flex` but needed parent-level enforcement
+   413→- Wrapped AdminSidebar in `<div className="hidden lg:block">` in admin-view.tsx to guarantee mobile hiding
+   414→- Updated email template OTP styling: font-size 42px→56px, letter-spacing 14px→18px, font-weight 800→900, margin increased
+   415→- Updated mobile responsive OTP: font-size 34px→44px, letter-spacing 10px→12px
+   416→- Removed logo placeholder (green square) from email header, kept only site name text
+   417→- Removed .header-logo, .header-logo img, .header-logo-placeholder CSS rules
+   418→- Increased header name font-weight from 700→800 and font-size from 22px→24px
+   419→
+   420→Stage Summary:
+   421→- Mobile admin panel: only Sheet-based mobile nav will show on small screens, desktop sidebar fully hidden via parent wrapper
+   422→- Email OTP numbers are now significantly larger (56px desktop, 44px mobile)
+   423→- Email header shows only the site name in green, no logo/image placeholder
+   424→---
+   425→Task ID: 3
+   426→Agent: Main Agent
+   427→Task: Replace support button hidden label with bell-vibration nudge animation
+   428→
+   429→Work Log:
+   430→- Analyzed existing live-support-button.tsx: had static "লাইভ সাপোর্ট" text label when hidden, slide-out animation
+   431→- Removed the static text label approach
+   432→- Added `isNudging` state and `hoverLockRef` ref for hover interaction control
+   433→- Implemented periodic nudge: first peek after 8s of hiding, then every 15s
+   434→- Bell shake animation: decaying oscillation keyframes [0, -14, 12, -10, 8, -5, 3, 0] with 0.5s delay for slide-in
+   435→- Nudge glow: pulsing ring animation during shake for extra attention
+   436→- Hover behavior preserved: hovering reveals button and locks nudge; leaving re-hides after 1s
+   437→- Smooth spring transitions for slide in/out (stiffness: 280, damping: 28)
+   438→- Verified in browser: button hides after 6s, nudges at ~14s with bell shake, hides again at ~17.5s, repeats
+   439→
+   440→Stage Summary:
+   441→- Rewrote /home/z/my-project/src/components/live-support-button.tsx
+   442→- Behavior: auto-hide → 8s pause → bell-shake nudge (3.5s) → hide → 15s pause → repeat
+   443→- All existing functionality preserved (panel, contacts, quick links, escape key, hover reveal)
+   444→- No compilation errors, browser-verified
+   445→---
+   446→Task ID: 4
+   447→Agent: Main Agent
+   448→Task: Redesign user lenden page to match dashboard design language
+   449→
+   450→Work Log:
+   451→- Analyzed dashboard overview (dashboard-main.tsx): GlassCard pattern, framer-motion animations, gradient banners, Badge components, proper typography
+   452→- Compared with old lenden page (user-payment-view.tsx): plain borders, no glass effect, ultra-small fonts, raw input, no animations
+   453→- Rewrote user-payment-view.tsx with full dashboard design system:
+   454→  - GlassCard component (backdrop-blur, border-white/60, shadow-xl)
+   455→  - Gradient header banner (from-primary/10 via-primary/5 to-transparent) with Banknote icon
+   456→  - 4 stat cards in 2x2 grid matching dashboard stat card pattern (icon + value + label)
+   457→  - framer-motion staggered entry animations (delay: 0.1 + i*0.06)
+   458→  - shadcn Input for search with Search icon
+   459→  - Filter tabs with icons (ArrowUpDown, CheckCircle2, XCircle, HourglassIcon, ShieldAlert, Ban)
+   460→  - Badge component for status (replacing custom mini-badges)
+   461→  - Desktop table inside GlassCard with !p-0 overflow-hidden
+   462→  - Mobile cards using GlassCard with !p-0
+   463→  - Loading skeletons matching dashboard skeleton patterns (StatCardSkeleton, TableSkeleton)
+   464→  - Empty state using GlassCard with centered layout
+   465→- Verified in browser: desktop and mobile views, no compilation or runtime errors
+   466→
+   467→Stage Summary:
+   468→- Rewrote /home/z/my-project/src/components/dashboard/user-payment-view.tsx
+   469→- Visual consistency with dashboard: same GlassCard, animation timing, typography, color system
+   470→- All functionality preserved: search, filter, deal click navigation, copy txn ID
+   471→- Clean dev log, browser verified on both desktop and mobile viewports
+   472→---
+   473→Task ID: 5
+   474→Agent: Main Agent
+   475→Task: Fix mobile view overflow on lenden page
+   476→
+   477→Work Log:
+   478→- Opened lenden page on 375px mobile viewport
+   479→- Found all elements 583-615px wide (viewport is 375px) — massive horizontal overflow
+   480→- Traced parent chain: flex child `flex-1 md:pl-64` had `min-width: auto` and was 615px
+   481→- Root cause: filter tab buttons with `shrink-0` (6 buttons × ~100px = 625px total) propagated intrinsic min-width up through the flex chain via `min-width: auto`
+   482→- Dashboard overview had same layout but no `shrink-0` overflow content, so it worked fine
+   483→- Fixed by adding `min-w-0 overflow-x-hidden` to the flex child and `min-w-0` to the flex container in dashboard-view.tsx
+   484→- Verified: 0 overflowing elements on mobile, desktop layout unaffected
+   485→
+   486→Stage Summary:
+   487→- Fixed /home/z/my-project/src/components/dashboard/dashboard-view.tsx: added `min-w-0` to flex container and `min-w-0 overflow-x-hidden` to flex child
+   488→- Root cause: flexbox `min-width: auto` preventing shrink below `shrink-0` children intrinsic width
+   489→- Mobile viewport: 375px, all elements now fit correctly
+   490→
