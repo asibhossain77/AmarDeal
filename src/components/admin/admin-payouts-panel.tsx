@@ -99,12 +99,12 @@ function getPayoutTypeLabel(type: string): string {
 }
 
 function formatAmount(amount: number): string {
-  return `৳${Math.round(amount).toLocaleString('bn-BD')}`;
+  return `৳${Math.round(amount).toLocaleString('en')}`;
 }
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '---';
-  return new Date(dateStr).toLocaleDateString('bn-BD', {
+  return new Date(dateStr).toLocaleDateString('en', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -303,7 +303,7 @@ export function AdminPayoutsPanel() {
                   মোট পেন্ডিং
                 </p>
                 <p className="text-xl font-bold text-foreground">
-                  {pendingCount.toLocaleString('bn-BD')}
+                  {pendingCount.toLocaleString('en')}
                 </p>
               </div>
             </div>
@@ -328,7 +328,7 @@ export function AdminPayoutsPanel() {
                   মোট পরিশোধিত
                 </p>
                 <p className="text-xl font-bold text-foreground">
-                  {paidCount.toLocaleString('bn-BD')}
+                  {paidCount.toLocaleString('en')}
                 </p>
               </div>
             </div>

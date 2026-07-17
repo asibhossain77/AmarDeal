@@ -166,7 +166,7 @@ export function PayoutAccountsPanel() {
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
                     <p className="text-muted-foreground mb-0.5">পরিমাণ</p>
                     <p className="font-bold text-foreground">
-                      ৳{p.amount.toLocaleString('bn-BD')}
+                      ৳{p.amount.toLocaleString('en')}
                     </p>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
@@ -185,7 +185,7 @@ export function PayoutAccountsPanel() {
 
                 {/* Date */}
                 <p className="text-[10px] text-muted-foreground/60 text-right">
-                  {new Date(p.createdAt).toLocaleDateString('bn-BD', {
+                  {new Date(p.createdAt).toLocaleDateString('en', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',

@@ -201,7 +201,7 @@ export function dealCreatedEmail(toName: string, dealTitle: string, amount: numb
       <p><strong>${creatorName}</strong> আপনাকে <strong>${role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'}</strong> হিসেবে একটি নতুন ডিল পাঠিয়েছেন:</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('পক্ষ', role === 'buyer' ? 'বিক্রেতা' : 'ক্রেতা'),
       ])}
       <p>আপনার ড্যাশবোর্ডে লগইন করে ডিলটি গ্রহণ বা বাতিল করুন।</p>
@@ -219,7 +219,7 @@ export function dealAcceptedEmail(toName: string, dealTitle: string, amount: num
       <p><strong>${sellerName}</strong> আপনার ডিলটি গ্রহণ করেছেন। এখন পেমেন্ট করুন:</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
       ])}
       <p>ড্যাশবোর্ডে গিয়ে পেমেন্ট জমা দিন। টাকা এসক্রোতে সুরক্ষিত থাকবে।</p>
       <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">পেমেন্ট করুন</a></div>
@@ -236,7 +236,7 @@ export function paymentSubmittedEmail(toName: string, dealTitle: string, amount:
       <p>"${dealTitle}" ডিলে পেমেন্ট সফলভাবে জমা হয়েছে।</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
       ])}
       <div class="alert alert-warn"><p>অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে ভেরিফাই হয়।</p></div>
     `),
@@ -253,7 +253,7 @@ export function paymentVerifiedEmail(toName: string, dealTitle: string, amount: 
       <p>"${dealTitle}" ডিলের পেমেন্ট অ্যাডমিন কর্তৃক ভেরিফাইড হয়েছে।</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('অবস্থা', 'ভেরিফাইড'),
       ])}
       ${isBuyer
@@ -274,7 +274,7 @@ export function deliveryStartedEmail(toName: string, dealTitle: string, amount: 
       <p><strong>${sellerName}</strong> "${dealTitle}" ডিলের কাজ সম্পন্ন করেছেন।</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('বিক্রেতা', sellerName),
       ])}
       <p>দয়া করে পণ্য/সেবা যাচাই করুন এবং কনফার্ম করুন। কোনো সমস্যা হলে বিরোধ দায়ের করুন।</p>
@@ -293,7 +293,7 @@ export function dealCompletedEmail(toName: string, dealTitle: string, amount: nu
       <div class="alert alert-success"><strong>লেনদেন নিরাপদে সম্পন্ন হয়েছে!</strong></div>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('অবস্থা', 'সম্পন্ন'),
       ])}
       ${isSeller
@@ -326,10 +326,10 @@ export function disputeRaisedEmail(toName: string, dealTitle: string, buyerName:
       <h2>ডিলে বিরোধ দায়ের</h2>
       <p class="greeting">প্রিয় ${toName},</p>
       <p><strong>${buyerName}</strong> "${dealTitle}" ডিলে বিরোধ দায়ের করেছেন। অ্যাডমিন এখন পর্যালোচনা করবেন।</p>
-      <div class="alert alert-danger">বিরোধিত পরিমাণ: <strong>৳${amount.toLocaleString('bn-BD')}</strong></div>
+      <div class="alert alert-danger">বিরোধিত পরিমাণ: <strong>৳${amount.toLocaleString('en')}</strong></div>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('ক্রেতা', buyerName),
       ])}
       <p>অ্যাডমিন উভয় পক্ষের কথা শুনে সিদ্ধান্ত নেবেন।</p>
@@ -386,7 +386,7 @@ export function payoutRequestedEmail(toName: string, dealTitle: string, amount: 
       <p>"${dealTitle}" ডিলের জন্য আপনার ${isSeller ? 'পেআউট' : 'রিফান্ড'} অনুরোধ গ্রহণ করা হয়েছে।</p>
       ${infoTable([
         infoRow('ডিল', dealTitle),
-        infoRow('পরিমাণ', `৳${amount.toLocaleString('bn-BD')}`),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
         infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),
       ])}
       <div class="alert alert-warn">অ্যাডমিন ভেরিফিকেশনের জন্য অপেক্ষা করুন। সাধারণত <strong>১-২ ঘন্টার</strong> মধ্যে প্রক্রিয়া সম্পন্ন হয়।</div>
@@ -402,7 +402,7 @@ export function payoutCompletedEmail(toName: string, dealTitle: string, amount: 
       <h2>${isSeller ? 'পেআউট' : 'রিফান্ড'} সম্পন্ন</h2>
       <p class="greeting">প্রিয় ${toName},</p>
       <p>"${dealTitle}" ডিলের ${isSeller ? 'পেআউট' : 'রিফান্ড'} সফলভাবে সম্পন্ন হয়েছে!</p>
-      <div class="alert alert-success">৳${amount.toLocaleString('bn-BD')} — আপনার অ্যাকাউন্টে পাঠানো হয়েছে</div>
+      <div class="alert alert-success">৳${amount.toLocaleString('en')} — আপনার অ্যাকাউন্টে পাঠানো হয়েছে</div>
       ${infoTable([
         infoRow('ডিল', dealTitle),
         infoRow('অ্যাকাউন্ট', `${accountType} — ${accountNumber}`),

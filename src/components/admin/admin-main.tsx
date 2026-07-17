@@ -319,7 +319,7 @@ function DashboardStatsPanel() {
     ? [
         {
           label: 'মোট ইউজার',
-          value: stats.totalUsers.toLocaleString('bn-BD'),
+          value: stats.totalUsers.toLocaleString('en'),
           icon: Users,
           color: 'text-violet-500 dark:text-violet-400',
           bg: 'bg-violet-500/10',
@@ -327,7 +327,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'মোট ডিল',
-          value: stats.totalDeals.toLocaleString('bn-BD'),
+          value: stats.totalDeals.toLocaleString('en'),
           icon: Handshake,
           color: 'text-primary',
           bg: 'bg-primary/10',
@@ -335,7 +335,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'পেন্ডিং ভেরিফিকেশন',
-          value: stats.pendingVerification.toLocaleString('bn-BD'),
+          value: stats.pendingVerification.toLocaleString('en'),
           icon: ShieldCheck,
           color: 'text-amber-500 dark:text-amber-400',
           bg: 'bg-amber-500/10',
@@ -343,7 +343,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'পেন্ডিং পেআউট',
-          value: stats.pendingPayouts.toLocaleString('bn-BD'),
+          value: stats.pendingPayouts.toLocaleString('en'),
           icon: Banknote,
           color: 'text-orange-500 dark:text-orange-400',
           bg: 'bg-orange-500/10',
@@ -351,7 +351,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'অ্যাডমিন কল',
-          value: stats.adminCalls.toLocaleString('bn-BD'),
+          value: stats.adminCalls.toLocaleString('en'),
           icon: Headphones,
           color: 'text-red-500 dark:text-red-400',
           bg: 'bg-red-500/10',
@@ -359,7 +359,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'বিরোধ',
-          value: stats.disputedCount.toLocaleString('bn-BD'),
+          value: stats.disputedCount.toLocaleString('en'),
           icon: AlertTriangle,
           color: 'text-rose-500 dark:text-rose-400',
           bg: 'bg-rose-500/10',
@@ -367,7 +367,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'মোট লেনদেন (৳)',
-          value: stats.completedAmount.toLocaleString('bn-BD'),
+          value: stats.completedAmount.toLocaleString('en'),
           icon: Wallet,
           color: 'text-emerald-500 dark:text-emerald-400',
           bg: 'bg-emerald-500/10',
@@ -375,7 +375,7 @@ function DashboardStatsPanel() {
         },
         {
           label: 'মোট প্রফিট (৳)',
-          value: stats.totalProfit.toLocaleString('bn-BD'),
+          value: stats.totalProfit.toLocaleString('en'),
           icon: TrendingUp,
           color: 'text-teal-500 dark:text-teal-400',
           bg: 'bg-teal-500/10',
@@ -601,7 +601,7 @@ function PaymentVerifyPanel() {
     const shortId = deal.id.length > 10 ? 'DL-' + deal.id.slice(-5) : deal.id;
     const userName = deal.creator?.name || deal.buyer?.name || 'ইউজার';
     const isActing = actionLoading === deal.id;
-    const dealTime = new Date(deal.createdAt).toLocaleString('bn-BD', {
+    const dealTime = new Date(deal.createdAt).toLocaleString('en', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -632,7 +632,7 @@ function PaymentVerifyPanel() {
               </Badge>
             </div>
             <p className="text-base font-bold text-foreground">{userName}</p>
-            <p className="text-2xl font-extrabold text-foreground mt-1">৳{deal.amount.toLocaleString('bn-BD')}</p>
+            <p className="text-2xl font-extrabold text-foreground mt-1">৳{deal.amount.toLocaleString('en')}</p>
           </div>
 
           {/* Payment Proof Details */}
@@ -724,7 +724,7 @@ function PaymentVerifyPanel() {
               {deal.amount && Number(editedAmount) !== deal.amount && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs">
                   <span className="text-muted-foreground">ডিলের পরিমাণ:</span>
-                  <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('bn-BD')}</span>
+                  <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                   <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
                     পার্থক্য আছে
                   </span>
@@ -801,11 +801,11 @@ function PaymentVerifyPanel() {
                       </span>
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">ডিলের পরিমাণ</span>
-                        <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('bn-BD')}</span>
+                        <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">পেমেন্টের পরিমাণ</span>
-                        <span className="font-bold text-foreground">৳{Number(editedAmount).toLocaleString('bn-BD')}</span>
+                        <span className="font-bold text-foreground">৳{Number(editedAmount).toLocaleString('en')}</span>
                       </span>
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">ডিল আইডি</span>
@@ -846,7 +846,7 @@ function PaymentVerifyPanel() {
                       </span>
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">পরিমাণ</span>
-                        <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('bn-BD')}</span>
+                        <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                     </span>
                     <span className="text-xs text-muted-foreground">📌 পেমেন্ট তথ্য মুছে যাবে কিন্তু ডিল বাতিল হবে না।</span>
@@ -883,7 +883,7 @@ function PaymentVerifyPanel() {
                       </span>
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">পরিমাণ</span>
-                        <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('bn-BD')}</span>
+                        <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                     </span>
                     <span className="text-xs text-red-600 dark:text-red-400">⚠️ এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।</span>
@@ -983,7 +983,7 @@ function PaymentVerifyPanel() {
                       {userName}
                     </td>
                     <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
-                      ৳{deal.amount.toLocaleString('bn-BD')}
+                      ৳{deal.amount.toLocaleString('en')}
                     </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
@@ -1027,7 +1027,7 @@ function PaymentVerifyPanel() {
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
                   </div>
-                  <p className="text-lg font-bold text-foreground ml-3">৳{deal.amount.toLocaleString('bn-BD')}</p>
+                  <p className="text-lg font-bold text-foreground ml-3">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
               </SolidCard>
             );
@@ -1174,7 +1174,7 @@ function AllDealsPanel() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-foreground truncate">{chatDeal.title}</p>
             <p className="text-xs text-muted-foreground">
-              {chatDeal.buyer?.name || '—'} — {chatDeal.seller?.name || 'N/A'} · ৳{chatDeal.amount.toLocaleString('bn-BD')}
+              {chatDeal.buyer?.name || '—'} — {chatDeal.seller?.name || 'N/A'} · ৳{chatDeal.amount.toLocaleString('en')}
             </p>
           </div>
           <span className="font-mono text-xs text-primary font-semibold bg-primary/10 px-2.5 py-1 rounded-lg">
@@ -1296,7 +1296,7 @@ function AllDealsPanel() {
                       <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{buyerName}</td>
                       <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{sellerName}</td>
                       <td className="px-5 py-4 text-foreground max-w-[160px] truncate">{deal.title}</td>
-                      <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">৳{deal.amount.toLocaleString('bn-BD')}</td>
+                      <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">৳{deal.amount.toLocaleString('en')}</td>
                       <td className="px-5 py-4 text-center whitespace-nowrap"><StatusBadge status={deal.status} /></td>
                       <td className="px-5 py-4 text-center whitespace-nowrap">
                         <button
@@ -1343,7 +1343,7 @@ function AllDealsPanel() {
                       <p>ক্রেতা: <span className="text-foreground font-medium">{buyerName}</span></p>
                       <p>বিক্রেতা: <span className="text-foreground font-medium">{sellerName}</span></p>
                     </div>
-                    <span className="text-base font-bold text-foreground">৳{deal.amount.toLocaleString('bn-BD')}</span>
+                    <span className="text-base font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                   </div>
                   <button
                     onClick={() => setChatDeal(deal)}
@@ -1539,7 +1539,7 @@ function UsersPanel() {
                 <span className="text-xs font-medium text-muted-foreground">নিবন্ধনের তারিখ</span>
               </div>
               <p className="text-sm font-semibold text-foreground">
-                {new Date(u.createdAt).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {new Date(u.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
 
@@ -1744,11 +1744,11 @@ function UsersPanel() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-foreground truncate">{d.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(d.createdAt).toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })}
+                            {new Date(d.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })}
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-foreground">৳{d.amount.toLocaleString('bn-BD')}</p>
+                          <p className="text-sm font-bold text-foreground">৳{d.amount.toLocaleString('en')}</p>
                           <StatusBadge status={d.status} />
                         </div>
                       </div>
@@ -1837,7 +1837,7 @@ function UsersPanel() {
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-muted-foreground whitespace-nowrap text-xs">
-                      {new Date(u.createdAt).toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(u.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                   </tr>
                 ))}
@@ -2421,10 +2421,10 @@ function PayoutsPanel() {
   if (selectedPayout) {
     const p = selectedPayout;
     const isActing = actingId === p.id;
-    const pTime = new Date(p.createdAt).toLocaleString('bn-BD', {
+    const pTime = new Date(p.createdAt).toLocaleString('en', {
       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     });
-    const paidTime = p.status === 'paid' ? new Date(p.updatedAt).toLocaleString('bn-BD', {
+    const paidTime = p.status === 'paid' ? new Date(p.updatedAt).toLocaleString('en', {
       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     }) : null;
     const shortDealId = p.dealId.length > 10 ? 'DL-' + p.dealId.slice(-5) : p.dealId;
@@ -2460,7 +2460,7 @@ function PayoutsPanel() {
             <p className="text-base font-bold text-foreground">
               {isRefund ? 'ফেরতের অনুরোধ' : 'সেলার পেআউট'}
             </p>
-            <p className="text-2xl font-extrabold text-foreground mt-1">৳{p.amount.toLocaleString('bn-BD')}</p>
+            <p className="text-2xl font-extrabold text-foreground mt-1">৳{p.amount.toLocaleString('en')}</p>
           </div>
 
           {/* Details */}
@@ -2512,12 +2512,12 @@ function PayoutsPanel() {
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">ডিলের পরিমাণ</p>
-                  <p className="font-semibold text-foreground">৳{p.deal?.amount.toLocaleString('bn-BD') || '—'}</p>
+                  <p className="font-semibold text-foreground">৳{p.deal?.amount.toLocaleString('en') || '—'}</p>
                 </div>
                 {p.deal?.paymentAmount != null && p.deal.paymentAmount !== p.deal.amount && (
                   <div className="col-span-2">
                     <p className="text-[10px] text-muted-foreground">প্রকৃত পেমেন্টের পরিমাণ (ফি ছাড়া)</p>
-                    <p className="font-bold text-primary">৳{p.deal.paymentAmount.toLocaleString('bn-BD')}</p>
+                    <p className="font-bold text-primary">৳{p.deal.paymentAmount.toLocaleString('en')}</p>
                   </div>
                 )}
               </div>
@@ -2580,7 +2580,7 @@ function PayoutsPanel() {
                           </span>
                           <span className="flex justify-between text-sm">
                             <span className="text-muted-foreground">পরিমাণ</span>
-                            <span className="font-bold text-foreground">৳{p.amount.toLocaleString('bn-BD')}</span>
+                            <span className="font-bold text-foreground">৳{p.amount.toLocaleString('en')}</span>
                           </span>
                           <span className="flex justify-between text-sm">
                             <span className="text-muted-foreground">একাউন্ট</span>
@@ -2700,7 +2700,7 @@ function PayoutsPanel() {
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
-                      ৳{payout.amount.toLocaleString('bn-BD')}
+                      ৳{payout.amount.toLocaleString('en')}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <p className="text-xs font-medium text-foreground">{payout.accountType}</p>
@@ -2757,7 +2757,7 @@ function PayoutsPanel() {
                         <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-[10px]">পেন্ডিং</Badge>
                       )}
                     </div>
-                    <p className="text-lg font-bold text-foreground">৳{payout.amount.toLocaleString('bn-BD')}</p>
+                    <p className="text-lg font-bold text-foreground">৳{payout.amount.toLocaleString('en')}</p>
                   </div>
                   <p className="text-sm font-semibold text-foreground">{payout.recipient?.name || 'অজানা'}</p>
                   <p className="text-xs text-muted-foreground">
@@ -2891,10 +2891,10 @@ function DisputesPanel() {
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
-    return d.toLocaleString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString('en', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const formatAmount = (n: number) => `৳${n.toLocaleString('bn-BD')}`;
+  const formatAmount = (n: number) => `৳${n.toLocaleString('en')}`;
 
   /* ── Chat View ── */
   if (selectedDeal) {
@@ -3234,7 +3234,7 @@ function AdminCallsPanel() {
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const formatAmount = (n: number) => `৳${n.toLocaleString('bn-BD')}`;
+  const formatAmount = (n: number) => `৳${n.toLocaleString('en')}`;
 
   /* ── End Call Handler ── */
   const [endingCall, setEndingCall] = useState(false);

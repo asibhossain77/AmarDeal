@@ -35,8 +35,8 @@ export async function POST(
     if (deal) {
       const isRefund = payout.type === 'buyer_refund'
       const msg = isRefund
-        ? `অ্যাডমিন ফেরতের পেমেন্ট সম্পন্ন করেছেন। ৳${payout.amount.toLocaleString('bn-BD')} ${payout.accountType} একাউন্টে (নম্বর: ${payout.accountNumber}) পাঠানো হয়েছে।`
-        : `অ্যাডমিন পেআউট সম্পন্ন করেছেন। ৳${payout.amount.toLocaleString('bn-BD')} ${payout.accountType} একাউন্টে (নম্বর: ${payout.accountNumber}) পাঠানো হয়েছে।`
+        ? `অ্যাডমিন ফেরতের পেমেন্ট সম্পন্ন করেছেন। ৳${payout.amount.toLocaleString('en')} ${payout.accountType} একাউন্টে (নম্বর: ${payout.accountNumber}) পাঠানো হয়েছে।`
+        : `অ্যাডমিন পেআউট সম্পন্ন করেছেন। ৳${payout.amount.toLocaleString('en')} ${payout.accountType} একাউন্টে (নম্বর: ${payout.accountNumber}) পাঠানো হয়েছে।`
 
       await db.chatMessage.create({
         data: {

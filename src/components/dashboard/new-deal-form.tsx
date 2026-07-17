@@ -227,11 +227,11 @@ export function NewDealForm() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">প্ল্যাটফর্ম ফি</span>
-                      <span className="font-semibold text-foreground">৳{feePreview.fee.toLocaleString('bn-BD')}</span>
+                      <span className="font-semibold text-foreground">৳{feePreview.fee.toLocaleString('en')}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">মোট পরিশোধ</span>
-                      <span className="font-bold text-primary">৳{feePreview.total.toLocaleString('bn-BD')}</span>
+                      <span className="font-bold text-primary">৳{feePreview.total.toLocaleString('en')}</span>
                     </div>
                   </div>
                 </motion.div>

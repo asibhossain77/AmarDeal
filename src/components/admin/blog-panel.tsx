@@ -52,7 +52,7 @@ function slugify(text: string): string {
 }
 
 function toBnDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('bn-BD', {
+  return new Date(dateStr).toLocaleDateString('en', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -248,7 +248,7 @@ export function BlogPanel() {
         <div>
           <h2 className="text-xl font-bold text-foreground">ব্লগ ম্যানেজমেন্ট</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            মোট {(posts?.length || 0).toLocaleString('bn-BD')}টি পোস্ট • প্রকাশিত {(posts?.filter((p) => p.published).length || 0).toLocaleString('bn-BD')}টি
+            মোট {(posts?.length || 0).toLocaleString('en')}টি পোস্ট • প্রকাশিত {(posts?.filter((p) => p.published).length || 0).toLocaleString('en')}টি
           </p>
         </div>
         <Button

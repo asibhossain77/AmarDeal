@@ -43,7 +43,7 @@ interface ChatMsg {
    ═══════════════════════════════════════════════════════════ */
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('bn-BD', {
+  return new Date(iso).toLocaleTimeString('en', {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -57,7 +57,7 @@ function formatDate(iso: string): string {
 
   if (d.toDateString() === today.toDateString()) return 'আজ';
   if (d.toDateString() === yesterday.toDateString()) return 'গতকাল';
-  return d.toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function shouldShowDateSeparator(messages: ChatMsg[], index: number): boolean {
@@ -421,7 +421,7 @@ export function DealChatView() {
               </span>
               <span className="text-[11px] text-muted-foreground/40">•</span>
               <span className="text-[11px] font-semibold" style={{ color: '#65A30D' }}>
-                ৳{dealAmount.toLocaleString('bn-BD')}
+                ৳{dealAmount.toLocaleString('en')}
               </span>
             </div>
           </div>

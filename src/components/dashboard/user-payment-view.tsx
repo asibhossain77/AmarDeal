@@ -106,7 +106,7 @@ function getMethodIcon(name: string) {
 }
 
 function formatTaka(amount: number): string {
-  return '৳' + Math.round(amount).toLocaleString('bn-BD');
+  return '৳' + Math.round(amount).toLocaleString('en');
 }
 
 /* ═══════════════════════════════════════════
@@ -159,10 +159,10 @@ function StatCards({ deals }: { deals: DealRow[] }) {
   const verifying = deals.filter((d) => getPaymentStatus(d) === 'verifying').length;
 
   const items = [
-    { label: 'মোট লেনদেন', value: totalDeals.toLocaleString('bn-BD'), icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'পেইড', value: paid.toLocaleString('bn-BD'), icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'আনপেইড', value: unpaid.toLocaleString('bn-BD'), icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-500/10' },
-    { label: 'ভেরিফাই হচ্ছে', value: verifying.toLocaleString('bn-BD'), icon: HourglassIcon, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'মোট লেনদেন', value: totalDeals.toLocaleString('en'), icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'পেইড', value: paid.toLocaleString('en'), icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'আনপেইড', value: unpaid.toLocaleString('en'), icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-500/10' },
+    { label: 'ভেরিফাই হচ্ছে', value: verifying.toLocaleString('en'), icon: HourglassIcon, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
   return (
@@ -211,7 +211,7 @@ function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: ()
       onClick={onClick}
     >
       <td className="px-5 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
-        {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}
+        {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
       </td>
       <td className="px-5 py-3.5">
         <div className="flex items-center gap-3">
@@ -274,7 +274,7 @@ function TxnCard({ deal, user, onClick }: { deal: DealRow; user: any; onClick: (
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {counterParty || 'অপেক্ষমান'} · {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}
+            {counterParty || 'অপেক্ষমান'} · {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
           </p>
         </div>
         <div className="text-right shrink-0">
@@ -501,7 +501,7 @@ export function UserPaymentView() {
               <div className="p-5 pb-3 text-center lg:text-left">
                 <h3 className="text-base font-semibold text-foreground">ট্রানজেকশন তালিকা</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filtered.length.toLocaleString('bn-BD')}টি লেনদেন পাওয়া গেছে
+                  {filtered.length.toLocaleString('en')}টি লেনদেন পাওয়া গেছে
                 </p>
               </div>
 

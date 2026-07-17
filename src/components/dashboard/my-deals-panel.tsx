@@ -201,11 +201,11 @@ export function MyDealsPanel() {
                       )}
                     </button>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}
+                      {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                   <p className="text-base font-semibold text-foreground truncate">{deal.title}</p>
-                  <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('bn-BD')}</p>
+                  <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   {getStatusBadge(deal.status)}

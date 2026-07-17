@@ -329,7 +329,7 @@ export function SellerDealTracker() {
   const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
   const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
   const dealDate = (dealData?.createdAt || activeDeal?.createdAt)
-    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })
     : '---';
   const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || 'ক্রেতা';
   const sellerName = dealData?.seller?.name || activeDeal?.sellerName || user?.name || 'বিক্রেতা';
@@ -459,7 +459,7 @@ export function SellerDealTracker() {
 
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <DetailCard icon={Banknote} label="ডিলের পরিমাণ" value={`৳${dealAmount.toLocaleString('bn-BD')}`} />
+            <DetailCard icon={Banknote} label="ডিলের পরিমাণ" value={`৳${dealAmount.toLocaleString('en')}`} />
             <DetailCard icon={User} label="ক্রেতা" value={buyerName} />
             <DetailCard icon={User} label="বিক্রেতা" value={sellerName} />
             <DetailCard icon={CalendarDays} label="তৈরির তারিখ" value={dealDate} />

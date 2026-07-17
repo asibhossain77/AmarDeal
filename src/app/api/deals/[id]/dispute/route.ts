@@ -86,7 +86,7 @@ export async function POST(
         sendEmail(adminUser.email, adminDisputeEmail(
           adminUser.name || 'অ্যাডমিন',
           deal.title,
-          `৳${(deal.amount || 0).toLocaleString('bn-BD')}`,
+          `৳${(deal.amount || 0).toLocaleString('en')}`,
           deal.buyer?.name || 'ক্রেতা',
           deal.seller?.name || 'বিক্রেতা',
         )).catch(() => {})

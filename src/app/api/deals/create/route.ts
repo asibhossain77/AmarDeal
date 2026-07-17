@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
         sendEmail(adminUser.email, adminNewDealEmail(
           adminUser.name || 'অ্যাডমিন',
           deal.title,
-          `৳${deal.amount.toLocaleString('bn-BD')}`,
+          `৳${deal.amount.toLocaleString('en')}`,
           deal.creator?.name || 'একজন ইউজার',
           deal.buyer?.name || '-',
           deal.seller?.name || '-',

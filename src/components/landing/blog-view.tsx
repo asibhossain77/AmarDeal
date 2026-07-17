@@ -23,7 +23,7 @@ interface BlogPostFull extends BlogPostPreview {
 }
 
 function toBnDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('bn-BD', {
+  return new Date(dateStr).toLocaleDateString('en', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -56,7 +56,7 @@ function Pagination({
     pages.push(totalPages);
   }
 
-  const toBn = (n: number) => n.toLocaleString('bn-BD');
+  const toBn = (n: number) => n.toLocaleString('en');
 
   return (
     <div className="flex items-center justify-center gap-1.5 pt-8">

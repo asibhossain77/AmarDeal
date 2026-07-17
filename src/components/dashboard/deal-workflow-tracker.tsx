@@ -188,7 +188,7 @@ interface ChatMessage {
 /** Convert ISO date string to Bengali time */
 function toBnTime(isoString: string): string {
   try {
-    return new Date(isoString).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' });
+    return new Date(isoString).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
@@ -985,7 +985,7 @@ export function DealWorkflowTracker() {
   const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
   const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
   const dealDate = (dealData?.createdAt || activeDeal?.createdAt)
-    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('bn-BD', { year: 'numeric', month: 'short', day: 'numeric' })
+    ? new Date(dealData?.createdAt || activeDeal?.createdAt || '').toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })
     : '---';
   const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || user?.name || 'ক্রেতা';
   const sellerName = dealData?.seller?.name || activeDeal?.sellerName || 'বিক্রেতা';
@@ -1355,20 +1355,20 @@ export function DealWorkflowTracker() {
                   <InfoCard
                     icon={Banknote}
                     label="ডিলের পরিমাণ"
-                    value={`৳${dealAmount.toLocaleString('bn-BD')}`}
+                    value={`৳${dealAmount.toLocaleString('en')}`}
                   />
                   {dealData?.paymentAmount != null && dealData.paymentAmount !== dealData.amount && (
                     <InfoCard
                       icon={Banknote}
                       label="প্রকৃত পেমেন্টের পরিমাণ"
-                      value={`৳${dealData.paymentAmount.toLocaleString('bn-BD')}`}
+                      value={`৳${dealData.paymentAmount.toLocaleString('en')}`}
                     />
                   )}
                   {dealData?.platformFee != null && dealData.platformFee > 0 && (
                     <InfoCard
                       icon={Receipt}
                       label="প্ল্যাটফর্ম ফি"
-                      value={`৳${dealData.platformFee.toLocaleString('bn-BD')}`}
+                      value={`৳${dealData.platformFee.toLocaleString('en')}`}
                     />
                   )}
                   <InfoCard

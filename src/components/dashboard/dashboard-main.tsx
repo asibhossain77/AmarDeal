@@ -113,7 +113,7 @@ function statusBadge(status: string) {
 
 /** Format number as Bengali numerals with ৳ prefix */
 function formatTaka(amount: number): string {
-  return '৳' + Math.round(amount).toLocaleString('bn-BD');
+  return '৳' + Math.round(amount).toLocaleString('en');
 }
 
 /* ═══════════════════════════════════════════
@@ -230,28 +230,28 @@ function OverviewPanel() {
     ? [
         {
           label: 'চলতি ডিল',
-          value: stats.activeDeals.toLocaleString('bn-BD'),
+          value: stats.activeDeals.toLocaleString('en'),
           icon: Handshake,
           color: 'text-primary',
           bg: 'bg-primary/10',
         },
         {
           label: 'সফল ডিল',
-          value: stats.completedDeals.toLocaleString('bn-BD'),
+          value: stats.completedDeals.toLocaleString('en'),
           icon: TrendingUp,
           color: 'text-emerald-500 dark:text-emerald-400',
           bg: 'bg-emerald-500/10',
         },
         {
           label: 'মোট লেনদেন (৳)',
-          value: stats.totalTransactionAmount.toLocaleString('bn-BD'),
+          value: stats.totalTransactionAmount.toLocaleString('en'),
           icon: Wallet,
           color: 'text-amber-500 dark:text-amber-400',
           bg: 'bg-amber-500/10',
         },
         {
           label: 'মোট ডিল',
-          value: stats.totalDeals.toLocaleString('bn-BD'),
+          value: stats.totalDeals.toLocaleString('en'),
           icon: ClipboardList,
           color: 'text-blue-500 dark:text-blue-400',
           bg: 'bg-blue-500/10',

@@ -114,9 +114,9 @@ function SellerOverviewPanel() {
   }, [user?.id]);
 
   const cards = [
-    { label: 'ইনকামিং ডিল', value: loading ? '...' : stats.incoming.toLocaleString('bn-BD'), icon: Inbox, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'চলমান ডিল', value: loading ? '...' : stats.active.toLocaleString('bn-BD'), icon: Clock, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
-    { label: 'মোট আয় (৳)', value: loading ? '...' : Math.round(stats.totalEarnings).toLocaleString('bn-BD'), icon: TrendingUp, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'ইনকামিং ডিল', value: loading ? '...' : stats.incoming.toLocaleString('en'), icon: Inbox, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'চলমান ডিল', value: loading ? '...' : stats.active.toLocaleString('en'), icon: Clock, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'মোট আয় (৳)', value: loading ? '...' : Math.round(stats.totalEarnings).toLocaleString('en'), icon: TrendingUp, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
   ];
 
   return (
@@ -179,11 +179,11 @@ function SellerOverviewPanel() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">সম্পন্ন ডিল</span>
-                <span className="text-base font-bold text-emerald-500">{loading ? '...' : stats.completed.toLocaleString('bn-BD')}</span>
+                <span className="text-base font-bold text-emerald-500">{loading ? '...' : stats.completed.toLocaleString('en')}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">মোট আয়</span>
-                <span className="text-base font-bold text-foreground">৳{loading ? '...' : Math.round(stats.totalEarnings).toLocaleString('bn-BD')}</span>
+                <span className="text-base font-bold text-foreground">৳{loading ? '...' : Math.round(stats.totalEarnings).toLocaleString('en')}</span>
               </div>
             </div>
           </div>
@@ -280,7 +280,7 @@ function ActiveDealsPanel() {
                     <td className="px-5 py-3.5 font-medium text-foreground whitespace-nowrap max-w-[160px] truncate">{deal.title}</td>
                     <td className="px-5 py-3.5 text-foreground whitespace-nowrap">{deal.buyer?.name || '---'}</td>
                     <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
-                      ৳{deal.amount.toLocaleString('bn-BD')}
+                      ৳{deal.amount.toLocaleString('en')}
                     </td>
                     <td className="px-5 py-3.5 text-center whitespace-nowrap">{getStatusBadge(deal.status)}</td>
                     <td className="px-5 py-3.5 text-center whitespace-nowrap">

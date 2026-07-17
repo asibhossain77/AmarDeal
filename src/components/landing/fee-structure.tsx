@@ -17,9 +17,9 @@ interface FeeRule {
 }
 
 function formatRange(min: number, max: number): string {
-  const minStr = `৳${min.toLocaleString('bn-BD')}`;
+  const minStr = `৳${min.toLocaleString('en')}`;
   if (max === 0) return `${minStr} — সীমাহীন`;
-  return `৳${min.toLocaleString('bn-BD')} — ৳${max.toLocaleString('bn-BD')}`;
+  return `৳${min.toLocaleString('en')} — ৳${max.toLocaleString('en')}`;
 }
 
 export function FeeStructure() {
@@ -125,7 +125,7 @@ export function FeeStructure() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Badge className="border-0 bg-primary/10 text-primary font-bold text-sm px-3 py-1">
-                          ৳{rule.fee.toLocaleString('bn-BD')}
+                          ৳{rule.fee.toLocaleString('en')}
                         </Badge>
                       </td>
                     </tr>
@@ -159,7 +159,7 @@ export function FeeStructure() {
                     {formatRange(rule.minimum_amount, rule.maximum_amount)}
                   </span>
                   <Badge className="border-0 bg-primary/10 text-primary font-bold text-sm px-3 py-1">
-                    ৳{rule.fee.toLocaleString('bn-BD')}
+                    ৳{rule.fee.toLocaleString('en')}
                   </Badge>
                 </div>
               ))
