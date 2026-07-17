@@ -442,3 +442,30 @@ Stage Summary:
 - Behavior: auto-hide → 8s pause → bell-shake nudge (3.5s) → hide → 15s pause → repeat
 - All existing functionality preserved (panel, contacts, quick links, escape key, hover reveal)
 - No compilation errors, browser-verified
+---
+Task ID: 4
+Agent: Main Agent
+Task: Redesign user lenden page to match dashboard design language
+
+Work Log:
+- Analyzed dashboard overview (dashboard-main.tsx): GlassCard pattern, framer-motion animations, gradient banners, Badge components, proper typography
+- Compared with old lenden page (user-payment-view.tsx): plain borders, no glass effect, ultra-small fonts, raw input, no animations
+- Rewrote user-payment-view.tsx with full dashboard design system:
+  - GlassCard component (backdrop-blur, border-white/60, shadow-xl)
+  - Gradient header banner (from-primary/10 via-primary/5 to-transparent) with Banknote icon
+  - 4 stat cards in 2x2 grid matching dashboard stat card pattern (icon + value + label)
+  - framer-motion staggered entry animations (delay: 0.1 + i*0.06)
+  - shadcn Input for search with Search icon
+  - Filter tabs with icons (ArrowUpDown, CheckCircle2, XCircle, HourglassIcon, ShieldAlert, Ban)
+  - Badge component for status (replacing custom mini-badges)
+  - Desktop table inside GlassCard with !p-0 overflow-hidden
+  - Mobile cards using GlassCard with !p-0
+  - Loading skeletons matching dashboard skeleton patterns (StatCardSkeleton, TableSkeleton)
+  - Empty state using GlassCard with centered layout
+- Verified in browser: desktop and mobile views, no compilation or runtime errors
+
+Stage Summary:
+- Rewrote /home/z/my-project/src/components/dashboard/user-payment-view.tsx
+- Visual consistency with dashboard: same GlassCard, animation timing, typography, color system
+- All functionality preserved: search, filter, deal click navigation, copy txn ID
+- Clean dev log, browser verified on both desktop and mobile viewports

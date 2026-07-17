@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Loader2,
   Inbox,
@@ -17,6 +20,12 @@ import {
   Wallet,
   CreditCard,
   Building2,
+  Receipt,
+  ArrowUpDown,
+  Banknote,
+  HourglassIcon,
+  Ban,
+  ShieldAlert,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -72,18 +81,18 @@ function getPaymentStatusLabel(status: PaymentStatus): string {
   }
 }
 
-function getPaymentStatusConfig(status: PaymentStatus) {
+function getPaymentStatusBadge(status: PaymentStatus) {
   switch (status) {
     case 'paid':
-      return { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/20' };
+      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium gap-1"><CheckCircle2 className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
     case 'unpaid':
-      return { icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/10', border: 'border-red-200 dark:border-red-500/20' };
+      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium gap-1"><XCircle className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
     case 'verifying':
-      return { icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20' };
+      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1"><Clock className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
     case 'wrong_info':
-      return { icon: AlertCircle, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/10', border: 'border-orange-200 dark:border-orange-500/20' };
+      return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium gap-1"><AlertCircle className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
     case 'cancelled':
-      return { icon: XCircle, color: 'text-zinc-500 dark:text-zinc-400', bg: 'bg-zinc-50 dark:bg-zinc-500/10', border: 'border-zinc-200 dark:border-zinc-500/20' };
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium gap-1"><Ban className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
   }
 }
 
@@ -96,6 +105,30 @@ function getMethodIcon(name: string) {
   return Wallet;
 }
 
+function formatTaka(amount: number): string {
+  return '৳' + Math.round(amount).toLocaleString('bn-BD');
+}
+
+/* ═══════════════════════════════════════════
+   Glass Card
+   ═══════════════════════════════════════════ */
+
+function GlassCard({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ─── Copy Button ─── */
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -105,47 +138,68 @@ function CopyBtn({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 1500);
   };
   return (
-    <button onClick={(e) => { e.stopPropagation(); handleCopy(); }} className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors" title="কপি করুন">
-      {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+    <button
+      onClick={(e) => { e.stopPropagation(); handleCopy(); }}
+      className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
+      title="কপি করুন"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
 
-/* ─── Compact Summary Row ─── */
-function SummaryRow({ deals }: { deals: DealRow[] }) {
+/* ═══════════════════════════════════════════
+   Stat Cards
+   ═══════════════════════════════════════════ */
+
+function StatCards({ deals }: { deals: DealRow[] }) {
   const totalDeals = deals.length;
   const paid = deals.filter((d) => getPaymentStatus(d) === 'paid').length;
   const unpaid = deals.filter((d) => getPaymentStatus(d) === 'unpaid').length;
   const verifying = deals.filter((d) => getPaymentStatus(d) === 'verifying').length;
 
   const items = [
-    { label: 'মোট', value: totalDeals, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'পেইড', value: paid, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' },
-    { label: 'আনপেইড', value: unpaid, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-500/10' },
-    { label: 'ভেরিফাই হচ্ছে', value: verifying, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10' },
+    { label: 'মোট লেনদেন', value: totalDeals.toLocaleString('bn-BD'), icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: 'পেইড', value: paid.toLocaleString('bn-BD'), icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'আনপেইড', value: unpaid.toLocaleString('bn-BD'), icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-500/10' },
+    { label: 'ভেরিফাই হচ্ছে', value: verifying.toLocaleString('bn-BD'), icon: HourglassIcon, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className={`flex flex-col items-center gap-0.5 rounded-xl ${item.bg} px-2 py-2`}
-        >
-          <span className={`text-base font-extrabold leading-none ${item.color}`}>{item.value}</span>
-          <span className="text-[10px] text-muted-foreground leading-none">{item.label}</span>
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      {items.map((stat, i) => {
+        const Icon = stat.icon;
+        return (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 + i * 0.06 }}
+          >
+            <GlassCard>
+              <div className="flex items-center justify-between text-center sm:text-left">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">{stat.label}</p>
+                  <p className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-foreground">{stat.value}</p>
+                </div>
+                <div className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
+                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
-/* ─── Transaction Row (Desktop) ─── */
+/* ═══════════════════════════════════════════
+   Transaction Row (Desktop)
+   ═══════════════════════════════════════════ */
+
 function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: () => void }) {
   const pStatus = getPaymentStatus(deal);
-  const config = getPaymentStatusConfig(pStatus);
-  const StatusIcon = config.icon;
-
   const isBuyer = deal.buyerId === user?.id;
   const counterParty = isBuyer ? deal.seller?.name : deal.buyer?.name;
   const DirIcon = isBuyer ? ArrowUpRight : ArrowDownLeft;
@@ -153,114 +207,143 @@ function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: ()
 
   return (
     <tr
-      className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+      className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0 cursor-pointer"
       onClick={onClick}
     >
-      <td className="py-2 px-2.5 text-[11px] text-muted-foreground whitespace-nowrap">
+      <td className="px-5 py-3.5 text-xs text-muted-foreground whitespace-nowrap">
         {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}
       </td>
-      <td className="py-2 px-2.5">
-        <div className="flex items-center gap-2">
-          <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${isBuyer ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
-            <DirIcon className={`h-3 w-3 ${dirColor}`} />
+      <td className="px-5 py-3.5">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${isBuyer ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
+            <DirIcon className={`h-4 w-4 ${dirColor}`} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-foreground truncate max-w-[160px]">{deal.title}</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">{counterParty || 'অপেক্ষমান'}</p>
+            <p className="text-sm font-medium text-foreground truncate max-w-[180px]">{deal.title}</p>
+            <p className="text-xs text-muted-foreground">{counterParty || 'অপেক্ষমান'}</p>
           </div>
         </div>
       </td>
-      <td className="py-2 px-2.5 text-right whitespace-nowrap">
-        <p className="text-xs font-bold text-foreground">৳{(deal.paymentAmount || deal.amount).toLocaleString('bn-BD')}</p>
+      <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
+        {formatTaka(deal.paymentAmount || deal.amount)}
       </td>
-      <td className="py-2 px-2.5 whitespace-nowrap">
+      <td className="px-5 py-3.5 whitespace-nowrap">
         {deal.paymentMethod ? (
-          <div className="flex items-center gap-1">
-            {(() => { const MIcon = getMethodIcon(deal.paymentMethod.name); return <MIcon className="h-3 w-3 text-muted-foreground" />; })()}
-            <span className="text-[11px] text-muted-foreground">{deal.paymentMethod.name}</span>
+          <div className="flex items-center gap-1.5">
+            {(() => { const MIcon = getMethodIcon(deal.paymentMethod.name); return <MIcon className="h-4 w-4 text-muted-foreground" />; })()}
+            <span className="text-xs text-muted-foreground">{deal.paymentMethod.name}</span>
           </div>
         ) : (
-          <span className="text-[11px] text-muted-foreground/50">—</span>
+          <span className="text-xs text-muted-foreground/50">—</span>
         )}
       </td>
-      <td className="py-2 px-2.5 whitespace-nowrap">
+      <td className="px-5 py-3.5 whitespace-nowrap">
         {deal.transactionId ? (
-          <div className="flex items-center gap-0.5">
-            <span className="text-[11px] font-mono text-muted-foreground truncate max-w-[90px]">{deal.transactionId}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-mono text-muted-foreground truncate max-w-[100px]">{deal.transactionId}</span>
             <CopyBtn text={deal.transactionId} />
           </div>
         ) : (
-          <span className="text-[11px] text-muted-foreground/50">—</span>
+          <span className="text-xs text-muted-foreground/50">—</span>
         )}
       </td>
-      <td className="py-2 px-2.5 whitespace-nowrap">
-        <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${config.color} ${config.bg} ${config.border}`}>
-          <StatusIcon className="h-2.5 w-2.5" />
-          {getPaymentStatusLabel(pStatus)}
-        </span>
+      <td className="px-5 py-3.5 text-center whitespace-nowrap">
+        {getPaymentStatusBadge(pStatus)}
       </td>
     </tr>
   );
 }
 
-/* ─── Transaction Card (Mobile) ─── */
+/* ═══════════════════════════════════════════
+   Transaction Card (Mobile)
+   ═══════════════════════════════════════════ */
+
 function TxnCard({ deal, user, onClick }: { deal: DealRow; user: any; onClick: () => void }) {
   const pStatus = getPaymentStatus(deal);
-  const config = getPaymentStatusConfig(pStatus);
-  const StatusIcon = config.icon;
-
   const isBuyer = deal.buyerId === user?.id;
   const counterParty = isBuyer ? deal.seller?.name : deal.buyer?.name;
   const DirIcon = isBuyer ? ArrowUpRight : ArrowDownLeft;
   const dirColor = isBuyer ? 'text-red-500' : 'text-emerald-500';
 
   return (
-    <div
-      className="rounded-xl border border-border/50 bg-white p-3 dark:bg-zinc-900 cursor-pointer active:scale-[0.98] transition-transform"
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isBuyer ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
-            <DirIcon className={`h-3.5 w-3.5 ${dirColor}`} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-foreground truncate max-w-[170px]">{deal.title}</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">{counterParty || 'অপেক্ষমান'} · {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}</p>
-          </div>
+    <GlassCard className="!p-0 overflow-hidden cursor-pointer active:scale-[0.98] transition-transform" onClick={onClick}>
+      <div className="p-4 flex items-center gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isBuyer ? 'bg-red-50 dark:bg-red-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10'}`}>
+          <DirIcon className={`h-5 w-5 ${dirColor}`} />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="text-right">
-            <p className="text-sm font-extrabold text-foreground leading-none">৳{(deal.paymentAmount || deal.amount).toLocaleString('bn-BD')}</p>
-            {deal.paymentMethod && (
-              <div className="flex items-center gap-1 mt-0.5 justify-end">
-                {(() => { const MIcon = getMethodIcon(deal.paymentMethod.name); return <MIcon className="h-2.5 w-2.5 text-muted-foreground" />; })()}
-                <span className="text-[10px] text-muted-foreground">{deal.paymentMethod.name}</span>
-              </div>
-            )}
-          </div>
-          <span className={`inline-flex items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-[9px] font-semibold shrink-0 ${config.color} ${config.bg} ${config.border}`}>
-            <StatusIcon className="h-2 w-2" />
-            {getPaymentStatusLabel(pStatus)}
-          </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {counterParty || 'অপেক্ষমান'} · {new Date(deal.createdAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' })}
+          </p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-sm font-bold text-foreground">{formatTaka(deal.paymentAmount || deal.amount)}</p>
+          <div className="mt-1">{getPaymentStatusBadge(pStatus)}</div>
         </div>
       </div>
-    </div>
+    </GlassCard>
   );
 }
 
 /* ─── Filter Tabs ─── */
-const FILTER_TABS: { key: 'all' | PaymentStatus; label: string }[] = [
-  { key: 'all', label: 'সব' },
-  { key: 'paid', label: 'পেইড' },
-  { key: 'unpaid', label: 'আনপেইড' },
-  { key: 'verifying', label: 'ভেরিফাই হচ্ছে' },
-  { key: 'wrong_info', label: 'ভুল তথ্য' },
-  { key: 'cancelled', label: 'বাতিল' },
+const FILTER_TABS: { key: 'all' | PaymentStatus; label: string; icon: typeof Receipt }[] = [
+  { key: 'all', label: 'সব', icon: ArrowUpDown },
+  { key: 'paid', label: 'পেইড', icon: CheckCircle2 },
+  { key: 'unpaid', label: 'আনপেইড', icon: XCircle },
+  { key: 'verifying', label: 'ভেরিফাই হচ্ছে', icon: HourglassIcon },
+  { key: 'wrong_info', label: 'ভুল তথ্য', icon: ShieldAlert },
+  { key: 'cancelled', label: 'বাতিল', icon: Ban },
 ];
 
+/* ═══════════════════════════════════════════
+   Skeleton
+   ═══════════════════════════════════════════ */
+
+function TableSkeleton() {
+  return (
+    <GlassCard className="!p-0 overflow-hidden">
+      <div className="p-5 pb-3 space-y-2">
+        <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+        <div className="h-3 w-52 animate-pulse rounded bg-muted" />
+      </div>
+      <div className="border-t border-border/50">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-4 border-b border-border/30 px-5 py-3.5 last:border-0"
+          >
+            <div className="h-3.5 w-16 animate-pulse rounded bg-muted" />
+            <div className="h-9 w-9 animate-pulse rounded-xl bg-muted shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+            </div>
+            <div className="h-3.5 w-16 animate-pulse rounded bg-muted" />
+            <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+    </GlassCard>
+  );
+}
+
+function StatCardSkeleton() {
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between">
+        <div className="flex-1 space-y-2">
+          <div className="h-3 w-14 sm:w-20 animate-pulse rounded bg-muted" />
+          <div className="h-6 sm:h-7 w-8 sm:w-12 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="h-10 w-10 sm:h-11 sm:w-11 animate-pulse rounded-xl bg-muted" />
+      </div>
+    </GlassCard>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
-   MAIN COMPONENT — Transaction Ledger (Compact)
+   MAIN COMPONENT — Transaction Ledger (Dashboard Style)
    ═══════════════════════════════════════════════════════════════ */
 export function UserPaymentView() {
   const user = useAppStore((s) => s.user);
@@ -317,95 +400,140 @@ export function UserPaymentView() {
   if (!mounted || !user) return null;
 
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div>
-        <h1 className="text-lg font-extrabold tracking-tight text-foreground">লেনদেন</h1>
-        <p className="text-[11px] text-muted-foreground mt-0.5">ডিল পেমেন্ট ট্রানজেকশন</p>
-      </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* ── Page Header Banner ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/15 p-4 sm:p-5 flex items-center gap-3"
+      >
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+          <Banknote className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+            লেনদেন
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground truncate">
+            ডিল পেমেন্ট ট্রানজেকশনের সম্পূর্ণ তালিকা
+          </p>
+        </div>
+      </motion.div>
 
-      {/* Compact Summary */}
-      {!loading && <SummaryRow deals={deals} />}
+      {/* ── Stat Cards ── */}
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+        </div>
+      ) : deals.length > 0 ? (
+        <StatCards deals={deals} />
+      ) : null}
 
-      {/* Search + Filter */}
-      <div className="space-y-2">
+      {/* ── Search & Filter ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="space-y-3"
+      >
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="ডিল, ট্রানজেকশন আইডি দিয়ে খুঁজুন..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-8 rounded-lg border border-border/50 bg-white pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 dark:bg-zinc-900 transition-colors"
+            className="pl-9 h-10 rounded-xl"
           />
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
           {FILTER_TABS.map((tab) => {
+            const Icon = tab.icon;
             const count = tab.key === 'all' ? deals.length : deals.filter((d) => getPaymentStatus(d) === tab.key).length;
             const active = filter === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => setFilter(tab.key)}
-                className={`shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                   active
-                    ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
               >
-                {tab.label} ({count})
+                <Icon className="h-3.5 w-3.5" />
+                {tab.label}
+                <span className={`text-[10px] font-semibold ${active ? 'text-primary-foreground/80' : 'text-muted-foreground/60'}`}>
+                  ({count})
+                </span>
               </button>
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Content */}
+      {/* ── Content ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+          <TableSkeleton />
+        </motion.div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 mb-2">
-            <Inbox className="h-5 w-5 text-muted-foreground" />
+        <GlassCard className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/60 mb-3">
+            <Inbox className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-xs font-semibold text-foreground">কোনো লেনদেন পাওয়া যায়নি</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-sm font-medium text-foreground">কোনো লেনদেন পাওয়া যায়নি</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             {search ? 'অন্য কিছু দিয়ে খুঁজুন' : 'আপনার এখনো কোনো ডিল নেই'}
           </p>
-        </div>
+        </GlassCard>
       ) : (
-        <>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+        >
           {/* Desktop Table */}
-          <div className="hidden md:block rounded-xl border border-border/50 bg-white dark:bg-zinc-900 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border/50 bg-muted/30">
-                  <th className="py-2 px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">তারিখ</th>
-                  <th className="py-2 px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">ডিল</th>
-                  <th className="py-2 px-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">পরিমাণ</th>
-                  <th className="py-2 px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">মেথড</th>
-                  <th className="py-2 px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Txn ID</th>
-                  <th className="py-2 px-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">স্ট্যাটাস</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((deal) => (
-                  <TxnRow key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} />
-                ))}
-              </tbody>
-            </table>
+          <div className="hidden md:block">
+            <GlassCard className="!p-0 overflow-hidden">
+              <div className="p-5 pb-3 text-center lg:text-left">
+                <h3 className="text-base font-semibold text-foreground">ট্রানজেকশন তালিকা</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {filtered.length.toLocaleString('bn-BD')}টি লেনদেন পাওয়া গেছে
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-t border-b border-border/50 bg-muted/30">
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">তারিখ</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">পরিমাণ</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">মেথড</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Txn ID</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((deal) => (
+                      <TxnRow key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
           </div>
 
           {/* Mobile Cards */}
-          <div className="md:hidden space-y-2">
+          <div className="md:hidden space-y-3">
             {filtered.map((deal) => (
               <TxnCard key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} />
             ))}
           </div>
-        </>
+        </motion.div>
       )}
     </div>
   );
