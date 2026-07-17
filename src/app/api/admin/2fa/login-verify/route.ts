@@ -1,6 +1,5 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import * as otplib from 'otplib'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +33,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate the TOTP code
-    const isValid = otplib.authenticator.verify({
+    const { authenticator } = await import('otplib')
+    const isValid = authenticator.verify({
       token: code,
       secret: user.admin.totpSecret,
     })

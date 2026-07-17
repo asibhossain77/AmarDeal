@@ -1,8 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
-import * as otplib from 'otplib'
-import QRCode from 'qrcode'
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate new TOTP secret
+    const otplib = await import('otplib')
     const secret = otplib.authenticator.generateSecret()
 
     // Store the secret (do NOT enable yet)
@@ -45,6 +44,7 @@ export async function POST(req: NextRequest) {
     const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
 
     // Convert to QR code data URI
+    const QRCode = (await import('qrcode')).default
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl)
 
     return NextResponse.json({ secret, qrCodeDataUrl })
