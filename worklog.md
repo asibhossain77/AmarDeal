@@ -469,3 +469,21 @@ Stage Summary:
 - Visual consistency with dashboard: same GlassCard, animation timing, typography, color system
 - All functionality preserved: search, filter, deal click navigation, copy txn ID
 - Clean dev log, browser verified on both desktop and mobile viewports
+---
+Task ID: 5
+Agent: Main Agent
+Task: Fix mobile view overflow on lenden page
+
+Work Log:
+- Opened lenden page on 375px mobile viewport
+- Found all elements 583-615px wide (viewport is 375px) — massive horizontal overflow
+- Traced parent chain: flex child `flex-1 md:pl-64` had `min-width: auto` and was 615px
+- Root cause: filter tab buttons with `shrink-0` (6 buttons × ~100px = 625px total) propagated intrinsic min-width up through the flex chain via `min-width: auto`
+- Dashboard overview had same layout but no `shrink-0` overflow content, so it worked fine
+- Fixed by adding `min-w-0 overflow-x-hidden` to the flex child and `min-w-0` to the flex container in dashboard-view.tsx
+- Verified: 0 overflowing elements on mobile, desktop layout unaffected
+
+Stage Summary:
+- Fixed /home/z/my-project/src/components/dashboard/dashboard-view.tsx: added `min-w-0` to flex container and `min-w-0 overflow-x-hidden` to flex child
+- Root cause: flexbox `min-width: auto` preventing shrink below `shrink-0` children intrinsic width
+- Mobile viewport: 375px, all elements now fit correctly

@@ -12,9 +12,9 @@ export function DashboardView() {
   if (!mounted) return null;
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
+    <div className="flex min-h-[calc(100vh-4rem)] min-w-0">
       <DashboardSidebar />
-      <div className="flex-1 md:pl-64">
+      <div className="flex-1 min-w-0 md:pl-64 overflow-x-hidden">
         <DashboardMain />
       </div>
     </div>
