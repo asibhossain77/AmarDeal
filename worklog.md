@@ -421,3 +421,24 @@ Stage Summary:
 - Mobile admin panel: only Sheet-based mobile nav will show on small screens, desktop sidebar fully hidden via parent wrapper
 - Email OTP numbers are now significantly larger (56px desktop, 44px mobile)
 - Email header shows only the site name in green, no logo/image placeholder
+---
+Task ID: 3
+Agent: Main Agent
+Task: Replace support button hidden label with bell-vibration nudge animation
+
+Work Log:
+- Analyzed existing live-support-button.tsx: had static "লাইভ সাপোর্ট" text label when hidden, slide-out animation
+- Removed the static text label approach
+- Added `isNudging` state and `hoverLockRef` ref for hover interaction control
+- Implemented periodic nudge: first peek after 8s of hiding, then every 15s
+- Bell shake animation: decaying oscillation keyframes [0, -14, 12, -10, 8, -5, 3, 0] with 0.5s delay for slide-in
+- Nudge glow: pulsing ring animation during shake for extra attention
+- Hover behavior preserved: hovering reveals button and locks nudge; leaving re-hides after 1s
+- Smooth spring transitions for slide in/out (stiffness: 280, damping: 28)
+- Verified in browser: button hides after 6s, nudges at ~14s with bell shake, hides again at ~17.5s, repeats
+
+Stage Summary:
+- Rewrote /home/z/my-project/src/components/live-support-button.tsx
+- Behavior: auto-hide → 8s pause → bell-shake nudge (3.5s) → hide → 15s pause → repeat
+- All existing functionality preserved (panel, contacts, quick links, escape key, hover reveal)
+- No compilation errors, browser-verified
