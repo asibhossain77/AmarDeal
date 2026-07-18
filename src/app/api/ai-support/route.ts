@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // In-memory conversation store (per sessionId)
 const conversations = new Map<string, { role: string; content: string }[]>()
@@ -78,36 +77,56 @@ function checkRateLimit(sessionId: string): boolean {
   return true
 }
 
-// --- Provider: Google Gemini (works everywhere) ---
+// --- Provider: Google Gemini via REST API (works everywhere) ---
 async function callGemini(userMessage: string, history: { role: string; content: string }[]): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY environment variable is not set')
+    throw new Error('GEMINI_API_KEY not set')
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction: SYSTEM_PROMPT,
-  })
+  // Build contents array for Gemini REST API
+  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
 
-  // Build conversation history for Gemini (skip the system prompt entry)
-  const geminiHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = []
-
+  // Add conversation history (skip system prompt)
   for (const msg of history) {
-    if (msg.content === SYSTEM_PROMPT) continue // skip system prompt
-    geminiHistory.push({
+    if (msg.content === SYSTEM_PROMPT) continue
+    contents.push({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],
     })
   }
 
-  const chat = model.startChat({ history: geminiHistory })
-  const result = await chat.sendMessage(userMessage)
+  // Add current user message
+  contents.push({
+    role: 'user',
+    parts: [{ text: userMessage }],
+  })
 
-  const text = result.response.text()
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents,
+      generationConfig: {
+        maxOutputTokens: 512,
+        temperature: 0.7,
+      },
+    }),
+  })
+
+  if (!res.ok) {
+    const errBody = await res.text()
+    throw new Error(`Gemini API ${res.status}: ${errBody}`)
+  }
+
+  const data = await res.json()
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+
   if (!text) {
-    throw new Error('Gemini returned empty response')
+    throw new Error(`Gemini returned empty: ${JSON.stringify(data).slice(0, 200)}`)
   }
 
   return text
@@ -127,15 +146,15 @@ async function callZAI(history: { role: string; content: string }[]): Promise<st
 }
 
 export async function GET(req: NextRequest) {
-  // Health check / debug endpoint
   const hasKey = !!process.env.GEMINI_API_KEY
-  const keyPreview = hasKey ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...${process.env.GEMINI_API_KEY!.slice(-4)}` : 'not set'
+  const keyPreview = hasKey
+    ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...${process.env.GEMINI_API_KEY!.slice(-4)}`
+    : 'not set'
 
   return NextResponse.json({
     status: 'ok',
-    provider: hasKey ? 'gemini' : 'z-ai-web-dev-sdk (local only)',
+    provider: hasKey ? 'gemini (REST)' : 'z-ai-web-dev-sdk (local only)',
     geminiKey: keyPreview,
-    note: hasKey ? 'Gemini API key is configured' : 'GEMINI_API_KEY not set — will use local SDK (Vercel will fail)',
   })
 }
 
@@ -173,12 +192,9 @@ export async function POST(req: NextRequest) {
 
     let aiResponse: string
 
-    // Choose provider: Gemini if API key is set, otherwise z-ai-web-dev-sdk
     if (process.env.GEMINI_API_KEY) {
-      // For Gemini: pass userMessage separately, history without user message
       aiResponse = await callGemini(message, history)
     } else {
-      // For z-ai: add user message to history first
       history.push({ role: 'user', content: message })
       aiResponse = await callZAI(history)
     }
@@ -191,14 +207,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ response: aiResponse })
   } catch (err: any) {
     console.error('[ai-support] Error:', err?.message || err)
-
-    // Return detailed error for debugging
-    const isDev = process.env.NODE_ENV === 'development'
     return NextResponse.json(
-      {
-        error: isDev ? `ত্রুটি: ${err?.message || 'অজানা'}` : 'সার্ভারে সমস্যা হয়েছে',
-        debug: isDev ? err?.message : undefined,
-      },
+      { error: 'সার্ভারে সমস্যা হয়েছে' },
       { status: 500 }
     )
   }
