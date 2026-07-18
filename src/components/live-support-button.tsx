@@ -5,53 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, HelpCircle, ChevronRight, Send } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
-interface ContactInfo {
-  phone: string | null;
-  email: string | null;
-  whatsapp: string | null;
-  telegram: string | null;
-  telegramGroup: string | null;
-  facebook: string | null;
-}
-
-const FALLBACK_CONTACT: ContactInfo = {
-  phone: null,
-  email: null,
-  whatsapp: null,
-  telegram: null,
-  telegramGroup: null,
-  facebook: null,
-};
-
 /** Bell-shake keyframes — decaying oscillation like a ringing bell */
 const bellShakeSequence = [0, -14, 12, -10, 8, -5, 3, 0];
 
-/** Telegram icon SVG */
-function TelegramIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
-      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-    </svg>
-  );
-}
-
 export function LiveSupportButton() {
   const [isOpen, setIsOpen] = useState(false);
-  const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
-  const [loaded, setLoaded] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
   const [isNudging, setIsNudging] = useState(false);
   const hoverLockRef = useRef(false);
-
-  useEffect(() => {
-    fetch('/api/contact-info')
-      .then((r) => (r.ok ? r.json() : FALLBACK_CONTACT))
-      .catch(() => FALLBACK_CONTACT)
-      .then((data) => {
-        setContact(data);
-        setLoaded(true);
-      });
-  }, []);
 
   // Auto-hide button after 6 seconds
   useEffect(() => {
@@ -112,7 +73,6 @@ export function LiveSupportButton() {
   const handleMouseLeave = useCallback(() => {
     hoverLockRef.current = false;
     if (!isOpen) {
-      // Re-hide after a short delay so the user has time to click
       const timer = setTimeout(() => setIsHidden(true), 1000);
       return () => clearTimeout(timer);
     }
@@ -179,32 +139,6 @@ export function LiveSupportButton() {
                   আমারডিল এ স্বাগতম। কিভাবে সাহায্য করতে পারি?
                 </p>
               </div>
-
-              {/* Telegram Group */}
-              {contact.telegramGroup && (
-                <a
-                  href={contact.telegramGroup}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-100 dark:hover:bg-sky-950/40 transition-colors group"
-                >
-                  <div className="h-9 w-9 rounded-xl bg-sky-500 flex items-center justify-center shrink-0">
-                    <TelegramIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">টেলিগ্রাম গ্রুপে যোগ দিন</p>
-                    <p className="text-xs text-muted-foreground truncate">সরাসরি সাপোর্ট পান</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-                </a>
-              )}
-
-              {/* Loading state */}
-              {!loaded && (
-                <div className="flex items-center justify-center py-3">
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                </div>
-              )}
 
               {/* Quick Links */}
               <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 space-y-1.5">
