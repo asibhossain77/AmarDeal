@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 // In-memory conversation store (per sessionId)
 const conversations = new Map<string, { role: string; content: string }[]>()
@@ -77,6 +78,41 @@ function checkRateLimit(sessionId: string): boolean {
   return true
 }
 
+// --- Provider: Google Gemini (works everywhere) ---
+async function callGemini(userMessage: string, history: { role: string; content: string }[]): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set')
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: SYSTEM_PROMPT,
+  })
+
+  // Build conversation history for Gemini (skip the system prompt entry)
+  const geminiHistory: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = []
+
+  for (const msg of history) {
+    if (msg.content === SYSTEM_PROMPT) continue // skip system prompt
+    geminiHistory.push({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }],
+    })
+  }
+
+  const chat = model.startChat({ history: geminiHistory })
+  const result = await chat.sendMessage(userMessage)
+
+  const text = result.response.text()
+  if (!text) {
+    throw new Error('Gemini returned empty response')
+  }
+
+  return text
+}
+
 // --- Provider: z-ai-web-dev-sdk (local dev only) ---
 async function callZAI(history: { role: string; content: string }[]): Promise<string> {
   const ZAI = (await import('z-ai-web-dev-sdk')).default
@@ -90,40 +126,17 @@ async function callZAI(history: { role: string; content: string }[]): Promise<st
   return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
 }
 
-// --- Provider: Google Gemini (works on Vercel) ---
-async function callGemini(history: { role: string; content: string }[]): Promise<string> {
-  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+export async function GET(req: NextRequest) {
+  // Health check / debug endpoint
+  const hasKey = !!process.env.GEMINI_API_KEY
+  const keyPreview = hasKey ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...${process.env.GEMINI_API_KEY!.slice(-4)}` : 'not set'
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not set')
-  }
-
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-
-  // Convert to Gemini format: system instruction + history
-  const systemInstruction = history.find(m => m.role === 'assistant' && m.content === SYSTEM_PROMPT)
-  const conversationHistory = history
-    .filter(m => m.role !== 'assistant' || m.content !== SYSTEM_PROMPT)
-    .map(m => ({
-      role: m.role === 'user' ? 'user' as const : 'model' as const,
-      parts: [{ text: m.content }],
-    }))
-
-  // If the last message is from 'user', we need to pop it for the generateContent call
-  const lastUserMsg = conversationHistory.pop()
-  if (!lastUserMsg || lastUserMsg.role !== 'user') {
-    throw new Error('No user message found')
-  }
-
-  const chat = model.startChat({
-    history: conversationHistory,
-    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction.content }] } : undefined,
+  return NextResponse.json({
+    status: 'ok',
+    provider: hasKey ? 'gemini' : 'z-ai-web-dev-sdk (local only)',
+    geminiKey: keyPreview,
+    note: hasKey ? 'Gemini API key is configured' : 'GEMINI_API_KEY not set — will use local SDK (Vercel will fail)',
   })
-
-  const result = await chat.sendMessage(lastUserMsg.parts[0].text)
-  return result.response.text() || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
 }
 
 export async function POST(req: NextRequest) {
@@ -158,26 +171,34 @@ export async function POST(req: NextRequest) {
       conversations.set(sessionId, history)
     }
 
-    // Add user message
-    history.push({ role: 'user', content: message })
+    let aiResponse: string
 
     // Choose provider: Gemini if API key is set, otherwise z-ai-web-dev-sdk
-    let aiResponse: string
     if (process.env.GEMINI_API_KEY) {
-      aiResponse = await callGemini(history)
+      // For Gemini: pass userMessage separately, history without user message
+      aiResponse = await callGemini(message, history)
     } else {
+      // For z-ai: add user message to history first
+      history.push({ role: 'user', content: message })
       aiResponse = await callZAI(history)
     }
 
-    // Save response
+    // Save to conversation history
+    history.push({ role: 'user', content: message })
     history.push({ role: 'assistant', content: aiResponse })
     conversations.set(sessionId, history)
 
     return NextResponse.json({ response: aiResponse })
-  } catch (err) {
-    console.error('[ai-support] Error:', err)
+  } catch (err: any) {
+    console.error('[ai-support] Error:', err?.message || err)
+
+    // Return detailed error for debugging
+    const isDev = process.env.NODE_ENV === 'development'
     return NextResponse.json(
-      { error: 'সার্ভারে সমস্যা হয়েছে' },
+      {
+        error: isDev ? `ত্রুটি: ${err?.message || 'অজানা'}` : 'সার্ভারে সমস্যা হয়েছে',
+        debug: isDev ? err?.message : undefined,
+      },
       { status: 500 }
     )
   }
