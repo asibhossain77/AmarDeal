@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, HelpCircle, ChevronRight, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 interface ContactInfo {
@@ -46,8 +46,10 @@ function TelegramIcon({ className }: { className?: string }) {
   );
 }
 
+type PanelState = 'closed' | 'menu' | 'chat';
+
 export function LiveSupportButton() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [panelState, setPanelState] = useState<PanelState>('closed');
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
   const [isHidden, setIsHidden] = useState(false);
   const [isNudging, setIsNudging] = useState(false);
@@ -63,6 +65,8 @@ export function LiveSupportButton() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const isOpen = panelState !== 'closed';
+
   useEffect(() => {
     fetch('/api/contact-info')
       .then((r) => (r.ok ? r.json() : FALLBACK_CONTACT))
@@ -75,12 +79,12 @@ export function LiveSupportButton() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, aiLoading]);
 
-  // Focus input when panel opens
+  // Focus input when chat opens
   useEffect(() => {
-    if (isOpen) {
+    if (panelState === 'chat') {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [isOpen]);
+  }, [panelState]);
 
   // Auto-hide button after 6 seconds
   useEffect(() => {
@@ -130,7 +134,9 @@ export function LiveSupportButton() {
   }, [isOpen]);
 
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPanelState('closed');
+    };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
   }, []);
@@ -164,8 +170,6 @@ export function LiveSupportButton() {
 
   const shouldSlideOut = isHidden && !isOpen && !isNudging;
 
-  const hasContactButtons = contact.whatsapp || contact.telegramGroup || contact.email;
-
   return (
     <div
       className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3"
@@ -173,7 +177,7 @@ export function LiveSupportButton() {
       onMouseLeave={handleMouseLeave}
     >
       <AnimatePresence>
-        {isOpen && (
+        {panelState === 'chat' && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -182,11 +186,11 @@ export function LiveSupportButton() {
             className="w-[340px] sm:w-[380px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col"
             style={{ maxHeight: 'min(560px, calc(100vh - 120px))' }}
           >
-            {/* Header */}
+            {/* Chat Header */}
             <div className="bg-primary px-5 py-3.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="h-4.5 w-4.5 text-primary-foreground" />
+                  <Bot className="h-4.5 w-4.5 text-primary-foreground" />
                 </div>
                 <div>
                   <p className="text-primary-foreground font-semibold text-sm">AI সাপোর্ট</p>
@@ -197,9 +201,9 @@ export function LiveSupportButton() {
                 </div>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => setPanelState('menu')}
                 className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                aria-label="বন্ধ করুন"
+                aria-label="পিছনে যান"
               >
                 <X className="h-4 w-4 text-primary-foreground" />
               </button>
@@ -246,66 +250,7 @@ export function LiveSupportButton() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Contact Buttons (compact) */}
-            {hasContactButtons && (
-              <div className="px-4 pb-2 shrink-0">
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {contact.whatsapp && (
-                    <a
-                      href={formatWhatsAppLink(contact.whatsapp)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors shrink-0"
-                    >
-                      <WhatsAppIcon className="h-3.5 w-3.5 text-green-600" />
-                      <span className="text-xs font-medium text-green-700 dark:text-green-400">WhatsApp</span>
-                    </a>
-                  )}
-                  {contact.telegramGroup && (
-                    <a
-                      href={contact.telegramGroup}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-50 dark:bg-sky-950/30 hover:bg-sky-100 dark:hover:bg-sky-950/50 transition-colors shrink-0"
-                    >
-                      <TelegramIcon className="h-3.5 w-3.5 text-sky-600" />
-                      <span className="text-xs font-medium text-sky-700 dark:text-sky-400">টেলিগ্রাম</span>
-                    </a>
-                  )}
-                  {contact.email && (
-                    <a
-                      href={`mailto:${contact.email}`}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors shrink-0"
-                    >
-                      <Send className="h-3.5 w-3.5 text-orange-600" />
-                      <span className="text-xs font-medium text-orange-700 dark:text-orange-400">ইমেইল</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Quick Links */}
-            <div className="px-4 pb-2 shrink-0">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { useAppStore.getState().setView('page-faq'); setIsOpen(false); }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <HelpCircle className="h-3 w-3" />
-                  <span className="text-[11px] font-medium">FAQ</span>
-                </button>
-                <button
-                  onClick={() => { useAppStore.getState().setView('page-contact'); setIsOpen(false); }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronRight className="h-3 w-3" />
-                  <span className="text-[11px] font-medium">যোগাযোগ</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Input */}
+            {/* Chat Input */}
             <div className="p-3 pt-1 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
               <form
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
@@ -337,6 +282,120 @@ export function LiveSupportButton() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {panelState === 'menu' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="w-[280px] sm:w-[300px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+          >
+            {/* Menu Header */}
+            <div className="bg-primary px-5 py-3.5">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <MessageCircle className="h-4.5 w-4.5 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-primary-foreground font-semibold text-sm">সাপোর্ট</p>
+                  <p className="text-primary-foreground/70 text-[11px]">আমাদের সাথে যোগাযোগ করুন</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="p-2 space-y-1">
+              {/* AI Chat */}
+              <button
+                onClick={() => setPanelState('chat')}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors text-left group"
+              >
+                <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 dark:group-hover:bg-primary/30 transition-colors">
+                  <Bot className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Chat with AI</p>
+                  <p className="text-xs text-muted-foreground">সরাসরি প্রশ্ন করুন</p>
+                </div>
+              </button>
+
+              {/* WhatsApp */}
+              {contact.whatsapp && (
+                <a
+                  href={formatWhatsAppLink(contact.whatsapp)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center shrink-0 group-hover:bg-green-100 dark:group-hover:bg-green-950/50 transition-colors">
+                    <WhatsAppIcon className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">WhatsApp</p>
+                    <p className="text-xs text-muted-foreground">মেসেজ করুন</p>
+                  </div>
+                </a>
+              )}
+
+              {/* Telegram */}
+              {contact.telegramGroup && (
+                <a
+                  href={contact.telegramGroup}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center shrink-0 group-hover:bg-sky-100 dark:group-hover:bg-sky-950/50 transition-colors">
+                    <TelegramIcon className="h-5 w-5 text-sky-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">টেলিগ্রাম</p>
+                    <p className="text-xs text-muted-foreground">গ্রুপে যোগ দিন</p>
+                  </div>
+                </a>
+              )}
+
+              {/* Email */}
+              {contact.email && (
+                <a
+                  href={`mailto:${contact.email}`}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors text-left group"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center shrink-0 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/50 transition-colors">
+                    <Mail className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">ইমেইল</p>
+                    <p className="text-xs text-muted-foreground">ইমেইল করুন</p>
+                  </div>
+                </a>
+              )}
+            </div>
+
+            {/* Footer Links */}
+            <div className="px-4 pb-3 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { useAppStore.getState().setView('page-faq'); setPanelState('closed'); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  <span className="text-[11px] font-medium">FAQ</span>
+                </button>
+                <button
+                  onClick={() => { useAppStore.getState().setView('page-contact'); setPanelState('closed'); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="text-[11px] font-medium">যোগাযোগ</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FAB Button */}
       <motion.button
         animate={{
@@ -346,9 +405,9 @@ export function LiveSupportButton() {
         transition={{ type: 'spring', stiffness: 280, damping: 28 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setPanelState(panelState === 'closed' ? 'menu' : 'closed')}
         className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer shrink-0"
-        aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'AI সাপোর্ট'}
+        aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'সাপোর্ট'}
       >
         <motion.div
           animate={
