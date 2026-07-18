@@ -557,3 +557,23 @@ Stage Summary:
 - Contact page (যোগাযোগ) shows Telegram group item alongside existing contacts
 - Admin panel (সোশ্যাল মিডিয়া section) now has "টেলিগ্রাম গ্রুপ লিংক" input field
 - DB schema updated with telegramGroup column; Turso needs manual ALTER TABLE for production
+
+---
+Task ID: ai-vercel-fix
+Agent: Main Agent
+Task: Fix AI support chatbot not working on Vercel
+
+Work Log:
+- Diagnosed issue: z-ai-web-dev-sdk is a local-only SDK that only works in Z.ai sandbox environment; it has no backend infrastructure accessible from Vercel
+- Installed @google/generative-ai package (v0.24.1)
+- Rewrote /api/ai-support/route.ts with dual provider support:
+  - If GEMINI_API_KEY env var is set → uses Google Gemini 2.0 Flash (works on Vercel)
+  - If no GEMINI_API_KEY → uses z-ai-web-dev-sdk (local dev)
+- Gemini uses startChat with systemInstruction and proper history management
+- Tested locally: still works with z-ai-web-dev-sdk (no key set)
+- Added proper error handling and fallback
+
+Stage Summary:
+- AI chatbot now has two providers: z-ai-web-dev-sdk (local) and Google Gemini (Vercel)
+- For Vercel: user needs to set GEMINI_API_KEY env variable (free from Google AI Studio)
+- API route: /api/ai-support (POST for chat, DELETE to clear session)

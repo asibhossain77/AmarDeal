@@ -10,6 +10,7 @@ const SYSTEM_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর AI
 - সংক্ষেপে ও পরিষ্কারভাবে উত্তর দাও
 - আমারডিল সম্পর্কে না জানলে সৎভাবে বলো
 - কোনো সংবেদনশীল তথ্য (পাসওয়ার্ড, ব্যাংক ডিটেইলস) কখনো জিজ্ঞাস করো না
+- ইউজার যেভাবেই কথা বলুক (আঞ্চলিক, আধুনিক, মিশ্র ভাষা) সেভাবেই বুঝে উত্তর দাও
 
 আমারডিল সম্পর্কে তথ্য:
 • আমারডিল বাংলাদেশের একটি এসক্রো (Escrow) প্ল্যাটফর্ম।
@@ -76,6 +77,55 @@ function checkRateLimit(sessionId: string): boolean {
   return true
 }
 
+// --- Provider: z-ai-web-dev-sdk (local dev only) ---
+async function callZAI(history: { role: string; content: string }[]): Promise<string> {
+  const ZAI = (await import('z-ai-web-dev-sdk')).default
+  const zai = await ZAI.create()
+
+  const completion = await zai.chat.completions.create({
+    messages: history as any,
+    thinking: { type: 'disabled' },
+  })
+
+  return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
+}
+
+// --- Provider: Google Gemini (works on Vercel) ---
+async function callGemini(history: { role: string; content: string }[]): Promise<string> {
+  const { GoogleGenerativeAI } = await import('@google/generative-ai')
+
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not set')
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+
+  // Convert to Gemini format: system instruction + history
+  const systemInstruction = history.find(m => m.role === 'assistant' && m.content === SYSTEM_PROMPT)
+  const conversationHistory = history
+    .filter(m => m.role !== 'assistant' || m.content !== SYSTEM_PROMPT)
+    .map(m => ({
+      role: m.role === 'user' ? 'user' as const : 'model' as const,
+      parts: [{ text: m.content }],
+    }))
+
+  // If the last message is from 'user', we need to pop it for the generateContent call
+  const lastUserMsg = conversationHistory.pop()
+  if (!lastUserMsg || lastUserMsg.role !== 'user') {
+    throw new Error('No user message found')
+  }
+
+  const chat = model.startChat({
+    history: conversationHistory,
+    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction.content }] } : undefined,
+  })
+
+  const result = await chat.sendMessage(lastUserMsg.parts[0].text)
+  return result.response.text() || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, sessionId } = await req.json()
@@ -111,16 +161,13 @@ export async function POST(req: NextRequest) {
     // Add user message
     history.push({ role: 'user', content: message })
 
-    // Call LLM
-    const ZAI = (await import('z-ai-web-dev-sdk')).default
-    const zai = await ZAI.create()
-
-    const completion = await zai.chat.completions.create({
-      messages: history as any,
-      thinking: { type: 'disabled' },
-    })
-
-    const aiResponse = completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
+    // Choose provider: Gemini if API key is set, otherwise z-ai-web-dev-sdk
+    let aiResponse: string
+    if (process.env.GEMINI_API_KEY) {
+      aiResponse = await callGemini(history)
+    } else {
+      aiResponse = await callZAI(history)
+    }
 
     // Save response
     history.push({ role: 'assistant', content: aiResponse })
