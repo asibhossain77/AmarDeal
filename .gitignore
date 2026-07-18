@@ -56,5 +56,11 @@ test
 prompt
 
 server.log
-# Skills directory
-/skills/tool-results/
+
+# Screenshots & uploads (dev artifacts)
+*.png
+!public/logo.png
+!public/uploads/site-logo.png
+/screenshots/
+/upload/
+/skills/
