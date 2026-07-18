@@ -614,3 +614,38 @@ Stage Summary:
 - Cache is invalidated immediately when admin saves a new prompt
 - All existing lint errors are pre-existing (require() style imports in infra files)
 - Committed and pushed: `feat: add AI prompt editor in admin panel`
+
+---
+Task ID: ai-prompt-enhancement
+Agent: Main Agent
+Task: Enhance AI prompt management in admin panel
+
+Work Log:
+- Discovered the feature was already fully built from a previous session:
+  - `ai-prompt-panel.tsx` component with textarea, save button
+  - `/api/admin/site-settings/route.ts` API with GET/POST for `ai_support_prompt` key
+  - `/api/ai-support/route.ts` uses `getSystemPrompt()` that fetches from `PlatformSetting` table with 5-min cache
+  - `admin-nav-config.ts` has "AI সাপোর্ট" nav item with Bot icon
+  - `admin-main.tsx` renders `AiPromptPanel` for `case 'ai-prompt'`
+  - Cache invalidation via `invalidatePromptCache()` on save
+- Enhanced `ai-prompt-panel.tsx` with:
+  - "ডিফল্টে ফিরুন" (Reset to default) button with inline DEFAULT_PROMPT constant
+  - Unsaved changes detection with "আনসেভড" badge and warning text
+  - Character count display
+  - "কাস্টম" badge when using non-default prompt
+  - "AI টেস্ট করুন" expandable test section with chat interface
+  - Tips card with prompt writing guidance in Bengali
+  - Warning when testing with unsaved changes
+  - Clean save button disabled state when no changes
+- Verified end-to-end with Agent Browser:
+  - Admin panel loads, sidebar shows "AI সাপোর্ট"
+  - Panel renders textarea with full default prompt
+  - Typing in textarea enables "সেভ করুন" button
+  - "ডিফল্টে ফিরুন" resets textarea to default prompt
+  - Test section opens/closes correctly
+  - No errors in dev log
+
+Stage Summary:
+- AI prompt management feature is fully functional and enhanced
+- Admin can edit, reset, test AI prompt from the admin panel
+- Changes are saved to PlatformSetting table and cached for 5 minutes in AI support API
