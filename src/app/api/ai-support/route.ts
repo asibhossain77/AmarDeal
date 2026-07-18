@@ -77,17 +77,51 @@ function checkRateLimit(sessionId: string): boolean {
   return true
 }
 
-// --- Provider: Google Gemini via REST API (works everywhere) ---
+// --- Provider: Groq (works everywhere, free, fast) ---
+async function callGroq(messages: { role: string; content: string }[]): Promise<string> {
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY not set')
+  }
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      max_tokens: 512,
+      temperature: 0.7,
+    }),
+  })
+
+  if (!res.ok) {
+    const errBody = await res.text()
+    throw new Error(`Groq API ${res.status}: ${errBody.slice(0, 200)}`)
+  }
+
+  const data = await res.json()
+  const text = data?.choices?.[0]?.message?.content
+
+  if (!text) {
+    throw new Error('Groq returned empty response')
+  }
+
+  return text
+}
+
+// --- Provider: Google Gemini REST API (fallback) ---
 async function callGemini(userMessage: string, history: { role: string; content: string }[]): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY not set')
   }
 
-  // Build contents array for Gemini REST API
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
 
-  // Add conversation history (skip system prompt)
   for (const msg of history) {
     if (msg.content === SYSTEM_PROMPT) continue
     contents.push({
@@ -96,37 +130,31 @@ async function callGemini(userMessage: string, history: { role: string; content:
     })
   }
 
-  // Add current user message
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }],
-  })
+  contents.push({ role: 'user', parts: [{ text: userMessage }] })
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents,
-      generationConfig: {
-        maxOutputTokens: 512,
-        temperature: 0.7,
-      },
-    }),
-  })
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+        generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
+      }),
+    }
+  )
 
   if (!res.ok) {
     const errBody = await res.text()
-    throw new Error(`Gemini API ${res.status}: ${errBody}`)
+    throw new Error(`Gemini API ${res.status}: ${errBody.slice(0, 200)}`)
   }
 
   const data = await res.json()
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
 
   if (!text) {
-    throw new Error(`Gemini returned empty: ${JSON.stringify(data).slice(0, 200)}`)
+    throw new Error('Gemini returned empty response')
   }
 
   return text
@@ -145,16 +173,15 @@ async function callZAI(history: { role: string; content: string }[]): Promise<st
   return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
 }
 
-export async function GET(req: NextRequest) {
-  const hasKey = !!process.env.GEMINI_API_KEY
-  const keyPreview = hasKey
-    ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...${process.env.GEMINI_API_KEY!.slice(-4)}`
-    : 'not set'
+export async function GET() {
+  const hasGroq = !!process.env.GROQ_API_KEY
+  const hasGemini = !!process.env.GEMINI_API_KEY
 
   return NextResponse.json({
     status: 'ok',
-    provider: hasKey ? 'gemini (REST)' : 'z-ai-web-dev-sdk (local only)',
-    geminiKey: keyPreview,
+    provider: hasGroq ? 'groq' : hasGemini ? 'gemini' : 'z-ai-web-dev-sdk (local only)',
+    groqKey: hasGroq ? `${process.env.GROQ_API_KEY!.slice(0, 8)}...` : 'not set',
+    geminiKey: hasGemini ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...` : 'not set',
   })
 }
 
@@ -180,7 +207,7 @@ export async function POST(req: NextRequest) {
     // Get or create conversation history
     let history = conversations.get(sessionId)
     if (!history) {
-      history = [{ role: 'assistant', content: SYSTEM_PROMPT }]
+      history = [{ role: 'system', content: SYSTEM_PROMPT }]
       conversations.set(sessionId, history)
     }
 
@@ -192,7 +219,12 @@ export async function POST(req: NextRequest) {
 
     let aiResponse: string
 
-    if (process.env.GEMINI_API_KEY) {
+    // Provider priority: Groq > Gemini > z-ai (local)
+    if (process.env.GROQ_API_KEY) {
+      // Groq uses standard OpenAI format with 'system' role
+      history.push({ role: 'user', content: message })
+      aiResponse = await callGroq(history)
+    } else if (process.env.GEMINI_API_KEY) {
       aiResponse = await callGemini(message, history)
     } else {
       history.push({ role: 'user', content: message })
@@ -200,7 +232,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Save to conversation history
-    history.push({ role: 'user', content: message })
+    if (!process.env.GEMINI_API_KEY) {
+      // For Groq and z-ai, user message was already pushed
+    } else {
+      history.push({ role: 'user', content: message })
+    }
     history.push({ role: 'assistant', content: aiResponse })
     conversations.set(sessionId, history)
 
