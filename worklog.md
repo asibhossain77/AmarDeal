@@ -577,3 +577,40 @@ Stage Summary:
 - AI chatbot now has two providers: z-ai-web-dev-sdk (local) and Google Gemini (Vercel)
 - For Vercel: user needs to set GEMINI_API_KEY env variable (free from Google AI Studio)
 - API route: /api/ai-support (POST for chat, DELETE to clear session)
+
+---
+Task ID: ai-prompt-settings
+Agent: Main Agent
+Task: Add AI Prompt settings panel to admin panel
+
+Work Log:
+- Added `'ai-prompt'` to the `AdminPanel` union type in `src/lib/store.ts`
+- Added navigation entry `{ label: 'AI সাপোর্ট', icon: Bot, panel: 'ai-prompt' }` in `src/components/admin/admin-nav-config.ts` (in the settings section, after email-settings)
+- Created `src/components/admin/ai-prompt-panel.tsx` — admin panel component with:
+  - Loads current AI prompt from `/api/admin/site-settings?key=ai_support_prompt`
+  - Textarea (12 rows, min 240px) for editing the prompt in Bengali
+  - "সেভ করুন" button that POSTs to `/api/admin/site-settings`
+  - Character count display below textarea
+  - Success/error toasts via sonner
+  - Loading spinner while fetching
+  - Uses shadcn/ui Card, Textarea, Label, Button
+- Added `case 'ai-prompt': return <AiPromptPanel />;` in `AdminPanelContent` switch in `src/components/admin/admin-main.tsx`
+- Updated `src/app/api/ai-support/route.ts`:
+  - Renamed `SYSTEM_PROMPT` to `DEFAULT_SYSTEM_PROMPT`
+  - Added module-level cache with 5-minute TTL (`cachedPrompt`, `cachedPromptAt`)
+  - Added `getSystemPrompt()` async function that loads from DB with cache fallback
+  - Exported `invalidatePromptCache()` for external cache invalidation
+  - Updated `callGemini()` to accept `systemPrompt` parameter
+  - Updated POST handler to resolve prompt dynamically via `getSystemPrompt()`
+- Created `src/app/api/admin/site-settings/route.ts`:
+  - GET: returns `ai_support_prompt` with default Bengali prompt if not in DB
+  - GET with `?key=ai_support_prompt`: returns single key-value pair
+  - POST: upserts any key-value pair, invalidates AI prompt cache if key is `ai_support_prompt`
+  - Uses `requireAdmin` guard for auth
+
+Stage Summary:
+- Admin can now navigate to "AI সাপোর্ট" in the settings section of the admin panel
+- AI prompt is loaded dynamically from DB with 5-min cache, falls back to hardcoded default
+- Cache is invalidated immediately when admin saves a new prompt
+- All existing lint errors are pre-existing (require() style imports in infra files)
+- Committed and pushed: `feat: add AI prompt editor in admin panel`
