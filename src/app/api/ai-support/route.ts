@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 // In-memory conversation store (per sessionId)
 const conversations = new Map<string, { role: string; content: string }[]>()
 
-const SYSTEM_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর AI সাপোর্ট অ্যাসিস্ট্যান্ট। তোমার কাজ ইউজারদের প্রশ্নের সঠিক উত্তর দেওয়া।
+const DEFAULT_SYSTEM_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর AI সাপোর্ট অ্যাসিস্ট্যান্ট। তোমার কাজ ইউজারদের প্রশ্নের সঠিক উত্তর দেওয়া।
 
 গুরুত্বপূর্ণ নিয়ম:
 - ইউজার যে ভাষায় কথা বলবে সেই ভাষায় উত্তর দাও (বাংলা, English, হিন্দি যাই হোক)
@@ -55,6 +56,32 @@ const SYSTEM_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর AI
 • "টাকা ফেরত পাবো?" → বিক্রেতা পণ্য না দিলে বা কোনো সমস্যা হলে অ্যাডমিন যাচাই করে টাকা ফেরত দেয়।
 • "পেমেন্ট কিভাবে?" → বিকাশ, নগদ, রকেট, ব্যাংক ট্রান্সফার, ক্যাশ অন ডেলিভারি — যেকোনো মাধ্যমে পেমেন্ট করতে পারবেন।
 `
+
+// In-memory cache for DB prompt (5-minute TTL)
+let cachedPrompt: string | null = null
+let cachedPromptAt = 0
+const PROMPT_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+/** Invalidate the cached prompt (call after admin saves a new one) */
+export function invalidatePromptCache() {
+  cachedPrompt = null
+  cachedPromptAt = 0
+}
+
+async function getSystemPrompt(): Promise<string> {
+  const now = Date.now()
+  if (cachedPrompt !== null && now - cachedPromptAt < PROMPT_CACHE_TTL) {
+    return cachedPrompt
+  }
+  try {
+    const row = await db.platformSetting.findUnique({ where: { key: 'ai_support_prompt' } })
+    cachedPrompt = row?.value || DEFAULT_SYSTEM_PROMPT
+    cachedPromptAt = now
+    return cachedPrompt
+  } catch {
+    return DEFAULT_SYSTEM_PROMPT
+  }
+}
 
 // Rate limiting — max 10 messages per minute per session
 const rateLimits = new Map<string, { count: number; resetAt: number }>()
@@ -114,7 +141,7 @@ async function callGroq(messages: { role: string; content: string }[]): Promise<
 }
 
 // --- Provider: Google Gemini REST API (fallback) ---
-async function callGemini(userMessage: string, history: { role: string; content: string }[]): Promise<string> {
+async function callGemini(userMessage: string, history: { role: string; content: string }[], systemPrompt: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY not set')
@@ -123,7 +150,7 @@ async function callGemini(userMessage: string, history: { role: string; content:
   const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
 
   for (const msg of history) {
-    if (msg.content === SYSTEM_PROMPT) continue
+    if (msg.content === systemPrompt) continue
     contents.push({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],
@@ -138,7 +165,7 @@ async function callGemini(userMessage: string, history: { role: string; content:
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        systemInstruction: { parts: [{ text: systemPrompt }] },
         contents,
         generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
       }),
@@ -204,10 +231,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Resolve system prompt (from DB or default)
+    const systemPrompt = await getSystemPrompt()
+
     // Get or create conversation history
     let history = conversations.get(sessionId)
     if (!history) {
-      history = [{ role: 'system', content: SYSTEM_PROMPT }]
+      history = [{ role: 'system', content: systemPrompt }]
       conversations.set(sessionId, history)
     }
 
@@ -225,7 +255,7 @@ export async function POST(req: NextRequest) {
       history.push({ role: 'user', content: message })
       aiResponse = await callGroq(history)
     } else if (process.env.GEMINI_API_KEY) {
-      aiResponse = await callGemini(message, history)
+      aiResponse = await callGemini(message, history, systemPrompt)
     } else {
       history.push({ role: 'user', content: message })
       aiResponse = await callZAI(history)

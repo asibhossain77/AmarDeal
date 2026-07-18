@@ -28,6 +28,7 @@ import { ContractPanel } from './contract-panel';
 import { BlogPanel } from './blog-panel';
 import { EmailSettingsPanel } from './email-settings-panel';
 import { TwoFactorPanel } from './two-factor-panel';
+import { AiPromptPanel } from './ai-prompt-panel';
 import {
   Bell,
   ShieldCheck,
@@ -3464,6 +3465,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <EmailSettingsPanel />;
     case 'two-factor':
       return <TwoFactorPanel />;
+    case 'ai-prompt':
+      return <AiPromptPanel />;
     default:
       return null;
   }
