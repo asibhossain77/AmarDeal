@@ -20,6 +20,7 @@ export async function GET() {
       telegram: null,
       facebook: null,
       facebookGroup: null,
+      telegramGroup: null,
       address: null,
       adminName: settingMap['admin_display_name'] || '',
       adminImageUrl: settingMap['admin_image_url'] || '',

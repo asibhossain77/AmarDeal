@@ -535,3 +535,25 @@ Stage Summary:
 - Frontend: admin 2FA settings panel + login 2FA verification step
 - Security: proxy.ts protects all /api/admin/* routes (session required)
 - Flow: Password → (if admin+2FA) → 6-digit TOTP code → Session created
+---
+Task ID: 1
+Agent: Main Agent
+Task: Hide WhatsApp/email/phone from support button, add Telegram group to support & contact, add admin panel control
+
+Work Log:
+- Read and analyzed current live-support-button.tsx, contact-section.tsx, contact-info-panel.tsx
+- Added `telegramGroup String?` column to ContactInfo model in prisma/schema.prisma
+- Ran `bun run db:push` to sync local SQLite DB
+- Updated live-support-button.tsx: removed WhatsApp, phone, email contact options from popup; added Telegram group link with custom Telegram SVG icon; kept only FAQ and Contact page quick links
+- Updated contact-section.tsx: added `telegramGroup` to ContactData interface; added Telegram group item rendering with Send icon and sky color theme
+- Updated contact-info-panel.tsx (admin): added `telegramGroup` to ContactData interface, state initialization, data loading, and added input field in Social Media section with Send icon
+- Updated /api/contact-info/route.ts: added telegramGroup to default response
+- Updated /api/admin/contact-info/route.ts: added telegramGroup to GET default, POST body destructuring, and data object
+- Verified with agent-browser: support button popup shows only greeting + quick links (no phone/email/WhatsApp); contact page still shows all contact info correctly
+
+Stage Summary:
+- Support button floating popup no longer shows WhatsApp, email, or phone numbers
+- Support button shows Telegram group link (when configured by admin)
+- Contact page (যোগাযোগ) shows Telegram group item alongside existing contacts
+- Admin panel (সোশ্যাল মিডিয়া section) now has "টেলিগ্রাম গ্রুপ লিংক" input field
+- DB schema updated with telegramGroup column; Turso needs manual ALTER TABLE for production

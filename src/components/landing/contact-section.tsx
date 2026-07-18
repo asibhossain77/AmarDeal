@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MessageCircle, MapPin, Users, Loader2, User } from 'lucide-react';
+import { Phone, Mail, MessageCircle, MapPin, Users, Loader2, User, Send } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
 
@@ -11,6 +11,7 @@ interface ContactData {
   email: string | null;
   whatsapp: string | null;
   telegram: string | null;
+  telegramGroup: string | null;
   facebook: string | null;
   facebookGroup: string | null;
   address: string | null;
@@ -73,6 +74,9 @@ export function ContactSection() {
   }
   if (data?.facebookGroup) {
     items.push({ icon: Users, label: 'ফেসবুক গ্রুপ', value: 'গ্রুপে যোগ দিন', href: data.facebookGroup, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' });
+  }
+  if (data?.telegramGroup) {
+    items.push({ icon: Send, label: 'টেলিগ্রাম গ্রুপ', value: 'গ্রুপে যোগ দিন', href: data.telegramGroup, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
   }
   if (data?.address) {
     items.push({ icon: MapPin, label: 'ঠিকানা', value: data.address, color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' });

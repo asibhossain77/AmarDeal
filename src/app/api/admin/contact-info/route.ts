@@ -13,6 +13,7 @@ export async function GET() {
         telegram: null,
         facebook: null,
         facebookGroup: null,
+        telegramGroup: null,
         address: null,
       });
     }
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdmin(req);
     if (!guard.ok) return guard.response;
     const body = await req.json();
-    const { phone, email, whatsapp, telegram, facebook, facebookGroup, address } = body;
+    const { phone, email, whatsapp, telegram, facebook, facebookGroup, telegramGroup, address } = body;
 
     const existing = await db.contactInfo.findFirst();
 
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
       telegram: telegram || null,
       facebook: facebook || null,
       facebookGroup: facebookGroup || null,
+      telegramGroup: telegramGroup || null,
       address: address || null,
     };
 

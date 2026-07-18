@@ -124,6 +124,7 @@ model ContactInfo {
   telegram      String?
   facebook      String?
   facebookGroup String?
+  telegramGroup String?
   address       String?
   updatedAt     DateTime @updatedAt
 }

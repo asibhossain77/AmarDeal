@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon } from 'lucide-react';
+import { Loader2, Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon, Send } from 'lucide-react';
 import { invalidateSiteSettingsCache } from '@/lib/use-site-settings';
 
 interface ContactData {
@@ -13,6 +13,7 @@ interface ContactData {
   email: string | null;
   whatsapp: string | null;
   telegram: string | null;
+  telegramGroup: string | null;
   facebook: string | null;
   facebookGroup: string | null;
   address: string | null;
@@ -26,7 +27,7 @@ interface ProfileData {
 export function ContactInfoPanel() {
   const [data, setData] = useState<ContactData>({
     phone: '', email: '', whatsapp: '', telegram: '',
-    facebook: '', facebookGroup: '', address: '',
+    facebook: '', facebookGroup: '', telegramGroup: '', address: '',
   });
   const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ export function ContactInfoPanel() {
         telegram: contact.telegram || '',
         facebook: contact.facebook || '',
         facebookGroup: contact.facebookGroup || '',
+        telegramGroup: contact.telegramGroup || '',
         address: contact.address || '',
       });
       setProfile({
@@ -191,6 +193,10 @@ export function ContactInfoPanel() {
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক গ্রুপ লিংক</Label>
             <Input placeholder="https://facebook.com/groups/..." value={data.facebookGroup || ''} onChange={e => updateField('facebookGroup', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Send className="h-3.5 w-3.5 text-muted-foreground" /> টেলিগ্রাম গ্রুপ লিংক</Label>
+            <Input placeholder="https://t.me/..." value={data.telegramGroup || ''} onChange={e => updateField('telegramGroup', e.target.value)} className="rounded-xl border-border/60" />
           </div>
         </div>
       </div>
