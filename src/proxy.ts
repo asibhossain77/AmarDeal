@@ -21,6 +21,16 @@ export const config = {
 }
 
 export async function proxy(req: NextRequest) {
+  // These routes handle their own auth — they must be reachable WITHOUT
+  // an existing session cookie (login-verify SETS the cookie, login is public).
+  const publicAdminRoutes = [
+    '/api/admin/2fa/login-verify',
+  ]
+
+  if (publicAdminRoutes.some((r) => req.nextUrl.pathname.startsWith(r))) {
+    return NextResponse.next()
+  }
+
   const sessionCookie = req.cookies.get(SESSION_COOKIE)
 
   // No session cookie at all — reject immediately
