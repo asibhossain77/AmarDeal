@@ -9,45 +9,7 @@ import {
   Landmark,
   UserCheck,
 } from 'lucide-react';
-
-const features = [
-  {
-    icon: Lock,
-    title: 'এন্ড-টু-এন্ড এনক্রিপশন',
-    description:
-      'আপনার সকল তথ্য ও লেনদেনের ডেটা শক্তিশালী এনক্রিপশন প্রযুক্তি দিয়ে সুরক্ষিত।',
-  },
-  {
-    icon: Eye,
-    title: 'স্বচ্ছ লেনদেন প্রক্রিয়া',
-    description:
-      'প্রতিটি ধাপে রিয়েল-টাইম আপডেট পান। লেনদেনের অবস্থা সবসময় আপনার হাতের মুঠোয়।',
-  },
-  {
-    icon: UserCheck,
-    title: 'যাচাইকৃত ব্যবহারকারী',
-    description:
-      'সকল ব্যবহারকারীকে যাচাই করা হয়। প্রতারণার ঝুঁকি হ্রাস পায় এবং বিশ্বাস বৃদ্ধি পায়।',
-  },
-  {
-    icon: Landmark,
-    title: 'নিয়ন্ত্রিত অর্থ প্রদান',
-    description:
-      'লাইসেন্সপ্রাপ্ত আর্থিক প্রতিষ্ঠানের মাধ্যমে টাকা পরিচালনা করা হয়।',
-  },
-  {
-    icon: Clock,
-    title: 'দ্রুত বিরোধ নিষ্পত্তি',
-    description:
-      'যেকোনো সমস্যায় দ্রুত মধ্যস্থতার ব্যবস্থা। পেশাদার সাপোর্ট টিম ২৪/৭ আপনার পাশে।',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'অর্থ ফেরতের গ্যারান্টি',
-    description:
-      'শর্ত পূরণ না হলে আপনার টাকা সম্পূর্ণ ফেরত পাবেন। কোনো লুকানো চার্জ নেই।',
-  },
-];
+import { useT } from '@/lib/i18n';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -67,6 +29,41 @@ const itemVariants = {
 };
 
 export function TrustSecurity() {
+  const t = useT();
+
+  const features = [
+    {
+      icon: Lock,
+      title: t('trust.feature1Title'),
+      description: t('trust.feature1Desc'),
+    },
+    {
+      icon: Eye,
+      title: t('trust.feature2Title'),
+      description: t('trust.feature2Desc'),
+    },
+    {
+      icon: UserCheck,
+      title: t('trust.feature3Title'),
+      description: t('trust.feature3Desc'),
+    },
+    {
+      icon: Landmark,
+      title: t('trust.feature4Title'),
+      description: t('trust.feature4Desc'),
+    },
+    {
+      icon: Clock,
+      title: t('trust.feature5Title'),
+      description: t('trust.feature5Desc'),
+    },
+    {
+      icon: ShieldCheck,
+      title: t('trust.feature6Title'),
+      description: t('trust.feature6Desc'),
+    },
+  ];
+
   return (
     <section id="features" className="border-t border-border/50 bg-muted/30 py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -79,14 +76,13 @@ export function TrustSecurity() {
           className="mx-auto mb-16 max-w-2xl text-center"
         >
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">
-            নিরাপত্তা ও ভরসা
+            {t('trust.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-            আপনার লেনদেন সম্পূর্ণ সুরক্ষিত
+            {t('trust.sectionTitle')}
           </h2>
           <p className="mt-4 text-muted-foreground">
-            আমরা সর্বোচ্চ নিরাপত্তা মান অনুসরণ করি যাতে আপনি নিশ্চিন্তে
-            লেনদেন করতে পারেন।
+            {t('trust.sectionDesc')}
           </p>
         </motion.div>
 

@@ -3,55 +3,7 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Users, Target, Heart, Award, TrendingUp } from 'lucide-react';
 import { useSiteSettings } from '@/lib/use-site-settings';
-
-const stats = [
-  { icon: ShieldCheck, value: '১০০%', label: 'নিরাপদ লেনদেন' },
-  { icon: Users, value: '২৪/৭', label: 'সাপোর্ট' },
-  { icon: Award, value: '০%', label: 'প্রতারণার হার' },
-  { icon: TrendingUp, value: 'দ্রুত', label: 'পেআউট প্রক্রিয়া' },
-];
-
-const values = [
-  {
-    icon: ShieldCheck,
-    title: 'নিরাপত্তা সর্বোচ্চ অগ্রাধিকার',
-    description:
-      'আমাদের প্ল্যাটফর্মে প্রতিটি লেনদেন এন্ড-টু-এন্ড এনক্রিপশন দিয়ে সুরক্ষিত। আপনার টাকা ডিল সম্পন্ন না হওয়া পর্যন্ত লক থাকে। কোনো তৃতীয় পক্ষ আপনার তথ্যে অ্যাক্সেস করতে পারে না।',
-  },
-  {
-    icon: Target,
-    title: 'স্বচ্ছতা ও জবাবদিহিতা',
-    description:
-      'প্রতিটি ডিলের সব ধাপ রিয়েল-টাইমে আপডেট হয়। কখন টাকা জমা হলো, কখন ভেরিফাই হলো, কখন ডেলিভারি হলো — সবকিছু আপনার সামনে স্বচ্ছভাবে দেখা যায়।',
-  },
-  {
-    icon: Users,
-    title: 'ক্রেতা-বিক্রেতা সম্পর্ক সুরক্ষা',
-    description:
-      'অনলাইনে কেনাবেচার সবচেয়ে বড় সমস্যা হলো বিশ্বাসের অভাব। আমরা সেই শূন্যস্থান পূরণ করি। ক্রেতা নিশ্চিন্তে পেমেন্ট করেন, বিক্রেতা নিশ্চিন্তে ডেলিভারি দেন।',
-  },
-  {
-    icon: Heart,
-    title: 'দ্রুত বিরোধ নিষ্পত্তি',
-    description:
-      'কোনো সমস্যা হলে অ্যাডমিন সরাসরি হস্তক্ষেপ করেন। চ্যাটের মাধ্যমে উভয় পক্ষের কথা শুনে দ্রুত সিদ্ধান্ত নেওয়া হয়। অযথা সময় নষ্ট হয় না।',
-  },
-];
-
-const milestones = [
-  {
-    phase: 'আমাদের লক্ষ্য',
-    text: 'বাংলাদেশের প্রতিটি অনলাইন লেনদেনকে নিরাপদ করা। কেউ প্রতারিত হবে না — এটাই আমাদের প্রতিশ্রুতি।',
-  },
-  {
-    phase: 'আমাদের পদ্ধতি',
-    text: 'মানুষের জন্য সহজ, প্রতারকদের জন্য কঠোর। আমরা প্রযুক্তি ও ম্যানুয়াল ভেরিফিকেশনের সমন্বয়ে কাজ করি যাতে কোনো ফাঁকফোকর না থাকে।',
-  },
-  {
-    phase: 'আমাদের প্রতিশ্রুতি',
-    text: 'আপনার টাকা আমাদের দায়িত্ব। আমরা একটি টাকাও অন্যায়ভাবে যেতে দেব না। প্রতিটি ডিলে আমরা নিরপেক্ষ মধ্যস্থ হিসেবে কাজ করি।',
-  },
-];
+import { useT } from '@/lib/i18n';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -72,6 +24,52 @@ const itemVariants = {
 
 export function AboutSection() {
   const { siteName } = useSiteSettings();
+  const t = useT();
+
+  const stats = [
+    { icon: ShieldCheck, value: '১০০%', label: t('about.stat1Label') },
+    { icon: Users, value: '২৪/৭', label: t('about.stat2Label') },
+    { icon: Award, value: '০%', label: t('about.stat3Label') },
+    { icon: TrendingUp, value: 'দ্রুত', label: t('about.stat4Label') },
+  ];
+
+  const values = [
+    {
+      icon: ShieldCheck,
+      title: t('about.value1Title'),
+      description: t('about.value1Desc'),
+    },
+    {
+      icon: Target,
+      title: t('about.value2Title'),
+      description: t('about.value2Desc'),
+    },
+    {
+      icon: Users,
+      title: t('about.value3Title'),
+      description: t('about.value3Desc'),
+    },
+    {
+      icon: Heart,
+      title: t('about.value4Title'),
+      description: t('about.value4Desc'),
+    },
+  ];
+
+  const milestones = [
+    {
+      phase: t('about.goalPhase'),
+      text: t('about.goalText'),
+    },
+    {
+      phase: t('about.methodPhase'),
+      text: t('about.methodText'),
+    },
+    {
+      phase: t('about.promisePhase'),
+      text: t('about.promiseText'),
+    },
+  ];
 
   return (
     <section id="about" className="py-20 sm:py-28">
@@ -85,14 +83,13 @@ export function AboutSection() {
           className="mx-auto mb-16 max-w-2xl text-center"
         >
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">
-            আমাদের সম্পর্কে
+            {t('about.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-            নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা
+            {t('about.sectionTitle')}
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            {siteName} হলো বাংলাদেশের একটি এসক্রো প্ল্যাটফর্ম যা অনলাইন কেনাবেচাকে নিরাপদ ও স্বচ্ছ করে।
-            আমরা বিশ্বাস করি প্রতিটি লেনদেন প্রতারণামুক্ত হওয়া উচিত।
+            {t('about.sectionDesc')}
           </p>
         </motion.div>
 
@@ -107,12 +104,10 @@ export function AboutSection() {
           <div className="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
               <h3 className="mb-4 text-xl font-bold tracking-tight sm:text-2xl">
-                আমাদের মিশন
+                {t('about.missionTitle')}
               </h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                বাংলাদেশে অনলাইনে কেনাবেচার পরিমাণ দিন দিন বাড়ছে, কিন্তু প্রতারণার ভয়ে অনেকেই পিছিয়ে আসছেন।
-                {siteName} এই সমস্যার সমাধান নিয়ে এসেছে। আমাদের মিশন হলো প্রতিটি অনলাইন লেনদেনে একটি বিশ্বস্ত তৃতীয় পক্ষ
-                হিসেবে কাজ করা — যাতে ক্রেতা তার টাকা হারান না এবং বিক্রেতা তার পণ্যের মূল্য পায়।
+                {t('about.missionText')}
               </p>
             </div>
             <div className="space-y-5">
@@ -193,10 +188,10 @@ export function AboutSection() {
         >
           <div className="mx-auto max-w-xl rounded-2xl bg-primary/5 border border-primary/10 p-6 sm:p-8">
             <p className="text-lg font-bold text-foreground sm:text-xl">
-              &quot;আপনার টাকা, আমাদের দায়িত্ব&quot;
+              {t('about.quote')}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              — {siteName} পরিবার
+              — {siteName} {t('about.familyLabel')}
             </p>
           </div>
         </motion.div>

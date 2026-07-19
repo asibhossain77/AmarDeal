@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -12,6 +13,7 @@ interface ContractData {
 }
 
 export function ContractSection() {
+  const t = useT();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [data, setData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,10 +46,10 @@ export function ContractSection() {
         {/* Section Header */}
         <div className="mb-8 text-center">
           <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-primary">
-            চুক্তি ও শর্তাবলী
+            {t('contract.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            আমাদের শর্তাবলী
+            {t('contract.sectionTitle')}
           </h2>
         </div>
 
@@ -57,21 +59,21 @@ export function ContractSection() {
             {data?.adminImageUrl ? (
               <img
                 src={data.adminImageUrl}
-                alt={data.adminName || 'অ্যাডমিন'}
+                alt={data.adminName || t('contact.admin')}
                 className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-primary/20"
                 loading="lazy" decoding="async"
               />
             ) : (
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xl font-bold text-primary">
-                {(data?.adminName || 'অ').charAt(0)}
+                {(data?.adminName || 'A').charAt(0)}
               </div>
             )}
             <div>
               <p className="text-base font-bold text-foreground">
-                {data?.adminName || 'আমার ডিল অ্যাডমিন'}
+                {data?.adminName || t('contract.admin')}
               </p>
               <p className="text-xs text-muted-foreground">
-                প্ল্যাটফর্ম প্রশাসক
+                {t('contract.platformAdmin')}
               </p>
             </div>
           </div>
@@ -82,7 +84,7 @@ export function ContractSection() {
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">
-              শর্তাবলী
+              {t('contract.termsTitle')}
             </h3>
           </div>
 
@@ -118,7 +120,7 @@ export function ContractSection() {
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">
-                এখনো কোনো শর্তাবলী যোগ করা হয়নি।
+                {t('contract.noTerms')}
               </p>
             </div>
           )}

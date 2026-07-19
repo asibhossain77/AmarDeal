@@ -2,30 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { FileText, Wallet, CheckCircle } from 'lucide-react';
-
-const steps = [
-  {
-    number: '০১',
-    icon: FileText,
-    title: 'ডিল তৈরি করুন',
-    description:
-      'ক্রেতা ও বিক্রেতা মিলে এসক্রো ডিল তৈরি করুন। লেনদেনের শর্তাবলী স্পষ্টভাবে উল্লেখ করুন।',
-  },
-  {
-    number: '০২',
-    icon: Wallet,
-    title: 'টাকা জমা দিন',
-    description:
-      'ক্রেতা নিরাপদে এসক্রো অ্যাকাউন্টে টাকা জমা দিন। টাকা সম্পূর্ণ সুরক্ষিত থাকবে ডিল সম্পন্ন না হওয়া পর্যন্ত।',
-  },
-  {
-    number: '০৩',
-    icon: CheckCircle,
-    title: 'নিরাপদে লেনদেন সম্পন্ন করুন',
-    description:
-      'শর্ত পূরণ হলে বিক্রেতাকে টাকা প্রদান করা হবে। কোনো পক্ষ শর্ত ভঙ্গ করলে টাকা ক্রেতাকে ফেরত দেওয়া হবে।',
-  },
-];
+import { useT } from '@/lib/i18n';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -45,6 +22,28 @@ const itemVariants = {
 };
 
 export function HowItWorks() {
+  const t = useT();
+
+  const stepNumbers = ['01', '02', '03'];
+
+  const steps = [
+    {
+      icon: FileText,
+      title: t('how.step1Title'),
+      description: t('how.step1Desc'),
+    },
+    {
+      icon: Wallet,
+      title: t('how.step2Title'),
+      description: t('how.step2Desc'),
+    },
+    {
+      icon: CheckCircle,
+      title: t('how.step3Title'),
+      description: t('how.step3Desc'),
+    },
+  ];
+
   return (
     <section id="how-it-works" className="py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -57,14 +56,13 @@ export function HowItWorks() {
           className="mx-auto mb-16 max-w-2xl text-center"
         >
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">
-            কিভাবে কাজ করে
+            {t('how.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-            মাত্র তিনটি ধাপে নিরাপদ লেনদেন
+            {t('how.sectionTitle')}
           </h2>
           <p className="mt-4 text-muted-foreground">
-            জটিল প্রক্রিয়া নয়, সহজ ও স্বচ্ছ পদ্ধতিতে আপনার লেনদেন
-            সম্পন্ন করুন।
+            {t('how.sectionDesc')}
           </p>
         </motion.div>
 
@@ -80,7 +78,7 @@ export function HowItWorks() {
             const Icon = step.icon;
             return (
               <motion.div
-                key={step.number}
+                key={stepNumbers[index]}
                 variants={itemVariants}
                 className="group relative rounded-3xl border border-border/40 bg-white p-6 sm:p-8 shadow-2xl shadow-gray-300/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 dark:bg-zinc-900 dark:shadow-none"
               >
@@ -89,7 +87,7 @@ export function HowItWorks() {
                 )}
 
                 <span className="mb-4 inline-block font-mono text-3xl font-black text-primary/50">
-                  {step.number}
+                  {stepNumbers[index]}
                 </span>
 
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">

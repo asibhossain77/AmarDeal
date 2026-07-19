@@ -3,6 +3,7 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MessageCircle, MapPin, Users, Loader2, User, Send } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -39,6 +40,7 @@ const itemVariants = {
 
 export function ContactSection() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
   const [data, setData] = useState<ContactData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,22 +66,22 @@ export function ContactSection() {
   const items: { icon: React.ElementType; label: string; value: string; href?: string; color: string }[] = [];
 
   if (data?.phone) {
-    items.push({ icon: Phone, label: 'ফোন', value: data.phone, href: `tel:${data.phone}`, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' });
+    items.push({ icon: Phone, label: t('contact.phone'), value: data.phone, href: `tel:${data.phone}`, color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' });
   }
   if (data?.whatsapp) {
-    items.push({ icon: MessageCircle, label: 'হোয়াটসঅ্যাপ', value: 'হোয়াটসঅ্যাপে মেসেজ করুন', href: data.whatsapp, color: 'bg-green-500/10 text-green-600 dark:text-green-400' });
+    items.push({ icon: MessageCircle, label: t('contact.whatsapp'), value: t('contact.whatsappMsg'), href: data.whatsapp, color: 'bg-green-500/10 text-green-600 dark:text-green-400' });
   }
   if (data?.email) {
-    items.push({ icon: Mail, label: 'ইমেইল', value: data.email, href: `mailto:${data.email}`, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
+    items.push({ icon: Mail, label: t('contact.emailLabel'), value: data.email, href: `mailto:${data.email}`, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
   }
   if (data?.facebookGroup) {
-    items.push({ icon: Users, label: 'ফেসবুক গ্রুপ', value: 'গ্রুপে যোগ দিন', href: data.facebookGroup, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' });
+    items.push({ icon: Users, label: t('contact.fbGroup'), value: t('contact.joinGroup'), href: data.facebookGroup, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' });
   }
   if (data?.telegramGroup) {
-    items.push({ icon: Send, label: 'টেলিগ্রাম গ্রুপ', value: 'গ্রুপে যোগ দিন', href: data.telegramGroup, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
+    items.push({ icon: Send, label: t('contact.tgGroup'), value: t('contact.joinGroup'), href: data.telegramGroup, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
   }
   if (data?.address) {
-    items.push({ icon: MapPin, label: 'ঠিকানা', value: data.address, color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' });
+    items.push({ icon: MapPin, label: t('contact.address'), value: data.address, color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' });
   }
 
   const hasProfile = data?.adminName || data?.adminImageUrl;
@@ -99,13 +101,13 @@ export function ContactSection() {
           className="mx-auto mb-12 max-w-2xl text-center"
         >
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">
-            যোগাযোগ
+            {t('contact.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
-            আমাদের সাথে কথা বলুন
+            {t('contact.sectionTitle')}
           </h2>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-            যেকোনো প্রশ্ন বা সমস্যায় সরাসরি যোগাযোগ করুন
+            {t('contact.sectionDesc')}
           </p>
         </motion.div>
 
@@ -125,7 +127,7 @@ export function ContactSection() {
                 {data?.adminImageUrl ? (
                   <img
                     src={data.adminImageUrl}
-                    alt={data.adminName || 'অ্যাডমিন'}
+                    alt={data.adminName || t('contact.admin')}
                     className="h-full w-full object-cover"
                     loading="lazy" decoding="async"
                   />
@@ -141,10 +143,10 @@ export function ContactSection() {
               <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full border-[3px] border-white dark:border-zinc-800 bg-emerald-500" />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-foreground">
-              {data?.adminName || 'প্ল্যাটফর্ম অ্যাডমিন'}
+              {data?.adminName || t('contact.admin')}
             </h3>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              যেকোনো সময় যোগাযোগ করুন
+              {t('contact.anytime')}
             </p>
           </motion.div>
         )}
@@ -194,7 +196,7 @@ export function ContactSection() {
           <div className="rounded-2xl border border-border/40 bg-white p-10 text-center shadow-lg dark:bg-zinc-900 dark:shadow-none">
             <User className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              এখনো যোগাযোগ তথ্য যোগ করা হয়নি
+              {t('contact.noInfo')}
             </p>
           </div>
         )}

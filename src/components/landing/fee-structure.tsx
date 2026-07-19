@@ -5,6 +5,7 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowRight } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -16,13 +17,14 @@ interface FeeRule {
   is_active: boolean;
 }
 
-function formatRange(min: number, max: number): string {
+function formatRange(min: number, max: number, t: (key: string) => string): string {
   const minStr = `৳${min.toLocaleString('en')}`;
-  if (max === 0) return `${minStr} — সীমাহীন`;
+  if (max === 0) return `${minStr} — ${t('fee.unlimited')}`;
   return `৳${min.toLocaleString('en')} — ৳${max.toLocaleString('en')}`;
 }
 
 export function FeeStructure() {
+  const t = useT();
   const [rules, setRules] = useState<FeeRule[]>([]);
   const [loading, setLoading] = useState(true);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -74,14 +76,13 @@ export function FeeStructure() {
         {/* Section Header */}
         <div className="mb-10 text-center">
           <Badge className="mb-4 border-0 bg-primary/10 text-primary font-semibold px-3 py-1">
-            স্বচ্ছ মূল্য নির্ধারণ
+            {t('fee.badge')}
           </Badge>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
-            আমাদের <span className="text-primary">ফি কাঠামো</span>
+            {t('fee.ourFee')}
           </h2>
           <p className="mt-3 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-            প্রতিটি লেনদেনের জন্য সামান্য ফি — আপনার নিরাপত্তার জন্য এটি একটি ছোট মূল্য।
-            নিচে বিস্তারিত দেখুন।
+            {t('fee.subtitle')}
           </p>
         </div>
 
@@ -92,8 +93,8 @@ export function FeeStructure() {
             <table className="w-full">
               <thead>
                 <tr className="bg-primary text-primary-foreground">
-                  <th className="px-6 py-4 text-left text-sm font-bold">লেনদেনের সীমা</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold">আমাদের ফি</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold">{t('fee.limitColumn')}</th>
+                  <th className="px-6 py-4 text-right text-sm font-bold">{t('fee.ourFee')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -107,7 +108,7 @@ export function FeeStructure() {
                 ) : rules.length === 0 ? (
                   <tr>
                     <td colSpan={2} className="px-6 py-12 text-center text-muted-foreground">
-                      কোনো ফি নিয়ম পাওয়া যায়নি
+                      {t('fee.noRules')}
                     </td>
                   </tr>
                 ) : (
@@ -120,7 +121,7 @@ export function FeeStructure() {
                     >
                       <td className="px-6 py-4">
                         <span className="text-sm font-semibold text-foreground">
-                          {formatRange(rule.minimum_amount, rule.maximum_amount)}
+                          {formatRange(rule.minimum_amount, rule.maximum_amount, t)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -143,7 +144,7 @@ export function FeeStructure() {
               ))
             ) : rules.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground text-sm">
-                কোনো ফি নিয়ম পাওয়া যায়নি
+                {t('fee.noRules')}
               </p>
             ) : (
               rules.map((rule, index) => (
@@ -156,7 +157,7 @@ export function FeeStructure() {
                   }`}
                 >
                   <span className="text-sm font-semibold text-foreground">
-                    {formatRange(rule.minimum_amount, rule.maximum_amount)}
+                    {formatRange(rule.minimum_amount, rule.maximum_amount, t)}
                   </span>
                   <Badge className="border-0 bg-primary/10 text-primary font-bold text-sm px-3 py-1">
                     ৳{rule.fee.toLocaleString('en')}
@@ -174,7 +175,7 @@ export function FeeStructure() {
             size="lg"
             className="gap-2 rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 px-8"
           >
-            এখনই ডিল শুরু করুন
+            {t('fee.startDeal')}
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>

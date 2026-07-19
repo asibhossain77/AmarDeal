@@ -3,81 +3,7 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-
-const sections = [
-  {
-    title: '১. তথ্য সংগ্রহ',
-    items: [
-      'আমরা রেজিস্ট্রেশনের সময় আপনার নাম, ফোন নম্বর ও পাসওয়ার্ড সংগ্রহ করি।',
-      'ডিল তৈরির সময় লেনদেনের তথ্য (পরিমাণ, শর্ত, পেমেন্ট মেথড) সংরক্ষণ হয়।',
-      'চ্যাট মেসেজ ও ডিল সম্পর্কিত যোগাযোগের তথ্য সংগ্রহ করা হয়।',
-      'পেমেন্ট প্রুফ (স্ক্রিনশট/ট্রানজাকশন আইডি) ভেরিফিকেশনের জন্য সংগৃহীত হয়।',
-    ],
-  },
-  {
-    title: '২. তথ্যের ব্যবহার',
-    items: [
-      'লেনদেন পরিচালনা, ভেরিফিকেশন ও পেআউট প্রক্রিয়ার জন্য।',
-      'বিরোধ নিষ্পত্তির সময় প্রমাণ হিসেবে ব্যবহার করা হয়।',
-      'প্ল্যাটফর্মের নিরাপত্তা ও সেবার মান উন্নয়নে।',
-      'অবৈধ কার্যকলাপ ও প্রতারণা প্রতিরোধে।',
-      'প্রয়োজনে আপনাকে গুরুত্বপূর্ণ নোটিফিকেশন পাঠানোর জন্য।',
-    ],
-  },
-  {
-    title: '৩. তথ্য সুরক্ষা',
-    items: [
-      'সকল ডেটা এন্ড-টু-এন্ড এনক্রিপশন দিয়ে সুরক্ষিত।',
-      'আপনার পাসওয়ার্ড হ্যাশ করে সংরক্ষণ করা হয় — আমরাও দেখতে পাই না।',
-      'শুধুমাত্র অ্যাডমিন ও সংশ্লিষ্ট ডিলের পক্ষগণ ডিলের তথ্য দেখতে পারে।',
-      'নিয়মিত সুরক্ষা অডিট ও আপডেটের মাধ্যমে ডেটা সুরক্ষিত রাখা হয়।',
-    ],
-  },
-  {
-    title: '৪. তৃতীয় পক্ষের সাথে শেয়ারিং',
-    items: [
-      'আমরা আপনার ব্যক্তিগত তথ্য কোনো তৃতীয় পক্ষকে বিক্রি, ভাড়া বা শেয়ার করি না।',
-      'ডিলের অন্য পক্ষ (ক্রেতা/বিক্রেতা) শুধুমাত্র সংশ্লিষ্ট ডিলের প্রয়োজনীয় তথ্য দেখতে পারে।',
-      'আইন প্রয়োগকারী সংস্থার আইনি অনুরোধে তথ্য প্রদান করা হতে পারে।',
-      'পেমেন্ট প্রসেসিংয়ের জন্য পেমেন্ট গেটওয়েকে ন্যূনতম তথ্য দেওয়া হয়।',
-    ],
-  },
-  {
-    title: '৫. কুকিজ ও ট্র্যাকিং',
-    items: [
-      'আমরা আপনার লগইন সেশন বজায় রাখতে কুকিজ ব্যবহার করি।',
-      'সাইটের পারফরম্যান্স ও ব্যবহারের অভিজ্ঞতা উন্নয়নে কুকিজ ব্যবহৃত হয়।',
-      'আপনি আপনার ব্রাউজার সেটিং থেকে কুকিজ নিষ্ক্রিয় করতে পারেন, তবে কিছু ফিচার কাজ নাও করতে পারে।',
-      'আমরা কোনো থার্ড-পার্টি ট্র্যাকিং বা অ্যাড ট্র্যাকিং কুকিজ ব্যবহার করি না।',
-    ],
-  },
-  {
-    title: '৬. তথ্য সংরক্ষণের সময়কাল',
-    items: [
-      'আপনার একাউন্ট যতদিন সক্রিয় থাকে ততদিন তথ্য সংরক্ষিত থাকে।',
-      'ডিল সম্পূর্ণ হওয়ার পর ডিলের রেকর্ড আইনি প্রয়োজনে ন্যূনতম ৬ মাস পর্যন্ত রাখা হয়।',
-      'অ্যাকাউন্ট মুছে ফেলার অনুরোধে ৩০ দিনের মধ্যে ব্যক্তিগত তথ্য ডিলিট করা হয় (আইনি রেকর্ড ব্যতিরেকে)।',
-      'অনুমোদন ছাড়া আপনার তথ্য স্বয়ংক্রিয়ভাবে মুছে ফেলা হয় না।',
-    ],
-  },
-  {
-    title: '৭. আপনার অধিকারসমূহ',
-    items: [
-      'আপনি যেকোনো সময় আপনার প্রোফাইল তথ্য দেখতে ও সম্পাদনা করতে পারেন।',
-      'আপনার তথ্য কিভাবে ব্যবহৃত হচ্ছে তা সম্পর্কে জানার অধিকার আপনার।',
-      'অ্যাকাউন্ট মুছে ফেলার জন্য অ্যাডমিনকে অনুরোধ করতে পারেন।',
-      'কোনো ভুল তথ্য সংশোধনের জন্য যোগাযোগ করতে পারেন।',
-    ],
-  },
-  {
-    title: '৮. নীতিতে পরিবর্তন',
-    items: [
-      'আমরা যেকোনো সময় এই গোপনীয়তা নীতি আপডেট করতে পারি।',
-      'যদি কোনো উল্লেখযোগ্য পরিবর্তন হয়, তবে প্ল্যাটফর্মে নোটিফিকেশন দেওয়া হবে।',
-      'নীতির সর্বশেষ সংস্করণ সবসময় এই পেজে পাওয়া যাবে।',
-    ],
-  },
-];
+import { useT } from '@/lib/i18n';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -97,6 +23,83 @@ const itemVariants = {
 };
 
 export function PrivacySection() {
+  const t = useT();
+
+  const sections = [
+    {
+      title: t('privacy.s1Title'),
+      items: [
+        t('privacy.s1i1'),
+        t('privacy.s1i2'),
+        t('privacy.s1i3'),
+        t('privacy.s1i4'),
+      ],
+    },
+    {
+      title: t('privacy.s2Title'),
+      items: [
+        t('privacy.s2i1'),
+        t('privacy.s2i2'),
+        t('privacy.s2i3'),
+        t('privacy.s2i4'),
+        t('privacy.s2i5'),
+      ],
+    },
+    {
+      title: t('privacy.s3Title'),
+      items: [
+        t('privacy.s3i1'),
+        t('privacy.s3i2'),
+        t('privacy.s3i3'),
+        t('privacy.s3i4'),
+      ],
+    },
+    {
+      title: t('privacy.s4Title'),
+      items: [
+        t('privacy.s4i1'),
+        t('privacy.s4i2'),
+        t('privacy.s4i3'),
+        t('privacy.s4i4'),
+      ],
+    },
+    {
+      title: t('privacy.s5Title'),
+      items: [
+        t('privacy.s5i1'),
+        t('privacy.s5i2'),
+        t('privacy.s5i3'),
+        t('privacy.s5i4'),
+      ],
+    },
+    {
+      title: t('privacy.s6Title'),
+      items: [
+        t('privacy.s6i1'),
+        t('privacy.s6i2'),
+        t('privacy.s6i3'),
+        t('privacy.s6i4'),
+      ],
+    },
+    {
+      title: t('privacy.s7Title'),
+      items: [
+        t('privacy.s7i1'),
+        t('privacy.s7i2'),
+        t('privacy.s7i3'),
+        t('privacy.s7i4'),
+      ],
+    },
+    {
+      title: t('privacy.s8Title'),
+      items: [
+        t('privacy.s8i1'),
+        t('privacy.s8i2'),
+        t('privacy.s8i3'),
+      ],
+    },
+  ];
+
   return (
     <section id="privacy" className="py-20 sm:py-28">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
@@ -112,13 +115,13 @@ export function PrivacySection() {
             <ShieldCheck className="h-6 w-6" />
           </div>
           <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-primary">
-            গোপনীয়তা নীতি
+            {t('privacy.sectionLabel')}
           </p>
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            আপনার তথ্য সুরক্ষিত আছে
+            {t('privacy.sectionTitle')}
           </h2>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-            আমরা আপনার ব্যক্তিগত তথ্যের গুরুত্ব বুঝি। নিচে বিস্তারিত জানুন আমরা কিভাবে আপনার তথ্য সংগ্রহ, ব্যবহার ও সুরক্ষিত করি।
+            {t('privacy.sectionDesc')}
           </p>
         </motion.div>
 
@@ -131,7 +134,7 @@ export function PrivacySection() {
           className="mb-8 flex justify-center"
         >
           <span className="inline-flex items-center rounded-full bg-muted/60 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-            সর্বশেষ আপডেট: জানুয়ারি ২০২৫
+            {t('privacy.lastUpdated')}
           </span>
         </motion.div>
 
@@ -174,14 +177,14 @@ export function PrivacySection() {
         >
           <div className="mx-auto max-w-xl rounded-2xl bg-primary/5 border border-primary/10 p-5 sm:p-6">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              গোপনীয়তা সম্পর্কে কোনো প্রশ্ন থাকলে আমাদের সাথে{' '}
+              {t('privacy.contactNote')}{' '}
               <button
                 onClick={() => useAppStore.getState().setView('page-contact')}
                 className="font-semibold text-primary hover:underline underline-offset-2"
               >
-                যোগাযোগ
+                {t('privacy.contactLink')}
               </button>{' '}
-              করুন। আমরা সবসময় আপনাকে সাহায্য করতে প্রস্তুত।
+              {t('privacy.contactNoteEnd')}
             </p>
           </div>
         </motion.div>

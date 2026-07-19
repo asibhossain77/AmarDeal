@@ -702,3 +702,65 @@ Stage Summary:
 - No Bengali hardcoded strings remain in any of the target files
 - No logic changes were made — only text string replacements
 - bn.ts and en.ts were not modified
+
+---
+Task ID: 4-a
+Agent: general-purpose
+Task: Update trust-security.tsx and how-it-works.tsx to use i18n t() instead of hardcoded Bengali
+
+Work Log:
+- Read both component files
+- Added useT import
+- Moved data arrays inside components
+- Replaced all hardcoded Bengali with t() calls using existing translation keys
+
+Stage Summary:
+- trust-security.tsx: 6 features + section header now translated
+- how-it-works.tsx: 3 steps + section header now translated
+---
+Task ID: 4-d
+Agent: general-purpose
+Task: Update privacy-section.tsx, contract-section.tsx, and blog-view.tsx to use i18n t()
+
+Work Log:
+- Read all three files
+- Added useT import to all
+- Moved privacy sections array inside component
+- Replaced all hardcoded Bengali with t() calls
+
+Stage Summary:
+- privacy-section.tsx: 8 privacy sections with titles and items all translated
+- contract-section.tsx: section header, admin card, terms header, empty state translated
+- blog-view.tsx: blog listing, post detail, empty states all translated
+
+---
+Task ID: 4-c
+Agent: general-purpose
+Task: Update about-section.tsx and contact-section.tsx to use i18n t()
+
+Work Log:
+- Read both files to understand current hardcoded Bengali text
+- Added `import { useT } from '@/lib/i18n'` to both files
+- Added `const t = useT()` inside both components
+- Moved `stats`, `values`, `milestones` arrays from module scope into `AboutSection` component body
+- Replaced all hardcoded Bengali in about-section: section header (label/title/desc), mission title/text, stat labels, value titles/descriptions, milestone phases/texts, bottom quote and family label
+- Replaced all hardcoded Bengali in contact-section: section header (label/title/desc), contact item labels (phone/whatsapp/email/fbGroup/tgGroup/address), item values (whatsappMsg/joinGroup), admin alt text/fallback name, anytime text, empty state text
+
+Stage Summary:
+- about-section.tsx: stats, values, milestones, mission, bottom statement all translated
+- contact-section.tsx: section header, all contact labels, admin text, empty state translated
+
+---
+Task ID: 4-b
+Agent: general-purpose
+Task: Update fee-structure.tsx and faq-section.tsx to use i18n t() instead of hardcoded Bengali
+
+Work Log:
+- Read both component files
+- Added useT import to both
+- Replaced all hardcoded Bengali with t() calls using existing translation keys
+- Moved faqs array inside FAQSection component for t() access
+
+Stage Summary:
+- fee-structure.tsx: section header, table headers, CTA button all translated
+- faq-section.tsx: 12 Q&As + section header + bottom CTA all translated

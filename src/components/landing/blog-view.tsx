@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, BookOpen, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n';
 
 const PER_PAGE = 6;
 
@@ -103,6 +104,7 @@ function Pagination({
 
 /* ─── Blog Post Detail ─── */
 function BlogPostDetail({ post, onBack }: { post: BlogPostFull; onBack: () => void }) {
+  const t = useT();
   return (
     <motion.article
       initial={{ opacity: 0, y: 16 }}
@@ -115,7 +117,7 @@ function BlogPostDetail({ post, onBack }: { post: BlogPostFull; onBack: () => vo
         className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        সব পোস্ট
+        {t('blog.allPosts')}
       </button>
 
       {post.coverImage && (
@@ -160,6 +162,7 @@ function BlogPostDetail({ post, onBack }: { post: BlogPostFull; onBack: () => vo
 
 /* ─── Blog Listing ─── */
 function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }) {
+  const t = useT();
   const [page, setPage] = useState(1);
 
   const { data: posts, isLoading } = useQuery<BlogPostPreview[]>({
@@ -189,8 +192,8 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <BookOpen className="h-14 w-14 text-muted-foreground/30 mb-4" />
-        <p className="text-lg font-medium text-muted-foreground">এখনো কোনো ব্লগ পোস্ট নেই</p>
-        <p className="text-sm text-muted-foreground/60 mt-1">শীঘ্রই নতুন আর্টিকেল প্রকাশ করা হবে</p>
+        <p className="text-lg font-medium text-muted-foreground">{t('blog.noPosts')}</p>
+        <p className="text-sm text-muted-foreground/60 mt-1">{t('blog.comingSoon')}</p>
       </div>
     );
   }
@@ -198,9 +201,9 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
   return (
     <div className="mx-auto max-w-4xl">
       <div className="text-center mb-8 sm:mb-10">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">ব্লগ</h1>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3">{t('blog.title')}</h1>
         <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-          নিরাপদ অনলাইন লেনদেন ও এসক্রো সম্পর্কে জানুন
+          {t('blog.subtitle')}
         </p>
       </div>
 
@@ -251,6 +254,7 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
 
 /* ─── Blog View (switches between listing & detail) ─── */
 export function BlogView() {
+  const t = useT();
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   const { data: fullPost, isLoading: loadingPost } = useQuery<BlogPostFull>({
@@ -274,10 +278,10 @@ export function BlogView() {
     if (!fullPost) {
       return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-muted-foreground mb-4">পোস্ট পাওয়া যায়নি</p>
+          <p className="text-muted-foreground mb-4">{t('blog.postNotFound')}</p>
           <Button variant="outline" onClick={() => setSelectedSlug(null)} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
-            ফিরে যান
+            {t('common.back')}
           </Button>
         </div>
       );
