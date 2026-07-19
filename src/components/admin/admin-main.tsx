@@ -20,15 +20,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { PaymentMethodsPanel } from './payment-methods-panel';
-import { FeeRulesPanel } from './fee-rules-panel';
-import { ContactInfoPanel } from './contact-info-panel';
-import { AdminProfilePanel } from './admin-profile-panel';
-import { ContractPanel } from './contract-panel';
-import { BlogPanel } from './blog-panel';
-import { EmailSettingsPanel } from './email-settings-panel';
-import { TwoFactorPanel } from './two-factor-panel';
-import { AiPromptPanel } from './ai-prompt-panel';
+import dynamic from 'next/dynamic';
+
+const PaymentMethodsPanel = dynamic(() => import('./payment-methods-panel').then(m => ({ default: m.PaymentMethodsPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const FeeRulesPanel = dynamic(() => import('./fee-rules-panel').then(m => ({ default: m.FeeRulesPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const ContactInfoPanel = dynamic(() => import('./contact-info-panel').then(m => ({ default: m.ContactInfoPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const AdminProfilePanel = dynamic(() => import('./admin-profile-panel').then(m => ({ default: m.AdminProfilePanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const ContractPanel = dynamic(() => import('./contract-panel').then(m => ({ default: m.ContractPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const BlogPanel = dynamic(() => import('./blog-panel').then(m => ({ default: m.BlogPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m => ({ default: m.EmailSettingsPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
 import {
   Bell,
   ShieldCheck,
@@ -648,6 +650,7 @@ function PaymentVerifyPanel() {
                       src={deal.paymentMethod.image}
                       alt={deal.paymentMethod.name}
                       className="h-full w-full object-cover"
+                      loading="lazy" decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                         (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
@@ -2168,6 +2171,7 @@ function SettingsPanel() {
                       src={settings.site_logo}
                       alt="লোগো"
                       className="h-full w-full object-contain p-1"
+                      loading="lazy" decoding="async"
                     />
                   ) : (
                     <CreditCard className="h-5 w-5 text-muted-foreground/40" />

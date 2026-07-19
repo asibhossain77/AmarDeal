@@ -59,6 +59,7 @@ export function ContractSection() {
                 src={data.adminImageUrl}
                 alt={data.adminName || 'অ্যাডমিন'}
                 className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-primary/20"
+                loading="lazy" decoding="async"
               />
             ) : (
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xl font-bold text-primary">

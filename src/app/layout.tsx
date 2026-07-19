@@ -13,7 +13,7 @@ const SITE_URL = "https://xn--94b8cubil3ej.xn--54b7fta0cc";
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
   subsets: ["bengali", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 

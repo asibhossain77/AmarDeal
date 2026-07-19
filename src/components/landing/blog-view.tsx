@@ -123,6 +123,7 @@ function BlogPostDetail({ post, onBack }: { post: BlogPostFull; onBack: () => vo
           src={post.coverImage}
           alt={post.title}
           className="w-full rounded-2xl object-cover max-h-80 mb-6"
+          loading="lazy" decoding="async"
         />
       )}
 
@@ -219,6 +220,7 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
                   src={post.coverImage}
                   alt={post.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy" decoding="async"
                 />
               </div>
             ) : (

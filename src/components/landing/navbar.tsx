@@ -174,6 +174,7 @@ export function Navbar() {
               <button
                 onClick={() => setDashboardPanel('overview')}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
+                aria-label="ড্যাশবোর্ড"
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span className="hidden xl:inline">ড্যাশবোর্ড</span>
@@ -181,6 +182,7 @@ export function Navbar() {
               <button
                 onClick={() => setDashboardPanel('new-deal')}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-primary bg-primary/10 transition-colors hover:bg-primary/15"
+                aria-label="নতুন ডিল"
               >
                 <FilePlus className="h-4 w-4" />
                 <span className="hidden xl:inline">নতুন ডিল</span>
@@ -197,6 +199,7 @@ export function Navbar() {
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
+                aria-label="লগআউট"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden xl:inline">লগআউট</span>

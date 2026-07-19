@@ -1,27 +1,38 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
+
+/* ── Eager: above-the-fold landing components ── */
 import { Navbar } from '@/components/landing/navbar';
 import { Hero } from '@/components/landing/hero';
-import { TrustSecurity } from '@/components/landing/trust-security';
-import { Footer } from '@/components/landing/footer';
 import { PageWrapper } from '@/components/landing/page-wrapper';
-import { HowItWorks } from '@/components/landing/how-it-works';
-import { FeeStructure } from '@/components/landing/fee-structure';
-import { FAQSection } from '@/components/landing/faq-section';
-import { AboutSection } from '@/components/landing/about-section';
-import { PrivacySection } from '@/components/landing/privacy-section';
-import { ContactSection } from '@/components/landing/contact-section';
-import { ContractSection } from '@/components/landing/contract-section';
-import { ReviewSection } from '@/components/landing/review-section';
-import { AuthView } from '@/components/auth/auth-view';
-import { DashboardView } from '@/components/dashboard/dashboard-view';
-import { AdminView } from '@/components/admin/admin-view';
-import { SellerView } from '@/components/seller/seller-view';
-import { BlogView } from '@/components/landing/blog-view';
-import { LiveSupportButton } from '@/components/live-support-button';
+
+/* ── Dynamic: below-the-fold landing sections ── */
+const TrustSecurity = dynamic(() => import('@/components/landing/trust-security').then(m => ({ default: m.TrustSecurity })), { ssr: false });
+const Footer = dynamic(() => import('@/components/landing/footer').then(m => ({ default: m.Footer })), { ssr: false });
+const ReviewSection = dynamic(() => import('@/components/landing/review-section').then(m => ({ default: m.ReviewSection })), { ssr: false });
+const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(m => ({ default: m.HowItWorks })), { ssr: false });
+const FeeStructure = dynamic(() => import('@/components/landing/fee-structure').then(m => ({ default: m.FeeStructure })), { ssr: false });
+const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(m => ({ default: m.FAQSection })), { ssr: false });
+const AboutSection = dynamic(() => import('@/components/landing/about-section').then(m => ({ default: m.AboutSection })), { ssr: false });
+const PrivacySection = dynamic(() => import('@/components/landing/privacy-section').then(m => ({ default: m.PrivacySection })), { ssr: false });
+const ContactSection = dynamic(() => import('@/components/landing/contact-section').then(m => ({ default: m.ContactSection })), { ssr: false });
+const ContractSection = dynamic(() => import('@/components/landing/contract-section').then(m => ({ default: m.ContractSection })), { ssr: false });
+const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false });
+
+/* ── Dynamic: heavy views (admin, dashboard, auth, seller) ── */
+const AuthView = dynamic(() => import('@/components/auth/auth-view').then(m => ({ default: m.AuthView })), { ssr: false });
+const DashboardView = dynamic(() => import('@/components/dashboard/dashboard-view').then(m => ({ default: m.DashboardView })), { ssr: false });
+const AdminView = dynamic(() => import('@/components/admin/admin-view').then(m => ({ default: m.AdminView })), { ssr: false });
+const SellerView = dynamic(() => import('@/components/seller/seller-view').then(m => ({ default: m.SellerView })), { ssr: false });
+
+/* ── Dynamic: live support widget (not needed on first paint) ── */
+const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
+
+/* ── Eager: site loader (shown immediately) ── */
 import { SiteLoader } from '@/components/shared/site-loader';
 
 /* ── Slim landing — only Hero + Trust + CTA ── */

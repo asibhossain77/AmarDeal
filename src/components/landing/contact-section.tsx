@@ -127,6 +127,7 @@ export function ContactSection() {
                     src={data.adminImageUrl}
                     alt={data.adminName || 'অ্যাডমিন'}
                     className="h-full w-full object-cover"
+                    loading="lazy" decoding="async"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">

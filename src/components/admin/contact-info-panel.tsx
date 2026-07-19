@@ -111,7 +111,7 @@ export function ContactInfoPanel() {
           {/* Profile Preview */}
           <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-border/40 bg-muted/30 flex items-center justify-center">
             {profile.adminImageUrl ? (
-              <img src={profile.adminImageUrl} alt="Profile" className="h-full w-full object-cover" />
+              <img src={profile.adminImageUrl} alt="Profile" className="h-full w-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <User className="h-10 w-10 text-muted-foreground/40" />
             )}

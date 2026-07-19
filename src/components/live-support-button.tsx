@@ -269,6 +269,7 @@ export function LiveSupportButton() {
                   type="submit"
                   disabled={!input.trim() || aiLoading}
                   className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center transition-colors shrink-0"
+                  aria-label="মেসেজ পাঠান"
                 >
                   {aiLoading ? (
                     <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />

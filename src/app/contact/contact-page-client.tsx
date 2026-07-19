@@ -161,6 +161,7 @@ export function ContactPageClient() {
                     src={data.photoUrl}
                     alt={data.name || 'Profile'}
                     className="mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-4 border-primary/20 shadow-lg mb-4"
+                    loading="lazy" decoding="async"
                   />
                 ) : (
                   <div className="mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-primary/15 flex items-center justify-center mb-4 shadow-lg">

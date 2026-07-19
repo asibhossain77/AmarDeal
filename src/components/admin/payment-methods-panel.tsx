@@ -693,6 +693,7 @@ export function PaymentMethodsPanel() {
                           src={form.image}
                           alt={form.name}
                           className="h-full w-full object-contain"
+                          loading="lazy" decoding="async"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}

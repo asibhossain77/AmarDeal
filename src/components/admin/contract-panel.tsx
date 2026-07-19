@@ -183,6 +183,7 @@ export function ContractPanel() {
                 src={previewUrl}
                 alt="প্রিভিউ"
                 className="h-12 w-12 rounded-full object-cover"
+                loading="lazy" decoding="async"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}

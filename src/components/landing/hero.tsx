@@ -39,9 +39,9 @@ function EscrowStatusCard() {
         <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-7">
           {/* Card Header */}
           <div className="mb-6 flex items-center justify-between">
-            <h3 className="text-sm font-semibold tracking-wide text-foreground">
+            <p className="text-sm font-semibold tracking-wide text-foreground">
               এসক্রো স্ট্যাটাস
-            </h3>
+            </p>
             <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
               সুরক্ষিত
             </span>

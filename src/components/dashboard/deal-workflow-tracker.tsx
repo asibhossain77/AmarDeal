@@ -1278,11 +1278,10 @@ export function DealWorkflowTracker() {
           <div className="relative flex items-center p-1 rounded-xl bg-muted/60 w-fit mx-auto">
             {/* Sliding indicator */}
             <motion.div
-              className="absolute top-1 bottom-1 rounded-lg"
-              style={{ backgroundColor: PARROT_GREEN, boxShadow: PARROT_GREEN_GLOW }}
+              className="absolute top-1 bottom-1 left-1 right-1 rounded-lg"
+              style={{ backgroundColor: PARROT_GREEN, boxShadow: PARROT_GREEN_GLOW, width: 'calc(50% - 4px)' }}
               animate={{
-                left: activeTab === 'info' ? '4px' : '50%',
-                width: 'calc(50% - 4px)',
+                x: activeTab === 'info' ? 0 : '100%',
               }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             />

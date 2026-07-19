@@ -376,8 +376,7 @@ export function AdminPayoutsPanel() {
             boxShadow: PARROT_GREEN_GLOW,
           }}
           animate={{
-            left: `${activeTabIndex * (100 / FILTER_TABS.length)}% + 4px`,
-            width: `calc(${100 / FILTER_TABS.length}% - 8px)`,
+            x: `${activeTabIndex * 100}%`,
           }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         />

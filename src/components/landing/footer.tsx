@@ -46,6 +46,7 @@ export function Footer() {
                 src={siteLogo}
                 alt={siteName}
                 className="h-9 w-9 rounded-lg object-contain"
+                loading="lazy" decoding="async"
               />
               <span className="text-lg font-bold tracking-tight">
                 {siteName}

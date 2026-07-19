@@ -215,10 +215,10 @@ export function NewDealForm() {
             <AnimatePresence>
               {feePreview && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
+                  initial={{ opacity: 0, scaleY: 0.8 }}
+                  animate={{ opacity: 1, scaleY: 1 }}
+                  exit={{ opacity: 0, scaleY: 0.8 }}
+                  style={{ transformOrigin: 'top' }}
                 >
                   <div className="mt-2 rounded-xl bg-primary/5 border border-primary/15 p-3 space-y-1.5">
                     <div className="flex items-center gap-2 text-xs font-medium text-primary">

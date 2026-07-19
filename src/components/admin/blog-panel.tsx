@@ -284,6 +284,7 @@ export function BlogPanel() {
                   src={post.coverImage}
                   alt=""
                   className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg object-cover shrink-0"
+                  loading="lazy" decoding="async"
                 />
               ) : (
                 <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-lg bg-primary/10">

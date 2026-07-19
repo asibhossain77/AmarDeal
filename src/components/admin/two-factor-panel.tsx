@@ -249,6 +249,7 @@ export function TwoFactorPanel() {
                     src={qrDataUrl}
                     alt="2FA QR Code"
                     className="h-48 w-48"
+                    loading="lazy" decoding="async"
                   />
                 </div>
               </div>
