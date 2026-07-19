@@ -1,0 +1,783 @@
+     1→'use client';
+     2→
+     3→import { useState, useSyncExternalStore, useCallback, useEffect } from 'react';
+     4→import { motion, AnimatePresence } from 'framer-motion';
+     5→import { useAppStore } from '@/lib/store';
+     6→import { useSiteSettings } from '@/lib/use-site-settings';
+     7→import { Button } from '@/components/ui/button';
+     8→import { Input } from '@/components/ui/input';
+     9→import { Label } from '@/components/ui/label';
+    10→import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+    11→import {
+    12→  ArrowLeft,
+    13→  Eye,
+    14→  EyeOff,
+    15→  Loader2,
+    16→  LogIn,
+    17→  UserPlus,
+    18→  ArrowRight,
+    19→  Mail,
+    20→  ShieldCheck,
+    21→  CheckCircle2,
+    22→  MailCheck,
+    23→  XCircle,
+    24→  ShieldAlert,
+    25→} from 'lucide-react';
+    26→import { toast } from 'sonner';
+    27→
+    28→const emptySubscribe = () => () => {};
+    29→
+    30→const inputClass =
+    31→  'h-11 rounded-xl bg-white border-border dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder:text-zinc-500 text-center md:text-left';
+    32→
+    33→/* ═══════════════════════════════════════════════════════════════
+    34→   OTP Input Component (shared)
+    35→   ═══════════════════════════════════════════════════════════════ */
+    36→function OtpStep({
+    37→  email,
+    38→  otp,
+    39→  setOtp,
+    40→  onVerify,
+    41→  onResend,
+    42→  resendTimer,
+    43→  loading,
+    44→  error,
+    45→}: {
+    46→  email: string;
+    47→  otp: string;
+    48→  setOtp: (v: string) => void;
+    49→  onVerify: () => void;
+    50→  onResend: () => void;
+    51→  resendTimer: number;
+    52→  loading: boolean;
+    53→  error: string;
+    54→}) {
+    55→  return (
+    56→    <div className="space-y-4">
+    57→      <div className="space-y-2 text-center">
+    58→        <Label className="text-foreground text-sm">ভেরিফিকেশন কোড</Label>
+    59→        <Input
+    60→          type="text"
+    61→          inputMode="numeric"
+    62→          maxLength={6}
+    63→          placeholder="৬ সংখ্যার কোড"
+    64→          value={otp}
+    65→          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+    66→          onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && onVerify()}
+    67→          className={`${inputClass} text-center text-lg tracking-[0.3em] font-bold`}
+    68→          autoFocus
+    69→        />
+    70→        <p className="text-xs text-muted-foreground">
+    71→          <span className="font-medium">{email}</span> এ কোড পাঠানো হয়েছে
+    72→        </p>
+    73→      </div>
+    74→      {error && (
+    75→        <p className="text-center text-sm text-destructive animate-in fade-in slide-in-from-top-1">{error}</p>
+    76→      )}
+    77→      <div className="text-center">
+    78→        <button
+    79→          type="button"
+    80→          onClick={onResend}
+    81→          disabled={resendTimer > 0 || loading}
+    82→          className="text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+    83→        >
+    84→          {resendTimer > 0 ? `আবার পাঠান (${resendTimer}s)` : 'আবার কোড পাঠান'}
+    85→        </button>
+    86→      </div>
+    87→    </div>
+    88→  );
+    89→}
+    90→
+    91→/* ═══════════════════════════════════════════════════════════════
+    92→   Forgot Password Form (3-step)
+    93→   ═══════════════════════════════════════════════════════════════ */
+    94→function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
+    95→  const [step, setStep] = useState<1 | 2 | 3>(1);
+    96→  const [email, setEmail] = useState('');
+    97→  const [otp, setOtp] = useState('');
+    98→  const [newPassword, setNewPassword] = useState('');
+    99→  const [confirmPassword, setConfirmPassword] = useState('');
+   100→  const [showPass, setShowPass] = useState(false);
+   101→  const [loading, setLoading] = useState(false);
+   102→  const [error, setError] = useState('');
+   103→  const [resendTimer, setResendTimer] = useState(0);
+   104→
+   105→  /* ── Live email check state ── */
+   106→  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'found' | 'not-found' | 'unverified' | 'error'>('idle');
+   107→
+   108→  useEffect(() => {
+   109→    if (resendTimer <= 0) return;
+   110→    const t = setTimeout(() => setResendTimer((p) => p - 1), 1000);
+   111→    return () => clearTimeout(t);
+   112→  }, [resendTimer]);
+   113→
+   114→  /* Debounced live email check */
+   115→  useEffect(() => {
+   116→    const trimmed = email.trim().toLowerCase();
+   117→    if (step !== 1) return;
+   118→    if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+   119→      setEmailStatus('idle');
+   120→      return;
+   121→    }
+   122→    setEmailStatus('checking');
+   123→    const timer = setTimeout(async () => {
+   124→      try {
+   125→        const res = await fetch('/api/auth/check-email', {
+   126→          method: 'POST',
+   127→          headers: { 'Content-Type': 'application/json' },
+   128→          body: JSON.stringify({ email: trimmed }),
+   129→        });
+   130→        const data = await res.json();
+   131→        if (data.exists && !data.emailVerified) {
+   132→          setEmailStatus('unverified');
+   133→        } else if (data.exists) {
+   134→          setEmailStatus('found');
+   135→        } else {
+   136→          setEmailStatus('not-found');
+   137→        }
+   138→      } catch {
+   139→        setEmailStatus('error');
+   140→      }
+   141→    }, 500);
+   142→    return () => clearTimeout(timer);
+   143→  }, [email, step]);
+   144→
+   145→  const handleSendOtp = useCallback(async () => {
+   146→    setError('');
+   147→    if (!email.trim() || !email.includes('@')) { setError('সঠিক ইমেইল দিন'); return; }
+   148→    setLoading(true);
+   149→    try {
+   150→      const res = await fetch('/api/auth/forgot-password', {
+   151→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   152→        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+   153→      });
+   154→      const data = await res.json();
+   155→      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
+   156→      toast.success('ভেরিফিকেশন কোড ইমেইলে পাঠানো হয়েছে');
+   157→      setStep(2); setResendTimer(60);
+   158→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   159→    finally { setLoading(false); }
+   160→  }, [email]);
+   161→
+   162→  const handleVerifyOtp = useCallback(async () => {
+   163→    setError('');
+   164→    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
+   165→    setLoading(true);
+   166→    try {
+   167→      const res = await fetch('/api/auth/verify-otp', {
+   168→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   169→        body: JSON.stringify({ email: email.trim().toLowerCase(), otp }),
+   170→      });
+   171→      const data = await res.json();
+   172→      if (!res.ok) {
+   173→        setError(data.error || 'সমস্যা হয়েছে');
+   174→        if (data.blocked) setTimeout(() => { setStep(1); setOtp(''); setResendTimer(0); setError(''); }, 2000);
+   175→        return;
+   176→      }
+   177→      setStep(3); setError('');
+   178→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   179→    finally { setLoading(false); }
+   180→  }, [email, otp]);
+   181→
+   182→  const handleResend = useCallback(async () => {
+   183→    if (resendTimer > 0) return;
+   184→    setLoading(true);
+   185→    try {
+   186→      await fetch('/api/auth/forgot-password', {
+   187→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   188→        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+   189→      });
+   190→      toast.success('নতুন কোড পাঠানো হয়েছে');
+   191→      setResendTimer(60);
+   192→    } catch { setError('সমস্যা হয়েছে, আবার চেষ্টা করুন'); }
+   193→    finally { setLoading(false); }
+   194→  }, [email, resendTimer]);
+   195→
+   196→  const handleReset = useCallback(async () => {
+   197→    setError('');
+   198→    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
+   199→    if (newPassword.length < 6) { setError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
+   200→    if (newPassword !== confirmPassword) { setError('দুইটি পাসওয়ার্ড মিলছে না'); return; }
+   201→    setLoading(true);
+   202→    try {
+   203→      const res = await fetch('/api/auth/reset-password', {
+   204→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   205→        body: JSON.stringify({ email: email.trim().toLowerCase(), otp, newPassword }),
+   206→      });
+   207→      const data = await res.json();
+   208→      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
+   209→      toast.success('পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!');
+   210→      onBack();
+   211→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   212→    finally { setLoading(false); }
+   213→  }, [email, otp, newPassword, confirmPassword, onBack]);
+   214→
+   215→  const stepLabels = ['ইমেইল', 'ভেরিফিকেশন', 'নতুন পাসওয়ার্ড'];
+   216→
+   217→  return (
+   218→    <div className="space-y-5">
+   219→      {/* Step indicator */}
+   220→      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+   221→        {stepLabels.map((label, i) => {
+   222→          const s = (i + 1) as 1 | 2 | 3;
+   223→          const isActive = s === step;
+   224→          const isDone = s < step;
+   225→          return (
+   226→            <div key={label} className="flex items-center gap-2">
+   227→              {i > 0 && <ArrowRight className="h-3 w-3 opacity-40" />}
+   228→              <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors ${isActive ? 'bg-primary/10 text-primary font-semibold' : isDone ? 'text-primary' : 'opacity-50'}`}>
+   229→                {isDone ? <ShieldCheck className="h-3 w-3" /> : <span className="text-[10px] font-bold">{s}</span>}
+   230→                {label}
+   231→              </span>
+   232→            </div>
+   233→          );
+   234→        })}
+   235→      </div>
+   236→
+   237→      <AnimatePresence mode="wait">
+   238→        {step === 1 && (
+   239→          <motion.div key="fp-s1" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
+   240→            <div className="space-y-2 text-center">
+   241→              <Label className="text-foreground text-sm">আপনার ইমেইল দিন</Label>
+   242→              <div className="relative">
+   243→                <Input type="email" placeholder="example@mail.com" value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10 pr-10`} />
+   244→                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+   245→                {emailStatus === 'checking' && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+   246→                {emailStatus === 'found' && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
+   247→                {emailStatus === 'not-found' && <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
+   248→                {emailStatus === 'unverified' && <MailCheck className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />}
+   249→              </div>
+   250→              {/* Live email status hint */}
+   251→              {emailStatus === 'found' && (
+   252→                <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-center gap-1">
+   253→                  <CheckCircle2 className="h-3 w-3" />
+   254→                  অ্যাকাউন্ট পাওয়া গেছে — কোড পাঠাতে পাশের বাটনে ক্লিক করুন
+   255→                </p>
+   256→              )}
+   257→              {emailStatus === 'not-found' && (
+   258→                <p className="text-xs text-red-500 flex items-center justify-center gap-1">
+   259→                  <XCircle className="h-3 w-3" />
+   260→                  এই ইমেইলে কোনো অ্যাকাউন্ট নেই
+   261→                </p>
+   262→              )}
+   263→              {emailStatus === 'unverified' && (
+   264→                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
+   265→                  <MailCheck className="h-3 w-3" />
+   266→                  অ্যাকাউন্ট আছে কিন্তু ইমেইল ভেরিফাইড নয় — পাসওয়ার্ড রিসেট করতে পারবেন না
+   267→                </p>
+   268→              )}
+   269→              {emailStatus === 'idle' && (
+   270→                <p className="text-xs text-muted-foreground">রেজিস্ট্রেশনের সময় ব্যবহৃত ইমেইল দিন</p>
+   271→              )}
+   272→            </div>
+   273→          </motion.div>
+   274→        )}
+   275→        {step === 2 && (
+   276→          <motion.div key="fp-s2" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+   277→            <OtpStep email={email} otp={otp} setOtp={setOtp} onVerify={handleVerifyOtp} onResend={handleResend} resendTimer={resendTimer} loading={loading} error={error} />
+   278→          </motion.div>
+   279→        )}
+   280→        {step === 3 && (
+   281→          <motion.div key="fp-s3" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
+   282→            <div className="space-y-2 text-center">
+   283→              <Label className="text-foreground text-sm">নতুন পাসওয়ার্ড</Label>
+   284→              <div className="relative">
+   285→                <Input type={showPass ? 'text' : 'password'} placeholder="কমপক্ষে ৬ অক্ষর" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`${inputClass} pr-11`} />
+   286→                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
+   287→                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   288→                </button>
+   289→              </div>
+   290→            </div>
+   291→            <div className="space-y-2 text-center">
+   292→              <Label className="text-foreground text-sm">পাসওয়ার্ড নিশ্চিত করুন</Label>
+   293→              <Input type={showPass ? 'text' : 'password'} placeholder="পুনরায় পাসওয়ার্ড দিন" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleReset()} className={inputClass} />
+   294→            </div>
+   295→            {error && <p className="text-center text-sm text-destructive">{error}</p>}
+   296→          </motion.div>
+   297→        )}
+   298→      </AnimatePresence>
+   299→
+   300→      <div className="flex gap-3">
+   301→        <Button variant="outline" onClick={step === 1 ? onBack : () => { setStep((s) => (s - 1) as 1 | 2); setError(''); }} className="h-12 rounded-xl text-sm font-medium gap-2">
+   302→          <ArrowLeft className="h-4 w-4" />{step === 1 ? 'ফিরুন' : 'পেছনে'}
+   303→        </Button>
+   304→        <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+   305→          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
+   306→          {step === 1 ? 'কোড পাঠান' : step === 2 ? 'যাচাই করুন' : 'পাসওয়ার্ড পরিবর্তন করুন'}
+   307→        </Button>
+   308→      </div>
+   309→    </div>
+   310→  );
+   311→}
+   312→
+   313→/* ═══════════════════════════════════════════════════════════════
+   314→   Email Verification Form (after registration or login block)
+   315→   ═══════════════════════════════════════════════════════════════ */
+   316→function EmailVerifyForm({
+   317→  userId,
+   318→  email,
+   319→  userName,
+   320→  onVerified,
+   321→  onBack,
+   322→}: {
+   323→  userId: string;
+   324→  email: string;
+   325→  userName: string;
+   326→  onVerified: () => void;
+   327→  onBack: () => void;
+   328→}) {
+   329→  const [otp, setOtp] = useState('');
+   330→  const [loading, setLoading] = useState(false);
+   331→  const [error, setError] = useState('');
+   332→  const [resendTimer, setResendTimer] = useState(60);
+   333→  const [verified, setVerified] = useState(false);
+   334→
+   335→  useEffect(() => {
+   336→    if (resendTimer <= 0) return;
+   337→    const t = setTimeout(() => setResendTimer((p) => p - 1), 1000);
+   338→    return () => clearTimeout(t);
+   339→  }, [resendTimer]);
+   340→
+   341→  const handleVerify = useCallback(async () => {
+   342→    setError('');
+   343→    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
+   344→    setLoading(true);
+   345→    try {
+   346→      const res = await fetch('/api/auth/verify-email', {
+   347→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   348→        body: JSON.stringify({ userId, otp }),
+   349→      });
+   350→      const data = await res.json();
+   351→      if (!res.ok) {
+   352→        setError(data.error || 'সমস্যা হয়েছে');
+   353→        if (data.blocked) setTimeout(() => { setOtp(''); setResendTimer(0); setError(''); }, 2000);
+   354→        return;
+   355→      }
+   356→      setVerified(true);
+   357→      toast.success('ইমেইল সফলভাবে ভেরিফাইড হয়েছে!');
+   358→      setTimeout(onVerified, 1500);
+   359→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   360→    finally { setLoading(false); }
+   361→  }, [userId, otp, onVerified]);
+   362→
+   363→  const handleResend = useCallback(async () => {
+   364→    if (resendTimer > 0) return;
+   365→    setLoading(true);
+   366→    try {
+   367→      const res = await fetch('/api/auth/resend-verify-email', {
+   368→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   369→        body: JSON.stringify({ userId }),
+   370→      });
+   371→      const data = await res.json();
+   372→      if (data.alreadyVerified) { onVerified(); return; }
+   373→      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
+   374→      toast.success('নতুন কোড পাঠানো হয়েছে');
+   375→      setResendTimer(60); setError('');
+   376→    } catch { setError('সমস্যা হয়েছে'); }
+   377→    finally { setLoading(false); }
+   378→  }, [userId, resendTimer, onVerified]);
+   379→
+   380→  if (verified) {
+   381→    return (
+   382→      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4 text-center py-4">
+   383→        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}>
+   384→          <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+   385→        </motion.div>
+   386→        <h3 className="text-lg font-bold text-foreground">ভেরিফিকেশন সফল! 🎉</h3>
+   387→        <p className="text-sm text-muted-foreground">আপনার ইমেইল সফলভাবে যাচাই হয়েছে। এখন লগইন করুন।</p>
+   388→      </motion.div>
+   389→    );
+   390→  }
+   391→
+   392→  return (
+   393→    <div className="space-y-5">
+   394→      <div className="text-center space-y-1">
+   395→        <div className="flex items-center justify-center gap-2 mb-3">
+   396→          <MailCheck className="h-8 w-8 text-primary" />
+   397→        </div>
+   398→        <p className="text-sm text-muted-foreground">
+   399→          <span className="font-semibold text-foreground">{userName}</span>, আপনার ইমেইল ভেরিফাই করুন
+   400→        </p>
+   401→      </div>
+   402→
+   403→      <AnimatePresence mode="wait">
+   404→        <motion.div key="ev-otp" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+   405→          <OtpStep email={email} otp={otp} setOtp={setOtp} onVerify={handleVerify} onResend={handleResend} resendTimer={resendTimer} loading={loading} error={error} />
+   406→        </motion.div>
+   407→      </AnimatePresence>
+   408→
+   409→      <div className="flex gap-3">
+   410→        <Button variant="outline" onClick={onBack} className="h-12 rounded-xl text-sm font-medium gap-2">
+   411→          <ArrowLeft className="h-4 w-4" />ফিরুন
+   412→        </Button>
+   413→        <Button onClick={handleVerify} disabled={loading || otp.length !== 6} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+   414→          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+   415→          ভেরিফাই করুন
+   416→        </Button>
+   417→      </div>
+   418→    </div>
+   419→  );
+   420→}
+   421→
+   422→/* ═══════════════════════════════════════════════════════════════
+   423→   Login Form
+   424→   ═══════════════════════════════════════════════════════════════ */
+   425→function LoginForm({
+   426→  onForgotPassword,
+   427→  onNeedsVerification,
+   428→}: {
+   429→  onForgotPassword: () => void;
+   430→  onNeedsVerification: (userId: string, email: string, userName: string) => void;
+   431→}) {
+   432→  const [identifier, setIdentifier] = useState('');
+   433→  const [password, setPassword] = useState('');
+   434→  const [showPass, setShowPass] = useState(false);
+   435→  const [loading, setLoading] = useState(false);
+   436→  const [error, setError] = useState('');
+   437→  const setUser = useAppStore((s) => s.setUser);
+   438→
+   439→  // 2FA state
+   440→  const [pending2FA, setPending2FA] = useState<{ userId: string; name: string; email: string } | null>(null);
+   441→  const [totpCode, setTotpCode] = useState('');
+   442→  const [totpLoading, setTotpLoading] = useState(false);
+   443→  const [totpError, setTotpError] = useState('');
+   444→
+   445→  const handleLogin = useCallback(async () => {
+   446→    setError('');
+   447→    if (!identifier.trim() || !password.trim()) { setError('সকল ফিল্ড পূরণ করুন'); return; }
+   448→    setLoading(true);
+   449→    try {
+   450→      const res = await fetch('/api/auth/login', {
+   451→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   452→        body: JSON.stringify({ identifier: identifier.trim(), password }),
+   453→      });
+   454→      const data = await res.json();
+   455→      if (!res.ok) {
+   456→        if (data.needsVerification) {
+   457→          onNeedsVerification(data.userId, data.email, identifier.trim());
+   458→          return;
+   459→        }
+   460→        setError(data.error || 'লগইন ব্যর্থ হয়েছে');
+   461→        return;
+   462→      }
+   463→      // Check if 2FA required
+   464→      if (data.requires2FA) {
+   465→        setPending2FA({ userId: data.userId, name: data.name, email: data.email });
+   466→        return;
+   467→      }
+   468→      toast.success('সফলভাবে লগইন হয়েছে!');
+   469→      setUser(data);
+   470→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   471→    finally { setLoading(false); }
+   472→  }, [identifier, password, setUser, onNeedsVerification]);
+   473→
+   474→  // 2FA verification handler
+   475→  const handle2FAVerify = useCallback(async () => {
+   476→    if (!pending2FA || totpCode.length !== 6) {
+   477→      setTotpError('6 ডিজিটের কোড দিন');
+   478→      return;
+   479→    }
+   480→    setTotpLoading(true);
+   481→    setTotpError('');
+   482→    try {
+   483→      const res = await fetch('/api/admin/2fa/login-verify', {
+   484→        method: 'POST',
+   485→        headers: { 'Content-Type': 'application/json' },
+   486→        body: JSON.stringify({ userId: pending2FA.userId, code: totpCode }),
+   487→      });
+   488→      const data = await res.json();
+   489→      if (!res.ok) {
+   490→        setTotpError(data.error || 'ভুল কোড');
+   491→        setTotpLoading(false);
+   492→        return;
+   493→      }
+   494→      toast.success('সফলভাবে লগইন হয়েছে!');
+   495→      setUser(data);
+   496→      setPending2FA(null);
+   497→      setTotpCode('');
+   498→    } catch {
+   499→      setTotpError('সার্ভারে সমস্যা হয়েছে');
+   500→    } finally {
+   501→      setTotpLoading(false);
+   502→    }
+   503→  }, [pending2FA, totpCode, setUser]);
+   504→
+   505→  return (
+   506→    <div className="space-y-5">
+   507→      <div className="space-y-2 text-center">
+   508→        <Label htmlFor="login-id" className="text-foreground text-sm">ইমেইল বা মোবাইল নাম্বার</Label>
+   509→        <Input id="login-id" type="text" placeholder="example@mail.com বা ০১XXXXXXXXX" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className={inputClass} />
+   510→      </div>
+   511→      <div className="space-y-2 text-center">
+   512→        <Label htmlFor="login-pass" className="text-foreground text-sm">পাসওয়ার্ড</Label>
+   513→        <div className="relative">
+   514→          <Input id="login-pass" type={showPass ? 'text' : 'password'} placeholder="আপনার পাসওয়ার্ড দিন" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className={`${inputClass} pr-11`} />
+   515→          <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+   516→            {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   517→          </button>
+   518→        </div>
+   519→      </div>
+   520→      <div className="text-center">
+   521→        <button type="button" onClick={onForgotPassword} className="text-sm text-primary hover:underline font-medium">পাসওয়ার্ড ভুলে গেছেন?</button>
+   522→      </div>
+   523→      <AnimatePresence>
+   524→        {error && (
+   525→          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-center text-sm text-destructive">{error}</motion.p>
+   526→        )}
+   527→      </AnimatePresence>
+   528→
+   529→      {/* 2FA Verification Step */}
+   530→      {pending2FA ? (
+   531→        <motion.div
+   532→          initial={{ opacity: 0, y: 10 }}
+   533→          animate={{ opacity: 1, y: 0 }}
+   534→          className="space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-5"
+   535→        >
+   536→          <div className="text-center space-y-2">
+   537→            <div className="flex justify-center">
+   538→              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+   539→                <ShieldAlert className="h-6 w-6 text-primary" />
+   540→              </div>
+   541→            </div>
+   542→            <h3 className="text-base font-bold text-foreground">
+   543→              টু-ফ্যাক্টর ভেরিফিকেশন
+   544→            </h3>
+   545→            <p className="text-xs text-muted-foreground">
+   546→              {pending2FA.name} ({pending2FA.email})
+   547→            </p>
+   548→            <p className="text-xs text-muted-foreground">
+   549→              Google Authenticator থেকে 6 ডিজিটের কোড দিন
+   550→            </p>
+   551→          </div>
+   552→
+   553→          <Input
+   554→            type="text"
+   555→            inputMode="numeric"
+   556→            placeholder="0 0 0 0 0 0"
+   557→            value={totpCode}
+   558→            onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+   559→            onKeyDown={(e) => e.key === 'Enter' && handle2FAVerify()}
+   560→            className="text-center font-mono text-2xl tracking-[0.5em] h-14"
+   561→            maxLength={6}
+   562→            autoFocus
+   563→          />
+   564→
+   565→          <AnimatePresence>
+   566→            {totpError && (
+   567→              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm text-destructive">
+   568→                {totpError}
+   569→              </motion.p>
+   570→            )}
+   571→          </AnimatePresence>
+   572→
+   573→          <div className="flex gap-3">
+   574→            <Button
+   575→              variant="outline"
+   576→              onClick={() => { setPending2FA(null); setTotpCode(''); setTotpError(''); }}
+   577→              className="flex-1 h-11"
+   578→            >
+   579→              ফিরে যান
+   580→            </Button>
+   581→            <Button
+   582→              onClick={handle2FAVerify}
+   583→              disabled={totpCode.length !== 6 || totpLoading}
+   584→              className="flex-1 h-11 gap-2"
+   585→            >
+   586→              {totpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+   587→              ভেরিফাই করুন
+   588→            </Button>
+   589→          </div>
+   590→        </motion.div>
+   591→      ) : (
+   592→        <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+   593→          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
+   594→          লগইন করুন
+   595→        </Button>
+   596→      )}
+   597→    </div>
+   598→  );
+   599→}
+   600→
+   601→/* ═══════════════════════════════════════════════════════════════
+   602→   Registration Form (2-step: fill form → verify email)
+   603→   ═══════════════════════════════════════════════════════════════ */
+   604→function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: string, email: string, userName: string) => void }) {
+   605→  const [name, setName] = useState('');
+   606→  const [phone, setPhone] = useState('');
+   607→  const [email, setEmail] = useState('');
+   608→  const [password, setPassword] = useState('');
+   609→  const [confirmPass, setConfirmPass] = useState('');
+   610→  const [showPass, setShowPass] = useState(false);
+   611→  const [loading, setLoading] = useState(false);
+   612→  const [error, setError] = useState('');
+   613→
+   614→  const handleRegister = useCallback(async () => {
+   615→    setError('');
+   616→    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !confirmPass.trim()) { setError('সকল ফিল্ড পূরণ করুন'); return; }
+   617→    if (password !== confirmPass) { setError('দুইটি পাসওয়ার্ড মিলছে না'); return; }
+   618→    if (password.length < 6) { setError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
+   619→    setLoading(true);
+   620→    try {
+   621→      const res = await fetch('/api/auth/register', {
+   622→        method: 'POST', headers: { 'Content-Type': 'application/json' },
+   623→        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), email: email.trim(), password }),
+   624→      });
+   625→      const data = await res.json();
+   626→      if (!res.ok) { setError(data.error || 'নিবন্ধন ব্যর্থ হয়েছে'); return; }
+   627→      if (data.needsVerification) {
+   628→        toast.success('অ্যাকাউন্ট তৈরি হয়েছে! ইমেইল ভেরিফাই করুন।');
+   629→        onNeedsVerification(data.id, data.email, data.name);
+   630→        return;
+   631→      }
+   632→      toast.success('অ্যাকাউন্ট তৈরি হয়েছে!');
+   633→    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+   634→    finally { setLoading(false); }
+   635→  }, [name, phone, email, password, confirmPass, onNeedsVerification]);
+   636→
+   637→  const fields = [
+   638→    { label: 'পূর্ণ নাম', id: 'reg-name', type: 'text', placeholder: 'আপনার পূর্ণ নাম', value: name, setter: setName },
+   639→    { label: 'মোবাইল নাম্বার', id: 'reg-phone', type: 'tel', placeholder: '০১XXXXXXXXX', value: phone, setter: setPhone },
+   640→    { label: 'ইমেইল', id: 'reg-email', type: 'email', placeholder: 'example@mail.com', value: email, setter: setEmail },
+   641→  ];
+   642→
+   643→  return (
+   644→    <div className="space-y-4">
+   645→      {fields.map((f) => (
+   646→        <div key={f.id} className="space-y-2 text-center">
+   647→          <Label htmlFor={f.id} className="text-foreground text-sm">{f.label}</Label>
+   648→          <Input id={f.id} type={f.type} placeholder={f.placeholder} value={f.value} onChange={(e) => f.setter(e.target.value)} className={inputClass} />
+   649→        </div>
+   650→      ))}
+   651→      <div className="space-y-2 text-center">
+   652→        <Label htmlFor="reg-pass" className="text-foreground text-sm">পাসওয়ার্ড</Label>
+   653→        <div className="relative">
+   654→          <Input id="reg-pass" type={showPass ? 'text' : 'password'} placeholder="কমপক্ষে ৬ অক্ষর" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-11`} />
+   655→          <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+   656→            {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   657→          </button>
+   658→        </div>
+   659→      </div>
+   660→      <div className="space-y-2 text-center">
+   661→        <Label htmlFor="reg-confirm" className="text-foreground text-sm">পাসওয়ার্ড নিশ্চিত করুন</Label>
+   662→        <Input id="reg-confirm" type={showPass ? 'text' : 'password'} placeholder="পুনরায় পাসওয়ার্ড দিন" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} className={inputClass} />
+   663→      </div>
+   664→      <AnimatePresence>
+   665→        {error && (
+   666→          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="text-center text-sm text-destructive">{error}</motion.p>
+   667→        )}
+   668→      </AnimatePresence>
+   669→      <Button onClick={handleRegister} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+   670→        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserPlus className="h-5 w-5" />}
+   671→        নতুন অ্যাকাউন্ট তৈরি করুন
+   672→      </Button>
+   673→    </div>
+   674→  );
+   675→}
+   676→
+   677→/* ═══════════════════════════════════════════════════════════════
+   678→   Auth View (exported)
+   679→   ═══════════════════════════════════════════════════════════════ */
+   680→type AuthMode = 'auth' | 'forgot' | 'verify';
+   681→
+   682→export function AuthView() {
+   683→  const setView = useAppStore((s) => s.setView);
+   684→  const { siteName, siteLogo } = useSiteSettings();
+   685→  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+   686→  const [mode, setMode] = useState<AuthMode>('auth');
+   687→  const [verifyInfo, setVerifyInfo] = useState({ userId: '', email: '', userName: '' });
+   688→
+   689→  if (!mounted) return null;
+   690→
+   691→  const goVerify = (userId: string, email: string, userName: string) => {
+   692→    setVerifyInfo({ userId, email, userName });
+   693→    setMode('verify');
+   694→  };
+   695→
+   696→  const getHeaderTitle = () => {
+   697→    if (mode === 'forgot') return 'পাসওয়ার্ড রিসেট';
+   698→    if (mode === 'verify') return 'ইমেইল ভেরিফিকেশন';
+   699→    return siteName;
+   700→  };
+   701→
+   702→  const getHeaderDesc = () => {
+   703→    if (mode === 'forgot') return 'ইমেইল ভেরিফিকেশনের মাধ্যমে পাসওয়ার্ড পরিবর্তন করুন';
+   704→    if (mode === 'verify') return 'আপনার ইমেইল যাচাই করুন';
+   705→    return 'নিরাপদ অনলাইন লেনদেন শুরু করুন';
+   706→  };
+   707→
+   708→  const getBackLabel = () => {
+   709→    if (mode === 'forgot') return 'লগইনে ফিরুন';
+   710→    if (mode === 'verify') return 'ফিরুন';
+   711→    return 'হোমপেজে ফিরুন';
+   712→  };
+   713→
+   714→  const handleBack = () => {
+   715→    if (mode === 'verify') setMode('auth');
+   716→    else if (mode === 'forgot') setMode('auth');
+   717→    else setView('landing');
+   718→  };
+   719→
+   720→  return (
+   721→    <section className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+   722→      <div className="pointer-events-none absolute inset-0">
+   723→        <div className="absolute top-1/3 left-1/2 h-[400px] w-[400px] -translate-x-1/2 rounded-full bg-primary/[0.06] blur-[100px] dark:bg-primary/[0.05]" />
+   724→      </div>
+   725→
+   726→      <motion.div
+   727→        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+   728→        animate={{ opacity: 1, y: 0, scale: 1 }}
+   729→        transition={{ duration: 0.5, ease: 'easeOut' }}
+   730→        className="relative w-full max-w-md"
+   731→      >
+   732→        <button onClick={handleBack} className="mb-6 flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground mx-auto w-fit">
+   733→          <ArrowLeft className="h-4 w-4" />{getBackLabel()}
+   734→        </button>
+   735→
+   736→        <div className="relative">
+   737→          <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-8">
+   738→            <div className="mb-6 flex flex-col items-center gap-3 text-center">
+   739→              <img src={siteLogo} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+   740→              <div>
+   741→                <h1 className="text-xl font-bold tracking-tight text-foreground">{getHeaderTitle()}</h1>
+   742→                <p className="mt-1 text-sm text-muted-foreground">{getHeaderDesc()}</p>
+   743→              </div>
+   744→            </div>
+   745→
+   746→            <AnimatePresence mode="wait">
+   747→              {mode === 'forgot' ? (
+   748→                <motion.div key="forgot" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+   749→                  <ForgotPasswordForm onBack={() => setMode('auth')} />
+   750→                </motion.div>
+   751→              ) : mode === 'verify' ? (
+   752→                <motion.div key="verify" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+   753→                  <EmailVerifyForm
+   754→                    userId={verifyInfo.userId}
+   755→                    email={verifyInfo.email}
+   756→                    userName={verifyInfo.userName}
+   757→                    onVerified={() => setMode('auth')}
+   758→                    onBack={() => setMode('auth')}
+   759→                  />
+   760→                </motion.div>
+   761→              ) : (
+   762→                <motion.div key="auth" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+   763→                  <Tabs defaultValue="login" className="w-full">
+   764→                    <TabsList className="mx-auto grid w-full grid-cols-2 bg-muted/60 dark:bg-zinc-800/60 !h-11 rounded-xl p-1">
+   765→                      <TabsTrigger value="login" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">লগইন</TabsTrigger>
+   766→                      <TabsTrigger value="register" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">নিবন্ধন</TabsTrigger>
+   767→                    </TabsList>
+   768→                    <TabsContent value="login" className="mt-6">
+   769→                      <LoginForm onForgotPassword={() => setMode('forgot')} onNeedsVerification={goVerify} />
+   770→                    </TabsContent>
+   771→                    <TabsContent value="register" className="mt-6">
+   772→                      <RegisterForm onNeedsVerification={goVerify} />
+   773→                    </TabsContent>
+   774→                  </Tabs>
+   775→                </motion.div>
+   776→              )}
+   777→            </AnimatePresence>
+   778→          </div>
+   779→        </div>
+   780→      </motion.div>
+   781→    </section>
+   782→  );
+   783→}

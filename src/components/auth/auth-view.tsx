@@ -4,6 +4,7 @@ import { useState, useSyncExternalStore, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,13 @@ const emptySubscribe = () => () => {};
 const inputClass =
   'h-11 rounded-xl bg-white border-border dark:bg-zinc-900 dark:border-zinc-700 dark:placeholder:text-zinc-500 text-center md:text-left';
 
+/** Shared helper to get t() without prop-drilling */
+function useT() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  return t;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    OTP Input Component (shared)
    ═══════════════════════════════════════════════════════════════ */
@@ -52,15 +60,17 @@ function OtpStep({
   loading: boolean;
   error: string;
 }) {
+  const t = useT();
+
   return (
     <div className="space-y-4">
       <div className="space-y-2 text-center">
-        <Label className="text-foreground text-sm">ভেরিফিকেশন কোড</Label>
+        <Label className="text-foreground text-sm">{t('auth.verificationCode')}</Label>
         <Input
           type="text"
           inputMode="numeric"
           maxLength={6}
-          placeholder="৬ সংখ্যার কোড"
+          placeholder={t('auth.codePlaceholder')}
           value={otp}
           onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
           onKeyDown={(e) => e.key === 'Enter' && otp.length === 6 && onVerify()}
@@ -68,7 +78,7 @@ function OtpStep({
           autoFocus
         />
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium">{email}</span> এ কোড পাঠানো হয়েছে
+          <span className="font-medium">{email}</span> {t('auth.codeSentTo')}
         </p>
       </div>
       {error && (
@@ -81,7 +91,7 @@ function OtpStep({
           disabled={resendTimer > 0 || loading}
           className="text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {resendTimer > 0 ? `আবার পাঠান (${resendTimer}s)` : 'আবার কোড পাঠান'}
+          {resendTimer > 0 ? t('auth.resendWithTimer', { timer: String(resendTimer) }) : t('auth.resend')}
         </button>
       </div>
     </div>
@@ -92,6 +102,7 @@ function OtpStep({
    Forgot Password Form (3-step)
    ═══════════════════════════════════════════════════════════════ */
 function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
+  const t = useT();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -144,7 +155,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
 
   const handleSendOtp = useCallback(async () => {
     setError('');
-    if (!email.trim() || !email.includes('@')) { setError('সঠিক ইমেইল দিন'); return; }
+    if (!email.trim() || !email.includes('@')) { setError(t('auth.validEmail')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -152,16 +163,16 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
-      toast.success('ভেরিফিকেশন কোড ইমেইলে পাঠানো হয়েছে');
+      if (!res.ok) { setError(data.error || t('auth.problem')); return; }
+      toast.success(t('auth.codeSentEmail'));
       setStep(2); setResendTimer(60);
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [email]);
+  }, [email, t]);
 
   const handleVerifyOtp = useCallback(async () => {
     setError('');
-    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
+    if (otp.length !== 6) { setError(t('auth.give6DigitCode')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/verify-otp', {
@@ -170,14 +181,14 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'সমস্যা হয়েছে');
+        setError(data.error || t('auth.problem'));
         if (data.blocked) setTimeout(() => { setStep(1); setOtp(''); setResendTimer(0); setError(''); }, 2000);
         return;
       }
       setStep(3); setError('');
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [email, otp]);
+  }, [email, otp, t]);
 
   const handleResend = useCallback(async () => {
     if (resendTimer > 0) return;
@@ -187,17 +198,17 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-      toast.success('নতুন কোড পাঠানো হয়েছে');
+      toast.success(t('auth.newCodeSent'));
       setResendTimer(60);
-    } catch { setError('সমস্যা হয়েছে, আবার চেষ্টা করুন'); }
+    } catch { setError(t('auth.tryAgain')); }
     finally { setLoading(false); }
-  }, [email, resendTimer]);
+  }, [email, resendTimer, t]);
 
   const handleReset = useCallback(async () => {
     setError('');
-    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
-    if (newPassword.length < 6) { setError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
-    if (newPassword !== confirmPassword) { setError('দুইটি পাসওয়ার্ড মিলছে না'); return; }
+    if (otp.length !== 6) { setError(t('auth.give6DigitCode')); return; }
+    if (newPassword.length < 6) { setError(t('auth.passwordMin6')); return; }
+    if (newPassword !== confirmPassword) { setError(t('auth.passwordMismatch')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/reset-password', {
@@ -205,14 +216,14 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         body: JSON.stringify({ email: email.trim().toLowerCase(), otp, newPassword }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
-      toast.success('পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!');
+      if (!res.ok) { setError(data.error || t('auth.problem')); return; }
+      toast.success(t('auth.passwordChanged'));
       onBack();
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [email, otp, newPassword, confirmPassword, onBack]);
+  }, [email, otp, newPassword, confirmPassword, onBack, t]);
 
-  const stepLabels = ['ইমেইল', 'ভেরিফিকেশন', 'নতুন পাসওয়ার্ড'];
+  const stepLabels = [t('auth.step.email'), t('auth.step.verification'), t('auth.step.newPassword')];
 
   return (
     <div className="space-y-5">
@@ -238,9 +249,9 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         {step === 1 && (
           <motion.div key="fp-s1" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
             <div className="space-y-2 text-center">
-              <Label className="text-foreground text-sm">আপনার ইমেইল দিন</Label>
+              <Label className="text-foreground text-sm">{t('auth.giveEmail')}</Label>
               <div className="relative">
-                <Input type="email" placeholder="example@mail.com" value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10 pr-10`} />
+                <Input type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10 pr-10`} />
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 {emailStatus === 'checking' && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
                 {emailStatus === 'found' && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
@@ -251,23 +262,23 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
               {emailStatus === 'found' && (
                 <p className="text-xs text-green-600 dark:text-green-400 flex items-center justify-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  অ্যাকাউন্ট পাওয়া গেছে — কোড পাঠাতে পাশের বাটনে ক্লিক করুন
+                  {t('auth.accountFound')}
                 </p>
               )}
               {emailStatus === 'not-found' && (
                 <p className="text-xs text-red-500 flex items-center justify-center gap-1">
                   <XCircle className="h-3 w-3" />
-                  এই ইমেইলে কোনো অ্যাকাউন্ট নেই
+                  {t('auth.noAccount')}
                 </p>
               )}
               {emailStatus === 'unverified' && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
                   <MailCheck className="h-3 w-3" />
-                  অ্যাকাউন্ট আছে কিন্তু ইমেইল ভেরিফাইড নয় — পাসওয়ার্ড রিসেট করতে পারবেন না
+                  {t('auth.unverifiedAccount')}
                 </p>
               )}
               {emailStatus === 'idle' && (
-                <p className="text-xs text-muted-foreground">রেজিস্ট্রেশনের সময় ব্যবহৃত ইমেইল দিন</p>
+                <p className="text-xs text-muted-foreground">{t('auth.registrationEmailHint')}</p>
               )}
             </div>
           </motion.div>
@@ -280,17 +291,17 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         {step === 3 && (
           <motion.div key="fp-s3" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
             <div className="space-y-2 text-center">
-              <Label className="text-foreground text-sm">নতুন পাসওয়ার্ড</Label>
+              <Label className="text-foreground text-sm">{t('auth.newPassword')}</Label>
               <div className="relative">
-                <Input type={showPass ? 'text' : 'password'} placeholder="কমপক্ষে ৬ অক্ষর" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`${inputClass} pr-11`} />
+                <Input type={showPass ? 'text' : 'password'} placeholder={t('auth.min6Placeholder')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`${inputClass} pr-11`} />
                 <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" tabIndex={-1}>
                   {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
             <div className="space-y-2 text-center">
-              <Label className="text-foreground text-sm">পাসওয়ার্ড নিশ্চিত করুন</Label>
-              <Input type={showPass ? 'text' : 'password'} placeholder="পুনরায় পাসওয়ার্ড দিন" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleReset()} className={inputClass} />
+              <Label className="text-foreground text-sm">{t('auth.confirmPassword')}</Label>
+              <Input type={showPass ? 'text' : 'password'} placeholder={t('auth.confirmPasswordPlaceholder')} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleReset()} className={inputClass} />
             </div>
             {error && <p className="text-center text-sm text-destructive">{error}</p>}
           </motion.div>
@@ -299,11 +310,11 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={step === 1 ? onBack : () => { setStep((s) => (s - 1) as 1 | 2); setError(''); }} className="h-12 rounded-xl text-sm font-medium gap-2">
-          <ArrowLeft className="h-4 w-4" />{step === 1 ? 'ফিরুন' : 'পেছনে'}
+          <ArrowLeft className="h-4 w-4" />{step === 1 ? t('auth.back') : t('auth.previous')}
         </Button>
         <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
-          {step === 1 ? 'কোড পাঠান' : step === 2 ? 'যাচাই করুন' : 'পাসওয়ার্ড পরিবর্তন করুন'}
+          {step === 1 ? t('auth.sendCode') : step === 2 ? t('auth.verifyCode') : t('auth.resetPassword')}
         </Button>
       </div>
     </div>
@@ -326,6 +337,7 @@ function EmailVerifyForm({
   onVerified: () => void;
   onBack: () => void;
 }) {
+  const t = useT();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -340,7 +352,7 @@ function EmailVerifyForm({
 
   const handleVerify = useCallback(async () => {
     setError('');
-    if (otp.length !== 6) { setError('৬ সংখ্যার কোড দিন'); return; }
+    if (otp.length !== 6) { setError(t('auth.give6DigitCode')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/verify-email', {
@@ -349,16 +361,16 @@ function EmailVerifyForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'সমস্যা হয়েছে');
+        setError(data.error || t('auth.problem'));
         if (data.blocked) setTimeout(() => { setOtp(''); setResendTimer(0); setError(''); }, 2000);
         return;
       }
       setVerified(true);
-      toast.success('ইমেইল সফলভাবে ভেরিফাইড হয়েছে!');
+      toast.success(t('auth.emailVerified'));
       setTimeout(onVerified, 1500);
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [userId, otp, onVerified]);
+  }, [userId, otp, onVerified, t]);
 
   const handleResend = useCallback(async () => {
     if (resendTimer > 0) return;
@@ -370,12 +382,12 @@ function EmailVerifyForm({
       });
       const data = await res.json();
       if (data.alreadyVerified) { onVerified(); return; }
-      if (!res.ok) { setError(data.error || 'সমস্যা হয়েছে'); return; }
-      toast.success('নতুন কোড পাঠানো হয়েছে');
+      if (!res.ok) { setError(data.error || t('auth.problem')); return; }
+      toast.success(t('auth.newCodeSent'));
       setResendTimer(60); setError('');
-    } catch { setError('সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.problem')); }
     finally { setLoading(false); }
-  }, [userId, resendTimer, onVerified]);
+  }, [userId, resendTimer, onVerified, t]);
 
   if (verified) {
     return (
@@ -383,8 +395,8 @@ function EmailVerifyForm({
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}>
           <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
         </motion.div>
-        <h3 className="text-lg font-bold text-foreground">ভেরিফিকেশন সফল! 🎉</h3>
-        <p className="text-sm text-muted-foreground">আপনার ইমেইল সফলভাবে যাচাই হয়েছে। এখন লগইন করুন।</p>
+        <h3 className="text-lg font-bold text-foreground">{t('auth.verificationSuccess')}</h3>
+        <p className="text-sm text-muted-foreground">{t('auth.verificationSuccessDesc')}</p>
       </motion.div>
     );
   }
@@ -396,7 +408,7 @@ function EmailVerifyForm({
           <MailCheck className="h-8 w-8 text-primary" />
         </div>
         <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{userName}</span>, আপনার ইমেইল ভেরিফাই করুন
+          <span className="font-semibold text-foreground">{userName}</span>, {t('auth.verifyEmailFor')}
         </p>
       </div>
 
@@ -408,11 +420,11 @@ function EmailVerifyForm({
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onBack} className="h-12 rounded-xl text-sm font-medium gap-2">
-          <ArrowLeft className="h-4 w-4" />ফিরুন
+          <ArrowLeft className="h-4 w-4" />{t('auth.back')}
         </Button>
         <Button onClick={handleVerify} disabled={loading || otp.length !== 6} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-          ভেরিফাই করুন
+          {t('auth.verifyCode')}
         </Button>
       </div>
     </div>
@@ -429,6 +441,7 @@ function LoginForm({
   onForgotPassword: () => void;
   onNeedsVerification: (userId: string, email: string, userName: string) => void;
 }) {
+  const t = useT();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -444,7 +457,7 @@ function LoginForm({
 
   const handleLogin = useCallback(async () => {
     setError('');
-    if (!identifier.trim() || !password.trim()) { setError('সকল ফিল্ড পূরণ করুন'); return; }
+    if (!identifier.trim() || !password.trim()) { setError(t('auth.fillAllFields')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
@@ -457,7 +470,7 @@ function LoginForm({
           onNeedsVerification(data.userId, data.email, identifier.trim());
           return;
         }
-        setError(data.error || 'লগইন ব্যর্থ হয়েছে');
+        setError(data.error || t('auth.loginFailed'));
         return;
       }
       // Check if 2FA required
@@ -465,16 +478,16 @@ function LoginForm({
         setPending2FA({ userId: data.userId, name: data.name, email: data.email });
         return;
       }
-      toast.success('সফলভাবে লগইন হয়েছে!');
+      toast.success(t('auth.loginSuccess'));
       setUser(data);
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [identifier, password, setUser, onNeedsVerification]);
+  }, [identifier, password, setUser, onNeedsVerification, t]);
 
   // 2FA verification handler
   const handle2FAVerify = useCallback(async () => {
     if (!pending2FA || totpCode.length !== 6) {
-      setTotpError('6 ডিজিটের কোড দিন');
+      setTotpError(t('auth.give6DigitCode'));
       return;
     }
     setTotpLoading(true);
@@ -487,38 +500,38 @@ function LoginForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        setTotpError(data.error || 'ভুল কোড');
+        setTotpError(data.error || t('auth.wrongCode'));
         setTotpLoading(false);
         return;
       }
-      toast.success('সফলভাবে লগইন হয়েছে!');
+      toast.success(t('auth.loginSuccess'));
       setUser(data);
       setPending2FA(null);
       setTotpCode('');
     } catch {
-      setTotpError('সার্ভারে সমস্যা হয়েছে');
+      setTotpError(t('auth.serverProblem'));
     } finally {
       setTotpLoading(false);
     }
-  }, [pending2FA, totpCode, setUser]);
+  }, [pending2FA, totpCode, setUser, t]);
 
   return (
     <div className="space-y-5">
       <div className="space-y-2 text-center">
-        <Label htmlFor="login-id" className="text-foreground text-sm">ইমেইল বা মোবাইল নাম্বার</Label>
-        <Input id="login-id" type="text" placeholder="example@mail.com বা ০১XXXXXXXXX" value={identifier} onChange={(e) => setIdentifier(e.target.value)} className={inputClass} />
+        <Label htmlFor="login-id" className="text-foreground text-sm">{t('auth.emailOrPhone')}</Label>
+        <Input id="login-id" type="text" placeholder={t('auth.emailOrPhonePlaceholder')} value={identifier} onChange={(e) => setIdentifier(e.target.value)} className={inputClass} />
       </div>
       <div className="space-y-2 text-center">
-        <Label htmlFor="login-pass" className="text-foreground text-sm">পাসওয়ার্ড</Label>
+        <Label htmlFor="login-pass" className="text-foreground text-sm">{t('auth.password')}</Label>
         <div className="relative">
-          <Input id="login-pass" type={showPass ? 'text' : 'password'} placeholder="আপনার পাসওয়ার্ড দিন" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className={`${inputClass} pr-11`} />
+          <Input id="login-pass" type={showPass ? 'text' : 'password'} placeholder={t('auth.enterPassword')} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} className={`${inputClass} pr-11`} />
           <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
             {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
       <div className="text-center">
-        <button type="button" onClick={onForgotPassword} className="text-sm text-primary hover:underline font-medium">পাসওয়ার্ড ভুলে গেছেন?</button>
+        <button type="button" onClick={onForgotPassword} className="text-sm text-primary hover:underline font-medium">{t('auth.forgotPassword')}</button>
       </div>
       <AnimatePresence>
         {error && (
@@ -540,13 +553,13 @@ function LoginForm({
               </div>
             </div>
             <h3 className="text-base font-bold text-foreground">
-              টু-ফ্যাক্টর ভেরিফিকেশন
+              {t('auth.twoFactor')}
             </h3>
             <p className="text-xs text-muted-foreground">
               {pending2FA.name} ({pending2FA.email})
             </p>
             <p className="text-xs text-muted-foreground">
-              Google Authenticator থেকে 6 ডিজিটের কোড দিন
+              {t('auth.twoFactorDesc')}
             </p>
           </div>
 
@@ -576,7 +589,7 @@ function LoginForm({
               onClick={() => { setPending2FA(null); setTotpCode(''); setTotpError(''); }}
               className="flex-1 h-11"
             >
-              ফিরে যান
+              {t('auth.goBack')}
             </Button>
             <Button
               onClick={handle2FAVerify}
@@ -584,14 +597,14 @@ function LoginForm({
               className="flex-1 h-11 gap-2"
             >
               {totpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              ভেরিফাই করুন
+              {t('auth.verifyCode')}
             </Button>
           </div>
         </motion.div>
       ) : (
         <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
-          লগইন করুন
+          {t('auth.loginButton')}
         </Button>
       )}
     </div>
@@ -602,6 +615,7 @@ function LoginForm({
    Registration Form (2-step: fill form → verify email)
    ═══════════════════════════════════════════════════════════════ */
 function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: string, email: string, userName: string) => void }) {
+  const t = useT();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -613,9 +627,9 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
 
   const handleRegister = useCallback(async () => {
     setError('');
-    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !confirmPass.trim()) { setError('সকল ফিল্ড পূরণ করুন'); return; }
-    if (password !== confirmPass) { setError('দুইটি পাসওয়ার্ড মিলছে না'); return; }
-    if (password.length < 6) { setError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'); return; }
+    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !confirmPass.trim()) { setError(t('auth.fillAllFields')); return; }
+    if (password !== confirmPass) { setError(t('auth.passwordMismatch')); return; }
+    if (password.length < 6) { setError(t('auth.passwordMin6')); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
@@ -623,21 +637,21 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
         body: JSON.stringify({ name: name.trim(), phone: phone.trim(), email: email.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'নিবন্ধন ব্যর্থ হয়েছে'); return; }
+      if (!res.ok) { setError(data.error || t('auth.registerFailed')); return; }
       if (data.needsVerification) {
-        toast.success('অ্যাকাউন্ট তৈরি হয়েছে! ইমেইল ভেরিফাই করুন।');
+        toast.success(t('auth.accountCreatedVerify'));
         onNeedsVerification(data.id, data.email, data.name);
         return;
       }
-      toast.success('অ্যাকাউন্ট তৈরি হয়েছে!');
-    } catch { setError('সার্ভারে সমস্যা হয়েছে'); }
+      toast.success(t('auth.accountCreated'));
+    } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
-  }, [name, phone, email, password, confirmPass, onNeedsVerification]);
+  }, [name, phone, email, password, confirmPass, onNeedsVerification, t]);
 
   const fields = [
-    { label: 'পূর্ণ নাম', id: 'reg-name', type: 'text', placeholder: 'আপনার পূর্ণ নাম', value: name, setter: setName },
-    { label: 'মোবাইল নাম্বার', id: 'reg-phone', type: 'tel', placeholder: '০১XXXXXXXXX', value: phone, setter: setPhone },
-    { label: 'ইমেইল', id: 'reg-email', type: 'email', placeholder: 'example@mail.com', value: email, setter: setEmail },
+    { label: t('auth.fullName'), id: 'reg-name', type: 'text', placeholder: t('auth.fullNamePlaceholder'), value: name, setter: setName },
+    { label: t('auth.phone'), id: 'reg-phone', type: 'tel', placeholder: t('auth.phonePlaceholder'), value: phone, setter: setPhone },
+    { label: t('auth.email'), id: 'reg-email', type: 'email', placeholder: t('auth.emailPlaceholder'), value: email, setter: setEmail },
   ];
 
   return (
@@ -649,17 +663,17 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
         </div>
       ))}
       <div className="space-y-2 text-center">
-        <Label htmlFor="reg-pass" className="text-foreground text-sm">পাসওয়ার্ড</Label>
+        <Label htmlFor="reg-pass" className="text-foreground text-sm">{t('auth.password')}</Label>
         <div className="relative">
-          <Input id="reg-pass" type={showPass ? 'text' : 'password'} placeholder="কমপক্ষে ৬ অক্ষর" value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-11`} />
+          <Input id="reg-pass" type={showPass ? 'text' : 'password'} placeholder={t('auth.passwordPlaceholder')} value={password} onChange={(e) => setPassword(e.target.value)} className={`${inputClass} pr-11`} />
           <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
             {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
       <div className="space-y-2 text-center">
-        <Label htmlFor="reg-confirm" className="text-foreground text-sm">পাসওয়ার্ড নিশ্চিত করুন</Label>
-        <Input id="reg-confirm" type={showPass ? 'text' : 'password'} placeholder="পুনরায় পাসওয়ার্ড দিন" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} className={inputClass} />
+        <Label htmlFor="reg-confirm" className="text-foreground text-sm">{t('auth.confirmPassword')}</Label>
+        <Input id="reg-confirm" type={showPass ? 'text' : 'password'} placeholder={t('auth.confirmPasswordPlaceholder')} value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} className={inputClass} />
       </div>
       <AnimatePresence>
         {error && (
@@ -668,7 +682,7 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
       </AnimatePresence>
       <Button onClick={handleRegister} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserPlus className="h-5 w-5" />}
-        নতুন অ্যাকাউন্ট তৈরি করুন
+        {t('auth.createAccount')}
       </Button>
     </div>
   );
@@ -683,6 +697,7 @@ export function AuthView() {
   const setView = useAppStore((s) => s.setView);
   const { siteName, siteLogo } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
   const [mode, setMode] = useState<AuthMode>('auth');
   const [verifyInfo, setVerifyInfo] = useState({ userId: '', email: '', userName: '' });
 
@@ -694,21 +709,21 @@ export function AuthView() {
   };
 
   const getHeaderTitle = () => {
-    if (mode === 'forgot') return 'পাসওয়ার্ড রিসেট';
-    if (mode === 'verify') return 'ইমেইল ভেরিফিকেশন';
+    if (mode === 'forgot') return t('auth.passwordResetTitle');
+    if (mode === 'verify') return t('auth.emailVerificationTitle');
     return siteName;
   };
 
   const getHeaderDesc = () => {
-    if (mode === 'forgot') return 'ইমেইল ভেরিফিকেশনের মাধ্যমে পাসওয়ার্ড পরিবর্তন করুন';
-    if (mode === 'verify') return 'আপনার ইমেইল যাচাই করুন';
-    return 'নিরাপদ অনলাইন লেনদেন শুরু করুন';
+    if (mode === 'forgot') return t('auth.passwordResetDesc');
+    if (mode === 'verify') return t('auth.verifyYourEmail');
+    return t('auth.startSafeTransaction');
   };
 
   const getBackLabel = () => {
-    if (mode === 'forgot') return 'লগইনে ফিরুন';
-    if (mode === 'verify') return 'ফিরুন';
-    return 'হোমপেজে ফিরুন';
+    if (mode === 'forgot') return t('auth.backToLogin');
+    if (mode === 'verify') return t('auth.back');
+    return t('auth.backToHomepage');
   };
 
   const handleBack = () => {
@@ -762,8 +777,8 @@ export function AuthView() {
                 <motion.div key="auth" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                   <Tabs defaultValue="login" className="w-full">
                     <TabsList className="mx-auto grid w-full grid-cols-2 bg-muted/60 dark:bg-zinc-800/60 !h-11 rounded-xl p-1">
-                      <TabsTrigger value="login" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">লগইন</TabsTrigger>
-                      <TabsTrigger value="register" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">নিবন্ধন</TabsTrigger>
+                      <TabsTrigger value="login" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.login')}</TabsTrigger>
+                      <TabsTrigger value="register" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.register')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="login" className="mt-6">
                       <LoginForm onForgotPassword={() => setMode('forgot')} onNeedsVerification={goVerify} />
