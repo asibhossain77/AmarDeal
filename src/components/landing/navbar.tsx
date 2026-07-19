@@ -28,7 +28,17 @@ import {
   FileText,
   Headphones,
   BookOpen,
+  Sparkles,
+  Calculator,
+  ListChecks,
+  CircleHelp,
+  Mail,
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const emptySubscribe = () => () => {};
 
@@ -246,30 +256,33 @@ export function Navbar() {
           )}
         </div>
 
-        {/* ── Center: Landing Desktop Nav Links (direct child of nav for proper absolute centering) ── */}
+        {/* ── Center: Landing Desktop Nav Links (icons only + tooltip on hover) ── */}
         {!isAuth && !isAdmin && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
-            <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.features')}
-            </a>
-            <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.feeStructure')}
-            </a>
-            <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.howItWorks')}
-            </a>
-            <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.faq')}
-            </a>
-            <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.blog')}
-            </a>
-            <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.about')}
-            </a>
-            <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              {t('nav.contact')}
-            </a>
+            {[
+              { href: '/security', viewKey: 'page-security', label: t('nav.features'), Icon: Sparkles },
+              { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
+              { href: '/how-it-works', viewKey: 'page-how-it-works', label: t('nav.howItWorks'), Icon: ListChecks },
+              { href: '/faq', viewKey: 'page-faq', label: t('nav.faq'), Icon: CircleHelp },
+              { href: '/blog', viewKey: 'blog', label: t('nav.blog'), Icon: BookOpen },
+              { href: '/about', viewKey: 'page-about', label: t('nav.about'), Icon: Users },
+              { href: '/contact', viewKey: 'page-contact', label: t('nav.contact'), Icon: Mail },
+            ].map((item) => (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>
+                  <a
+                    href={item.href}
+                    onClick={(e) => { e.preventDefault(); setView(item.viewKey); }}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
+                  >
+                    <item.Icon className="h-[18px] w-[18px]" />
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs font-medium">
+                  {item.label}
+                </TooltipContent>
+              </Tooltip>
+            ))}
           </div>
         )}
 
