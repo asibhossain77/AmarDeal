@@ -64,8 +64,8 @@ export function Footer() {
             <div key={cat}>
               <h3 className="mb-4 text-sm font-semibold">{cat}</h3>
               <ul className="space-y-2.5">
-                {footerLinks[i].map((link) => (
-                  <li key={link.label + link.href}>
+                {footerLinks[i].map((link, j) => (
+                  <li key={`${link.href}-${j}`}>
                     <a
                       href={link.href}
                       onClick={(e) => { e.preventDefault(); setView(link.view); }}
