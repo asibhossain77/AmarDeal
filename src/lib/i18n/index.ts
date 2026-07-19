@@ -3,10 +3,21 @@
 import { useMemo } from 'react';
 import { bn, type TranslationKey } from './locales/bn';
 import { en } from './locales/en';
+import { useAppStore } from '@/lib/store';
 
 export type Locale = 'bn' | 'en';
 
 const translations: Record<Locale, Record<TranslationKey, string>> = { bn, en };
+
+/**
+ * useT — convenience hook that returns a `t()` function for the current locale.
+ * Must be called inside a React component.
+ */
+export function useT() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  return t;
+}
 
 /**
  * useTranslation — returns a `t()` function bound to the given locale.

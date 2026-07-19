@@ -22,6 +22,7 @@ import {
   CircleCheck,
 } from 'lucide-react';
 import { AccessDenied } from '@/components/shared/access-denied';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -49,14 +50,14 @@ function formatTime(iso: string): string {
   });
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, t: (key: any) => string): string {
   const d = new Date(iso);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (d.toDateString() === today.toDateString()) return 'আজ';
-  if (d.toDateString() === yesterday.toDateString()) return 'গতকাল';
+  if (d.toDateString() === today.toDateString()) return t('chat.today');
+  if (d.toDateString() === yesterday.toDateString()) return t('chat.yesterday');
   return d.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -67,26 +68,26 @@ function shouldShowDateSeparator(messages: ChatMsg[], index: number): boolean {
   return prev !== curr;
 }
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: string, t: (key: any) => string) {
   switch (status) {
     case 'created':
-      return <Badge className="bg-slate-100 text-slate-700 border-0 font-medium text-[10px]">তৈরি হয়েছে</Badge>;
+      return <Badge className="bg-slate-100 text-slate-700 border-0 font-medium text-[10px]">{t('status.created')}</Badge>;
     case 'Pending_Verification':
-      return <Badge className="bg-amber-100 text-amber-700 border-0 font-medium text-[10px]">ভেরিফিকেশন পেন্ডিং</Badge>;
+      return <Badge className="bg-amber-100 text-amber-700 border-0 font-medium text-[10px]">{t('status.pendingVerification')}</Badge>;
     case 'Pending_Payment':
-      return <Badge className="bg-orange-100 text-orange-700 border-0 font-medium text-[10px]">পেমেন্ট ফেরত</Badge>;
+      return <Badge className="bg-orange-100 text-orange-700 border-0 font-medium text-[10px]">{t('status.paymentReturn')}</Badge>;
     case 'Payment_Verified':
-      return <Badge className="bg-blue-100 text-blue-700 border-0 font-medium text-[10px]">ভেরিফাইড</Badge>;
+      return <Badge className="bg-blue-100 text-blue-700 border-0 font-medium text-[10px]">{t('status.verified')}</Badge>;
     case 'in_delivery':
-      return <Badge className="bg-primary/15 text-primary border-0 font-medium text-[10px]">ডেলিভারি চলছে</Badge>;
+      return <Badge className="bg-primary/15 text-primary border-0 font-medium text-[10px]">{t('status.inDelivery')}</Badge>;
     case 'completed':
-      return <Badge className="bg-emerald-100 text-emerald-700 border-0 font-medium text-[10px]">সম্পন্ন</Badge>;
+      return <Badge className="bg-emerald-100 text-emerald-700 border-0 font-medium text-[10px]">{t('status.completed')}</Badge>;
     case 'rejected':
-      return <Badge className="bg-red-100 text-red-700 border-0 font-medium text-[10px]">রিজেক্টেড</Badge>;
+      return <Badge className="bg-red-100 text-red-700 border-0 font-medium text-[10px]">{t('status.rejected')}</Badge>;
     case 'disputed':
-      return <Badge className="bg-red-100 text-red-700 border-0 font-medium text-[10px]">বিরোধ</Badge>;
+      return <Badge className="bg-red-100 text-red-700 border-0 font-medium text-[10px]">{t('status.disputed')}</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 border-0 font-medium text-[10px]">বাতিল</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 border-0 font-medium text-[10px]">{t('status.cancelled')}</Badge>;
     default:
       return <Badge variant="outline" className="text-[10px]">{status}</Badge>;
   }
@@ -258,15 +259,15 @@ function TypingIndicator() {
    Empty State
    ═══════════════════════════════════════════════════════════ */
 
-function EmptyState() {
+function EmptyState({ t }: { t: (key: any) => string }) {
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
       <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/8 mb-5">
         <MessageSquare className="h-10 w-10 text-primary/40" />
       </div>
-      <h3 className="text-base font-bold text-foreground/80 mb-1">কোনো মেসেজ নেই</h3>
+      <h3 className="text-base font-bold text-foreground/80 mb-1">{t('chat.noMessages')}</h3>
       <p className="text-xs text-muted-foreground/60 max-w-[240px] leading-relaxed">
-        এই ডিলে এখনো কোনো মেসেজ আদানপ্রদান হয়নি। নিচে টাইপ করে শুরু করুন।
+        {t('chat.noMessagesDesc')}
       </p>
     </div>
   );
@@ -279,6 +280,7 @@ function EmptyState() {
 export function DealChatView() {
   const { setDashboardPanel, activeDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [loading, setLoading] = useState(true);
@@ -343,7 +345,7 @@ export function DealChatView() {
     // Determine role
     const isBuyer = user?.id === activeDeal.buyerId;
     const role = isBuyer ? 'buyer' : 'seller';
-    const senderName = user?.name || 'ব্যবহারকারী';
+    const senderName = user?.name || t('chat.user');
 
     try {
       const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
@@ -357,11 +359,11 @@ export function DealChatView() {
         setMessages((prev) => [...prev, newMsg]);
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'মেসেজ পাঠাতে সমস্যা হয়েছে');
+        toast.error(data.error || t('chat.sendMessageError'));
         setInputText(text); // Restore text on failure
       }
     } catch {
-      toast.error('নেটওয়ার্ক সমস্যা');
+      toast.error(t('chat.networkError'));
       setInputText(text);
     } finally {
       setSending(false);
@@ -381,7 +383,7 @@ export function DealChatView() {
 
   if (accessDenied) return <AccessDenied />;
 
-  const dealTitle = activeDeal?.title || 'ডিল';
+  const dealTitle = activeDeal?.title || t('chat.deal');
   const dealStatus = activeDeal?.status || 'created';
   const dealAmount = activeDeal?.amount ?? 0;
 
@@ -396,7 +398,7 @@ export function DealChatView() {
           <button
             onClick={() => setDashboardPanel('deal-detail')}
             className="flex h-9 w-9 items-center justify-center rounded-xl transition-colors hover:bg-accent"
-            aria-label="ফিরে যান"
+            aria-label={t('chat.goBack')}
           >
             <ArrowLeft className="h-4.5 w-4.5 text-foreground" />
           </button>
@@ -413,7 +415,7 @@ export function DealChatView() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-foreground truncate">{dealTitle}</h2>
-              {getStatusBadge(dealStatus)}
+              {getStatusBadge(dealStatus, t)}
             </div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[11px] text-muted-foreground">
@@ -434,7 +436,7 @@ export function DealChatView() {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:inline">
-                সক্রিয়
+                {t('chat.active')}
               </span>
             </div>
           </div>
@@ -457,7 +459,7 @@ export function DealChatView() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : messages.length === 0 ? (
-          <EmptyState />
+          <EmptyState t={t} />
         ) : (
           <div className="py-4">
             {messages.map((msg, i) => {
@@ -465,7 +467,7 @@ export function DealChatView() {
               if (shouldShowDateSeparator(messages, i)) {
                 return (
                   <div key={`date-${i}`}>
-                    <DateSeparator date={formatDate(msg.createdAt)} />
+                    <DateSeparator date={formatDate(msg.createdAt, t)} />
                     <MessageRenderer
                       msg={msg}
                       index={i}
@@ -507,7 +509,7 @@ export function DealChatView() {
           {/* Attachment button (visual placeholder) */}
           <button
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            aria-label="ফাইল সংযুক্ত করুন"
+            aria-label={t('chat.attachFile')}
           >
             <Paperclip className="h-4.5 w-4.5" />
           </button>
@@ -519,13 +521,13 @@ export function DealChatView() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="মেসেজ লিখুন..."
+              placeholder={t('chat.placeholder')}
               disabled={sending}
               className="h-10 rounded-xl border-border/60 bg-muted/40 pr-10 text-sm placeholder:text-muted-foreground/50 focus-visible:ring-primary/30"
             />
             <button
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-              aria-label="ইমোজি"
+              aria-label={t('chat.emoji')}
             >
               <Smile className="h-4 w-4" />
             </button>
@@ -541,7 +543,7 @@ export function DealChatView() {
               color: inputText.trim() ? '#ffffff' : 'var(--muted-foreground)',
               boxShadow: inputText.trim() ? '0 4px 14px rgba(101,163,13,0.35)' : 'none',
             }}
-            aria-label="পাঠান"
+            aria-label={t('chat.send')}
           >
             {sending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -553,7 +555,7 @@ export function DealChatView() {
 
         {/* Keyboard spacer hint for mobile */}
         <p className="text-center text-[10px] text-muted-foreground/30 mt-1.5 hidden sm:block">
-          Enter চেপে পাঠান
+          {t('chat.enterToSend')}
         </p>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, FileText, PlusCircle, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -16,6 +17,7 @@ const emptySubscribe = () => () => {};
 export function NewDealForm() {
   const { setDashboardPanel, setActiveDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
 
   const [title, setTitle] = useState('');
   const [role, setRole] = useState('');
@@ -44,12 +46,12 @@ export function NewDealForm() {
   const handleSubmit = useCallback(async () => {
     setError('');
     if (!title.trim() || !role || !partyEmail.trim() || !amount.trim()) {
-      setError('সকল প্রয়োজনীয় ফিল্ড পূরণ করুন');
+      setError(t('deal.fillRequired'));
       return;
     }
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
-      setError('সঠিক পরিমাণ দিন (শূন্যের বেশি)');
+      setError(t('deal.validAmount'));
       return;
     }
 
@@ -69,7 +71,7 @@ export function NewDealForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'ডিল তৈরি ব্যর্থ হয়েছে');
+        setError(data.error || t('deal.createFailed'));
         return;
       }
       setActiveDeal({
@@ -82,14 +84,14 @@ export function NewDealForm() {
         buyerName: data.buyerName,
         sellerName: data.sellerName,
       });
-      toast.success('ডিলটি সফলভাবে তৈরি হয়েছে!');
+      toast.success(t('deal.createSuccess'));
       setDashboardPanel('deal-detail');
     } catch {
-      setError('সার্ভারে সমস্যা হয়েছে');
+      setError(t('deal.serverError'));
     } finally {
       setLoading(false);
     }
-  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setActiveDeal]);
+  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setActiveDeal, t]);
 
   if (!mounted) return null;
 
@@ -111,39 +113,39 @@ export function NewDealForm() {
             <PlusCircle className="h-6 w-6 text-primary" />
           </div>
           <h2 className="text-xl font-bold tracking-tight text-foreground">
-            নতুন ডিল তৈরি করুন
+            {t('deal.createTitle')}
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            নিরাপদে লেনদেন সম্পন্ন করতে ডিলের তথ্য দিন
+            {t('deal.createDesc')}
           </p>
         </div>
 
         {/* Form Fields */}
         <div className="space-y-5">
-          {/* Field 1: ডিলের শিরোনাম */}
+          {/* Field 1: Title */}
           <div className="space-y-2 text-center md:text-left">
             <Label htmlFor="deal-title" className="text-foreground text-sm">
-              ডিলের শিরোনাম
+              {t('deal.titleLabel')}
             </Label>
             <Input
               id="deal-title"
               type="text"
-              placeholder="যেমন: লোগো ডিজাইন, ওয়েব ডেভেলপমেন্ট"
+              placeholder={t('deal.titlePlaceholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className={inputClass}
             />
           </div>
 
-          {/* Field 2: আপনার ভূমিকা (Radio Buttons) */}
+          {/* Field 2: Role (Radio Buttons) */}
           <div className="space-y-3 text-center md:text-left">
             <Label className="text-foreground text-sm">
-              আপনার ভূমিকা
+              {t('deal.roleLabel')}
             </Label>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-start">
               {[
-                { value: 'buyer', label: 'ক্রেতা (Buyer)', desc: 'আপনি টাকা পরিশোধ করবেন' },
-                { value: 'seller', label: 'বিক্রেতা (Seller)', desc: 'আপনি পণ্য/সেবা দেবেন' },
+                { value: 'buyer', label: t('deal.buyer'), desc: t('deal.buyerDesc') },
+                { value: 'seller', label: t('deal.seller'), desc: t('deal.sellerDesc') },
               ].map((opt) => (
                 <button
                   key={opt.value}
@@ -183,30 +185,30 @@ export function NewDealForm() {
             </div>
           </div>
 
-          {/* Field 3: প্রতিপক্ষের ইমেইল */}
+          {/* Field 3: Counterpart Email */}
           <div className="space-y-2 text-center md:text-left">
             <Label htmlFor="party-email" className="text-foreground text-sm">
-              প্রতিপক্ষের ইমেইল বা মোবাইল
+              {t('deal.partyEmail')}
             </Label>
             <Input
               id="party-email"
               type="text"
-              placeholder="ইমেইল বা মোবাইল নম্বর"
+              placeholder={t('deal.partyEmailPlaceholder')}
               value={partyEmail}
               onChange={(e) => setPartyEmail(e.target.value)}
               className={inputClass}
             />
           </div>
 
-          {/* Field 4: ডিলের পরিমাণ (টাকা) */}
+          {/* Field 4: Amount */}
           <div className="space-y-2 text-center md:text-left">
             <Label htmlFor="deal-amount" className="text-foreground text-sm">
-              ডিলের পরিমাণ (টাকা)
+              {t('deal.amountLabel')}
             </Label>
             <Input
               id="deal-amount"
               type="number"
-              placeholder="যেমন: 50000"
+              placeholder={t('deal.amountPlaceholder')}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               className={inputClass}
@@ -223,14 +225,14 @@ export function NewDealForm() {
                   <div className="mt-2 rounded-xl bg-primary/5 border border-primary/15 p-3 space-y-1.5">
                     <div className="flex items-center gap-2 text-xs font-medium text-primary">
                       <Receipt className="h-3.5 w-3.5" />
-                      ফি প্রিভিউ
+                      {t('deal.feePreview')}
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">প্ল্যাটফর্ম ফি</span>
+                      <span className="text-muted-foreground">{t('deal.platformFee')}</span>
                       <span className="font-semibold text-foreground">৳{feePreview.fee.toLocaleString('en')}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">মোট পরিশোধ</span>
+                      <span className="text-muted-foreground">{t('deal.totalPay')}</span>
                       <span className="font-bold text-primary">৳{feePreview.total.toLocaleString('en')}</span>
                     </div>
                   </div>
@@ -239,14 +241,14 @@ export function NewDealForm() {
             </AnimatePresence>
           </div>
 
-          {/* Field 5: ডিলের শর্তাবলী */}
+          {/* Field 5: Terms */}
           <div className="space-y-2 text-center md:text-left">
             <Label htmlFor="deal-terms" className="text-foreground text-sm">
-              ডিলের শর্তাবলী
+              {t('deal.termsLabel')}
             </Label>
             <Textarea
               id="deal-terms"
-              placeholder="ডিলের বিস্তারিত শর্তাবলী লিখুন..."
+              placeholder={t('deal.termsPlaceholder')}
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               rows={4}
@@ -281,7 +283,7 @@ export function NewDealForm() {
             ) : (
               <FileText className="h-5 w-5" />
             )}
-            ডিল তৈরি করুন
+            {t('deal.createButton')}
           </Button>
         </div>
       </div>

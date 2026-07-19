@@ -2,6 +2,7 @@
 
 import { ArrowLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 
 interface BackButtonProps {
   /** Override label text */
@@ -12,12 +13,15 @@ interface BackButtonProps {
   variant?: 'ghost' | 'outline';
 }
 
-export function BackButton({ label = 'ফিরে যান', className = '', variant = 'outline' }: BackButtonProps) {
+export function BackButton({ label, className = '', variant = 'outline' }: BackButtonProps) {
+  const t = useT();
   const goBack = useAppStore((s) => s.goBack);
   const view = useAppStore((s) => s.view);
   const _prevView = useAppStore((s) => s._prevView);
   const _prevDashPanel = useAppStore((s) => s._prevDashPanel);
   const _prevSellerPanel = useAppStore((s) => s._prevSellerPanel);
+
+  const displayLabel = label ?? t('common.back');
 
   // Determine if back is available
   const isBackToPublicView = _prevView === 'landing' || _prevView === 'auth';
@@ -33,7 +37,7 @@ export function BackButton({ label = 'ফিরে যান', className = '', v
       <button
         onClick={goBack}
         className={`inline-flex items-center justify-center rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground ${className}`}
-        aria-label={label}
+        aria-label={displayLabel}
       >
         <ArrowLeft className="h-5 w-5" />
       </button>
@@ -44,10 +48,10 @@ export function BackButton({ label = 'ফিরে যান', className = '', v
     <button
       onClick={goBack}
       className={`inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent ${className}`}
-      aria-label={label}
+      aria-label={displayLabel}
     >
       <ArrowLeft className="h-4 w-4" />
-      {label}
+      {displayLabel}
     </button>
   );
 }

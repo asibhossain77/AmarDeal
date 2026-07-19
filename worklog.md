@@ -673,3 +673,32 @@ Stage Summary:
 - 100+ translation keys for navbar, hero, footer, settings, auth, pages
 - System is extensible — new keys can be added to bn.ts/en.ts and used with t('key')
 - Components not yet translated: review-section, trust-security, how-it-works, faq-section, about-section, privacy-section, contact-section, fee-structure, auth-view (these can be translated incrementally)
+
+---
+Task ID: i18n-dashboard-components
+Agent: fullstack-developer
+Task: Update all dashboard component files to use t() translation system
+
+Work Log:
+- Read all 10 target component files and translation key files (bn.ts, en.ts)
+- Found that 7 of 10 files were ALREADY fully converted to use useT() and t() calls in a prior pass
+- Applied remaining fixes to 4 files:
+  1. dashboard-sidebar.tsx: Changed Bengali fallback char 'ই' → 'U' (line 73)
+  2. dashboard-main.tsx: Changed Bengali fallback char 'ই' → 'U' (line 273)
+  3. user-payment-view.tsx: Replaced hardcoded "Status" table header → t('dashboard.status') (line 524)
+  4. profile-panel.tsx: Changed Bengali fallback char 'ই' → 'U' (line 45)
+- Verified all 10 files now correctly import useT from '@/lib/i18n' and use t() for all user-facing text
+- Files confirmed already complete (no changes needed):
+  - my-deals-panel.tsx (all strings use t(), getStatusBadge accepts t param)
+  - new-deal-form.tsx (all labels, placeholders, errors use t())
+  - deal-chat-view.tsx (formatDate, getStatusBadge, EmptyState all use t param)
+  - payout-accounts-panel.tsx (statusBadge, typeLabel accept t param)
+  - access-denied.tsx (all text uses t())
+  - back-button.tsx (default label uses t('common.back') inside component)
+- TypeScript compilation check passed (no new errors introduced; pre-existing errors in unrelated files remain)
+
+Stage Summary:
+- All 10 dashboard component files now fully use the i18n translation system
+- No Bengali hardcoded strings remain in any of the target files
+- No logic changes were made — only text string replacements
+- bn.ts and en.ts were not modified

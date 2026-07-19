@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Banknote, Clock, Check, XCircle, ArrowLeft, Loader2, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useT } from '@/lib/i18n';
 
 const PARROT_GREEN = '#65A30D';
 const PARROT_GREEN_MILD = 'rgba(101, 163, 13, 0.10)';
@@ -29,13 +30,13 @@ interface PayoutRecord {
   };
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, t: (key: any) => string) {
   switch (status) {
     case 'pending':
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
           <Clock className="h-3 w-3" />
-          অপেক্ষমান
+          {t('status.pending')}
         </span>
       );
     case 'approved':
@@ -43,14 +44,14 @@ function statusBadge(status: string) {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
           <Check className="h-3 w-3" />
-          সম্পন্ন
+          {t('status.completed')}
         </span>
       );
     case 'rejected':
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-500/15 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:text-red-400">
           <XCircle className="h-3 w-3" />
-          বাতিল
+          {t('status.rejected')}
         </span>
       );
     default:
@@ -62,14 +63,15 @@ function statusBadge(status: string) {
   }
 }
 
-function typeLabel(type: string) {
-  return type === 'seller_payout' ? 'বিক্রেতা পেআউট' : 'ক্রেতা ফেরত';
+function typeLabel(type: string, t: (key: any) => string) {
+  return type === 'seller_payout' ? t('payout.sellerPayout') : t('payout.buyerRefund');
 }
 
 export function PayoutAccountsPanel() {
   const { user, setDashboardPanel } = useAppStore();
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = useT();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -84,10 +86,10 @@ export function PayoutAccountsPanel() {
         throw new Error();
       })
       .then((data) => { if (!cancelled) setPayouts(data); })
-      .catch(() => { if (!cancelled) toast.error('পেআউট তথ্য লোড করতে সমস্যা'); })
+      .catch(() => { if (!cancelled) toast.error(t('payout.loadError')); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, t]);
 
   return (
     <div className="space-y-4">
@@ -96,13 +98,13 @@ export function PayoutAccountsPanel() {
         <button
           onClick={() => setDashboardPanel('my-deals')}
           className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-accent hover:scale-105"
-          aria-label="ফিরে যান"
+          aria-label={t('payout.goBack')}
         >
           <ArrowLeft className="h-4 w-4 text-foreground" />
         </button>
         <div>
-          <h2 className="text-lg font-bold text-foreground">পেআউট ইতিহাস</h2>
-          <p className="text-xs text-muted-foreground">আপনার সকল পেআউট ও ফেরতের তথ্য</p>
+          <h2 className="text-lg font-bold text-foreground">{t('payout.history')}</h2>
+          <p className="text-xs text-muted-foreground">{t('payout.subtitle')}</p>
         </div>
       </div>
 
@@ -123,9 +125,9 @@ export function PayoutAccountsPanel() {
           >
             <Inbox className="h-8 w-8" style={{ color: PARROT_GREEN }} />
           </div>
-          <p className="text-sm font-semibold text-foreground mb-1">কোনো পেআউট নেই</p>
+          <p className="text-sm font-semibold text-foreground mb-1">{t('payout.noPayout')}</p>
           <p className="text-xs text-muted-foreground max-w-[250px]">
-            ডিল সম্পন্ন বা বাতিল হলে এখানে পেআউটের তথ্য দেখাবে
+            {t('payout.noPayoutDesc')}
           </p>
         </motion.div>
       ) : (
@@ -154,31 +156,31 @@ export function PayoutAccountsPanel() {
                         {p.deal.title}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {typeLabel(p.type)} · DL-{p.dealId.slice(-5)}
+                        {typeLabel(p.type, t)} · DL-{p.dealId.slice(-5)}
                       </p>
                     </div>
                   </div>
-                  {statusBadge(p.status)}
+                  {statusBadge(p.status, t)}
                 </div>
 
                 {/* Details grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <p className="text-muted-foreground mb-0.5">পরিমাণ</p>
+                    <p className="text-muted-foreground mb-0.5">{t('payout.amount')}</p>
                     <p className="font-bold text-foreground">
                       ৳{p.amount.toLocaleString('en')}
                     </p>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <p className="text-muted-foreground mb-0.5">পদ্ধতি</p>
+                    <p className="text-muted-foreground mb-0.5">{t('payout.method')}</p>
                     <p className="font-semibold text-foreground truncate">{p.accountType}</p>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <p className="text-muted-foreground mb-0.5">অ্যাকাউন্ট নম্বর</p>
+                    <p className="text-muted-foreground mb-0.5">{t('payout.accountNumber')}</p>
                     <p className="font-semibold text-foreground truncate">{p.accountNumber}</p>
                   </div>
                   <div className="rounded-xl bg-muted/50 px-3 py-2">
-                    <p className="text-muted-foreground mb-0.5">অ্যাকাউন্ট নাম</p>
+                    <p className="text-muted-foreground mb-0.5">{t('payout.accountName')}</p>
                     <p className="font-semibold text-foreground truncate">{p.accountName}</p>
                   </div>
                 </div>

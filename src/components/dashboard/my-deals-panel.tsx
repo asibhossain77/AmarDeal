@@ -6,6 +6,7 @@ import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Eye, Inbox, Copy, Check, Search, X } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -21,22 +22,22 @@ interface DealRow {
   creator?: { id: string; name: string; email: string } | null;
 }
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: string, t: (key: any) => string) {
   switch (status) {
     case 'created':
-      return <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">তৈরি হয়েছে</Badge>;
+      return <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">{t('status.created')}</Badge>;
     case 'payment_pending':
-      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">পেমেন্ট পেন্ডিং</Badge>;
+      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">{t('status.paymentPending')}</Badge>;
     case 'payment_verified':
-      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">ভেরিফাইড</Badge>;
+      return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">{t('status.verified')}</Badge>;
     case 'in_delivery':
-      return <Badge className="bg-primary/15 text-primary dark:bg-primary/20 border-0 font-medium">ডেলিভারি চলছে</Badge>;
+      return <Badge className="bg-primary/15 text-primary dark:bg-primary/20 border-0 font-medium">{t('status.inDelivery')}</Badge>;
     case 'completed':
-      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
+      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">{t('status.completed')}</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">{t('status.cancelled')}</Badge>;
     case 'disputed':
-      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ</Badge>;
+      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">{t('status.disputed')}</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -51,6 +52,7 @@ export function MyDealsPanel() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const t = useT();
 
   const fetchDeals = useCallback(async () => {
     if (!user?.id) return;
@@ -123,8 +125,8 @@ export function MyDealsPanel() {
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div className="text-center lg:text-left">
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">আমার ডিলসমূহ</h2>
-        <p className="mt-1 text-sm text-muted-foreground">আপনার সকল ডিলের তালিকা</p>
+        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('deals.myDeals')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('deals.myDealsDesc')}</p>
       </div>
 
       {/* Search bar */}
@@ -134,7 +136,7 @@ export function MyDealsPanel() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ডিল আইডি বা টাইটেল দিয়ে খুঁজুন..."
+          placeholder={t('deals.searchPlaceholder')}
           className="w-full h-10 rounded-xl border border-border/50 bg-white dark:bg-zinc-900 pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 shadow-lg"
         />
         {search && (
@@ -159,7 +161,7 @@ export function MyDealsPanel() {
                 : 'bg-white dark:bg-zinc-900 text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground shadow-lg'
             }`}
           >
-            {tab === 'all' ? 'সকল' : tab === 'active' ? 'চলমান' : 'সম্পন্ন'}
+            {tab === 'all' ? t('deals.all') : tab === 'active' ? t('status.active') : t('status.completed')}
           </button>
         ))}
       </div>
@@ -172,7 +174,7 @@ export function MyDealsPanel() {
         <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 text-center">
           <Inbox className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
           <p className="text-sm text-muted-foreground">
-            {search.trim() ? `"${search}" দিয়ে কোনো ডিল পাওয়া যায়নি` : 'কোনো ডিল পাওয়া যায়নি'}
+            {search.trim() ? t('deals.searchNoResult', { search }) : t('deals.noDealFound')}
           </p>
         </div>
       ) : (
@@ -191,7 +193,7 @@ export function MyDealsPanel() {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleCopyId(deal.id); }}
                       className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 hover:bg-muted px-2 py-0.5 transition-colors group"
-                      title="কপি করুন"
+                      title={t('deals.copy')}
                     >
                       <span className="font-mono text-xs font-semibold text-primary">{`DL-${deal.id.slice(-5)}`}</span>
                       {copiedId === deal.id ? (
@@ -208,14 +210,14 @@ export function MyDealsPanel() {
                   <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {getStatusBadge(deal.status)}
+                  {getStatusBadge(deal.status, t)}
                   <Button
                     size="sm"
                     onClick={() => handleOpenDeal(deal)}
                     className="h-8 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
                   >
                     <Eye className="h-3.5 w-3.5" />
-                    দেখুন
+                    {t('deals.view')}
                   </Button>
                 </div>
               </div>

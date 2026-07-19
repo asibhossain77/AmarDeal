@@ -2,18 +2,24 @@
 
 import { useSyncExternalStore } from 'react';
 import { useAppStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { LogOut } from 'lucide-react';
-import { filterNavGroups } from './admin-nav-config';
+import { getAdminNavGroups, filterTranslatedNavGroups } from './admin-nav-config';
 
 const emptySubscribe = () => () => {};
 
 export function AdminSidebar() {
   const { logout, adminPanel, setAdminPanel, user } = useAppStore();
+  const t = useT();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   if (!mounted) return null;
 
-  const groups = filterNavGroups(user?.adminRole, user?.permissions ?? []);
+  const groups = filterTranslatedNavGroups(
+    getAdminNavGroups(t),
+    user?.adminRole,
+    user?.permissions ?? [],
+  );
 
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
@@ -52,14 +58,14 @@ export function AdminSidebar() {
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4">
           <div className="flex items-center gap-3 rounded-xl py-2 mb-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-              {user?.name?.charAt(0) || 'অ'}
+              {user?.name?.charAt(0) || 'A'}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">
-                {user?.name || 'অ্যাডমিন'}
+                {user?.name || t('nav.adminLabel')}
               </p>
               <p className="truncate text-xs text-muted-foreground">
-                {user?.adminRole === 'staff' ? 'স্টাফ' : user?.adminRole === 'super_admin' ? 'সুপার অ্যাডমিন' : 'সাপোর্ট'}
+                {user?.adminRole === 'staff' ? 'Staff' : user?.adminRole === 'super_admin' ? t('profile.roleSuperAdmin') : 'Support'}
               </p>
             </div>
           </div>
@@ -68,7 +74,7 @@ export function AdminSidebar() {
             className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="h-[18px] w-[18px]" />
-            লগআউট
+            {t('nav.logout')}
           </button>
         </div>
       </div>

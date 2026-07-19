@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { ShieldX, ArrowLeft, Lock } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 /**
  * Branded "Access Denied" page shown when a user tries to access
@@ -11,6 +12,7 @@ import { ShieldX, ArrowLeft, Lock } from 'lucide-react';
  */
 export function AccessDenied() {
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+  const t = useT();
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 px-6 py-20 text-center">
@@ -38,13 +40,12 @@ export function AccessDenied() {
 
         {/* Title */}
         <h2 className="text-xl font-bold text-foreground mb-2">
-          অ্যাক্সেস অস্বীকৃত
+          {t('access.denied')}
         </h2>
 
         {/* Description */}
         <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-          আপনার এই ডিল দেখার অনুমতি নেই। আপনি শুধুমাত্র নিজের
-          ডিলগুলো দেখতে পারবেন।
+          {t('access.deniedDesc')}
         </p>
 
         {/* CTA */}
@@ -58,12 +59,12 @@ export function AccessDenied() {
           }}
         >
           <ArrowLeft className="h-4 w-4" />
-          ড্যাশবোর্ডে ফিরুন
+          {t('access.backToDashboard')}
         </Button>
 
         {/* Subtle branding */}
         <p className="mt-8 text-[11px] text-muted-foreground/40">
-          আমার ডিল — নিরাপদ অনলাইন লেনদেন
+          {t('access.branding')}
         </p>
       </motion.div>
     </div>

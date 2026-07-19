@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { useAppStore, type SellerPanel } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { useT } from '@/lib/i18n';
 import {
   LayoutDashboard,
   Clock,
@@ -15,15 +16,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 const emptySubscribe = () => () => {};
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   panel: SellerPanel;
 }
 
-const navItems: NavItem[] = [
-  { label: 'ড্যাশবোর্ড', icon: LayoutDashboard, panel: 'overview' },
-  { label: 'চলমান ডিল', icon: Clock, panel: 'active-deals' },
-  { label: 'আমার পণ্য', icon: Package, panel: 'my-products' },
+const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPanel }[] = [
+  { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
+  { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },
+  { labelKey: 'seller.myProducts', icon: Package, panel: 'my-products' },
 ];
 
 export function SellerSidebar() {
@@ -32,6 +33,7 @@ export function SellerSidebar() {
   const user = useAppStore((s) => s.user);
   const { siteName, siteLogo } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
 
   if (!mounted) return null;
 
@@ -56,7 +58,7 @@ export function SellerSidebar() {
         <button
           onClick={() => setSidebarOpen(false)}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors md:hidden"
-          aria-label="বন্ধ করুন"
+          aria-label={t('common.close')}
         >
           <X className="h-5 w-5" />
         </button>
@@ -64,12 +66,12 @@ export function SellerSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item) => {
+        {navItemKeys.map((item) => {
           const Icon = item.icon;
           const isActive = sellerPanel === item.panel;
           return (
             <button
-              key={item.label}
+              key={item.labelKey}
               onClick={() => {
                 setSellerPanel(item.panel);
                 setSidebarOpen(false);
@@ -81,7 +83,7 @@ export function SellerSidebar() {
               }`}
             >
               <Icon className="h-[18px] w-[18px]" />
-              {item.label}
+              {t(item.labelKey as any)}
             </button>
           );
         })}
@@ -91,10 +93,10 @@ export function SellerSidebar() {
       <div className="border-t border-border/50 p-4">
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 mb-2">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-            {user?.name?.charAt(0) || 'ব'}
+            {user?.name?.charAt(0) || t('seller.welcomeSeller').charAt(0)}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{user?.name || 'বিক্রেতা'}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('profile.roleSeller')}</p>
             <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
           </div>
         </div>
@@ -103,7 +105,7 @@ export function SellerSidebar() {
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
         >
           <LogOut className="h-[18px] w-[18px]" />
-          লগআউট
+          {t('nav.logout')}
         </button>
       </div>
     </div>

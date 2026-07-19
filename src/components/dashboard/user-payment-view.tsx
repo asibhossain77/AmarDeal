@@ -27,6 +27,7 @@ import {
   Ban,
   ShieldAlert,
 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 /* ─── Types ─── */
 interface PaymentMethodInfo {
@@ -71,28 +72,29 @@ function getPaymentStatus(deal: DealRow): PaymentStatus {
   return 'paid';
 }
 
-function getPaymentStatusLabel(status: PaymentStatus): string {
+function getPaymentStatusLabel(status: PaymentStatus, t: (key: any) => string): string {
   switch (status) {
-    case 'paid': return 'পেইড';
-    case 'unpaid': return 'আনপেইড';
-    case 'verifying': return 'ভেরিফাই হচ্ছে';
-    case 'wrong_info': return 'ভুল তথ্য';
-    case 'cancelled': return 'বাতিল';
+    case 'paid': return t('status.paid');
+    case 'unpaid': return t('status.unpaid');
+    case 'verifying': return t('status.verifying');
+    case 'wrong_info': return t('status.wrongInfo');
+    case 'cancelled': return t('status.cancelled');
   }
 }
 
-function getPaymentStatusBadge(status: PaymentStatus) {
+function getPaymentStatusBadge(status: PaymentStatus, t: (key: any) => string) {
+  const label = getPaymentStatusLabel(status, t);
   switch (status) {
     case 'paid':
-      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium gap-1"><CheckCircle2 className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
+      return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium gap-1"><CheckCircle2 className="h-3 w-3" />{label}</Badge>;
     case 'unpaid':
-      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium gap-1"><XCircle className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
+      return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium gap-1"><XCircle className="h-3 w-3" />{label}</Badge>;
     case 'verifying':
-      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1"><Clock className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
+      return <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1"><Clock className="h-3 w-3" />{label}</Badge>;
     case 'wrong_info':
-      return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium gap-1"><AlertCircle className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
+      return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium gap-1"><AlertCircle className="h-3 w-3" />{label}</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium gap-1"><Ban className="h-3 w-3" />{getPaymentStatusLabel(status)}</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium gap-1"><Ban className="h-3 w-3" />{label}</Badge>;
   }
 }
 
@@ -130,7 +132,7 @@ function GlassCard({
 }
 
 /* ─── Copy Button ─── */
-function CopyBtn({ text }: { text: string }) {
+function CopyBtn({ text, t }: { text: string; t: (key: any) => string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -141,7 +143,7 @@ function CopyBtn({ text }: { text: string }) {
     <button
       onClick={(e) => { e.stopPropagation(); handleCopy(); }}
       className="inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded"
-      title="কপি করুন"
+      title={t('deals.copy')}
     >
       {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
@@ -152,17 +154,17 @@ function CopyBtn({ text }: { text: string }) {
    Stat Cards
    ═══════════════════════════════════════════ */
 
-function StatCards({ deals }: { deals: DealRow[] }) {
+function StatCards({ deals, t }: { deals: DealRow[]; t: (key: any) => string }) {
   const totalDeals = deals.length;
   const paid = deals.filter((d) => getPaymentStatus(d) === 'paid').length;
   const unpaid = deals.filter((d) => getPaymentStatus(d) === 'unpaid').length;
   const verifying = deals.filter((d) => getPaymentStatus(d) === 'verifying').length;
 
   const items = [
-    { label: 'মোট লেনদেন', value: totalDeals.toLocaleString('en'), icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
-    { label: 'পেইড', value: paid.toLocaleString('en'), icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'আনপেইড', value: unpaid.toLocaleString('en'), icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-500/10' },
-    { label: 'ভেরিফাই হচ্ছে', value: verifying.toLocaleString('en'), icon: HourglassIcon, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
+    { label: t('payment.totalTxn'), value: totalDeals.toLocaleString('en'), icon: Receipt, color: 'text-primary', bg: 'bg-primary/10' },
+    { label: t('status.paid'), value: paid.toLocaleString('en'), icon: CheckCircle2, color: 'text-emerald-500 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: t('status.unpaid'), value: unpaid.toLocaleString('en'), icon: XCircle, color: 'text-red-500 dark:text-red-400', bg: 'bg-red-500/10' },
+    { label: t('status.verifying'), value: verifying.toLocaleString('en'), icon: HourglassIcon, color: 'text-amber-500 dark:text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
   return (
@@ -198,7 +200,7 @@ function StatCards({ deals }: { deals: DealRow[] }) {
    Transaction Row (Desktop)
    ═══════════════════════════════════════════ */
 
-function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: () => void }) {
+function TxnRow({ deal, user, onClick, t }: { deal: DealRow; user: any; onClick: () => void; t: (key: any) => string }) {
   const pStatus = getPaymentStatus(deal);
   const isBuyer = deal.buyerId === user?.id;
   const counterParty = isBuyer ? deal.seller?.name : deal.buyer?.name;
@@ -220,7 +222,7 @@ function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: ()
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate max-w-[180px]">{deal.title}</p>
-            <p className="text-xs text-muted-foreground">{counterParty || 'অপেক্ষমান'}</p>
+            <p className="text-xs text-muted-foreground">{counterParty || t('payment.waiting')}</p>
           </div>
         </div>
       </td>
@@ -241,14 +243,14 @@ function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: ()
         {deal.transactionId ? (
           <div className="flex items-center gap-1">
             <span className="text-xs font-mono text-muted-foreground truncate max-w-[100px]">{deal.transactionId}</span>
-            <CopyBtn text={deal.transactionId} />
+            <CopyBtn text={deal.transactionId} t={t} />
           </div>
         ) : (
           <span className="text-xs text-muted-foreground/50">—</span>
         )}
       </td>
       <td className="px-5 py-3.5 text-center whitespace-nowrap">
-        {getPaymentStatusBadge(pStatus)}
+        {getPaymentStatusBadge(pStatus, t)}
       </td>
     </tr>
   );
@@ -258,7 +260,7 @@ function TxnRow({ deal, user, onClick }: { deal: DealRow; user: any; onClick: ()
    Transaction Card (Mobile)
    ═══════════════════════════════════════════ */
 
-function TxnCard({ deal, user, onClick }: { deal: DealRow; user: any; onClick: () => void }) {
+function TxnCard({ deal, user, onClick, t }: { deal: DealRow; user: any; onClick: () => void; t: (key: any) => string }) {
   const pStatus = getPaymentStatus(deal);
   const isBuyer = deal.buyerId === user?.id;
   const counterParty = isBuyer ? deal.seller?.name : deal.buyer?.name;
@@ -274,12 +276,12 @@ function TxnCard({ deal, user, onClick }: { deal: DealRow; user: any; onClick: (
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {counterParty || 'অপেক্ষমান'} · {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+            {counterParty || t('payment.waiting')} · {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
           </p>
         </div>
         <div className="text-right shrink-0">
           <p className="text-sm font-bold text-foreground">{formatTaka(deal.paymentAmount || deal.amount)}</p>
-          <div className="mt-1">{getPaymentStatusBadge(pStatus)}</div>
+          <div className="mt-1">{getPaymentStatusBadge(pStatus, t)}</div>
         </div>
       </div>
     </GlassCard>
@@ -287,14 +289,16 @@ function TxnCard({ deal, user, onClick }: { deal: DealRow; user: any; onClick: (
 }
 
 /* ─── Filter Tabs ─── */
-const FILTER_TABS: { key: 'all' | PaymentStatus; label: string; icon: typeof Receipt }[] = [
-  { key: 'all', label: 'সব', icon: ArrowUpDown },
-  { key: 'paid', label: 'পেইড', icon: CheckCircle2 },
-  { key: 'unpaid', label: 'আনপেইড', icon: XCircle },
-  { key: 'verifying', label: 'ভেরিফাই হচ্ছে', icon: HourglassIcon },
-  { key: 'wrong_info', label: 'ভুল তথ্য', icon: ShieldAlert },
-  { key: 'cancelled', label: 'বাতিল', icon: Ban },
-];
+function getFilterTabs(t: (key: any) => string): { key: 'all' | PaymentStatus; label: string; icon: typeof Receipt }[] {
+  return [
+    { key: 'all', label: t('payment.all'), icon: ArrowUpDown },
+    { key: 'paid', label: t('status.paid'), icon: CheckCircle2 },
+    { key: 'unpaid', label: t('status.unpaid'), icon: XCircle },
+    { key: 'verifying', label: t('status.verifying'), icon: HourglassIcon },
+    { key: 'wrong_info', label: t('status.wrongInfo'), icon: ShieldAlert },
+    { key: 'cancelled', label: t('status.cancelled'), icon: Ban },
+  ];
+}
 
 /* ═══════════════════════════════════════════
    Skeleton
@@ -349,6 +353,7 @@ export function UserPaymentView() {
   const user = useAppStore((s) => s.user);
   const { setDashboardPanel } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useT();
 
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -399,6 +404,8 @@ export function UserPaymentView() {
 
   if (!mounted || !user) return null;
 
+  const FILTER_TABS = getFilterTabs(t);
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* ── Page Header Banner ── */}
@@ -413,10 +420,10 @@ export function UserPaymentView() {
         </div>
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-            লেনদেন
+            {t('payment.title')}
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground truncate">
-            ডিল পেমেন্ট ট্রানজেকশনের সম্পূর্ণ তালিকা
+            {t('payment.subtitle')}
           </p>
         </div>
       </motion.div>
@@ -427,7 +434,7 @@ export function UserPaymentView() {
           {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
         </div>
       ) : deals.length > 0 ? (
-        <StatCards deals={deals} />
+        <StatCards deals={deals} t={t} />
       ) : null}
 
       {/* ── Search & Filter ── */}
@@ -441,7 +448,7 @@ export function UserPaymentView() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="ডিল, ট্রানজেকশন আইডি দিয়ে খুঁজুন..."
+            placeholder={t('payment.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-10 rounded-xl"
@@ -484,9 +491,9 @@ export function UserPaymentView() {
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/60 mb-3">
             <Inbox className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-foreground">কোনো লেনদেন পাওয়া যায়নি</p>
+          <p className="text-sm font-medium text-foreground">{t('payment.noTxnFound')}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {search ? 'অন্য কিছু দিয়ে খুঁজুন' : 'আপনার এখনো কোনো ডিল নেই'}
+            {search ? t('payment.tryOther') : t('payment.noDealsYet')}
           </p>
         </GlassCard>
       ) : (
@@ -499,9 +506,9 @@ export function UserPaymentView() {
           <div className="hidden md:block">
             <GlassCard className="!p-0 overflow-hidden">
               <div className="p-5 pb-3 text-center lg:text-left">
-                <h3 className="text-base font-semibold text-foreground">ট্রানজেকশন তালিকা</h3>
+                <h3 className="text-base font-semibold text-foreground">{t('payment.txnList')}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {filtered.length.toLocaleString('en')}টি লেনদেন পাওয়া গেছে
+                  {t('payment.txnCount', { count: filtered.length.toLocaleString('en') })}
                 </p>
               </div>
 
@@ -509,17 +516,17 @@ export function UserPaymentView() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-t border-b border-border/50 bg-muted/30">
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">তারিখ</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল</th>
-                      <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">পরিমাণ</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">মেথড</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('payment.date')}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('payment.deal')}</th>
+                      <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('dashboard.amount')}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('payment.method')}</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Txn ID</th>
-                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('dashboard.status')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((deal) => (
-                      <TxnRow key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} />
+                      <TxnRow key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} t={t} />
                     ))}
                   </tbody>
                 </table>
@@ -530,7 +537,7 @@ export function UserPaymentView() {
           {/* Mobile Cards */}
           <div className="md:hidden space-y-3">
             {filtered.map((deal) => (
-              <TxnCard key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} />
+              <TxnCard key={deal.id} deal={deal} user={user} onClick={() => handleDealClick(deal)} t={t} />
             ))}
           </div>
         </motion.div>

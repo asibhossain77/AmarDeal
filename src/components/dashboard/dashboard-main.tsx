@@ -21,6 +21,7 @@ import { MyDealsPanel } from './my-deals-panel';
 import { ProfilePanel } from './profile-panel';
 import { SettingsPanel } from './settings-panel';
 import { BackButton } from '@/components/shared/back-button';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
@@ -50,57 +51,57 @@ interface RecentDeal {
    Helpers
    ═══════════════════════════════════════════ */
 
-/** Map DB status → Bengali display label for the overview table */
-function getDisplayStatus(status: string): string {
+/** Map DB status → display label for the overview table */
+function getDisplayStatus(status: string, t: (key: any) => string): string {
   switch (status) {
     case 'payment_verified':
     case 'verified':
     case 'in_delivery':
     case 'delivery':
-      return 'টাকা জমা';
+      return t('status.deposited');
     case 'created':
     case 'payment_pending':
-      return 'চলমান';
+      return t('status.active');
     case 'completed':
-      return 'সম্পন্ন';
+      return t('status.completed');
     case 'cancelled':
     case 'rejected':
-      return 'বাতিল';
+      return t('status.cancelled');
     case 'disputed':
-      return 'বিরোধ';
+      return t('status.disputed');
     default:
       return status;
   }
 }
 
-function statusBadge(status: string) {
-  const display = getDisplayStatus(status);
+function statusBadge(status: string, t: (key: any) => string) {
+  const display = getDisplayStatus(status, t);
   switch (display) {
-    case 'টাকা জমা':
+    case t('status.deposited'):
       return (
         <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
           {display}
         </Badge>
       );
-    case 'চলমান':
+    case t('status.active'):
       return (
         <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">
           {display}
         </Badge>
       );
-    case 'সম্পন্ন':
+    case t('status.completed'):
       return (
         <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">
           {display}
         </Badge>
       );
-    case 'বাতিল':
+    case t('status.cancelled'):
       return (
         <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">
           {display}
         </Badge>
       );
-    case 'বিরোধ':
+    case t('status.disputed'):
       return (
         <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">
           {display}
@@ -111,7 +112,7 @@ function statusBadge(status: string) {
   }
 }
 
-/** Format number as Bengali numerals with ৳ prefix */
+/** Format number with ৳ prefix */
 function formatTaka(amount: number): string {
   return '৳' + Math.round(amount).toLocaleString('en');
 }
@@ -195,6 +196,7 @@ function OverviewPanel() {
   const user = useAppStore((s) => s.user);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
   const userId = user?.id;
+  const t = useT();
 
   /* ── Queries ── */
   const { data: stats, isLoading: statsLoading } = useQuery<UserStats>({
@@ -229,28 +231,28 @@ function OverviewPanel() {
   const statCards = stats
     ? [
         {
-          label: 'চলতি ডিল',
+          label: t('dashboard.activeDeals'),
           value: stats.activeDeals.toLocaleString('en'),
           icon: Handshake,
           color: 'text-primary',
           bg: 'bg-primary/10',
         },
         {
-          label: 'সফল ডিল',
+          label: t('dashboard.successfulDeals'),
           value: stats.completedDeals.toLocaleString('en'),
           icon: TrendingUp,
           color: 'text-emerald-500 dark:text-emerald-400',
           bg: 'bg-emerald-500/10',
         },
         {
-          label: 'মোট লেনদেন (৳)',
+          label: t('dashboard.totalTransactions'),
           value: stats.totalTransactionAmount.toLocaleString('en'),
           icon: Wallet,
           color: 'text-amber-500 dark:text-amber-400',
           bg: 'bg-amber-500/10',
         },
         {
-          label: 'মোট ডিল',
+          label: t('dashboard.totalDeals'),
           value: stats.totalDeals.toLocaleString('en'),
           icon: ClipboardList,
           color: 'text-blue-500 dark:text-blue-400',
@@ -266,16 +268,16 @@ function OverviewPanel() {
         <button
           onClick={() => setDashboardPanel('profile')}
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
-          aria-label="প্রোফাইল"
+          aria-label={t('dashboard.profile')}
         >
-          {user?.name?.charAt(0) || 'ই'}
+          {user?.name?.charAt(0) || 'U'}
         </button>
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-            স্বাগতম, <span className="text-primary">{user?.name?.split(' ')[0] || 'ইউজার'}</span> 👋
+            {t('dashboard.welcome')}, <span className="text-primary">{user?.name?.split(' ')[0] || t('dashboard.user')}</span> 👋
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground truncate">
-            আজকের ডিল ও লেনদেনের সারসংক্ষেপ
+            {t('dashboard.todaySummary')}
           </p>
         </div>
       </div>
@@ -331,7 +333,7 @@ function OverviewPanel() {
             <div className="w-full">
               <h3 className="mb-4 text-base font-semibold text-foreground flex items-center justify-center gap-2">
                 <ArrowUpRight className="h-4 w-4 text-primary" />
-                কুইক অ্যাকশন
+                {t('dashboard.quickActions')}
               </h3>
               <div className="w-full space-y-2.5 px-5">
               <Button
@@ -339,7 +341,7 @@ function OverviewPanel() {
                 className="w-full h-12 rounded-lg text-base font-semibold shadow-lg shadow-primary/25 dark:glow-lime gap-2.5"
               >
                 <Plus className="h-5 w-5" />
-                নতুন ডিল তৈরি করুন
+                {t('dashboard.newDeal')}
               </Button>
               <Button
                 onClick={() => setDashboardPanel('my-deals')}
@@ -347,7 +349,7 @@ function OverviewPanel() {
                 className="w-full h-12 rounded-lg text-base font-semibold gap-2.5"
               >
                 <ClipboardList className="h-5 w-5" />
-                আমার ডিল
+                {t('dashboard.myDealsBtn')}
               </Button>
               </div>
             </div>
@@ -358,7 +360,7 @@ function OverviewPanel() {
             {/* Balance Summary */}
             <div className="w-full">
               <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                অ্যাকাউন্ট সারসংক্ষেপ
+                {t('dashboard.accountSummary')}
               </h3>
               {statsLoading ? (
                 <div className="space-y-3">
@@ -370,7 +372,7 @@ function OverviewPanel() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      উপলব্ধ ব্যালেন্স
+                      {t('dashboard.availableBalance')}
                     </span>
                     <span className="text-base font-bold text-foreground">
                       {formatTaka(stats.availableBalance)}
@@ -378,7 +380,7 @@ function OverviewPanel() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
-                      হোল্ড থাকা টাকা
+                      {t('dashboard.heldAmount')}
                     </span>
                     <span className="text-base font-bold text-amber-500 dark:text-amber-400">
                       {formatTaka(stats.heldAmount)}
@@ -387,7 +389,7 @@ function OverviewPanel() {
                   <div className="border-t border-border/40 pt-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-foreground">
-                        মোট ব্যালেন্স
+                        {t('dashboard.totalBalance')}
                       </span>
                       <span className="text-base font-bold text-foreground">
                         {formatTaka(stats.totalBalance)}
@@ -413,10 +415,10 @@ function OverviewPanel() {
             <GlassCard className="!p-0 overflow-hidden">
               <div className="p-5 pb-3 text-center lg:text-left">
                 <h3 className="text-base font-semibold text-foreground">
-                  সাম্প্রতিক ডিলসমূহ
+                  {t('dashboard.recentDeals')}
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  সাম্প্রতিক সকল ডিলের তালিকা
+                  {t('dashboard.recentDealsDesc')}
                 </p>
               </div>
 
@@ -426,16 +428,16 @@ function OverviewPanel() {
                   <thead>
                     <tr className="border-t border-b border-border/50 bg-muted/30">
                       <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                        ডিল আইডি
+                        {t('dashboard.dealId')}
                       </th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                        শিরোনাম
+                        {t('dashboard.title')}
                       </th>
                       <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                        পরিমাণ
+                        {t('dashboard.amount')}
                       </th>
                       <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                        অবস্থা
+                        {t('dashboard.status')}
                       </th>
                     </tr>
                   </thead>
@@ -455,7 +457,7 @@ function OverviewPanel() {
                           {formatTaka(deal.amount)}
                         </td>
                         <td className="px-5 py-3.5 text-center whitespace-nowrap">
-                          {statusBadge(deal.status)}
+                          {statusBadge(deal.status, t)}
                         </td>
                       </tr>
                     ))}
@@ -467,10 +469,10 @@ function OverviewPanel() {
             <GlassCard className="flex flex-col items-center justify-center py-12 text-center">
               <Handshake className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-medium text-muted-foreground">
-                কোনো ডিল নেই
+                {t('dashboard.noDeals')}
               </p>
               <p className="mt-1 text-xs text-muted-foreground/70">
-                নতুন ডিল তৈরি করে শুরু করুন
+                {t('dashboard.startNewDeal')}
               </p>
             </GlassCard>
           )}

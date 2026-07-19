@@ -67,11 +67,13 @@ import {
   FileText,
   TrendingUp,
 } from 'lucide-react';
+import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
 /* ─── Admin Chat Message Styles ─── */
 function adminChatBubble(msg: AdminChatMsg) {
+  const t = useT();
   const isAdmin = msg.role === 'admin';
   const isSystem = msg.role === 'system';
   const isBuyer = msg.role === 'buyer';
@@ -95,7 +97,7 @@ function adminChatBubble(msg: AdminChatMsg) {
     ? 'text-[10px] font-bold text-sky-600 dark:text-sky-400'
     : 'text-[10px] font-bold text-emerald-600 dark:text-emerald-400';
 
-  const label = isSystem ? 'সিস্টেম' : isAdmin ? `${msg.senderName} (অ্যাডমিন)` : msg.senderName || 'অজানা';
+  const label = isSystem ? 'System' : isAdmin ? `${msg.senderName} (Admin)` : msg.senderName || 'Unknown';
   const showLabel = isSystem || isAdmin || isBuyer || isSeller;
 
   return (
@@ -186,49 +188,50 @@ function SolidCard({
 
 /* ─── Status Badge Helper ─── */
 function StatusBadge({ status }: { status: string }) {
+  const t = useT();
   const config: Record<string, { label: string; classes: string }> = {
     created: {
-      label: 'তৈরি',
+      label: t('status.created'),
       classes:
         'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
     },
     pending: {
-      label: 'পেন্ডিং',
+      label: t('status.pending'),
       classes:
         'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
     },
     payment_pending: {
-      label: 'পেমেন্ট পেন্ডিং',
+      label: t('status.paymentPending'),
       classes:
         'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
     },
     payment_verified: {
-      label: 'ভেরিফাইড',
+      label: t('status.verified'),
       classes:
         'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
     },
     in_delivery: {
-      label: 'ডেলিভারি',
+      label: t('status.inDelivery'),
       classes:
         'bg-primary/15 text-primary dark:bg-primary/20',
     },
     delivery_confirmed: {
-      label: 'ডেলিভারি কনফার্মড',
+      label: t('status.inDelivery'),
       classes:
         'bg-primary/15 text-primary dark:bg-primary/20',
     },
     completed: {
-      label: 'সম্পন্ন',
+      label: t('status.completed'),
       classes:
         'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
     },
     rejected: {
-      label: 'রিজেক্টেড',
+      label: t('status.rejected'),
       classes:
         'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
     },
     cancelled: {
-      label: 'বাতিল',
+      label: t('status.cancelled'),
       classes:
         'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
     },
@@ -246,14 +249,15 @@ function StatusBadge({ status }: { status: string }) {
 
 /* ─── Role Badge Helper ─── */
 function RoleBadge({ isAdmin, adminRole, adminPermissions }: { isAdmin: boolean; adminRole: string | null; adminPermissions?: string[] }) {
+  const t = useT();
   if (isAdmin) {
-    let label = 'সাপোর্ট';
+    let label = 'Support';
     let colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0';
     if (adminRole === 'super_admin') {
-      label = 'সুপার অ্যাডমিন';
+      label = t('profile.roleSuperAdmin');
       colorClass = 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0';
     } else if (adminRole === 'staff') {
-      label = 'স্টাফ';
+      label = 'Staff';
       colorClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0';
       const count = (adminPermissions || []).length;
       if (count > 0) label += ` (${count})`;
@@ -296,6 +300,7 @@ function LoadingSpinner() {
    ═══════════════════════════════════════════ */
 
 function DashboardStatsPanel() {
+  const t = useT();
   const user = useAppStore((s) => s.user);
   const setAdminPanel = useAppStore((s) => s.setAdminPanel);
   const { data: stats, isLoading } = useQuery<AdminStats>({
@@ -322,7 +327,7 @@ function DashboardStatsPanel() {
   const allCards = stats
     ? [
         {
-          label: 'মোট ইউজার',
+          label: t('adminNav.userManagement'),
           value: stats.totalUsers.toLocaleString('en'),
           icon: Users,
           color: 'text-violet-500 dark:text-violet-400',
@@ -330,7 +335,7 @@ function DashboardStatsPanel() {
           target: 'users' as const,
         },
         {
-          label: 'মোট ডিল',
+          label: t('adminNav.allDeals'),
           value: stats.totalDeals.toLocaleString('en'),
           icon: Handshake,
           color: 'text-primary',
@@ -338,7 +343,7 @@ function DashboardStatsPanel() {
           target: 'all-deals' as const,
         },
         {
-          label: 'পেন্ডিং ভেরিফিকেশন',
+          label: t('status.pendingVerification'),
           value: stats.pendingVerification.toLocaleString('en'),
           icon: ShieldCheck,
           color: 'text-amber-500 dark:text-amber-400',
@@ -346,7 +351,7 @@ function DashboardStatsPanel() {
           target: 'payment-verify' as const,
         },
         {
-          label: 'পেন্ডিং পেআউট',
+          label: t('adminNav.payoutManagement'),
           value: stats.pendingPayouts.toLocaleString('en'),
           icon: Banknote,
           color: 'text-orange-500 dark:text-orange-400',
@@ -354,7 +359,7 @@ function DashboardStatsPanel() {
           target: 'payouts' as const,
         },
         {
-          label: 'অ্যাডমিন কল',
+          label: t('adminNav.liveChat'),
           value: stats.adminCalls.toLocaleString('en'),
           icon: Headphones,
           color: 'text-red-500 dark:text-red-400',
@@ -362,7 +367,7 @@ function DashboardStatsPanel() {
           target: 'admin-calls' as const,
         },
         {
-          label: 'বিরোধ',
+          label: t('adminNav.disputeManagement'),
           value: stats.disputedCount.toLocaleString('en'),
           icon: AlertTriangle,
           color: 'text-rose-500 dark:text-rose-400',
@@ -370,7 +375,7 @@ function DashboardStatsPanel() {
           target: 'disputes' as const,
         },
         {
-          label: 'মোট লেনদেন (৳)',
+          label: 'Total Transactions (৳)',
           value: stats.completedAmount.toLocaleString('en'),
           icon: Wallet,
           color: 'text-emerald-500 dark:text-emerald-400',
@@ -378,7 +383,7 @@ function DashboardStatsPanel() {
           target: 'all-deals' as const,
         },
         {
-          label: 'মোট প্রফিট (৳)',
+          label: 'Total Profit (৳)',
           value: stats.totalProfit.toLocaleString('en'),
           icon: TrendingUp,
           color: 'text-teal-500 dark:text-teal-400',
@@ -442,6 +447,7 @@ function DashboardStatsPanel() {
    ═══════════════════════════════════════════ */
 
 function PaymentVerifyPanel() {
+  const t = useT();
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -489,16 +495,16 @@ function PaymentVerifyPanel() {
         body: JSON.stringify({ dealId }),
       });
       if (res.ok) {
-        toast.success('পেমেন্ট সফলভাবে ভেরিফাই হয়েছে!');
+        toast.success(t('common.success'));
         setConfirmDialog(null);
         setSelectedDeal(null);
         fetchDeals();
       } else {
-        toast.error('ভেরিফিকেশন ব্যর্থ হয়েছে');
+        toast.error(t('common.failed'));
         setConfirmDialog(null);
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
       setConfirmDialog(null);
     } finally {
       setActionLoading(null);
@@ -516,13 +522,13 @@ function PaymentVerifyPanel() {
         body: JSON.stringify({ dealId, reason: 'wrong_info' }),
       });
       if (res.ok) {
-        toast.success('ভুল তথ্য হিসেবে চিহ্নিত করা হয়েছে। ক্রেতা আবার পেমেন্ট করতে পারবে।');
+        toast.success(t('status.wrongInfo'));
         setConfirmDialog(null);
         setSelectedDeal(null);
         fetchDeals();
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'ব্যর্থ হয়েছে');
+        toast.error(data.error || t('common.failed'));
         setConfirmDialog(null);
       }
     } catch {
@@ -544,13 +550,13 @@ function PaymentVerifyPanel() {
         body: JSON.stringify({ dealId, reason: 'cancel' }),
       });
       if (res.ok) {
-        toast.success('ডিল বাতিল করা হয়েছে');
+        toast.success(t('status.cancelled'));
         setConfirmDialog(null);
         setSelectedDeal(null);
         fetchDeals();
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'বাতিল করতে সমস্যা হয়েছে');
+        toast.error(data.error || t('common.failed'));
         setConfirmDialog(null);
       }
     } catch {
@@ -565,7 +571,7 @@ function PaymentVerifyPanel() {
     if (!selectedDeal) return;
     const num = Number(editedAmount);
     if (!num || num <= 0) {
-      toast.error('সঠিক পরিমাণ দিন');
+      toast.error('Enter a valid amount');
       return;
     }
     setIsUpdatingAmount(true);
@@ -577,7 +583,7 @@ function PaymentVerifyPanel() {
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success('পেমেন্টের পরিমাণ আপডেট হয়েছে');
+        toast.success(t('common.success'));
         // Update selectedDeal with new data
         setSelectedDeal({ ...selectedDeal, paymentAmount: data.deal.paymentAmount });
         // Also update in deals list
@@ -586,7 +592,7 @@ function PaymentVerifyPanel() {
         );
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
@@ -603,7 +609,7 @@ function PaymentVerifyPanel() {
   if (selectedDeal) {
     const deal = selectedDeal;
     const shortId = deal.id.length > 10 ? 'DL-' + deal.id.slice(-5) : deal.id;
-    const userName = deal.creator?.name || deal.buyer?.name || 'ইউজার';
+    const userName = deal.creator?.name || deal.buyer?.name || t('nav.user');
     const isActing = actionLoading === deal.id;
     const dealTime = new Date(deal.createdAt).toLocaleString('en', {
       year: 'numeric',
@@ -632,7 +638,7 @@ function PaymentVerifyPanel() {
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs text-muted-foreground">{shortId}</span>
               <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-xs font-medium">
-                পেন্ডিং
+                {t('status.pending')}
               </Badge>
             </div>
             <p className="text-base font-bold text-foreground">{userName}</p>
@@ -662,10 +668,10 @@ function PaymentVerifyPanel() {
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">পেমেন্ট মেথড</p>
+                  <p className="text-xs text-muted-foreground">{t('adminNav.paymentMethods')}</p>
                   <p className="text-sm font-semibold text-foreground">
                     {deal.paymentMethod.name}
-                    <span className="text-muted-foreground font-normal"> ({deal.paymentMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'})</span>
+                    <span className="text-muted-foreground font-normal"> ({deal.paymentMethod.accountType === 'merchant' ? 'Merchant' : 'Personal'})</span>
                   </p>
                 </div>
               </div>
@@ -675,10 +681,10 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">সেন্ডার একাউন্ট নম্বর</span>
+                <span className="text-xs font-medium text-muted-foreground">Sender Account</span>
               </div>
               <p className="text-lg font-bold font-mono text-foreground tracking-wide break-all">
-                {deal.senderNumber || 'দেওয়া হয়নি'}
+                {deal.senderNumber || 'N/A'}
               </p>
             </div>
 
@@ -686,7 +692,7 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">ট্রানজেকশন আইডি</span>
+                <span className="text-xs font-medium text-muted-foreground">Transaction ID</span>
               </div>
               <p className="text-base font-bold font-mono text-foreground tracking-wide break-all">
                 {deal.transactionId || 'দেওয়া হয়নি'}
@@ -697,7 +703,7 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-2">
                 <Pencil className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-medium text-muted-foreground">পেমেন্টের পরিমাণ <span className="text-primary">(সম্পাদনযোগ্য)</span></span>
+                <span className="text-xs font-medium text-muted-foreground">Payment Amount <span className="text-primary">(Editable)</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -728,10 +734,10 @@ function PaymentVerifyPanel() {
               {/* Deal amount for comparison */}
               {deal.amount && Number(editedAmount) !== deal.amount && (
                 <div className="mt-2 flex items-center gap-1.5 text-xs">
-                  <span className="text-muted-foreground">ডিলের পরিমাণ:</span>
+                  <span className="text-muted-foreground">Deal Amount:</span>
                   <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                   <span className="ml-auto rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                    পার্থক্য আছে
+                    Differs
                   </span>
                 </div>
               )}
@@ -741,7 +747,7 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">পেমেন্টের সময়</span>
+                <span className="text-xs font-medium text-muted-foreground">Payment Time</span>
               </div>
               <p className="text-sm font-semibold text-foreground">{dealTime}</p>
             </div>
@@ -760,7 +766,7 @@ function PaymentVerifyPanel() {
                 ) : (
                   <ShieldCheck className="h-5 w-5" />
                 )}
-                পেমেন্ট ভেরিফাই করুন
+                Verify Payment
               </Button>
 
               {/* Row 2: Wrong Info + Cancel */}
@@ -773,7 +779,7 @@ function PaymentVerifyPanel() {
                   className="h-12 gap-2 rounded-xl text-sm font-semibold border-amber-200 text-amber-600 hover:bg-amber-50 dark:border-amber-800/50 dark:text-amber-400 dark:hover:bg-amber-500/10"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  ভুল তথ্য
+                  Wrong Info
                 </Button>
 
                 <Button
@@ -784,7 +790,7 @@ function PaymentVerifyPanel() {
                   className="h-12 gap-2 rounded-xl text-sm font-semibold border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
                   <ShieldX className="h-4 w-4" />
-                  ডিল বাতিল
+                  Cancel Deal
                 </Button>
               </div>
             </div>
@@ -795,40 +801,40 @@ function PaymentVerifyPanel() {
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-primary" />
-                    পেমেন্ট ভেরিফাই করবেন?
+                    Verify Payment?
                   </AlertDialogTitle>
                   <AlertDialogDescription className="space-y-3">
-                    <span>আপনি কি নিশ্চিত যে এই পেমেন্টটি যাচাই করতে চান?</span>
+                    <span>Are you sure you want to verify this payment?</span>
                     <span className="block rounded-xl border border-border/50 bg-muted/30 p-3 space-y-1.5">
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">ইউজার</span>
+                        <span className="text-muted-foreground">{t('nav.user')}</span>
                         <span className="font-semibold text-foreground">{userName}</span>
                       </span>
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">ডিলের পরিমাণ</span>
+                        <span className="text-muted-foreground">Deal Amount</span>
                         <span className="font-semibold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">পেমেন্টের পরিমাণ</span>
+                        <span className="text-muted-foreground">Payment Amount</span>
                         <span className="font-bold text-foreground">৳{Number(editedAmount).toLocaleString('en')}</span>
                       </span>
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">ডিল আইডি</span>
+                        <span className="text-muted-foreground">Deal ID</span>
                         <span className="font-mono text-xs text-muted-foreground">{shortId}</span>
                       </span>
                     </span>
-                    <span className="text-xs text-amber-600 dark:text-amber-400">⚠️ একবার ভেরিফাই করলে এটি আর পরিবর্তন করা যাবে না।</span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400">⚠️ Once verified, this cannot be changed.</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isActing}>না</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isActing}>{t('common.cancel')}</AlertDialogCancel>
                   <Button
                     onClick={handleVerify}
                     disabled={isActing}
                     className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
                   >
                     {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                    হ্যাঁ, ভেরিফাই করুন
+                    Yes, Verify
                   </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -840,21 +846,21 @@ function PaymentVerifyPanel() {
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-amber-500" />
-                    ভুল তথ্য চিহ্নিত করবেন?
+                    Mark as Wrong Info?
                   </AlertDialogTitle>
                   <AlertDialogDescription className="space-y-3">
-                    <span>পেমেন্ট তথ্য ভুল হলে ডিলটি <strong className="text-amber-600 dark:text-amber-400">পুনরায় তৈরি</strong> হবে এবং ক্রেতা আবার পেমেন্ট জমা দিতে পারবে।</span>
+                    <span>If payment info is wrong, the deal will be <strong className="text-amber-600 dark:text-amber-400">recreated</strong> and the buyer can submit payment again.</span>
                     <span className="block rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-500/5 p-3 space-y-1.5">
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">ইউজার</span>
                         <span className="font-semibold text-foreground">{userName}</span>
                       </span>
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">পরিমাণ</span>
+                        <span className="text-muted-foreground">Amount</span>
                         <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                     </span>
-                    <span className="text-xs text-muted-foreground">📌 পেমেন্ট তথ্য মুছে যাবে কিন্তু ডিল বাতিল হবে না।</span>
+                    <span className="text-xs text-muted-foreground">📌 Payment info will be removed but the deal won't be cancelled.</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -865,7 +871,7 @@ function PaymentVerifyPanel() {
                     className="gap-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
                   >
                     {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
-                    হ্যাঁ, ভুল তথ্য
+                    Yes, Wrong Info
                   </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -877,10 +883,10 @@ function PaymentVerifyPanel() {
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
                     <ShieldX className="h-5 w-5 text-red-500" />
-                    ডিল বাতিল করবেন?
+                    Cancel Deal?
                   </AlertDialogTitle>
                   <AlertDialogDescription className="space-y-3">
-                    <span>ডিলটি সম্পূর্ণ <strong className="text-red-600 dark:text-red-400">বাতিল</strong> হয়ে যাবে। এটি আর পুনরুদ্ধার করা যাবে না।</span>
+                    <span>The deal will be permanently <strong className="text-red-600 dark:text-red-400">cancelled</strong>. This cannot be undone.</span>
                     <span className="block rounded-xl border border-red-200/50 bg-red-50/50 dark:bg-red-500/5 p-3 space-y-1.5">
                       <span className="flex justify-between text-sm">
                         <span className="text-muted-foreground">ইউজার</span>
@@ -891,7 +897,7 @@ function PaymentVerifyPanel() {
                         <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                     </span>
-                    <span className="text-xs text-red-600 dark:text-red-400">⚠️ এই কাজ পূর্বাবস্থায় ফেরানো যাবে না।</span>
+                    <span className="text-xs text-red-600 dark:text-red-400">⚠️ This action cannot be undone.</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -902,7 +908,7 @@ function PaymentVerifyPanel() {
                     className="gap-2 bg-red-500 hover:bg-red-600 text-white rounded-xl"
                   >
                     {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldX className="h-4 w-4" />}
-                    হ্যাঁ, বাতিল করুন
+                    Yes, Cancel
                   </Button>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -921,14 +927,14 @@ function PaymentVerifyPanel() {
         <div className="text-center sm:text-left">
           <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            পেমেন্ট ভেরিফিকেশন
+            Payment Verification
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            ভেরিফিকেশনের অপেক্ষমান ডিলসমূহ পর্যালোচনা করুন
+            Review deals pending verification
           </p>
         </div>
         <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-xs font-medium">
-          {pendingDeals.length} পেন্ডিং
+          {pendingDeals.length} {t('status.pending')}
         </Badge>
       </div>
 
@@ -942,10 +948,10 @@ function PaymentVerifyPanel() {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
             <p className="text-sm font-semibold text-foreground">
-              সব পেমেন্ট ভেরিফাই হয়েছে
+              All payments verified
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              বর্তমানে কোনো পেন্ডিং ডিল নেই
+              No pending deals
             </p>
           </div>
         ) : (
@@ -953,16 +959,16 @@ function PaymentVerifyPanel() {
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                  ডিল আইডি
+                  Deal ID
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                  ইউজার নেম
+                  User
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                  পরিমাণ (৳)
+                  Amount (৳)
                 </th>
                 <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                  পেমেন্ট স্ট্যাটাস
+                  Status
                 </th>
               </tr>
             </thead>
@@ -992,7 +998,7 @@ function PaymentVerifyPanel() {
                     </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
-                        পেন্ডিং
+                        {t('status.pending')}
                       </Badge>
                     </td>
                   </tr>
@@ -1028,7 +1034,7 @@ function PaymentVerifyPanel() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-xs text-muted-foreground">{shortId}</span>
-                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-[10px]">পেন্ডিং</Badge>
+                      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-[10px]">{t('status.pending')}</Badge>
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
                   </div>
@@ -1054,22 +1060,23 @@ const dealFilterTabs: {
   label: string;
   statuses: string[];
 }[] = [
-  { key: 'all', label: 'সকল', statuses: [] },
+  { key: 'all', label: 'All', statuses: [] },
   {
     key: 'pending',
-    label: 'পেন্ডিং',
+    label: t('status.pending'),
     statuses: ['created', 'pending', 'payment_pending'],
   },
-  { key: 'verified', label: 'ভেরিফাইড', statuses: ['payment_verified'] },
+  { key: 'verified', label: t('status.verified'), statuses: ['payment_verified'] },
   {
     key: 'delivery',
-    label: 'ডেলিভারি',
+    label: t('status.inDelivery'),
     statuses: ['in_delivery', 'delivery_confirmed'],
   },
-  { key: 'completed', label: 'সম্পন্ন', statuses: ['completed', 'rejected', 'cancelled'] },
+  { key: 'completed', label: t('status.completed'), statuses: ['completed', 'rejected', 'cancelled'] },
 ];
 
 function AllDealsPanel() {
+  const t = useT();
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<DealFilter>('all');
@@ -1192,7 +1199,7 @@ function AllDealsPanel() {
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <MessageCircle className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">কোনো মেসেজ নেই</p>
+                <p className="text-sm text-muted-foreground">No messages</p>
               </div>
             )}
             {messages.map((msg) => adminChatBubble(msg))}
@@ -1205,7 +1212,7 @@ function AllDealsPanel() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder="মেসেজ লিখুন..."
+                placeholder="Write a message..."
                 className="flex-1 h-10 rounded-xl text-sm"
               />
               <Button
@@ -1215,7 +1222,7 @@ function AllDealsPanel() {
                 className="h-10 rounded-xl px-4 gap-2"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
-                <span className="hidden sm:inline">পাঠান</span>
+                <span className="hidden sm:inline">Send</span>
               </Button>
             </div>
           </div>
@@ -1230,10 +1237,10 @@ function AllDealsPanel() {
       <div className="mb-5">
         <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
           <Handshake className="h-5 w-5 text-primary" />
-          সকল ডিল
+          All Deals
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
-          প্ল্যাটফর্মের সকল ডিলের সম্পূর্ণ তালিকা
+          Complete list of all platform deals
         </p>
       </div>
 
@@ -1260,7 +1267,7 @@ function AllDealsPanel() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ডিল আইডি বা শিরোনাম দিয়ে খুঁজুন..."
+            placeholder="Search by deal ID or title..."
             className="w-full sm:w-48 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -1273,8 +1280,8 @@ function AllDealsPanel() {
         ) : filteredDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
-            <p className="text-sm font-semibold text-foreground">কোনো ডিল পাওয়া যায়নি</p>
-            <p className="mt-1 text-xs text-muted-foreground">এই ফিল্টারে কোনো ডিল নেই</p>
+            <p className="text-sm font-semibold text-foreground">No deals found</p>
+            <p className="mt-1 text-xs text-muted-foreground">No deals in this filter</p>
           </div>
         ) : (
           <div className="max-h-[500px] overflow-y-auto">
@@ -1282,19 +1289,19 @@ function AllDealsPanel() {
               <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল আইডি</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ক্রেতা</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">বিক্রেতা</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">শিরোনাম</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">পরিমাণ</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">অ্যাকশন</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Buyer</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Seller</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Title</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">Amount</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Status</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDeals.map((deal) => {
                   const shortId = deal.id.length > 10 ? 'DL-' + deal.id.slice(-5) : deal.id;
                   const buyerName = deal.buyer?.name || '—';
-                  const sellerName = deal.seller?.name || 'অনির্ধারিত';
+                  const sellerName = deal.seller?.name || 'N/A';
                   return (
                     <tr key={deal.id} className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0">
                       <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">{shortId}</td>
@@ -1345,8 +1352,8 @@ function AllDealsPanel() {
                   <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      <p>ক্রেতা: <span className="text-foreground font-medium">{buyerName}</span></p>
-                      <p>বিক্রেতা: <span className="text-foreground font-medium">{sellerName}</span></p>
+                      <p>Buyer: <span className="text-foreground font-medium">{buyerName}</span></p>
+                      <p>Seller: <span className="text-foreground font-medium">{sellerName}</span></p>
                     </div>
                     <span className="text-base font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                   </div>
@@ -1355,7 +1362,7 @@ function AllDealsPanel() {
                     className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-3 py-2 text-xs font-semibold transition-colors mt-1"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
-                    চ্যাট করুন
+                    Chat
                   </button>
                 </div>
               </SolidCard>
@@ -1369,19 +1376,19 @@ function AllDealsPanel() {
 
 /* ─── Staff Permission Options ─── */
 const STAFF_PERMISSION_OPTIONS = [
-  { value: 'payment-verify', label: 'পেমেন্ট ভেরিফিকেশন', desc: 'পেমেন্ট ভেরিফাই ও অনুমোদন' },
-  { value: 'payouts', label: 'পেআউট ম্যানেজমেন্ট', desc: 'পেআউট অনুমোদন ও প্রসেসিং' },
-  { value: 'admin-calls', label: 'লাইভ চ্যাট', desc: 'ইউজারদের সাথে লাইভ চ্যাট ও কল' },
-  { value: 'disputes', label: 'বিরোধ ম্যানেজমেন্ট', desc: 'ডিসপিউট হ্যান্ডেলিং' },
-  { value: 'payment-methods', label: 'পেমেন্ট মেথড', desc: 'পেমেন্ট মেথড যোগ/সম্পাদনা' },
-  { value: 'fee-rules', label: 'ফি কাঠামো', desc: 'ফি নিয়ম পরিবর্তন' },
-  { value: 'all-deals', label: 'সকল ডিল', desc: 'সব ডিল দেখা ও ম্যানেজ করা' },
-  { value: 'users', label: 'ইউজার ম্যানেজমেন্ট', desc: 'ইউজার তালিকা, পাসওয়ার্ড পরিবর্তন' },
-  { value: 'contact-info', label: 'যোগাযোগ', desc: 'যোগাযোগ তথ্য সেটিংস' },
-  { value: 'settings', label: 'ওয়েবসাইট সেটিংস', desc: 'সাইটের সাধারণ সেটিংস' },
-  { value: 'contract', label: 'চুক্তি পেজ', desc: 'চুক্তি টেমপ্লেট সম্পাদনা' },
-  { value: 'blog', label: 'ব্লগ', desc: 'ব্লগ পোস্ট লেখা ও ম্যানেজ' },
-  { value: 'email-settings', label: 'ইমেইল সেটিংস', desc: 'ইমেইল কনফিগারেশন' },
+  { value: 'payment-verify', label: t('adminNav.paymentVerify'), desc: 'Verify and approve payments' },
+  { value: 'payouts', label: t('adminNav.payoutManagement'), desc: 'Approve and process payouts' },
+  { value: 'admin-calls', label: t('adminNav.liveChat'), desc: 'Live chat and calls with users' },
+  { value: 'disputes', label: t('adminNav.disputeManagement'), desc: 'Dispute handling' },
+  { value: 'payment-methods', label: t('adminNav.paymentMethods'), desc: 'Add/edit payment methods' },
+  { value: 'fee-rules', label: t('adminNav.feeRules'), desc: 'Change fee rules' },
+  { value: 'all-deals', label: t('adminNav.allDeals'), desc: 'View and manage all deals' },
+  { value: 'users', label: 'ইউজার ম্যানেজমেন্ট', desc: 'ইউজার তালিকা, Change Password' },
+  { value: 'contact-info', label: t('adminNav.contact'), desc: 'Contact info settings' },
+  { value: 'settings', label: t('adminNav.websiteSettings'), desc: 'General site settings' },
+  { value: 'contract', label: t('adminNav.contract'), desc: 'Edit contract template' },
+  { value: 'blog', label: t('adminNav.blog'), desc: 'Write and manage blog posts' },
+  { value: 'email-settings', label: 'Email সেটিংস', desc: 'ইমেইল কনফিগারেশন' },
 ];
 
 /* ═══════════════════════════════════════════
@@ -1389,6 +1396,7 @@ const STAFF_PERMISSION_OPTIONS = [
    ═══════════════════════════════════════════ */
 
 function UsersPanel() {
+  const t = useT();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1433,7 +1441,7 @@ function UsersPanel() {
       });
       if (res.ok) {
         const data = await res.json();
-        toast.success(data.message || 'সফল');
+        toast.success(data.message || t('common.success'));
         fetchUsers();
         // Update selectedUser if viewing the same user
         if (selectedUser?.id === userId) {
@@ -1446,7 +1454,7 @@ function UsersPanel() {
         }
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'ব্যর্থ হয়েছে');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
@@ -1467,7 +1475,7 @@ function UsersPanel() {
         setUserDeals(data);
       }
     } catch {
-      toast.error('ইউজার ডেটা লোড করতে সমস্যা হয়েছে');
+      toast.error('Failed to load user data');
     } finally {
       setDealsLoading(false);
     }
@@ -1509,7 +1517,7 @@ function UsersPanel() {
                   <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
                   {u.isAdmin ? null : (
                     <Badge className={`${u.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'} border-0 text-xs font-medium`}>
-                      {u.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                      {u.isActive ? t('status.active') : t('status.cancelled')}
                     </Badge>
                   )}
                 </div>
@@ -1532,7 +1540,7 @@ function UsersPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">মোবাইল নম্বর</span>
+                <span className="text-xs font-medium text-muted-foreground">Mobile Number</span>
               </div>
               <p className="text-sm font-semibold text-foreground font-mono">{u.phone}</p>
             </div>
@@ -1541,7 +1549,7 @@ function UsersPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">নিবন্ধনের তারিখ</span>
+                <span className="text-xs font-medium text-muted-foreground">Join Date</span>
               </div>
               <p className="text-sm font-semibold text-foreground">
                 {new Date(u.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -1558,7 +1566,7 @@ function UsersPanel() {
                 <div className="relative flex-1">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="নতুন পাসওয়ার্ড"
+                    placeholder="New password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && newPassword.trim()) handleAction(u.id, 'change_password', newPassword); }}
@@ -1597,7 +1605,7 @@ function UsersPanel() {
                   className="w-full h-12 gap-2 rounded-xl text-sm font-semibold"
                 >
                   <Eye className="h-4 w-4" />
-                  ইউজার প্যানেল দেখুন
+                  View User Panel
                 </Button>
 
                 {/* Deactivate/Activate */}
@@ -1619,7 +1627,7 @@ function UsersPanel() {
                   ) : (
                     <UserCheck className="h-4 w-4" />
                   )}
-                  {u.isActive ? 'ইউজার নিষ্ক্রিয় করুন' : 'ইউজার সক্রিয় করুন'}
+                  {u.isActive ? 'Deactivate User' : 'Activate User'}
                 </Button>
               </>
             )}
@@ -1636,7 +1644,7 @@ function UsersPanel() {
                     className="w-full h-11 gap-2 rounded-xl text-sm font-semibold"
                   >
                     <Settings className="h-4 w-4" />
-                    অ্যাডমিন রোল দিন
+                    Assign Admin Role
                     <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${openDropdown === u.id ? 'rotate-180' : ''}`} />
                   </Button>
                   {openDropdown === u.id && (
@@ -1650,14 +1658,14 @@ function UsersPanel() {
                         disabled={isActing}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
                       >
-                        সাপোর্ট অ্যাডমিন
+                        Support Admin
                       </button>
                       <button
                         onClick={() => handleAction(u.id, 'set_admin', 'super_admin')}
                         disabled={isActing}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
                       >
-                        সুপার অ্যাডমিন
+                        Super Admin
                       </button>
                       <button
                         onClick={() => {
@@ -1666,7 +1674,7 @@ function UsersPanel() {
                         disabled={isActing}
                         className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 disabled:opacity-50"
                       >
-                        স্টাফ
+                        Staff
                       </button>
                     </motion.div>
                   )}
@@ -1688,7 +1696,7 @@ function UsersPanel() {
                   className="w-full h-11 gap-2 rounded-xl text-sm font-semibold border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
                 >
                   <ShieldCheck className="h-4 w-4" />
-                  পারমিশন ম্যানেজ করুন
+                  Manage Permissions
                   {(u.adminPermissions || []).length > 0 && (
                     <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px] ml-auto px-1.5">
                       {(u.adminPermissions || []).length}
@@ -1709,7 +1717,7 @@ function UsersPanel() {
                   className="w-full h-11 gap-2 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
                   <XCircle className="h-4 w-4" />
-                  অ্যাডমিন রোল সরান
+                  Remove Admin Role
                 </Button>
               </div>
             )}
@@ -1723,13 +1731,13 @@ function UsersPanel() {
               <div className="border-b border-border/50 bg-muted/30 px-4 sm:px-5 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-bold text-foreground">{u.name} — ডিল তালিকা</h3>
+                  <h3 className="text-sm font-bold text-foreground">{u.name} — Deals</h3>
                 </div>
                 <button
                   onClick={() => setViewUserDeals(false)}
                   className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  বন্ধ করুন
+                  Close
                 </button>
               </div>
               <div className="max-h-80 overflow-y-auto">
@@ -1740,7 +1748,7 @@ function UsersPanel() {
                 ) : userDeals.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center px-4">
                     <Handshake className="h-8 w-8 text-muted-foreground/50 mb-2" />
-                    <p className="text-sm text-muted-foreground">এই ইউজারের কোনো ডিল নেই</p>
+                    <p className="text-sm text-muted-foreground">This user has no deals</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-border/30">
@@ -1775,10 +1783,10 @@ function UsersPanel() {
       <div className="mb-5">
         <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
           <Users className="h-5 w-5 text-primary" />
-          ইউজার ম্যানেজমেন্ট
+          User Management
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
-          সকল নিবন্ধিত ইউজারের তালিকা ও ব্যবস্থাপনা
+          List and management of all registered users
         </p>
       </div>
 
@@ -1786,7 +1794,7 @@ function UsersPanel() {
       <div className="mb-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="ইমেইল বা মোবাইল নম্বর দিয়ে খুঁজুন..."
+          placeholder="Search by email or mobile..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 h-11 rounded-xl text-sm bg-white dark:bg-zinc-900"
@@ -1801,7 +1809,7 @@ function UsersPanel() {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm font-semibold text-foreground">
-              {searchQuery ? 'কোনো ইউজার পাওয়া যায়নি' : 'কোনো ইউজার নেই'}
+              {searchQuery ? 'No users found' : 'No users'}
             </p>
           </div>
         ) : (
@@ -1809,9 +1817,9 @@ function UsersPanel() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">নাম</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Name</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ইমেইল</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">মোবাইল</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Mobile</th>
                   <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">নিবন্ধনের তারিখ</th>
                 </tr>
@@ -1898,7 +1906,7 @@ function UsersPanel() {
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
                 <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                স্টাফ পারমিশন সেট করুন
+                Set Staff Permissions
               </AlertDialogTitle>
               <AlertDialogDescription>
                 <span className="text-foreground font-semibold">{staffPermDialog.userName}</span> — নিচের প্যানেলগুলোতে অ্যাক্সেস দিন
@@ -1935,7 +1943,7 @@ function UsersPanel() {
             </div>
 
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 px-1">
-              <span>নোট: ড্যাশবোর্ড ও প্রোফাইল সবসময় অ্যাক্সেসযোগ্য</span>
+              <span>Note: Dashboard and Profile are always accessible</span>
               <span className="font-semibold text-foreground">{tempPermissions.length}টি নির্বাচিত</span>
             </div>
 
@@ -1956,7 +1964,7 @@ function UsersPanel() {
                     });
                     if (res.ok) {
                       const data = await res.json();
-                      toast.success(data.message || 'পারমিশন সেট হয়েছে');
+                      toast.success(data.message || 'Permissions set');
                       setStaffPermDialog(null);
                       fetchUsers();
                     } else {
@@ -1973,7 +1981,7 @@ function UsersPanel() {
                 className="gap-2"
               >
                 {permSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                সেভ করুন
+                Save
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1988,6 +1996,7 @@ function UsersPanel() {
    ═══════════════════════════════════════════ */
 
 function SettingsPanel() {
+  const t = useT();
   const [settings, setSettings] = useState<PlatformSettings>({
     platform_name: '',
     site_logo: '',
@@ -2030,9 +2039,9 @@ function SettingsPanel() {
       });
       if (res.ok) {
         invalidateSiteSettingsCache();
-        toast.success('সেটিংস সফলভাবে সংরক্ষণ হয়েছে');
+        toast.success(t('common.success'));
       } else {
-        toast.error('সেটিংস সংরক্ষণ ব্যর্থ হয়েছে');
+        toast.error(t('common.failed'));
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
@@ -2056,9 +2065,9 @@ function SettingsPanel() {
         const data = await res.json();
         setSettings((s) => ({ ...s, site_logo: data.logoPath }));
         invalidateSiteSettingsCache();
-        toast.success('লোগো সফলভাবে আপডেট হয়েছে');
+        toast.success('Logo updated!');
       } else {
-        toast.error('লোগো আপলোড ব্যর্থ হয়েছে');
+        toast.error('Upload Logo ব্যর্থ হয়েছে');
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
@@ -2133,10 +2142,10 @@ function SettingsPanel() {
       <div className="mb-5">
         <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
           <Settings className="h-5 w-5 text-primary" />
-          ওয়েবসাইট সেটিংস
+          Website Settings
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
-          এসক্রো প্ল্যাটফর্মের সাধারণ কনফিগারেশন
+          General escrow platform configuration
         </p>
       </div>
 
@@ -2153,8 +2162,8 @@ function SettingsPanel() {
               <CreditCard className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">ব্র্যান্ড সেটিংস</p>
-              <p className="text-[11px] text-muted-foreground">লোগো ও ওয়েবসাইটের নাম পরিবর্তন করুন</p>
+              <p className="text-sm font-bold text-foreground">Brand Settings</p>
+              <p className="text-[11px] text-muted-foreground">Change logo and website name</p>
             </div>
           </div>
 
@@ -2162,7 +2171,7 @@ function SettingsPanel() {
             {/* Logo Upload */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-start">
               <Label className="text-sm font-medium text-foreground text-center sm:text-left pt-2.5">
-                ওয়েবসাইট লোগো
+                Website Logo
               </Label>
               <div className="flex items-center gap-4">
                 <div className="h-14 w-14 rounded-xl border-2 border-dashed border-border/60 bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
@@ -2191,7 +2200,7 @@ function SettingsPanel() {
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
                       )}
-                      {logoUploading ? 'আপলোড হচ্ছে...' : 'লোগো আপলোড'}
+                      {logoUploading ? 'Uploading...' : 'লোগো আপলোড'}
                     </span>
                   </label>
                   <span className="text-[10px] text-muted-foreground">PNG, JPG — সর্বোচ্চ ২MB</span>
@@ -2202,7 +2211,7 @@ function SettingsPanel() {
             {/* Platform Name */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
               <Label htmlFor="platform_name" className="text-sm font-medium text-foreground text-center sm:text-left">
-                ওয়েবসাইটের নাম
+                Website Name
               </Label>
               <Input
                 id="platform_name"
@@ -2228,7 +2237,7 @@ function SettingsPanel() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              ব্র্যান্ড সংরক্ষণ করুন
+              Save Brand
             </Button>
           </div>
         </SolidCard>
@@ -2272,7 +2281,7 @@ function SettingsPanel() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              সেটিংস সংরক্ষণ করুন
+              Save Settings
             </Button>
           </div>
         </SolidCard>
@@ -2284,8 +2293,8 @@ function SettingsPanel() {
               <FileText className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">ফুটার সেটিংস</p>
-              <p className="text-[11px] text-muted-foreground">হোম পেজ ফুটারের তথ্য পরিবর্তন করুন</p>
+              <p className="text-sm font-bold text-foreground">Footer Settings</p>
+              <p className="text-[11px] text-muted-foreground">Change homepage footer info</p>
             </div>
           </div>
 
@@ -2339,7 +2348,7 @@ function SettingsPanel() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              ফুটার সংরক্ষণ করুন
+              Save Footer
             </Button>
           </div>
         </SolidCard>
@@ -2369,6 +2378,7 @@ interface PayoutRow {
 }
 
 function PayoutsPanel() {
+  const t = useT();
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'paid' | 'all'>('pending');
@@ -2401,11 +2411,11 @@ function PayoutsPanel() {
         method: 'POST',
       });
       if (res.ok) {
-        toast.success('পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!');
+        toast.success(t('common.success'));
         setSelectedPayout(null);
         fetchPayouts();
       } else {
-        toast.error('পেমেন্ট আপডেট করতে সমস্যা');
+        toast.error(t('common.failed'));
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
@@ -2455,7 +2465,7 @@ function PayoutsPanel() {
               <span className="font-mono text-xs text-muted-foreground">{shortDealId}</span>
               {p.status === 'paid' ? (
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-xs font-medium">
-                  পেমেন্ট সম্পন্ন
+                  Payment Complete
                 </Badge>
               ) : (
                 <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-xs font-medium">
@@ -2464,7 +2474,7 @@ function PayoutsPanel() {
               )}
             </div>
             <p className="text-base font-bold text-foreground">
-              {isRefund ? 'ফেরতের অনুরোধ' : 'সেলার পেআউট'}
+              {isRefund ? 'Refund Request' : 'Seller Payout'}
             </p>
             <p className="text-2xl font-extrabold text-foreground mt-1">৳{p.amount.toLocaleString('en')}</p>
           </div>
@@ -2477,7 +2487,7 @@ function PayoutsPanel() {
                 <UserCheck className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">প্রাপক</p>
+                <p className="text-xs text-muted-foreground">Recipient</p>
                 <p className="text-sm font-semibold text-foreground">{p.recipient?.name || 'অজানা'}</p>
                 <p className="text-xs text-muted-foreground">{p.recipient?.phone || ''}</p>
               </div>
@@ -2487,19 +2497,19 @@ function PayoutsPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5 space-y-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">পেআউট বিবরণ</span>
+                <span className="text-xs font-medium text-muted-foreground">Payout Details</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">পেমেন্ট মেথড</p>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">Payment Method</p>
                   <p className="text-sm font-semibold text-foreground">{p.accountType}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">একাউন্ট নম্বর</p>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">Account Number</p>
                   <p className="text-sm font-semibold font-mono text-foreground">{p.accountNumber}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground mb-0.5">একাউন্টের নাম</p>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">Account Name</p>
                   <p className="text-sm font-semibold text-foreground">{p.accountName}</p>
                 </div>
               </div>
@@ -2509,7 +2519,7 @@ function PayoutsPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5 space-y-2">
               <div className="flex items-center gap-2">
                 <Handshake className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">ডিল তথ্য</span>
+                <span className="text-xs font-medium text-muted-foreground">Deal Info</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
@@ -2517,19 +2527,19 @@ function PayoutsPanel() {
                   <p className="font-mono font-medium text-foreground">{shortDealId}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground">ডিলের পরিমাণ</p>
+                  <p className="text-[10px] text-muted-foreground">Deal Amount</p>
                   <p className="font-semibold text-foreground">৳{p.deal?.amount.toLocaleString('en') || '—'}</p>
                 </div>
                 {p.deal?.paymentAmount != null && p.deal.paymentAmount !== p.deal.amount && (
                   <div className="col-span-2">
-                    <p className="text-[10px] text-muted-foreground">প্রকৃত পেমেন্টের পরিমাণ (ফি ছাড়া)</p>
+                    <p className="text-[10px] text-muted-foreground">Actual Payment Amount (excl. fee)</p>
                     <p className="font-bold text-primary">৳{p.deal.paymentAmount.toLocaleString('en')}</p>
                   </div>
                 )}
               </div>
               {p.deal?.title && (
                 <div>
-                  <p className="text-[10px] text-muted-foreground">ডিল টাইটেল</p>
+                  <p className="text-[10px] text-muted-foreground">Deal Title</p>
                   <p className="text-sm font-medium text-foreground">{p.deal.title}</p>
                 </div>
               )}
@@ -2539,11 +2549,11 @@ function PayoutsPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5 space-y-2">
               <div className="flex items-center gap-2">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">সময়</span>
+                <span className="text-xs font-medium text-muted-foreground">Time</span>
               </div>
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">অনুরোধ</span>
+                  <span className="text-muted-foreground">Requested</span>
                   <span className="font-medium text-foreground">{pTime}</span>
                 </div>
                 {paidTime && (
@@ -2568,17 +2578,17 @@ function PayoutsPanel() {
                   ) : (
                     <CheckCircle className="h-4 w-4" />
                   )}
-                  পেমেন্ট ডান করুন
+                  Mark as Paid
                 </Button>
                 <AlertDialog open={showPaidConfirm} onOpenChange={(open) => { if (!open) setShowPaidConfirm(false); }}>
                   <AlertDialogContent className="rounded-2xl">
                     <AlertDialogHeader>
                       <AlertDialogTitle className="flex items-center gap-2">
                         <CheckCircle className="h-5 w-5 text-emerald-500" />
-                        পেমেন্ট ডান করবেন?
+                        Mark as Paid?
                       </AlertDialogTitle>
                       <AlertDialogDescription className="space-y-3">
-                        <span>আপনি কি নিশ্চিত যে এই পেআউটটি পেমেন্ট সম্পন্ন করতে চান?</span>
+                        <span>Are you sure you want to mark this payout as paid?</span>
                         <span className="block rounded-xl border border-border/50 bg-muted/30 p-3 space-y-1.5">
                           <span className="flex justify-between text-sm">
                             <span className="text-muted-foreground">প্রাপক</span>
@@ -3481,6 +3491,7 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
    ═══════════════════════════════════════════ */
 
 export function AdminMain() {
+  const t = useT();
   const { adminPanel, user, setAdminPanel } = useAppStore();
   const { siteName } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
