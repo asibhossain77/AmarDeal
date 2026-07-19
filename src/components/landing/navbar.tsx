@@ -4,6 +4,8 @@ import { useState, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
 import { useAppStore, type DashboardPanel, type AdminPanel } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { useTranslation } from '@/lib/i18n';
+import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -32,11 +34,13 @@ const emptySubscribe = () => () => {};
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   if (!mounted) {
     return (
-      <button className="flex h-9 w-9 items-center justify-center rounded-lg" aria-label="থিম পরিবর্তন">
+      <button className="flex h-9 w-9 items-center justify-center rounded-lg" aria-label={t('nav.themeChange')}>
         <span className="h-4 w-4" />
       </button>
     );
@@ -46,7 +50,7 @@ function ThemeToggle() {
     <button
       className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      aria-label="থিম পরিবর্তন"
+      aria-label={t('nav.themeChange')}
     >
       {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
     </button>
@@ -88,34 +92,48 @@ function MobileBrandHeader({ sub }: { sub?: string }) {
   );
 }
 
+/* ── Translated nav helpers ── */
+function useNavText() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  return t;
+}
+
 /* ── Dashboard mobile nav items (mirrors sidebar) ── */
-const dashboardNavItems: { label: string; icon: React.ElementType; panel: string }[] = [
-  { label: 'ড্যাশবোর্ড', icon: LayoutDashboard, panel: 'overview' },
-  { label: 'আমার ডিল', icon: Handshake, panel: 'my-deals' },
-  { label: 'লেনদেন', icon: ArrowLeftRight, panel: 'payment' },
-  { label: 'প্রোফাইল', icon: UserCircle, panel: 'profile' },
-  { label: 'সেটিংস', icon: Settings, panel: 'settings' },
-];
+function useDashboardNavItems() {
+  const t = useNavText();
+  return [
+    { label: t('nav.dashboard'), icon: LayoutDashboard, panel: 'overview' },
+    { label: t('nav.myDeals'), icon: Handshake, panel: 'my-deals' },
+    { label: t('nav.transactions'), icon: ArrowLeftRight, panel: 'payment' },
+    { label: t('nav.profile'), icon: UserCircle, panel: 'profile' },
+    { label: t('nav.settings'), icon: Settings, panel: 'settings' },
+  ];
+}
 
 /* ── Admin mobile nav items (mirrors sidebar) ── */
-const adminNavItems: { label: string; icon: React.ElementType; panel: string }[] = [
-  { label: 'ড্যাশবোর্ড', icon: LayoutDashboard, panel: 'dashboard' },
-  { label: 'পেমেন্ট ভেরিফিকেশন', icon: ShieldCheck, panel: 'payment-verify' },
-  { label: 'লাইভ চ্যাট', icon: Headphones, panel: 'admin-calls' },
-  { label: 'পেমেন্ট মেথড', icon: CreditCard, panel: 'payment-methods' },
-  { label: 'ফি কাঠামো', icon: Receipt, panel: 'fee-rules' },
-  { label: 'সকল ডিল', icon: Handshake, panel: 'all-deals' },
-  { label: 'ইউজার ম্যানেজমেন্ট', icon: Users, panel: 'users' },
-  { label: 'যোগাযোগ', icon: MessageCircle, panel: 'contact-info' },
-  { label: 'ওয়েবসাইট সেটিংস', icon: Settings, panel: 'settings' },
-  { label: 'চুক্তি পেজ', icon: FileText, panel: 'contract' },
-  { label: 'ব্লগ', icon: BookOpen, panel: 'blog' },
-];
+function useAdminNavItems() {
+  const t = useNavText();
+  return [
+    { label: t('adminNav.dashboard'), icon: LayoutDashboard, panel: 'dashboard' },
+    { label: t('adminNav.paymentVerify'), icon: ShieldCheck, panel: 'payment-verify' },
+    { label: t('adminNav.liveChat'), icon: Headphones, panel: 'admin-calls' },
+    { label: t('adminNav.paymentMethods'), icon: CreditCard, panel: 'payment-methods' },
+    { label: t('adminNav.feeRules'), icon: Receipt, panel: 'fee-rules' },
+    { label: t('adminNav.allDeals'), icon: Handshake, panel: 'all-deals' },
+    { label: t('adminNav.userManagement'), icon: Users, panel: 'users' },
+    { label: t('adminNav.contact'), icon: MessageCircle, panel: 'contact-info' },
+    { label: t('adminNav.websiteSettings'), icon: Settings, panel: 'settings' },
+    { label: t('adminNav.contract'), icon: FileText, panel: 'contract' },
+    { label: t('adminNav.blog'), icon: BookOpen, panel: 'blog' },
+  ];
+}
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
   const { view, user, logout, setView, setDashboardPanel, setAdminPanel, dashboardPanel, adminPanel, activeDeal } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useNavText();
 
   const isAdmin = view === 'admin';
   const isAuth = view === 'auth' || view === 'dashboard';
@@ -123,6 +141,9 @@ export function Navbar() {
   const isSidebarView = isDashboard || isAdmin;
 
   const isInfoPage = view === 'blog' || view.startsWith('page-');
+
+  const dashboardNavItems = useDashboardNavItems();
+  const adminNavItems = useAdminNavItems();
 
   const handleLogoClick = () => {
     if (isDashboard) setDashboardPanel('overview');
@@ -174,35 +195,36 @@ export function Navbar() {
               <button
                 onClick={() => setDashboardPanel('overview')}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
-                aria-label="ড্যাশবোর্ড"
+                aria-label={t('nav.dashboard')}
               >
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden xl:inline">ড্যাশবোর্ড</span>
+                <span className="hidden xl:inline">{t('nav.dashboard')}</span>
               </button>
               <button
                 onClick={() => setDashboardPanel('new-deal')}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-primary bg-primary/10 transition-colors hover:bg-primary/15"
-                aria-label="নতুন ডিল"
+                aria-label={t('nav.newDeal')}
               >
                 <FilePlus className="h-4 w-4" />
-                <span className="hidden xl:inline">নতুন ডিল</span>
+                <span className="hidden xl:inline">{t('nav.newDeal')}</span>
               </button>
               <div className="mx-1 h-5 w-px bg-border/60" />
+              <LanguageSwitcher />
               <ThemeToggle />
               <button
                 onClick={() => setDashboardPanel('profile')}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary hover:bg-primary/25 transition-colors"
-                aria-label="প্রোফাইল"
+                aria-label={t('nav.profile')}
               >
-                {user?.name?.charAt(0) || 'ই'}
+                {user?.name?.charAt(0) || 'U'}
               </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-destructive hover:bg-destructive/10"
-                aria-label="লগআউট"
+                aria-label={t('nav.logout')}
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden xl:inline">লগআউট</span>
+                <span className="hidden xl:inline">{t('nav.logout')}</span>
               </button>
             </div>
           )}
@@ -210,6 +232,7 @@ export function Navbar() {
           {/* ── Desktop Nav: Admin ── */}
           {isAdmin && mounted && (
             <div className="hidden items-center gap-2 md:flex">
+              <LanguageSwitcher />
               <ThemeToggle />
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">A</div>
               <button
@@ -217,7 +240,7 @@ export function Navbar() {
                 className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
               >
                 <LogOut className="h-4 w-4" />
-                এক্সিট অ্যাডমিন
+                {t('nav.exitAdmin')}
               </button>
             </div>
           )}
@@ -227,25 +250,25 @@ export function Navbar() {
         {!isAuth && !isAdmin && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
             <a href="/security" onClick={(e) => { e.preventDefault(); setView('page-security'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              বৈশিষ্ট্য
+              {t('nav.features')}
             </a>
             <a href="/fees" onClick={(e) => { e.preventDefault(); setView('page-fees'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              ফি কাঠামো
+              {t('nav.feeStructure')}
             </a>
             <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setView('page-how-it-works'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              কিভাবে কাজ করে
+              {t('nav.howItWorks')}
             </a>
             <a href="/faq" onClick={(e) => { e.preventDefault(); setView('page-faq'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              FAQ
+              {t('nav.faq')}
             </a>
             <a href="/blog" onClick={(e) => { e.preventDefault(); setView('blog'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              ব্লগ
+              {t('nav.blog')}
             </a>
             <a href="/about" onClick={(e) => { e.preventDefault(); setView('page-about'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              আমাদের সম্পর্কে
+              {t('nav.about')}
             </a>
             <a href="/contact" onClick={(e) => { e.preventDefault(); setView('page-contact'); }} className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-              যোগাযোগ
+              {t('nav.contact')}
             </a>
           </div>
         )}
@@ -253,26 +276,28 @@ export function Navbar() {
         {/* ── Right: Landing Desktop Buttons (direct child of nav) ── */}
         {!isAuth && !isAdmin && (
           <div className="hidden shrink-0 items-center gap-2 md:flex">
+            <LanguageSwitcher />
             <ThemeToggle />
             <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
               <LogIn className="h-4 w-4" />
-              লগইন / নিবন্ধন
+              {t('nav.loginRegister')}
             </Button>
           </div>
         )}
 
         {/* ── Mobile Menu (hamburger for landing/auth/dashboard — admin has its own) ── */}
           <div className="flex items-center gap-2 md:hidden">
+            <LanguageSwitcher />
             <ThemeToggle />
             {!isAdmin && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label="মেনু খুলুন">
+                <button className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground" aria-label={t('nav.openMenu')}>
                   <Menu className="h-5 w-5" />
                 </button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72 overflow-y-auto">
-                <SheetTitle className="sr-only">নেভিগেশন মেনু</SheetTitle>
+                <SheetTitle className="sr-only">{t('nav.navMenu')}</SheetTitle>
                 <nav className="flex flex-col gap-1 pt-8">
                   {/* ── Dashboard Mobile Nav ── */}
                   {isDashboard && (
@@ -286,7 +311,7 @@ export function Navbar() {
                         className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-md shadow-primary/20 transition-colors hover:bg-primary/90"
                       >
                         <FilePlus className="h-4 w-4" />
-                        নতুন ডিল তৈরি করুন
+                        {t('nav.createNewDeal')}
                       </button>
 
                       <div className="my-2 h-px bg-border/60" />
@@ -299,7 +324,7 @@ export function Navbar() {
                           <button
                             key={item.label}
                             onClick={() => {
-                              if (item.label === 'আমার ডিল' && activeDeal) {
+                              if (item.panel === 'my-deals' && activeDeal) {
                                 setDashboardPanel('deal-detail');
                               } else {
                                 setDashboardPanel(item.panel as DashboardPanel);
@@ -322,10 +347,10 @@ export function Navbar() {
                       <div className="my-2 border-t border-border/50 pt-3">
                         <div className="flex items-center gap-3 rounded-xl px-4 py-2.5">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-                            {user?.name?.charAt(0) || 'ই'}
+                            {user?.name?.charAt(0) || 'U'}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-foreground">{user?.name || 'ইউজার'}</p>
+                            <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('nav.user')}</p>
                             <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                           </div>
                         </div>
@@ -337,7 +362,7 @@ export function Navbar() {
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-destructive transition-all hover:bg-destructive/10"
                       >
                         <LogOut className="h-[18px] w-[18px]" />
-                        লগআউট
+                        {t('nav.logout')}
                       </button>
                     </>
                   )}
@@ -372,10 +397,10 @@ export function Navbar() {
                       <div className="my-2 border-t border-border/50 pt-3">
                         <div className="flex items-center gap-3 rounded-xl px-4 py-2.5">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-                            {user?.name?.charAt(0) || 'অ'}
+                            {user?.name?.charAt(0) || 'A'}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-foreground">{user?.name || 'অ্যাডমিন'}</p>
+                            <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('nav.adminLabel')}</p>
                             <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                           </div>
                         </div>
@@ -387,7 +412,7 @@ export function Navbar() {
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
                       >
                         <LogOut className="h-[18px] w-[18px]" />
-                        এক্সিট অ্যাডমিন
+                        {t('nav.exitAdmin')}
                       </button>
                     </>
                   )}
@@ -398,29 +423,29 @@ export function Navbar() {
                       <MobileBrandHeader />
 
                       <a href="/security" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-security'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        বৈশিষ্ট্য
+                        {t('nav.features')}
                       </a>
                       <a href="/fees" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-fees'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        ফি কাঠামো
+                        {t('nav.feeStructure')}
                       </a>
                       <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-how-it-works'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        কিভাবে কাজ করে
+                        {t('nav.howItWorks')}
                       </a>
                       <a href="/faq" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-faq'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        FAQ
+                        {t('nav.faq')}
                       </a>
                       <a href="/blog" onClick={(e) => { e.preventDefault(); setOpen(false); setView('blog'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        ব্লগ
+                        {t('nav.blog')}
                       </a>
                       <a href="/about" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-about'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        আমাদের সম্পর্কে
+                        {t('nav.about')}
                       </a>
                       <a href="/contact" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-contact'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        যোগাযোগ
+                        {t('nav.contact')}
                       </a>
                       <div className="mt-4 border-t border-border pt-4">
                         <Button onClick={() => { setOpen(false); setView('auth'); }} className="w-full gap-2 rounded-lg font-medium">
-                          <LogIn className="h-4 w-4" /> লগইন / নিবন্ধন
+                          <LogIn className="h-4 w-4" /> {t('nav.loginRegister')}
                         </Button>
                       </div>
                     </>

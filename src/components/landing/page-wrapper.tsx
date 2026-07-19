@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Home } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useTranslation } from '@/lib/i18n';
 import { Footer } from './footer';
 
 interface PageWrapperProps {
@@ -14,6 +15,8 @@ interface PageWrapperProps {
 
 export function PageWrapper({ children, title, subtitle }: PageWrapperProps) {
   const setView = useAppStore((s) => s.setView);
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -29,7 +32,7 @@ export function PageWrapper({ children, title, subtitle }: PageWrapperProps) {
           className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
         >
           <Home className="h-4 w-4" />
-          হোম
+          {t('common.home')}
         </a>
       </div>
 

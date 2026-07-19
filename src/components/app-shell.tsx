@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
+import { useTranslation } from '@/lib/i18n';
 import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
 
 /* ── Eager: above-the-fold landing components ── */
@@ -49,66 +50,82 @@ function LandingView() {
   );
 }
 
-/* ── Separate pages ── */
+/* ── Separate pages with translations ── */
 function PageHowItWorks() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="কিভাবে কাজ করে" subtitle="মাত্র তিনটি ধাপে নিরাপদ লেনদেন সম্পন্ন করুন">
+    <PageWrapper title={t('page.howItWorks.title')} subtitle={t('page.howItWorks.subtitle')}>
       <HowItWorks />
     </PageWrapper>
   );
 }
 
 function PageFees() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="ফি কাঠামো" subtitle="স্বচ্ছ ও সাশ্রয়ী ফি স্ট্রাকচার">
+    <PageWrapper title={t('page.fees.title')} subtitle={t('page.fees.subtitle')}>
       <FeeStructure />
     </PageWrapper>
   );
 }
 
 function PageSecurity() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="নিরাপত্তা" subtitle="আপনার লেনদেন সম্পূর্ণ সুরক্ষিত">
+    <PageWrapper title={t('page.security.title')} subtitle={t('page.security.subtitle')}>
       <TrustSecurity />
     </PageWrapper>
   );
 }
 
 function PageFaq() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="ঘন ঘন জিজ্ঞাসিত প্রশ্নাবলী" subtitle="আমাদের সেবা সম্পর্কে সাধারণ প্রশ্ন ও উত্তর">
+    <PageWrapper title={t('page.faq.title')} subtitle={t('page.faq.subtitle')}>
       <FAQSection />
     </PageWrapper>
   );
 }
 
 function PageAbout() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="আমাদের সম্পর্কে" subtitle="নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা">
+    <PageWrapper title={t('page.about.title')} subtitle={t('page.about.subtitle')}>
       <AboutSection />
     </PageWrapper>
   );
 }
 
 function PagePrivacy() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="গোপনীয়তা নীতি" subtitle="আপনার তথ্য কিভাবে সুরক্ষিত আছে তা জানুন">
+    <PageWrapper title={t('page.privacy.title')} subtitle={t('page.privacy.subtitle')}>
       <PrivacySection />
     </PageWrapper>
   );
 }
 
 function PageTerms() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="শর্তাবলী ও চুক্তি" subtitle="আমাদের সেবার শর্তাবলী ও ব্যবহারের শর্ত">
+    <PageWrapper title={t('page.terms.title')} subtitle={t('page.terms.subtitle')}>
       <ContractSection />
     </PageWrapper>
   );
 }
 
 function PageContact() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title="যোগাযোগ" subtitle="আমাদের সাথে যোগাযোগ করুন">
+    <PageWrapper title={t('page.contact.title')} subtitle={t('page.contact.subtitle')}>
       <ContactSection />
     </PageWrapper>
   );

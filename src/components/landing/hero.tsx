@@ -1,33 +1,40 @@
 'use client';
 
+import { useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { useTranslation } from '@/lib/i18n';
 
-const escrowSteps = [
-  {
-    num: '১',
-    color: 'bg-primary',
-    title: 'টাকা জমা',
-    subtitle: 'bKash / Nagad / Bank',
-  },
-  {
-    num: '২',
-    color: 'bg-teal-600 dark:bg-teal-500',
-    title: 'মধ্যস্থতা',
-    subtitle: 'অ্যাডমিন যাচাই করেন',
-  },
-  {
-    num: '৩',
-    color: 'bg-lime-600 dark:bg-lime-500',
-    title: 'টাকা রিলিজ',
-    subtitle: 'বিক্রেতা পান বা রিফান্ড',
-  },
-];
+const emptySubscribe = () => () => {};
 
 function EscrowStatusCard() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+
+  const steps = [
+    {
+      num: locale === 'bn' ? '১' : '1',
+      color: 'bg-primary',
+      title: t('hero.step1.title'),
+      subtitle: t('hero.step1.sub'),
+    },
+    {
+      num: locale === 'bn' ? '২' : '2',
+      color: 'bg-teal-600 dark:bg-teal-500',
+      title: t('hero.step2.title'),
+      subtitle: t('hero.step2.sub'),
+    },
+    {
+      num: locale === 'bn' ? '৩' : '3',
+      color: 'bg-lime-600 dark:bg-lime-500',
+      title: t('hero.step3.title'),
+      subtitle: t('hero.step3.sub'),
+    },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -40,16 +47,16 @@ function EscrowStatusCard() {
           {/* Card Header */}
           <div className="mb-6 flex items-center justify-between">
             <p className="text-sm font-semibold tracking-wide text-foreground">
-              এসক্রো স্ট্যাটাস
+              {t('hero.escrowStatus')}
             </p>
             <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-              সুরক্ষিত
+              {t('hero.secured')}
             </span>
           </div>
 
           {/* 3-Step Progress List */}
           <div>
-            {escrowSteps.map((step, i) => (
+            {steps.map((step, i) => (
               <div key={step.num}>
                 <div className="flex items-start gap-3.5">
                   <div
@@ -66,7 +73,7 @@ function EscrowStatusCard() {
                     </p>
                   </div>
                 </div>
-                {i < escrowSteps.length - 1 && (
+                {i < steps.length - 1 && (
                   <div className="ml-3.5 h-4 w-px border-l border-dashed border-border" />
                 )}
               </div>
@@ -82,7 +89,7 @@ function EscrowStatusCard() {
               ৳৫০,০০০<span className="text-lg">.০০</span>
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              উদাহরণ এসক্রো পরিমাণ
+              {t('hero.exampleAmount')}
             </p>
           </div>
         </div>
@@ -93,6 +100,9 @@ function EscrowStatusCard() {
 
 export function Hero() {
   const { siteName } = useSiteSettings();
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   return (
     <section className="relative overflow-hidden">
@@ -124,21 +134,22 @@ export function Hero() {
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                 </span>
                 <span className="text-xs font-semibold tracking-wide text-primary">
-                  নিরাপদ অনলাইন লেনদেন
+                  {t('hero.badge')}
                 </span>
               </motion.div>
 
               {/* Main Heading */}
               <h1 className="mb-5 text-center text-3xl font-bold leading-[1.2] tracking-tight sm:text-4xl md:text-left md:text-5xl lg:text-[3.4rem]">
-                আপনার টাকা,
+                {t('hero.heading.line1')}
                 <br />
-                <span className="glow-text-lime text-primary">আমাদের দায়িত্ব</span>
+                <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
               </h1>
 
               {/* Subtitle */}
               <p className="mx-auto mb-8 max-w-md text-center text-base leading-relaxed text-muted-foreground md:mx-0 md:text-left sm:text-[17px]">
-                {siteName}-এ ক্রেতা ও বিক্রেতার মধ্যে নিরাপদ এসক্রো সেবা।
-                টাকা জমা থেকে রিলিজ পর্যন্ত — সব কিছু স্বচ্ছ ও নিরাপদ।
+                {siteName}{t('hero.subtitle.prefix')}
+                <br />
+                {t('hero.subtitle.suffix')}
               </p>
 
               {/* CTA Buttons */}
@@ -148,14 +159,14 @@ export function Hero() {
                   onClick={() => useAppStore.getState().setView('auth')}
                   className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
                 >
-                  এখনই শুরু করুন
+                  {t('hero.startNow')}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 <button
                   onClick={() => useAppStore.getState().setView('page-how-it-works')}
                   className="inline-flex items-center gap-1.5 rounded-xl px-7 py-3 text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  আরও জানুন
+                  {t('hero.learnMore')}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>

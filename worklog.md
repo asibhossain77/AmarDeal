@@ -649,3 +649,27 @@ Stage Summary:
 - AI prompt management feature is fully functional and enhanced
 - Admin can edit, reset, test AI prompt from the admin panel
 - Changes are saved to PlatformSetting table and cached for 5 minutes in AI support API
+---
+Task ID: i18n-language-switch
+Agent: Main Agent
+Task: Add Bangla/English language switch button next to dark/light toggle and in user settings
+
+Work Log:
+- Created custom i18n system: src/lib/i18n/locales/bn.ts (Bengali translations), src/lib/i18n/locales/en.ts (English translations)
+- Created useTranslation hook: src/lib/i18n/index.ts with type-safe t() function and variable interpolation
+- Added `locale: Locale` field to Zustand store with localStorage persistence (key: 'amardeal-locale')
+- Added `setLocale` action that also updates document.documentElement.lang dynamically
+- Created LanguageSwitcher component (src/components/shared/language-switcher.tsx) — Globe icon dropdown with 🇧🇩/🇬🇧 flags
+- Integrated LanguageSwitcher next to ThemeToggle in ALL navbar locations: desktop dashboard, desktop admin, desktop landing, mobile hamburger
+- Added Language Preference card in Settings panel (src/components/dashboard/settings-panel.tsx) with LanguageSwitcher
+- Translated key UI components: navbar, hero, footer, page-wrapper, app-shell (page titles), settings panel
+- Created LocaleEffect component (src/components/shared/locale-effect.tsx) to sync html lang attribute
+- Updated layout.tsx to include LocaleEffect
+
+Stage Summary:
+- Language switcher works in all views (landing, dashboard, admin, mobile)
+- Locale persists across page reloads via localStorage
+- HTML lang attribute updates dynamically (bn/en)
+- 100+ translation keys for navbar, hero, footer, settings, auth, pages
+- System is extensible — new keys can be added to bn.ts/en.ts and used with t('key')
+- Components not yet translated: review-section, trust-security, how-it-works, faq-section, about-section, privacy-section, contact-section, fee-structure, auth-view (these can be translated incrementally)

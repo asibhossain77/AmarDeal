@@ -5,6 +5,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/lib/query-client";
+import { LocaleEffect } from "@/components/shared/locale-effect";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
@@ -414,6 +415,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
+            <LocaleEffect />
             {children}
             <Toaster />
           </QueryProvider>

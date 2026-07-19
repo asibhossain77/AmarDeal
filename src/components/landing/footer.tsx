@@ -2,37 +2,39 @@
 
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useAppStore, type AppView } from '@/lib/store';
+import { useTranslation } from '@/lib/i18n';
 import { Separator } from '@/components/ui/separator';
-
-const defaultDescription = 'বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করি যাতে আপনি নিশ্চিন্তে কেনাবেচা করতে পারেন।';
-const defaultCopyright = `© ${new Date().getFullYear()} আমার ডিল। সর্বস্বত্ব সংরক্ষিত।`;
-const defaultMadeIn = 'বাংলাদেশে তৈরি';
-
-const footerLinks: { label: string; view: AppView; href: string }[][] = [
-  [
-    { label: 'কিভাবে কাজ করে', view: 'page-how-it-works', href: '/how-it-works' },
-    { label: 'ফি কাঠামো', view: 'page-fees', href: '/fees' },
-    { label: 'নিরাপত্তা', view: 'page-security', href: '/security' },
-    { label: 'ব্লগ', view: 'blog', href: '/blog' },
-    { label: 'FAQ', view: 'page-faq', href: '/faq' },
-  ],
-  [
-    { label: 'আমাদের সম্পর্কে', view: 'page-about', href: '/about' },
-    { label: 'যোগাযোগ', view: 'page-contact', href: '/contact' },
-    { label: 'গোপনীয়তা নীতি', view: 'page-privacy', href: '/privacy' },
-    { label: 'শর্তাবলী', view: 'page-terms', href: '/terms' },
-    { label: 'চুক্তি পেজ', view: 'page-terms', href: '/terms' },
-  ],
-];
-
-const categories = ['সেবা', 'কোম্পানি'] as const;
 
 export function Footer() {
   const { siteName, siteLogo, footerDescription, footerCopyrightText, footerMadeIn } = useSiteSettings();
   const setView = useAppStore((s) => s.setView);
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+
+  const defaultDescription = t('footer.defaultDescription');
+  const defaultMadeIn = t('footer.defaultMadeIn');
+
+  const footerLinks: { label: string; view: AppView; href: string }[][] = [
+    [
+      { label: t('nav.howItWorks'), view: 'page-how-it-works', href: '/how-it-works' },
+      { label: t('nav.feeStructure'), view: 'page-fees', href: '/fees' },
+      { label: t('nav.features'), view: 'page-security', href: '/security' },
+      { label: t('nav.blog'), view: 'blog', href: '/blog' },
+      { label: t('nav.faq'), view: 'page-faq', href: '/faq' },
+    ],
+    [
+      { label: t('nav.about'), view: 'page-about', href: '/about' },
+      { label: t('nav.contact'), view: 'page-contact', href: '/contact' },
+      { label: t('page.privacy.title'), view: 'page-privacy', href: '/privacy' },
+      { label: t('page.terms.title'), view: 'page-terms', href: '/terms' },
+      { label: t('page.terms.title'), view: 'page-terms', href: '/terms' },
+    ],
+  ];
+
+  const categories = [t('footer.cat.services'), t('footer.cat.company')] as const;
 
   const description = footerDescription || `${siteName} ${defaultDescription}`;
-  const copyrightLine = footerCopyrightText || `© ${new Date().getFullYear()} ${siteName}। সর্বস্বত্ব সংরক্ষিত।`;
+  const copyrightLine = footerCopyrightText || `© ${new Date().getFullYear()} ${siteName}। ${t('footer.allRightsReserved')}`;
   const madeIn = footerMadeIn || defaultMadeIn;
 
   return (
@@ -63,7 +65,7 @@ export function Footer() {
               <h3 className="mb-4 text-sm font-semibold">{cat}</h3>
               <ul className="space-y-2.5">
                 {footerLinks[i].map((link) => (
-                  <li key={link.label}>
+                  <li key={link.label + link.href}>
                     <a
                       href={link.href}
                       onClick={(e) => { e.preventDefault(); setView(link.view); }}

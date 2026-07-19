@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { Locale } from '@/lib/i18n'
 
 export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact'
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings'
@@ -49,6 +50,7 @@ interface AppState {
   sellerPanel: SellerPanel
   adminPanel: AdminPanel
   activeDeal: DealInfo | null
+  locale: Locale
   /* Navigation history (single-level) */
   _prevView: AppView | null
   _prevDashPanel: DashboardPanel | null
@@ -61,8 +63,15 @@ interface AppState {
   setSellerPanel: (panel: SellerPanel) => void
   setAdminPanel: (panel: AdminPanel) => void
   setActiveDeal: (deal: DealInfo | null) => void
+  setLocale: (locale: Locale) => void
   /** Go back to previous page/panel */
   goBack: () => void
+}
+
+/* Persist locale in localStorage */
+function getSavedLocale(): Locale {
+  if (typeof window === 'undefined') return 'bn';
+  return (localStorage.getItem('amardeal-locale') as Locale) || 'bn';
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -73,6 +82,7 @@ export const useAppStore = create<AppState>((set) => ({
   sellerPanel: 'overview',
   adminPanel: 'dashboard',
   activeDeal: null,
+  locale: getSavedLocale(),
   _prevView: null,
   _prevDashPanel: null,
   _prevSellerPanel: null,
@@ -101,6 +111,11 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
+  setLocale: (locale) => {
+    localStorage.setItem('amardeal-locale', locale);
+    document.documentElement.lang = locale === 'bn' ? 'bn' : 'en';
+    set({ locale });
+  },
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {
