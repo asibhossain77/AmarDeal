@@ -171,6 +171,7 @@ function pushUrl(url: string) {
 /* ── Apply current URL to store (reusable) ── */
 
 const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact']);
+const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'seller', 'auth']);
 
 function applyUrlToStore() {
   const store = useAppStore;
@@ -233,6 +234,11 @@ export function initUrlSync() {
     // Not logged in but on a public page
     store.setState({ view: parsed.view });
     _lastUrl = window.location.pathname;
+  } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {
+    // Not logged in but on a protected URL → redirect to auth (login)
+    store.setState({ view: 'auth' });
+    window.history.replaceState(null, '', '/login');
+    _lastUrl = '/login';
   } else {
     _lastUrl = window.location.pathname;
   }
