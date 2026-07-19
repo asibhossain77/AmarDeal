@@ -72,8 +72,7 @@ import { useT } from '@/lib/i18n';
 const emptySubscribe = () => () => {};
 
 /* ─── Admin Chat Message Styles ─── */
-function adminChatBubble(msg: AdminChatMsg) {
-  const t = useT();
+function AdminChatBubble({ msg }: { msg: AdminChatMsg }) {
   const isAdmin = msg.role === 'admin';
   const isSystem = msg.role === 'system';
   const isBuyer = msg.role === 'buyer';
@@ -101,7 +100,7 @@ function adminChatBubble(msg: AdminChatMsg) {
   const showLabel = isSystem || isAdmin || isBuyer || isSeller;
 
   return (
-    <div key={msg.id} className={`flex ${align}`}>
+    <div className={`flex ${align}`}>
       <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${bubbleStyle}`}>
         {showLabel && <p className={`${labelStyle} mb-0.5`}>{label}</p>}
         <p className="leading-relaxed">{msg.text}</p>
@@ -585,10 +584,10 @@ function PaymentVerifyPanel() {
         const data = await res.json();
         toast.success(t('common.success'));
         // Update selectedDeal with new data
-        setSelectedDeal({ ...selectedDeal, paymentAmount: data.deal.paymentAmount });
+        setSelectedDeal({ ...selectedDeal, paymentAmount: data.deal?.paymentAmount });
         // Also update in deals list
         setDeals((prev) =>
-          prev.map((d) => (d.id === selectedDeal.id ? { ...d, paymentAmount: data.deal.paymentAmount } : d))
+          prev.map((d) => (d.id === selectedDeal.id ? { ...d, paymentAmount: data.deal?.paymentAmount } : d))
         );
       } else {
         const data = await res.json().catch(() => ({}));
@@ -1055,28 +1054,29 @@ function PaymentVerifyPanel() {
 
 type DealFilter = 'all' | 'pending' | 'verified' | 'delivery' | 'completed';
 
-const dealFilterTabs: {
-  key: DealFilter;
-  label: string;
-  statuses: string[];
-}[] = [
-  { key: 'all', label: 'All', statuses: [] },
-  {
-    key: 'pending',
-    label: t('status.pending'),
-    statuses: ['created', 'pending', 'payment_pending'],
-  },
-  { key: 'verified', label: t('status.verified'), statuses: ['payment_verified'] },
-  {
-    key: 'delivery',
-    label: t('status.inDelivery'),
-    statuses: ['in_delivery', 'delivery_confirmed'],
-  },
-  { key: 'completed', label: t('status.completed'), statuses: ['completed', 'rejected', 'cancelled'] },
-];
-
 function AllDealsPanel() {
   const t = useT();
+
+  const dealFilterTabs: {
+    key: DealFilter;
+    label: string;
+    statuses: string[];
+  }[] = [
+    { key: 'all', label: 'All', statuses: [] },
+    {
+      key: 'pending',
+      label: t('status.pending'),
+      statuses: ['created', 'pending', 'payment_pending'],
+    },
+    { key: 'verified', label: t('status.verified'), statuses: ['payment_verified'] },
+    {
+      key: 'delivery',
+      label: t('status.inDelivery'),
+      statuses: ['in_delivery', 'delivery_confirmed'],
+    },
+    { key: 'completed', label: t('status.completed'), statuses: ['completed', 'rejected', 'cancelled'] },
+  ];
+
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<DealFilter>('all');
@@ -1202,7 +1202,7 @@ function AllDealsPanel() {
                 <p className="text-sm text-muted-foreground">No messages</p>
               </div>
             )}
-            {messages.map((msg) => adminChatBubble(msg))}
+            {messages.map((msg) => <AdminChatBubble key={msg.id} msg={msg} />)}
             <div ref={chatEndRef} />
           </div>
 
@@ -1374,22 +1374,7 @@ function AllDealsPanel() {
   );
 }
 
-/* ─── Staff Permission Options ─── */
-const STAFF_PERMISSION_OPTIONS = [
-  { value: 'payment-verify', label: t('adminNav.paymentVerify'), desc: 'Verify and approve payments' },
-  { value: 'payouts', label: t('adminNav.payoutManagement'), desc: 'Approve and process payouts' },
-  { value: 'admin-calls', label: t('adminNav.liveChat'), desc: 'Live chat and calls with users' },
-  { value: 'disputes', label: t('adminNav.disputeManagement'), desc: 'Dispute handling' },
-  { value: 'payment-methods', label: t('adminNav.paymentMethods'), desc: 'Add/edit payment methods' },
-  { value: 'fee-rules', label: t('adminNav.feeRules'), desc: 'Change fee rules' },
-  { value: 'all-deals', label: t('adminNav.allDeals'), desc: 'View and manage all deals' },
-  { value: 'users', label: 'ইউজার ম্যানেজমেন্ট', desc: 'ইউজার তালিকা, Change Password' },
-  { value: 'contact-info', label: t('adminNav.contact'), desc: 'Contact info settings' },
-  { value: 'settings', label: t('adminNav.websiteSettings'), desc: 'General site settings' },
-  { value: 'contract', label: t('adminNav.contract'), desc: 'Edit contract template' },
-  { value: 'blog', label: t('adminNav.blog'), desc: 'Write and manage blog posts' },
-  { value: 'email-settings', label: 'Email সেটিংস', desc: 'ইমেইল কনফিগারেশন' },
-];
+
 
 /* ═══════════════════════════════════════════
    Panel 4: ইউজার ম্যানেজমেন্ট
@@ -1397,6 +1382,22 @@ const STAFF_PERMISSION_OPTIONS = [
 
 function UsersPanel() {
   const t = useT();
+
+  const STAFF_PERMISSION_OPTIONS = [
+    { value: 'payment-verify', label: t('adminNav.paymentVerify'), desc: 'Verify and approve payments' },
+    { value: 'payouts', label: t('adminNav.payoutManagement'), desc: 'Approve and process payouts' },
+    { value: 'admin-calls', label: t('adminNav.liveChat'), desc: 'Live chat and calls with users' },
+    { value: 'disputes', label: t('adminNav.disputeManagement'), desc: 'Dispute handling' },
+    { value: 'payment-methods', label: t('adminNav.paymentMethods'), desc: 'Add/edit payment methods' },
+    { value: 'fee-rules', label: t('adminNav.feeRules'), desc: 'Change fee rules' },
+    { value: 'all-deals', label: t('adminNav.allDeals'), desc: 'View and manage all deals' },
+    { value: 'users', label: t('adminNav.userManagement'), desc: 'User list, Change Password' },
+    { value: 'contact-info', label: t('adminNav.contact'), desc: 'Contact info settings' },
+    { value: 'settings', label: t('adminNav.websiteSettings'), desc: 'General site settings' },
+    { value: 'contract', label: t('adminNav.contract'), desc: 'Edit contract template' },
+    { value: 'blog', label: t('adminNav.blog'), desc: 'Write and manage blog posts' },
+    { value: 'email-settings', label: t('adminNav.emailSettings'), desc: 'Email configuration' },
+  ];
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -3020,7 +3021,7 @@ function DisputesPanel() {
                 <p className="text-sm text-muted-foreground">কোনো মেসেজ নেই</p>
               </div>
             )}
-            {messages.map((msg) => adminChatBubble(msg))}
+            {messages.map((msg) => <AdminChatBubble key={msg.id} msg={msg} />)}
             <div ref={chatEndRef} />
           </div>
 
@@ -3316,7 +3317,7 @@ function AdminCallsPanel() {
                 <p className="text-sm text-muted-foreground">কোনো মেসেজ নেই</p>
               </div>
             )}
-            {messages.map((msg) => adminChatBubble(msg))}
+            {messages.map((msg) => <AdminChatBubble key={msg.id} msg={msg} />)}
             <div ref={chatEndRef} />
           </div>
 
