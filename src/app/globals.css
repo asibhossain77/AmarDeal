@@ -177,6 +177,34 @@ html {
   background-color: oklch(0.3 0.005 250);
 }
 
+/* ── AI Support Panel ── */
+.ai-panel-border {
+  background-color: #fafafa;
+  border: 1px solid oklch(0.9 0.004 250);
+  box-shadow: 0 8px 40px oklch(0 0 0 / 0.12), 0 2px 12px oklch(0 0 0 / 0.06);
+}
+.dark .ai-panel-border {
+  background-color: oklch(0.13 0.006 250);
+  border-color: oklch(0.22 0.006 250);
+  box-shadow: 0 8px 40px oklch(0 0 0 / 0.4), 0 0 80px oklch(0.7 0.2 300 / 0.04);
+}
+
+.ai-chat-bg {
+  background-color: #f4f4f5;
+}
+.dark .ai-chat-bg {
+  background-color: oklch(0.11 0.005 250);
+}
+
+.ai-input-bg {
+  background-color: #fafafa;
+  border-top: 1px solid oklch(0.92 0.004 250);
+}
+.dark .ai-input-bg {
+  background-color: oklch(0.13 0.006 250);
+  border-top-color: oklch(0.2 0.006 250);
+}
+
 /* ── AI Glow Border Animation ── */
 @property --glow-angle {
   syntax: "<angle>";
@@ -236,8 +264,14 @@ html {
   }
 }
 
-/* ── Shimmer Loading Animation ── */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* ── AI Thinking Bounce ── */
+@keyframes thinkBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
 }
