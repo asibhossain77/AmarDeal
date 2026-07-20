@@ -231,10 +231,12 @@ export function LiveSupportButton() {
                   className="flex justify-start"
                 >
                   <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-3">
-                    <div className="flex gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />
-                      <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:300ms]" />
+                    <div className="flex items-center gap-1 h-4">
+                      <span className="w-[3px] rounded-full bg-primary/70 animate-[wave_1.2s_ease-in-out_infinite]" />
+                      <span className="w-[3px] rounded-full bg-primary/70 animate-[wave_1.2s_ease-in-out_0.15s_infinite]" />
+                      <span className="w-[3px] rounded-full bg-primary/70 animate-[wave_1.2s_ease-in-out_0.3s_infinite]" />
+                      <span className="w-[3px] rounded-full bg-primary/70 animate-[wave_1.2s_ease-in-out_0.45s_infinite]" />
+                      <span className="w-[3px] rounded-full bg-primary/70 animate-[wave_1.2s_ease-in-out_0.6s_infinite]" />
                     </div>
                   </div>
                 </motion.div>
