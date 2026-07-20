@@ -176,3 +176,17 @@ html {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: oklch(0.3 0.005 250);
 }
+
+/* ── AI Glow Border Animation ── */
+@keyframes aiGlow {
+  0%, 100% {
+    background-size: 200% 200%;
+    background-position: 0% 50%;
+    opacity: 0.6;
+  }
+  50% {
+    background-size: 300% 300%;
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}

@@ -249,19 +249,21 @@ export function LiveSupportButton() {
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
                 className="flex items-center gap-2"
               >
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="আপনার প্রশ্ন লিখুন..."
-                  disabled={aiLoading}
-                  className="flex-1 h-10 px-4 rounded-xl bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50 transition-colors"
-                />
+                <div className="flex-1 rounded-xl p-[2px] bg-[length:200%_200%] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 animate-[aiGlow_3s_ease-in-out_infinite]">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="আপনার প্রশ্ন লিখুন..."
+                    disabled={aiLoading}
+                    className="w-full h-[36px] px-4 rounded-[10px] bg-white dark:bg-zinc-900 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={!input.trim() || aiLoading}
-                  className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center transition-colors shrink-0"
+                  className="h-[40px] w-10 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center transition-colors shrink-0"
                   aria-label="মেসেজ পাঠান"
                 >
                   {aiLoading ? (
