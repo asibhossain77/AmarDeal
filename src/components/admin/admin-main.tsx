@@ -1810,18 +1810,18 @@ function UsersPanel() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-5">
-        <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
-          <Users className="h-5 w-5 text-primary" />
-          User Management
+      <div className="mb-4 sm:mb-5">
+        <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary shrink-0" />
+          <span className="truncate">User Management</span>
         </h2>
-        <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
+        <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
           List and management of all registered users
         </p>
       </div>
 
       {/* Role Category Tabs */}
-      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+      <div className="mb-3 flex gap-1 sm:gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 sm:-mx-1 sm:px-1 no-scrollbar">
         {ROLE_TABS.map((tab) => {
           const count = tab.key === 'all' ? users.length : (roleCounts as Record<string, number>)[tab.key] ?? 0;
           const active = roleFilter === tab.key;
@@ -1830,28 +1830,28 @@ function UsersPanel() {
             <button
               key={tab.key}
               onClick={() => setRoleFilter(tab.key)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
                 active
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
-              <span className={`${active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-foreground/10 text-muted-foreground'} text-[10px] font-bold px-1.5 py-0.5 rounded-md`}>{count}</span>
+              <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <span>{tab.label}</span>
+              <span className={`${active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-foreground/10 text-muted-foreground'} text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-md`}>{count}</span>
             </button>
           );
         })}
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4 relative">
+      <div className="mb-3 sm:mb-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           placeholder="Search by email or mobile..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-11 rounded-xl text-sm bg-white dark:bg-zinc-900"
+          className="pl-10 h-10 sm:h-11 rounded-xl text-sm bg-white dark:bg-zinc-900"
         />
       </div>
 
@@ -1915,7 +1915,7 @@ function UsersPanel() {
       </SolidCard>
 
       {/* Mobile Cards */}
-      <div className="lg:hidden space-y-3">
+      <div className="lg:hidden space-y-2">
         {loading ? (
           <LoadingSpinner />
         ) : filteredUsers.length === 0 ? (
@@ -1932,21 +1932,19 @@ function UsersPanel() {
               className="!p-0 cursor-pointer active:scale-[0.98] transition-transform"
               onClick={() => setSelectedUser(u)}
             >
-              <div className="p-3.5 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">{u.name.charAt(0)}</span>
+              <div className="px-3 py-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
+                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-xs sm:text-sm font-bold text-primary">{u.name.charAt(0)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-semibold text-foreground truncate">{u.name}</p>
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+                    <p className="text-[13px] sm:text-sm font-semibold text-foreground truncate">{u.name}</p>
                     <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{u.phone}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-px">{u.phone}</p>
                 </div>
-                <Badge className={`${u.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'} border-0 text-[10px] font-medium shrink-0`}>
-                  {u.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
-                </Badge>
+                <div className={`h-2 w-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} title={u.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} />
               </div>
             </SolidCard>
           ))
@@ -3588,17 +3586,17 @@ export function AdminMain() {
   }
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
+    <div className="flex-1 p-3 sm:p-4 md:p-6 lg:px-6 lg:py-8">
       {/* ── Top Bar ── */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+      <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
             <span className="text-primary">{siteName}</span>
-            <span className="text-muted-foreground font-normal text-base">
-              — অ্যাডমিন প্যানেল
+            <span className="text-muted-foreground font-normal text-sm sm:text-base">
+              {' '}— অ্যাডমিন প্যানেল
             </span>
           </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
             এসক্রো ম্যানেজমেন্ট ড্যাশবোর্ড
           </p>
         </div>
