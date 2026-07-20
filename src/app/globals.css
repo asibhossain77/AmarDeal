@@ -178,15 +178,46 @@ html {
 }
 
 /* ── AI Glow Border Animation ── */
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
 @keyframes aiGlow {
-  0%, 100% {
-    background-size: 200% 200%;
-    background-position: 0% 50%;
-    opacity: 0.6;
+  0% {
+    --glow-angle: 0deg;
+    filter: brightness(0.8);
+  }
+  25% {
+    filter: brightness(1.2);
   }
   50% {
-    background-size: 300% 300%;
-    background-position: 100% 50%;
-    opacity: 1;
+    --glow-angle: 180deg;
+    filter: brightness(0.8);
   }
+  75% {
+    filter: brightness(1.2);
+  }
+  100% {
+    --glow-angle: 360deg;
+    filter: brightness(0.8);
+  }
+}
+
+.ai-glow-border {
+  background: conic-gradient(
+    from var(--glow-angle),
+    #ec4899,
+    #d946ef,
+    #a855f7,
+    #8b5cf6,
+    #6366f1,
+    #3b82f6,
+    #06b6d4,
+    #14b8a6,
+    #a855f7,
+    #ec4899
+  );
+  animation: aiGlow 4s linear infinite;
 }
