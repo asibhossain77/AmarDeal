@@ -145,13 +145,13 @@ export function LiveSupportButton() {
             <div className="bg-primary px-5 py-3.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
-                  <Bot className="h-4.5 w-4.5 text-primary-foreground" />
+                  <Bot className="h-4.5 w-4.5 text-white" />
                 </div>
                 <div>
-                  <p className="text-primary-foreground font-semibold text-sm">AI সাপোর্ট</p>
+                  <p className="text-white font-semibold text-sm">AI সাপোর্ট</p>
                   <div className="flex items-center gap-1.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <p className="text-primary-foreground/70 text-[11px]">সরাসরি উত্তর দিচ্ছে</p>
+                    <p className="text-white/70 text-[11px]">সরাসরি উত্তর দিচ্ছে</p>
                   </div>
                 </div>
               </div>
@@ -160,7 +160,7 @@ export function LiveSupportButton() {
                 className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
                 aria-label="বন্ধ করুন"
               >
-                <X className="h-4 w-4 text-primary-foreground" />
+                <X className="h-4 w-4 text-white" />
               </button>
             </div>
 
