@@ -1398,9 +1398,20 @@ function UsersPanel() {
     { value: 'blog', label: t('adminNav.blog'), desc: 'Write and manage blog posts' },
     { value: 'email-settings', label: t('adminNav.emailSettings'), desc: 'Email configuration' },
   ];
+  type RoleFilter = 'all' | 'super_admin' | 'support' | 'staff' | 'user';
+
+  const ROLE_TABS: { key: RoleFilter; label: string; icon: React.ElementType }[] = [
+    { key: 'all', label: t('adminUsers.all'), icon: Users },
+    { key: 'super_admin', label: t('adminUsers.superAdmin'), icon: Shield },
+    { key: 'support', label: t('adminUsers.support'), icon: Headphones },
+    { key: 'staff', label: t('adminUsers.staff'), icon: UserCog },
+    { key: 'user', label: t('adminUsers.generalUser'), icon: User },
+  ];
+
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -1482,7 +1493,22 @@ function UsersPanel() {
     }
   };
 
+  // Count users per role
+  const roleCounts = users.reduce((acc, u) => {
+    if (u.isAdmin && u.adminRole === 'super_admin') acc.super_admin++;
+    else if (u.isAdmin && u.adminRole === 'support') acc.support++;
+    else if (u.isAdmin && u.adminRole === 'staff') acc.staff++;
+    else acc.user++;
+    return acc;
+  }, { super_admin: 0, support: 0, staff: 0, user: 0 });
+
   const filteredUsers = users.filter((u) => {
+    // Role filter
+    if (roleFilter === 'super_admin') return u.isAdmin && u.adminRole === 'super_admin';
+    if (roleFilter === 'support') return u.isAdmin && u.adminRole === 'support';
+    if (roleFilter === 'staff') return u.isAdmin && u.adminRole === 'staff';
+    if (roleFilter === 'user') return !u.isAdmin;
+    // Search filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return u.email.toLowerCase().includes(q) || u.phone.includes(q) || u.name.toLowerCase().includes(q);
@@ -1789,6 +1815,30 @@ function UsersPanel() {
         <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
           List and management of all registered users
         </p>
+      </div>
+
+      {/* Role Category Tabs */}
+      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        {ROLE_TABS.map((tab) => {
+          const count = tab.key === 'all' ? users.length : (roleCounts as Record<string, number>)[tab.key] ?? 0;
+          const active = roleFilter === tab.key;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setRoleFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors shrink-0 ${
+                active
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
+              <span className={`${active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-foreground/10 text-muted-foreground'} text-[10px] font-bold px-1.5 py-0.5 rounded-md`}>{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search Bar */}
