@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, Mail, HelpCircle, ChevronRight, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 interface ContactInfo {
@@ -123,101 +123,79 @@ export function LiveSupportButton() {
   }, [input, aiLoading, sessionId]);
 
   // Collect available contact links
-  const contactLinks: { href: string; icon: React.ElementType; label: string; gradient: string }[] = [];
-  if (contact.whatsapp) contactLinks.push({ href: formatWhatsAppLink(contact.whatsapp), icon: WhatsAppIcon, label: 'WhatsApp', gradient: 'from-green-500/20 to-emerald-500/10 hover:from-green-500/30 hover:to-emerald-500/20' });
-  if (contact.email) contactLinks.push({ href: `mailto:${contact.email}`, icon: Mail, label: 'Email', gradient: 'from-orange-500/20 to-amber-500/10 hover:from-orange-500/30 hover:to-amber-500/20' });
-  if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', gradient: 'from-cyan-500/20 to-sky-500/10 hover:from-cyan-500/30 hover:to-sky-500/20' });
-  if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', gradient: 'from-blue-500/20 to-indigo-500/10 hover:from-blue-500/30 hover:to-indigo-500/20' });
+  const contactLinks: { href: string; icon: React.ElementType; label: string; color: string; hoverColor: string; darkColor: string; darkHover: string }[] = [];
+  if (contact.whatsapp) contactLinks.push({ href: formatWhatsAppLink(contact.whatsapp), icon: WhatsAppIcon, label: 'WhatsApp', color: 'bg-green-50', hoverColor: 'hover:bg-green-100', darkColor: 'dark:bg-green-950/30', darkHover: 'dark:hover:bg-green-950/50' });
+  if (contact.email) contactLinks.push({ href: `mailto:${contact.email}`, icon: Mail, label: 'Email', color: 'bg-orange-50', hoverColor: 'hover:bg-orange-100', darkColor: 'dark:bg-orange-950/30', darkHover: 'dark:hover:bg-orange-950/50' });
+  if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', color: 'bg-sky-50', hoverColor: 'hover:bg-sky-100', darkColor: 'dark:bg-sky-950/30', darkHover: 'dark:hover:bg-sky-950/50' });
+  if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
 
   return (
     <div className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3">
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.92 }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.92 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-            className="w-[340px] sm:w-[380px] rounded-2xl overflow-hidden flex flex-col ai-panel-border"
-            style={{ maxHeight: 'min(580px, calc(100vh - 100px))' }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="w-[340px] sm:w-[380px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col"
+            style={{ maxHeight: 'min(560px, calc(100vh - 120px))' }}
           >
-            {/* Header — dark AI gradient */}
-            <div className="relative px-5 py-4 shrink-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950" />
-              {/* Subtle dot grid pattern */}
-              <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-              <div className="relative flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
-                      <Sparkles className="h-5 w-5 text-white" />
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 border-2 border-zinc-900" />
-                  </div>
-                  <div>
-                    <p className="text-white font-semibold text-[15px] tracking-tight">AI সাপোর্ট</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-                      </span>
-                      <p className="text-white/50 text-[11px] font-medium">সরাসরি উত্তর দিচ্ছে</p>
-                    </div>
+            {/* Header */}
+            <div className="bg-primary px-5 py-3.5 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Bot className="h-4.5 w-4.5 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-primary-foreground font-semibold text-sm">AI সাপোর্ট</p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <p className="text-primary-foreground/70 text-[11px]">সরাসরি উত্তর দিচ্ছে</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors"
-                  aria-label="বন্ধ করুন"
-                >
-                  <X className="h-4 w-4 text-white/70" />
-                </button>
               </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                aria-label="বন্ধ করুন"
+              >
+                <X className="h-4 w-4 text-primary-foreground" />
+              </button>
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0 ai-chat-bg">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {/* Welcome + Contact Grid — shown when no chat messages yet */}
               {!hasChatted && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  {/* Welcome message */}
-                  <div className="flex gap-2.5 max-w-[90%]">
-                    <div className="shrink-0 mt-1">
-                      <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-cyan-400/20 flex items-center justify-center">
-                        <Sparkles className="h-3 w-3 text-fuchsia-500" />
-                      </div>
-                    </div>
-                    <div className="bg-white dark:bg-zinc-800/80 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-zinc-100 dark:border-zinc-700/50">
-                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                        আসসালামু আলাইকুম! 👋
-                        {'\n'}আমারডিল এ স্বাগতম। আমি AI অ্যাসিস্ট্যান্ট। কিভাবে সাহায্য করতে পারি?
-                      </p>
-                    </div>
+                  <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%]">
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                      আসসালামু আলাইকুম! 👋
+                      {'\n'}আমারডিল এ স্বাগতম। আমি AI অ্যাসিস্ট্যান্ট। কিভাবে সাহায্য করতে পারি?
+                    </p>
                   </div>
 
-                  {/* 2×2 Contact Grid — glassmorphism */}
+                  {/* 2×2 Contact Grid */}
                   {contactLinks.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {contactLinks.map((link, idx) => {
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                      {contactLinks.map((link) => {
                         const Icon = link.icon;
                         return (
-                          <motion.a
+                          <a
                             key={link.label}
                             href={link.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 + idx * 0.06 }}
-                            className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-gradient-to-br ${link.gradient} border border-zinc-200/60 dark:border-zinc-700/40 backdrop-blur-sm transition-all duration-200 group hover:scale-[1.02] hover:shadow-sm active:scale-[0.98]`}
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl ${link.color} ${link.hoverColor} ${link.darkColor} ${link.darkHover} transition-colors group`}
                           >
-                            <Icon className="h-5 w-5 text-foreground/60 group-hover:text-foreground shrink-0 transition-colors" />
-                            <span className="text-[12.5px] font-semibold text-foreground/80 group-hover:text-foreground transition-colors">{link.label}</span>
-                          </motion.a>
+                            <Icon className="h-5 w-5 text-foreground/70 group-hover:text-foreground shrink-0" />
+                            <span className="text-[13px] font-semibold text-foreground">{link.label}</span>
+                          </a>
                         );
                       })}
                     </div>
@@ -229,23 +207,16 @@ export function LiveSupportButton() {
               {messages.map((msg, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  transition={{ duration: 0.2 }}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  {msg.role === 'ai' && (
-                    <div className="shrink-0 mt-1 mr-2">
-                      <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-cyan-400/20 flex items-center justify-center">
-                        <Sparkles className="h-3 w-3 text-fuchsia-500" />
-                      </div>
-                    </div>
-                  )}
                   <div
-                    className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                       msg.role === 'user'
-                        ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-md'
-                        : 'bg-white dark:bg-zinc-800/80 text-foreground rounded-bl-md border border-zinc-100 dark:border-zinc-700/50'
+                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        : 'bg-muted text-foreground rounded-bl-md'
                     }`}
                   >
                     {msg.text}
@@ -253,26 +224,16 @@ export function LiveSupportButton() {
                 </motion.div>
               ))}
 
-              {/* AI Thinking Indicator */}
               {aiLoading && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="shrink-0 mt-1 mr-2">
-                    <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-cyan-400/20 flex items-center justify-center">
-                      <Sparkles className="h-3 w-3 text-fuchsia-500 animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="bg-white dark:bg-zinc-800/80 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm border border-zinc-100 dark:border-zinc-700/50">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-[3px]">
-                        <span className="h-[5px] w-[5px] bg-fuchsia-500/70 rounded-sm animate-[thinkBounce_1.4s_ease-in-out_infinite]" />
-                        <span className="h-[5px] w-[5px] bg-fuchsia-400/70 rounded-sm animate-[thinkBounce_1.4s_ease-in-out_0.2s_infinite]" />
-                        <span className="h-[5px] w-[5px] bg-cyan-400/70 rounded-sm animate-[thinkBounce_1.4s_ease-in-out_0.4s_infinite]" />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground font-medium ml-1">চিন্তা করছি...</span>
+                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-3 min-w-[80px]">
+                    <div className="relative h-3.5 w-16 overflow-hidden rounded bg-foreground/10">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
+                      <span className="absolute right-0 top-0 h-3.5 w-[2px] bg-primary animate-pulse" />
                     </div>
                   </div>
                 </motion.div>
@@ -282,7 +243,7 @@ export function LiveSupportButton() {
             </div>
 
             {/* AI Text Input Bar */}
-            <div className="p-3 pt-2 ai-input-bg shrink-0">
+            <div className="p-3 pt-1 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
               <form
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
                 className="flex items-center gap-2"
@@ -295,37 +256,37 @@ export function LiveSupportButton() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="আপনার প্রশ্ন লিখুন..."
                     disabled={aiLoading}
-                    className="w-full h-[38px] px-4 rounded-[10px] bg-white dark:bg-zinc-900 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 transition-opacity"
+                    className="w-full h-[36px] px-4 rounded-[10px] bg-white dark:bg-zinc-900 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!input.trim() || aiLoading}
-                  className="h-[42px] w-10 rounded-[12px] bg-gradient-to-br from-fuchsia-500 to-cyan-400 hover:from-fuchsia-600 hover:to-cyan-500 disabled:opacity-40 disabled:from-fuchsia-500 disabled:to-cyan-400 flex items-center justify-center transition-all shrink-0 shadow-md shadow-fuchsia-500/15 hover:shadow-lg hover:shadow-fuchsia-500/25 active:scale-95"
+                  className="h-[40px] w-10 rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:hover:bg-primary flex items-center justify-center transition-colors shrink-0"
                   aria-label="মেসেজ পাঠান"
                 >
                   {aiLoading ? (
-                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
                   ) : (
-                    <Send className="h-4 w-4 text-white" />
+                    <Send className="h-4 w-4 text-primary-foreground" />
                   )}
                 </button>
               </form>
 
               {/* FAQ & Contact Links */}
-              <div className="flex gap-1.5 mt-2.5">
+              <div className="flex gap-2 mt-2">
                 <button
                   onClick={() => { useAppStore.getState().setView('page-faq'); setIsOpen(false); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground group"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
                 >
-                  <HelpCircle className="h-3 w-3 group-hover:text-fuchsia-500 transition-colors" />
+                  <HelpCircle className="h-3 w-3" />
                   <span className="text-[11px] font-medium">FAQ</span>
                 </button>
                 <button
                   onClick={() => { useAppStore.getState().setView('page-contact'); setIsOpen(false); }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground group"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
                 >
-                  <ChevronRight className="h-3 w-3 group-hover:text-cyan-500 transition-colors" />
+                  <ChevronRight className="h-3 w-3" />
                   <span className="text-[11px] font-medium">যোগাযোগ</span>
                 </button>
               </div>
@@ -335,31 +296,25 @@ export function LiveSupportButton() {
       </AnimatePresence>
 
       {/* FAB Button */}
-      <div className="relative">
-        {/* Pulse ring */}
-        {!isOpen && (
-          <span className="absolute inset-0 rounded-2xl bg-primary animate-ping opacity-20" />
-        )}
-        <motion.button
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative h-13 w-13 rounded-2xl bg-gradient-to-br from-fuchsia-500 to-cyan-400 hover:from-fuchsia-600 hover:to-cyan-500 shadow-xl shadow-fuchsia-500/25 flex items-center justify-center transition-all cursor-pointer shrink-0"
-          aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'সাপোর্ট'}
-        >
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <X className="h-5 w-5 text-white" />
-              </motion.div>
-            ) : (
-              <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <MessageCircle className="h-5 w-5 text-white" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </div>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer shrink-0"
+        aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'সাপোর্ট'}
+      >
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <X className="h-5 w-5 text-primary-foreground" />
+            </motion.div>
+          ) : (
+            <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <MessageCircle className="h-5 w-5 text-primary-foreground" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
     </div>
   );
 }
