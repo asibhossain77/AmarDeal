@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-// useCallback/useState kept for AI chat; useCallback removed below if unused
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Mail } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 interface ContactInfo {
@@ -47,24 +46,27 @@ function TelegramIcon({ className }: { className?: string }) {
   );
 }
 
-type PanelState = 'closed' | 'menu' | 'chat';
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
 
 export function LiveSupportButton() {
-  const [panelState, setPanelState] = useState<PanelState>('closed');
+  const [isOpen, setIsOpen] = useState(false);
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
 
-
   // AI Chat state
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'ai', text: 'আসসালামু আলাইকুম! 👋\nআমারডিল এ স্বাগতম। আমি AI অ্যাসিস্ট্যান্ট। কিভাবে সাহায্য করতে পারি?' }
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [sessionId] = useState(() => `sup_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isOpen = panelState !== 'closed';
+  const hasChatted = messages.length > 0;
 
   useEffect(() => {
     fetch('/api/contact-info')
@@ -78,16 +80,16 @@ export function LiveSupportButton() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, aiLoading]);
 
-  // Focus input when chat opens
+  // Focus input when panel opens
   useEffect(() => {
-    if (panelState === 'chat') {
+    if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
-  }, [panelState]);
+  }, [isOpen]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPanelState('closed');
+      if (e.key === 'Escape') setIsOpen(false);
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
@@ -120,10 +122,17 @@ export function LiveSupportButton() {
     }
   }, [input, aiLoading, sessionId]);
 
+  // Collect available contact links
+  const contactLinks: { href: string; icon: React.ElementType; label: string; color: string; hoverColor: string; darkColor: string; darkHover: string }[] = [];
+  if (contact.whatsapp) contactLinks.push({ href: formatWhatsAppLink(contact.whatsapp), icon: WhatsAppIcon, label: 'WhatsApp', color: 'bg-green-50', hoverColor: 'hover:bg-green-100', darkColor: 'dark:bg-green-950/30', darkHover: 'dark:hover:bg-green-950/50' });
+  if (contact.email) contactLinks.push({ href: `mailto:${contact.email}`, icon: Mail, label: 'Email', color: 'bg-orange-50', hoverColor: 'hover:bg-orange-100', darkColor: 'dark:bg-orange-950/30', darkHover: 'dark:hover:bg-orange-950/50' });
+  if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', color: 'bg-sky-50', hoverColor: 'hover:bg-sky-100', darkColor: 'dark:bg-sky-950/30', darkHover: 'dark:hover:bg-sky-950/50' });
+  if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
+
   return (
     <div className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3">
       <AnimatePresence>
-        {panelState === 'chat' && (
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -132,7 +141,7 @@ export function LiveSupportButton() {
             className="w-[340px] sm:w-[380px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col"
             style={{ maxHeight: 'min(560px, calc(100vh - 120px))' }}
           >
-            {/* Chat Header */}
+            {/* Header */}
             <div className="bg-primary px-5 py-3.5 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -147,16 +156,54 @@ export function LiveSupportButton() {
                 </div>
               </div>
               <button
-                onClick={() => setPanelState('menu')}
+                onClick={() => setIsOpen(false)}
                 className="h-8 w-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                aria-label="পিছনে যান"
+                aria-label="বন্ধ করুন"
               >
                 <X className="h-4 w-4 text-primary-foreground" />
               </button>
             </div>
 
-            {/* Chat Messages */}
+            {/* Chat Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+              {/* Welcome + Contact Grid — shown when no chat messages yet */}
+              {!hasChatted && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-3"
+                >
+                  <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%]">
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                      আসসালামু আলাইকুম! 👋
+                      {'\n'}আমারডিল এ স্বাগতম। আমি AI অ্যাসিস্ট্যান্ট। কিভাবে সাহায্য করতে পারি?
+                    </p>
+                  </div>
+
+                  {/* 2×2 Contact Grid */}
+                  {contactLinks.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {contactLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <a
+                            key={link.label}
+                            href={link.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl ${link.color} ${link.hoverColor} ${link.darkColor} ${link.darkHover} transition-colors group`}
+                          >
+                            <Icon className="h-4.5 w-4.5 text-foreground/70 group-hover:text-foreground shrink-0" />
+                            <span className="text-xs font-semibold text-foreground">{link.label}</span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Chat Messages */}
               {messages.map((msg, i) => (
                 <motion.div
                   key={i}
@@ -196,7 +243,7 @@ export function LiveSupportButton() {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Chat Input */}
+            {/* AI Text Input Bar */}
             <div className="p-3 pt-1 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
               <form
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
@@ -229,149 +276,25 @@ export function LiveSupportButton() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {panelState === 'menu' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="w-[280px] sm:w-[300px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
-          >
-            {/* Menu Header */}
-            <div className="bg-primary px-5 py-3.5">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center">
-                  <MessageCircle className="h-4.5 w-4.5 text-primary-foreground" />
-                </div>
-                <div>
-                  <p className="text-primary-foreground font-semibold text-sm">সাপোর্ট</p>
-                  <p className="text-primary-foreground/70 text-[11px]">আমাদের সাথে যোগাযোগ করুন</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Menu Items */}
-            <div className="p-2 space-y-1">
-              {/* AI Chat */}
-              <button
-                onClick={() => setPanelState('chat')}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors text-left group"
-              >
-                <div className="h-10 w-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 dark:group-hover:bg-primary/30 transition-colors">
-                  <Bot className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground">Chat with AI</p>
-                  <p className="text-xs text-muted-foreground">সরাসরি প্রশ্ন করুন</p>
-                </div>
-              </button>
-
-              {/* WhatsApp */}
-              {contact.whatsapp && (
-                <a
-                  href={formatWhatsAppLink(contact.whatsapp)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors text-left group"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center shrink-0 group-hover:bg-green-100 dark:group-hover:bg-green-950/50 transition-colors">
-                    <WhatsAppIcon className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">WhatsApp</p>
-                    <p className="text-xs text-muted-foreground">মেসেজ করুন</p>
-                  </div>
-                </a>
-              )}
-
-              {/* Email */}
-              {contact.email && (
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors text-left group"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center shrink-0 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/50 transition-colors">
-                    <Mail className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">ইমেইল</p>
-                    <p className="text-xs text-muted-foreground">ইমেইল করুন</p>
-                  </div>
-                </a>
-              )}
-            </div>
-
-            {/* Telegram & Facebook Group — side by side */}
-            {(contact.telegramGroup || contact.facebookGroup) && (
-              <div className="mx-2 mb-2 flex gap-2">
-                {contact.telegramGroup && (
-                  <a
-                    href={contact.telegramGroup}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 hover:bg-sky-100 dark:hover:bg-sky-950/50 transition-colors group"
-                  >
-                    <TelegramIcon className="h-4 w-4 text-sky-600 shrink-0" />
-                    <span className="text-xs font-semibold text-foreground">Telegram</span>
-                  </a>
-                )}
-                {contact.facebookGroup && (
-                  <a
-                    href={contact.facebookGroup}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors group"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-blue-600 shrink-0" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    <span className="text-xs font-semibold text-foreground">Facebook</span>
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Footer Links */}
-            <div className="px-4 pb-3 pt-1 border-t border-zinc-100 dark:border-zinc-800">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { useAppStore.getState().setView('page-faq'); setPanelState('closed'); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <HelpCircle className="h-3 w-3" />
-                  <span className="text-[11px] font-medium">FAQ</span>
-                </button>
-                <button
-                  onClick={() => { useAppStore.getState().setView('page-contact'); setPanelState('closed'); }}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronRight className="h-3 w-3" />
-                  <span className="text-[11px] font-medium">যোগাযোগ</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* FAB Button */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setPanelState(panelState === 'closed' ? 'menu' : 'closed')}
+        onClick={() => setIsOpen(!isOpen)}
         className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer shrink-0"
         aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'সাপোর্ট'}
       >
         <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <X className="h-5 w-5 text-primary-foreground" />
-              </motion.div>
-            ) : (
-              <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                <MessageCircle className="h-5 w-5 text-primary-foreground" />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {isOpen ? (
+            <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <X className="h-5 w-5 text-primary-foreground" />
+            </motion.div>
+          ) : (
+            <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+              <MessageCircle className="h-5 w-5 text-primary-foreground" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.button>
     </div>
   );
