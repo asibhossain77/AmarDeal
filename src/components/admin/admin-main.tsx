@@ -66,6 +66,9 @@ import {
   MessageCircle,
   FileText,
   TrendingUp,
+  Shield,
+  UserCog,
+  User,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
