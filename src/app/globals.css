@@ -215,12 +215,8 @@ html {
   animation: aiGlow 4s linear infinite;
 }
 
-/* ── Wave Loading Animation ── */
-@keyframes wave {
-  0%, 100% {
-    height: 4px;
-  }
-  50% {
-    height: 16px;
-  }
+/* ── Shimmer Loading Animation ── */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
