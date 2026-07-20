@@ -182,7 +182,7 @@ export function LiveSupportButton() {
 
                   {/* 2×2 Contact Grid */}
                   {contactLinks.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-2 gap-2.5 pt-1">
                       {contactLinks.map((link) => {
                         const Icon = link.icon;
                         return (
@@ -191,10 +191,10 @@ export function LiveSupportButton() {
                             href={link.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl ${link.color} ${link.hoverColor} ${link.darkColor} ${link.darkHover} transition-colors group`}
+                            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl ${link.color} ${link.hoverColor} ${link.darkColor} ${link.darkHover} transition-colors group`}
                           >
-                            <Icon className="h-4.5 w-4.5 text-foreground/70 group-hover:text-foreground shrink-0" />
-                            <span className="text-xs font-semibold text-foreground">{link.label}</span>
+                            <Icon className="h-5 w-5 text-foreground/70 group-hover:text-foreground shrink-0" />
+                            <span className="text-[13px] font-semibold text-foreground">{link.label}</span>
                           </a>
                         );
                       })}
