@@ -306,11 +306,11 @@ export function LiveSupportButton() {
         <AnimatePresence mode="wait">
           {isOpen ? (
             <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <X className="h-5 w-5 text-primary-foreground" />
+              <X className="h-5 w-5 text-white" />
             </motion.div>
           ) : (
             <motion.div key="open" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <MessageCircle className="h-5 w-5 text-primary-foreground" />
+              <MessageCircle className="h-5 w-5 text-white" />
             </motion.div>
           )}
         </AnimatePresence>
