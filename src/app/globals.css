@@ -208,16 +208,9 @@ html {
 .ai-glow-border {
   background: conic-gradient(
     from var(--glow-angle),
-    #ec4899,
     #d946ef,
-    #a855f7,
-    #8b5cf6,
-    #6366f1,
-    #3b82f6,
     #06b6d4,
-    #14b8a6,
-    #a855f7,
-    #ec4899
+    #d946ef
   );
   animation: aiGlow 4s linear infinite;
 }
