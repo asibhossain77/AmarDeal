@@ -23,8 +23,6 @@ function formatWhatsAppLink(number: string): string {
   return `https://wa.me/${full}`;
 }
 
-const bellShakeSequence = [0, -14, 12, -10, 8, -5, 3, 0];
-
 interface ChatMsg {
   role: 'user' | 'ai';
   text: string;
@@ -52,7 +50,6 @@ export function LiveSupportButton() {
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
   const [isHidden, setIsHidden] = useState(false);
-  const [isNudging, setIsNudging] = useState(false);
   const hoverLockRef = useRef(false);
 
   // AI Chat state
@@ -97,32 +94,15 @@ export function LiveSupportButton() {
   useEffect(() => {
     if (isOpen) {
       setIsHidden(false);
-      setIsNudging(false);
     } else {
       const timer = setTimeout(() => setIsHidden(true), 3000);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isHidden || isOpen || isNudging || hoverLockRef.current) return;
-    const trigger = () => {
-      if (!hoverLockRef.current && !isOpen) setIsNudging(true);
-    };
-    const firstTimer = setTimeout(trigger, 8000);
-    const interval = setInterval(trigger, 15000);
-    return () => { clearTimeout(firstTimer); clearInterval(interval); };
-  }, [isHidden, isOpen, isNudging]);
-
-  useEffect(() => {
-    if (!isNudging) return;
-    const timer = setTimeout(() => setIsNudging(false), 3500);
-    return () => clearTimeout(timer);
-  }, [isNudging]);
-
   const handleMouseEnter = useCallback(() => {
     hoverLockRef.current = true;
-    if (!isOpen) { setIsHidden(false); setIsNudging(false); }
+    if (!isOpen) { setIsHidden(false); }
   }, [isOpen]);
 
   const handleMouseLeave = useCallback(() => {
@@ -168,7 +148,7 @@ export function LiveSupportButton() {
     }
   }, [input, aiLoading, sessionId]);
 
-  const shouldSlideOut = isHidden && !isOpen && !isNudging;
+  const shouldSlideOut = isHidden && !isOpen;
 
   return (
     <div
@@ -410,19 +390,7 @@ export function LiveSupportButton() {
         className="h-12 w-12 rounded-2xl bg-primary hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 shadow-lg shadow-primary/30 dark:shadow-primary/20 flex items-center justify-center transition-colors relative cursor-pointer shrink-0"
         aria-label={isOpen ? 'সাপোর্ট প্যানেল বন্ধ করুন' : 'সাপোর্ট'}
       >
-        <motion.div
-          animate={
-            isNudging
-              ? { rotate: bellShakeSequence }
-              : { rotate: 0 }
-          }
-          transition={
-            isNudging
-              ? { duration: 1.6, ease: 'easeInOut', delay: 0.5, repeat: 1 }
-              : { duration: 0.2 }
-          }
-        >
-          <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
             {isOpen ? (
               <motion.div key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
                 <X className="h-5 w-5 text-primary-foreground" />
@@ -433,28 +401,6 @@ export function LiveSupportButton() {
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
-
-        {!isOpen && !isHidden && !isNudging && (
-          <motion.span
-            initial={{ scale: 1, opacity: 0.25 }}
-            animate={{ scale: 1.8, opacity: 0 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
-            className="absolute inset-0 rounded-2xl bg-primary"
-          />
-        )}
-
-        <AnimatePresence>
-          {isNudging && (
-            <motion.span
-              initial={{ scale: 1, opacity: 0 }}
-              animate={{ scale: 1.6, opacity: 0.3 }}
-              exit={{ scale: 1, opacity: 0 }}
-              transition={{ duration: 0.8, repeat: 3, repeatType: 'reverse', ease: 'easeInOut' }}
-              className="absolute inset-0 rounded-2xl bg-primary"
-            />
-          )}
-        </AnimatePresence>
       </motion.button>
     </div>
   );
