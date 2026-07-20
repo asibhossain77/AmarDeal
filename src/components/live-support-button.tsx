@@ -9,12 +9,14 @@ import { useAppStore } from '@/lib/store';
 interface ContactInfo {
   whatsapp: string | null;
   telegramGroup: string | null;
+  facebookGroup: string | null;
   email: string | null;
 }
 
 const FALLBACK_CONTACT: ContactInfo = {
   whatsapp: null,
   telegramGroup: null,
+  facebookGroup: null,
   email: null,
 };
 
@@ -283,24 +285,6 @@ export function LiveSupportButton() {
                 </a>
               )}
 
-              {/* Telegram */}
-              {contact.telegramGroup && (
-                <a
-                  href={contact.telegramGroup}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors text-left group"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-sky-50 dark:bg-sky-950/30 flex items-center justify-center shrink-0 group-hover:bg-sky-100 dark:group-hover:bg-sky-950/50 transition-colors">
-                    <TelegramIcon className="h-5 w-5 text-sky-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">টেলিগ্রাম</p>
-                    <p className="text-xs text-muted-foreground">গ্রুপে যোগ দিন</p>
-                  </div>
-                </a>
-              )}
-
               {/* Email */}
               {contact.email && (
                 <a
@@ -317,6 +301,34 @@ export function LiveSupportButton() {
                 </a>
               )}
             </div>
+
+            {/* Telegram & Facebook Group — side by side */}
+            {(contact.telegramGroup || contact.facebookGroup) && (
+              <div className="mx-2 mb-2 flex gap-2">
+                {contact.telegramGroup && (
+                  <a
+                    href={contact.telegramGroup}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/30 hover:bg-sky-100 dark:hover:bg-sky-950/50 transition-colors group"
+                  >
+                    <TelegramIcon className="h-4 w-4 text-sky-600 shrink-0" />
+                    <span className="text-xs font-semibold text-foreground">Telegram</span>
+                  </a>
+                )}
+                {contact.facebookGroup && (
+                  <a
+                    href={contact.facebookGroup}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors group"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4 text-blue-600 shrink-0" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    <span className="text-xs font-semibold text-foreground">Facebook</span>
+                  </a>
+                )}
+              </div>
+            )}
 
             {/* Footer Links */}
             <div className="px-4 pb-3 pt-1 border-t border-zinc-100 dark:border-zinc-800">
