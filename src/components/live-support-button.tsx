@@ -248,7 +248,7 @@ export function LiveSupportButton() {
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
                 className="flex items-center gap-2"
               >
-                <div className="flex-1 rounded-[12px] p-[2px] ai-glow-border">
+                <div className={`flex-1 rounded-[12px] p-[2px] ai-glow-border ${aiLoading ? 'ai-glow-loading' : ''}`}>
                   <input
                     ref={inputRef}
                     type="text"
