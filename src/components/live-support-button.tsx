@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+// useCallback/useState kept for AI chat; useCallback removed below if unused
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
@@ -49,8 +50,7 @@ type PanelState = 'closed' | 'menu' | 'chat';
 export function LiveSupportButton() {
   const [panelState, setPanelState] = useState<PanelState>('closed');
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
-  const [isHidden, setIsHidden] = useState(false);
-  const hoverLockRef = useRef(false);
+
 
   // AI Chat state
   const [messages, setMessages] = useState<ChatMsg[]>([
@@ -82,36 +82,6 @@ export function LiveSupportButton() {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [panelState]);
-
-  // Auto-hide button after 6 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isOpen) setIsHidden(true);
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsHidden(false);
-    } else {
-      const timer = setTimeout(() => setIsHidden(true), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  const handleMouseEnter = useCallback(() => {
-    hoverLockRef.current = true;
-    if (!isOpen) { setIsHidden(false); }
-  }, [isOpen]);
-
-  const handleMouseLeave = useCallback(() => {
-    hoverLockRef.current = false;
-    if (!isOpen) {
-      const timer = setTimeout(() => setIsHidden(true), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -148,14 +118,8 @@ export function LiveSupportButton() {
     }
   }, [input, aiLoading, sessionId]);
 
-  const shouldSlideOut = isHidden && !isOpen;
-
   return (
-    <div
-      className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3">
       <AnimatePresence>
         {panelState === 'chat' && (
           <motion.div
@@ -379,11 +343,6 @@ export function LiveSupportButton() {
 
       {/* FAB Button */}
       <motion.button
-        animate={{
-          x: shouldSlideOut ? 52 : 0,
-          opacity: shouldSlideOut ? 0.4 : 1,
-        }}
-        transition={{ type: 'spring', stiffness: 280, damping: 28 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setPanelState(panelState === 'closed' ? 'menu' : 'closed')}
