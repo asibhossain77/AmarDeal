@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useT } from '@/lib/i18n';
 
 interface Review {
   id: string;
@@ -176,6 +177,7 @@ function Pagination({
 
 /* ── Review Form (email/phone verification) ── */
 function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useT();
   const [contact, setContact] = useState('');
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -204,12 +206,12 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
       });
       if (!res.ok) {
         const data = (await res.json()) as { error: string; code?: string };
-        throw new Error(data.error || 'সমস্যা হয়েছে');
+        throw new Error(data.error || 'Something went wrong');
       }
       return res.json();
     },
     onSuccess: () => {
-      toast.success('রিভিউ জমা হয়েছে! ধন্যবাদ 🎉');
+      toast.success(t('review.submitted'));
       setContact('');
       setRating(0);
       setComment('');
@@ -227,21 +229,21 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
       <h3 className="flex items-center gap-2 text-base font-bold text-foreground mb-4">
         <MessageSquarePlus className="h-5 w-5 text-primary" />
-        আপনার মতামত দিন
+        {t('review.giveReview')}
       </h3>
 
       <div className="space-y-4">
         {/* Email / Phone */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            ইমেইল বা ফোন নম্বর <span className="text-destructive">*</span>
+            {t('review.emailOrPhone')} <span className="text-destructive">*</span>
           </label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={contact}
               onChange={(e) => setContact(e.target.value)}
-              placeholder="example@gmail.com বা ০১৭XXXXXXXX"
+              placeholder="example@gmail.com"
               className="pl-9"
               type="text"
             />
@@ -252,17 +254,17 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
               {!reviewStatus.hasAccount ? (
                 <p className="flex items-center gap-1.5 text-xs text-destructive">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  এই ইমেইল/ফোন নম্বর দিয়ে কোনো একাউন্ট নেই
+                  {t('review.noAccount')}
                 </p>
               ) : reviewStatus.reviewed ? (
                 <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                  এই একাউন্ট দিয়ে ইতিমধ্যে রিভিউ দেওয়া হয়েছে
+                  {t('review.alreadyReviewed')}
                 </p>
               ) : (
                 <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                  একাউন্ট পাওয়া গেছে
+                  {t('review.accountFound')}
                 </p>
               )}
             </div>
@@ -270,7 +272,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
           {checkingStatus && (
             <div className="mt-1.5 flex items-center gap-1.5">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">যাচাই হচ্ছে...</span>
+              <span className="text-xs text-muted-foreground">{t('review.verifying')}</span>
             </div>
           )}
         </div>
@@ -278,7 +280,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
         {/* Rating */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            রেটিং <span className="text-destructive">*</span>
+            {t('review.rating')} <span className="text-destructive">*</span>
           </label>
           <StarRating value={rating} onChange={setRating} interactive />
         </div>
@@ -286,17 +288,17 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
         {/* Comment */}
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            আপনার মন্তব্য <span className="text-destructive">*</span>
+            {t('review.comment')} <span className="text-destructive">*</span>
           </label>
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value.slice(0, 500))}
-            placeholder="আমাদের সেবা সম্পর্কে আপনার মতামত লিখুন..."
+            placeholder={t('review.commentPlaceholder')}
             rows={3}
             className="resize-none"
           />
           <p className="mt-1 text-right text-xs text-muted-foreground">
-            {comment.length}/৫০০
+            {comment.length}/500
           </p>
         </div>
 
@@ -311,7 +313,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
           ) : (
             <Send className="h-4 w-4" />
           )}
-          রিভিউ জমা দিন
+          {t('review.submit')}
         </Button>
       </div>
     </div>
@@ -320,6 +322,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
 
 /* ── Main Section ── */
 export function ReviewSection() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
 
@@ -366,14 +369,14 @@ export function ReviewSection() {
           className="text-center mb-8 sm:mb-10"
         >
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-            আমাদের ব্যবহারকারীদের মতামত
+            {t('review.sectionTitle')}
           </h2>
           {avgRating && (
             <div className="mt-2 sm:mt-3 flex items-center justify-center gap-2">
               <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-amber-400 text-amber-400" />
               <span className="text-base sm:text-lg font-bold text-foreground">{avgRating}</span>
               <span className="text-xs sm:text-sm text-muted-foreground">
-                ({reviews!.length} টি রিভিউ)
+                ({t('review.reviewCount', { count: reviews!.length })})
               </span>
             </div>
           )}
@@ -396,8 +399,8 @@ export function ReviewSection() {
             ) : !reviews?.length ? (
               <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-border/60">
                 <MessageSquarePlus className="h-12 w-12 text-muted-foreground/20 mb-3" />
-                <p className="text-muted-foreground font-medium">এখনো কোনো রিভিউ নেই</p>
-                <p className="text-sm text-muted-foreground/60 mt-1">প্রথম রিভিউ দিন!</p>
+                <p className="text-muted-foreground font-medium">{t('review.noReviews')}</p>
+                <p className="text-sm text-muted-foreground/60 mt-1">{t('review.beFirst')}</p>
               </div>
             ) : (
               <>
