@@ -230,10 +230,11 @@ export function LiveSupportButton() {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-4 py-3 min-w-[80px]">
-                    <div className="relative h-3.5 w-16 overflow-hidden rounded bg-foreground/10">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/20 to-transparent animate-[shimmer_1.5s_ease-in-out_infinite]" />
-                      <span className="absolute right-0 top-0 h-3.5 w-[2px] bg-primary animate-pulse" />
+                  <div className="bg-muted text-foreground rounded-2xl rounded-bl-md px-5 py-3.5">
+                    <div className="flex items-center gap-[5px]">
+                      <span className="h-[7px] w-[7px] rounded-full bg-foreground/40 animate-[fbDot_1.4s_ease-in-out_infinite]" />
+                      <span className="h-[7px] w-[7px] rounded-full bg-foreground/40 animate-[fbDot_1.4s_ease-in-out_0.2s_infinite]" />
+                      <span className="h-[7px] w-[7px] rounded-full bg-foreground/40 animate-[fbDot_1.4s_ease-in-out_0.4s_infinite]" />
                     </div>
                   </div>
                 </motion.div>
