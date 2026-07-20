@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot, Mail } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 interface ContactInfo {
@@ -271,6 +271,24 @@ export function LiveSupportButton() {
                   )}
                 </button>
               </form>
+
+              {/* FAQ & Contact Links */}
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => { useAppStore.getState().setView('page-faq'); setIsOpen(false); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  <span className="text-[11px] font-medium">FAQ</span>
+                </button>
+                <button
+                  onClick={() => { useAppStore.getState().setView('page-contact'); setIsOpen(false); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="text-[11px] font-medium">যোগাযোগ</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
