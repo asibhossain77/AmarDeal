@@ -27,7 +27,6 @@ export function Footer() {
       { label: t('nav.contact'), view: 'page-contact', href: '/contact' },
       { label: t('page.privacy.title'), view: 'page-privacy', href: '/privacy' },
       { label: t('page.terms.title'), view: 'page-terms', href: '/terms' },
-      { label: t('page.terms.title'), view: 'page-terms', href: '/terms' },
     ],
   ];
 
