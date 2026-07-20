@@ -430,6 +430,13 @@ export const bn = {
   'adminNav.aiSupport': 'AI সাপোর্ট',
   'adminNav.twoFactor': 'টু-ফ্যাক্টর অথেনটিকেশন',
 
+  // ── Admin Users Panel ──
+  'adminUsers.all': 'সবাই',
+  'adminUsers.superAdmin': 'সুপার অ্যাডমিন',
+  'adminUsers.support': 'সাপোর্ট',
+  'adminUsers.staff': 'স্টাফ',
+  'adminUsers.generalUser': 'সাধারণ ইউজার',
+
   // ── Seller ──
   'seller.myProducts': 'আমার পণ্য',
   'seller.dealCancelled': 'ডিল বাতিল হয়েছে',

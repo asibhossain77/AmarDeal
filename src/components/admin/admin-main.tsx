@@ -1507,10 +1507,10 @@ function UsersPanel() {
 
   const filteredUsers = users.filter((u) => {
     // Role filter
-    if (roleFilter === 'super_admin') return u.isAdmin && u.adminRole === 'super_admin';
-    if (roleFilter === 'support') return u.isAdmin && u.adminRole === 'support';
-    if (roleFilter === 'staff') return u.isAdmin && u.adminRole === 'staff';
-    if (roleFilter === 'user') return !u.isAdmin;
+    if (roleFilter === 'super_admin' && !(u.isAdmin && u.adminRole === 'super_admin')) return false;
+    if (roleFilter === 'support' && !(u.isAdmin && u.adminRole === 'support')) return false;
+    if (roleFilter === 'staff' && !(u.isAdmin && u.adminRole === 'staff')) return false;
+    if (roleFilter === 'user' && u.isAdmin) return false;
     // Search filter
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();

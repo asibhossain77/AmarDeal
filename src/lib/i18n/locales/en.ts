@@ -432,6 +432,13 @@ export const en: Record<TranslationKey, string> = {
   'adminNav.aiSupport': 'AI Support',
   'adminNav.twoFactor': 'Two-Factor Authentication',
 
+  // ── Admin Users Panel ──
+  'adminUsers.all': 'All',
+  'adminUsers.superAdmin': 'Super Admin',
+  'adminUsers.support': 'Support',
+  'adminUsers.staff': 'Staff',
+  'adminUsers.generalUser': 'General User',
+
   // ── Seller ──
   'seller.myProducts': 'My Products',
   'seller.dealCancelled': 'Deal Cancelled',
