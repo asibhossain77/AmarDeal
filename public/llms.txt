@@ -1,0 +1,23 @@
+# AmarDeal
+
+AmarDeal is a comprehensive e-commerce and service platform built with Next.js.
+
+## Pages
+
+- [Home](/) - Landing page with features, pricing, and reviews
+- [Login](/) - User authentication
+- [Dashboard](/) - User dashboard after login
+- [FAQ](/) - Frequently asked questions
+- [Contact](/) - Contact information
+- [Terms & Conditions](/) - Terms of service
+- [Privacy Policy](/) - Privacy policy
+
+## Features
+
+- Product and service listings
+- User registration and login
+- AI-powered customer support chat
+- Fee structure and pricing
+- User reviews and feedback system
+- Admin dashboard for user management
+- Responsive design with dark mode support
