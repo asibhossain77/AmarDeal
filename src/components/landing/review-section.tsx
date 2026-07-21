@@ -141,6 +141,7 @@ function Pagination({
         className="h-9 w-9"
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
+        aria-label="আগের পেজ"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -169,6 +170,7 @@ function Pagination({
         className="h-9 w-9"
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
+        aria-label="পরের পেজ"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
