@@ -43,6 +43,7 @@ function StarRating({
           type="button"
           disabled={!interactive}
           onClick={() => onChange?.(i)}
+          aria-label={`${i} তারা`}
           className={`transition-colors ${
             interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'
           } ${i <= value ? 'text-amber-400' : 'text-muted-foreground/30'}`}
