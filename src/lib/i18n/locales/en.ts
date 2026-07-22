@@ -603,6 +603,8 @@ export const en: Record<TranslationKey, string> = {
   'contact.whatsappMsg': 'Message on WhatsApp',
   'contact.emailLabel': 'Email',
   'contact.fbGroup': 'Facebook Group',
+  'contact.fbPage': 'Facebook Page',
+  'contact.visitPage': 'Visit Page',
   'contact.joinGroup': 'Join Group',
   'contact.tgGroup': 'Telegram Group',
   'contact.address': 'Address',

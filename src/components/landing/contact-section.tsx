@@ -14,6 +14,7 @@ interface ContactData {
   telegram: string | null;
   telegramGroup: string | null;
   facebook: string | null;
+  facebookPage: string | null;
   facebookGroup: string | null;
   address: string | null;
   adminName: string;
@@ -73,6 +74,9 @@ export function ContactSection() {
   }
   if (data?.email) {
     items.push({ icon: Mail, label: t('contact.emailLabel'), value: data.email, href: `mailto:${data.email}`, color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' });
+  }
+  if (data?.facebookPage) {
+    items.push({ icon: Facebook, label: t('contact.fbPage'), value: t('contact.visitPage'), href: data.facebookPage, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' });
   }
   if (data?.facebookGroup) {
     items.push({ icon: Users, label: t('contact.fbGroup'), value: t('contact.joinGroup'), href: data.facebookGroup, color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' });

@@ -19,6 +19,7 @@ export async function GET() {
       whatsapp: null,
       telegram: null,
       facebook: null,
+      facebookPage: null,
       facebookGroup: null,
       telegramGroup: null,
       address: null,

@@ -123,6 +123,7 @@ model ContactInfo {
   whatsapp      String?
   telegram      String?
   facebook      String?
+  facebookPage  String?
   facebookGroup String?
   telegramGroup String?
   address       String?

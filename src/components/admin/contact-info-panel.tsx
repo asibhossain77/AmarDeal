@@ -15,6 +15,7 @@ interface ContactData {
   telegram: string | null;
   telegramGroup: string | null;
   facebook: string | null;
+  facebookPage: string | null;
   facebookGroup: string | null;
   address: string | null;
 }
@@ -27,7 +28,7 @@ interface ProfileData {
 export function ContactInfoPanel() {
   const [data, setData] = useState<ContactData>({
     phone: '', email: '', whatsapp: '', telegram: '',
-    facebook: '', facebookGroup: '', telegramGroup: '', address: '',
+    facebook: '', facebookPage: '', facebookGroup: '', telegramGroup: '', address': '',
   });
   const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ export function ContactInfoPanel() {
         whatsapp: contact.whatsapp || '',
         telegram: contact.telegram || '',
         facebook: contact.facebook || '',
+        facebookPage: contact.facebookPage || '',
         facebookGroup: contact.facebookGroup || '',
         telegramGroup: contact.telegramGroup || '',
         address: contact.address || '',
@@ -181,14 +183,18 @@ export function ContactInfoPanel() {
           </div>
           <div>
             <p className="text-sm font-bold text-foreground">সোশ্যাল মিডিয়া</p>
-            <p className="text-[11px] text-muted-foreground">ফেসবুক প্রোফাইল, গ্রুপ, টেলিগ্রাম</p>
+            <p className="text-[11px] text-muted-foreground">ফেসবুক প্রোফাইল, পেজ, গ্রুপ, টেলিগ্রাম</p>
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক প্রোফাইল লিংক</Label>
             <Input placeholder="https://facebook.com/..." value={data.facebook || ''} onChange={e => updateField('facebook', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক পেজ লিংক</Label>
+            <Input placeholder="https://facebook.com/amardealpage" value={data.facebookPage || ''} onChange={e => updateField('facebookPage', e.target.value)} className="rounded-xl border-border/60" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-muted-foreground" /> ফেসবুক গ্রুপ লিংক</Label>

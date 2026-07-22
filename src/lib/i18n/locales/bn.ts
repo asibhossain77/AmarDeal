@@ -601,6 +601,8 @@ export const bn = {
   'contact.whatsappMsg': 'হোয়াটসঅ্যাপে মেসেজ করুন',
   'contact.emailLabel': 'ইমেইল',
   'contact.fbGroup': 'ফেসবুক গ্রুপ',
+  'contact.fbPage': 'ফেসবুক পেজ',
+  'contact.visitPage': 'পেজ দেখুন',
   'contact.joinGroup': 'গ্রুপে যোগ দিন',
   'contact.tgGroup': 'টেলিগ্রাম গ্রুপ',
   'contact.address': 'ঠিকানা',
