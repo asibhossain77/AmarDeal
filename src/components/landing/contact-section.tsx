@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MessageCircle, MapPin, Users, Loader2, User, Send } from 'lucide-react';
+import { Phone, Mail, MessageCircle, MapPin, Facebook, Users, Loader2, User, Send } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};

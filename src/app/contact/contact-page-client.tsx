@@ -7,29 +7,35 @@ import {
   MapPin,
   Phone,
   Mail,
-  Globe,
   ArrowLeft,
   ExternalLink,
   Loader2,
   User,
+  Facebook,
+  Users,
+  Send,
+  MessageCircle,
 } from 'lucide-react';
 
-/* ─── Types ─── */
+/* ─── Types (matches /api/contact-info response) ─── */
 interface ContactData {
-  name: string;
-  photoUrl: string;
-  address: string;
-  phone: string;
-  email: string;
-  facebookUrl: string;
-  whatsappUrl: string;
-  instagramUrl: string;
-  websiteUrl: string;
+  phone: string | null;
+  email: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  telegramGroup: string | null;
+  facebook: string | null;
+  facebookPage: string | null;
+  facebookGroup: string | null;
+  address: string | null;
+  adminName: string;
+  adminImageUrl: string;
 }
 
 /* ─── Social Links Config ─── */
 interface SocialLink {
   label: string;
+  action: string;
   url: string;
   color: string;
   hoverBg: string;
@@ -37,15 +43,27 @@ interface SocialLink {
 
 function getSocialLinks(data: ContactData): SocialLink[] {
   const links: SocialLink[] = [];
-  if (data.facebookUrl)
-    links.push({ label: 'ফেসবুক', url: data.facebookUrl, color: '#1877F2', hoverBg: 'bg-[#1877F2]/10' });
-  if (data.whatsappUrl)
-    links.push({ label: 'হোয়াটসঅ্যাপ', url: data.whatsappUrl, color: '#25D366', hoverBg: 'bg-[#25D366]/10' });
-  if (data.instagramUrl)
-    links.push({ label: 'ইনস্টাগ্রাম', url: data.instagramUrl, color: '#E4405F', hoverBg: 'bg-[#E4405F]/10' });
-  if (data.websiteUrl)
-    links.push({ label: 'ওয়েবসাইট', url: data.websiteUrl, color: '#65A30D', hoverBg: 'bg-primary/10' });
+  if (data.facebookPage)
+    links.push({ label: 'ফেসবুক পেজ', action: 'ভিজিট করুন', url: data.facebookPage, color: '#1877F2', hoverBg: 'bg-[#1877F2]/10' });
+  if (data.facebookGroup)
+    links.push({ label: 'ফেসবুক গ্রুপ', action: 'জয়েন করুন', url: data.facebookGroup, color: '#1877F2', hoverBg: 'bg-[#1877F2]/10' });
+  if (data.facebook)
+    links.push({ label: 'ফেসবুক প্রোফাইল', action: 'ভিজিট করুন', url: data.facebook, color: '#1877F2', hoverBg: 'bg-[#1877F2]/10' });
+  if (data.whatsapp)
+    links.push({ label: 'হোয়াটসঅ্যাপ', action: 'মেসেজ করুন', url: data.whatsapp, color: '#25D366', hoverBg: 'bg-[#25D366]/10' });
+  if (data.telegram)
+    links.push({ label: 'টেলিগ্রাম', action: 'মেসেজ করুন', url: data.telegram, color: '#26A5E4', hoverBg: 'bg-[#26A5E4]/10' });
+  if (data.telegramGroup)
+    links.push({ label: 'টেলিগ্রাম গ্রুপ', action: 'জয়েন করুন', url: data.telegramGroup, color: '#26A5E4', hoverBg: 'bg-[#26A5E4]/10' });
   return links;
+}
+
+function getSocialIcon(label: string) {
+  if (label.includes('গ্রুপ') && label.includes('ফেসবুক')) return Users;
+  if (label.includes('গ্রুপ') && label.includes('টেলিগ্রাম')) return Users;
+  if (label.includes('টেলিগ্রাম')) return Send;
+  if (label.includes('হোয়াটসঅ্যাপ')) return MessageCircle;
+  return Facebook;
 }
 
 /* ─── Animation Variants ─── */
@@ -114,7 +132,7 @@ export function ContactPageClient() {
 
   const socialLinks = getSocialLinks(data);
   const hasAnyInfo =
-    data.name || data.address || data.phone || data.email || socialLinks.length > 0;
+    data.adminName || data.adminImageUrl || data.address || data.phone || data.email || socialLinks.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
@@ -150,26 +168,28 @@ export function ContactPageClient() {
             className="space-y-5"
           >
             {/* ── Profile Card ── */}
-            {(data.name || data.photoUrl) && (
+            {(data.adminName || data.adminImageUrl) && (
               <motion.div
                 variants={itemVariants}
                 className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-6 sm:p-8 text-center"
               >
                 {/* Avatar */}
-                {data.photoUrl ? (
+                {data.adminImageUrl ? (
                   <img
-                    src={data.photoUrl}
-                    alt={data.name || 'Profile'}
+                    src={data.adminImageUrl}
+                    alt={data.adminName || 'Profile'}
                     className="mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover border-4 border-primary/20 shadow-lg mb-4"
                     loading="lazy" decoding="async"
                   />
                 ) : (
                   <div className="mx-auto h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-primary/15 flex items-center justify-center mb-4 shadow-lg">
-                    <User className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
+                    <span className="text-3xl sm:text-4xl font-black text-primary">
+                      {(data.adminName || 'আ').charAt(0)}
+                    </span>
                   </div>
                 )}
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {data.name || 'আমার ডিল'}
+                  {data.adminName || 'আমার ডিল'}
                 </h1>
               </motion.div>
             )}
@@ -185,10 +205,10 @@ export function ContactPageClient() {
                 <ContactRow icon={MapPin} label="ঠিকানা" value={data.address} />
               )}
               {data.phone && (
-                <ContactRow icon={Phone} label="ফোন নম্বর" value={data.phone} />
+                <ContactRow icon={Phone} label="ফোন নম্বর" value={data.phone} href={`tel:${data.phone}`} />
               )}
               {data.email && (
-                <ContactRow icon={Mail} label="ইমেইল" value={data.email} />
+                <ContactRow icon={Mail} label="ইমেইল" value={data.email} href={`mailto:${data.email}`} />
               )}
 
               {!data.address && !data.phone && !data.email && (
@@ -206,31 +226,34 @@ export function ContactPageClient() {
               >
                 <h2 className="text-base font-bold text-foreground mb-4">সোশ্যাল মিডিয়া</h2>
                 <div className="grid grid-cols-2 gap-3">
-                  {socialLinks.map((link) => (
-                    <a
-                      key={link.label}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center gap-3 rounded-2xl p-3.5 border border-border/50 transition-all hover:shadow-md active:scale-[0.98] ${link.hoverBg}`}
-                    >
-                      <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: `${link.color}20` }}
+                  {socialLinks.map((link) => {
+                    const Icon = getSocialIcon(link.label);
+                    return (
+                      <a
+                        key={link.label}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 rounded-2xl p-3.5 border border-border/50 transition-all hover:shadow-md active:scale-[0.98] ${link.hoverBg}`}
                       >
-                        <Globe className="h-4 w-4" style={{ color: link.color }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-foreground truncate">
-                          {link.label}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          দেখতে ক্লিক করুন
-                        </p>
-                      </div>
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </a>
-                  ))}
+                        <div
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: `${link.color}20` }}
+                        >
+                          <Icon className="h-4 w-4" style={{ color: link.color }} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-foreground truncate">
+                            {link.label}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {link.action}
+                          </p>
+                        </div>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </a>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -265,13 +288,19 @@ function ContactRow({
   icon: Icon,
   label,
   value,
+  href,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
+  href?: string;
 }) {
+  const Wrapper = href ? 'a' : 'div';
   return (
-    <div className="flex items-start gap-3.5 rounded-2xl bg-muted/40 p-3.5">
+    <Wrapper
+      {...(href ? { href, target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className={href ? 'flex items-start gap-3.5 rounded-2xl bg-muted/40 p-3.5 cursor-pointer hover:bg-muted/60 transition-colors' : 'flex items-start gap-3.5 rounded-2xl bg-muted/40 p-3.5'}
+    >
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15">
         <Icon className="h-4 w-4 text-primary" />
       </div>
@@ -283,6 +312,6 @@ function ContactRow({
           {value}
         </p>
       </div>
-    </div>
+    </Wrapper>
   );
 }
