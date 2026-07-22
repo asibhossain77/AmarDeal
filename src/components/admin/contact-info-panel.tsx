@@ -26,10 +26,9 @@ interface ProfileData {
 }
 
 export function ContactInfoPanel() {
-  const [data, setData] = useState<ContactData>({
-    phone: '', email: '', whatsapp: '', telegram: '',
-    facebook: '', facebookPage: '', facebookGroup: '', telegramGroup: '', address': '',
-  });
+    const [data, setData] = useState<ContactData>({
+    const [data, setData] = useState<ContactData>({
+    facebook: '', facebookPage: '', facebookGroup: '', telegramGroup: '', address: '',
   const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
