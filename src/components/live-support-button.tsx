@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, animate, useTransform, PanInfo } from 'framer-motion';
 import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
@@ -56,6 +56,7 @@ function FacebookIcon({ className }: { className?: string }) {
 
 export function LiveSupportButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
 
   // AI Chat state
@@ -67,6 +68,45 @@ export function LiveSupportButton() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasChatted = messages.length > 0;
+
+  // Swipe drag value
+  const x = useMotionValue(0);
+  const btnWidth = 48; // 12 * 4 = 48px
+  const peekOffset = btnWidth - 14; // leave 14px peek when dismissed
+
+  // Animate to target position
+  const animateTo = useCallback((target: number) => {
+    animate(x, target, { type: 'spring', stiffness: 400, damping: 30 });
+  }, [x]);
+
+  const handleDragEnd = useCallback((_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 40;
+    if (isDismissed) {
+      // If dismissed, swipe LEFT to bring back
+      if (info.offset.x < -threshold || info.velocity.x < -300) {
+        setIsDismissed(false);
+        animateTo(0);
+      } else {
+        animateTo(peekOffset);
+      }
+    } else {
+      // If visible, swipe RIGHT to dismiss
+      if (info.offset.x > threshold || info.velocity.x > 300) {
+        setIsDismissed(true);
+        animateTo(peekOffset);
+        if (isOpen) setIsOpen(false);
+      } else {
+        animateTo(0);
+      }
+    }
+  }, [isDismissed, isOpen, animateTo, peekOffset]);
+
+  // When isDismissed changes (from non-drag source), animate
+  useEffect(() => {
+    animateTo(isDismissed ? peekOffset : 0);
+  }, [isDismissed, animateTo, peekOffset]);
+
+  const scaleOnPeek = useTransform(x, [peekOffset - 10, peekOffset + 10], [1, 0.85]);
 
   useEffect(() => {
     fetch('/api/contact-info')
@@ -130,7 +170,16 @@ export function LiveSupportButton() {
   if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
 
   return (
-    <div className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3">
+    <motion.div
+      className="fixed bottom-6 right-0 z-50 flex flex-col items-end gap-3 pr-3"
+      style={{ x, scale: scaleOnPeek }}
+      drag="x"
+      dragDirectionLock
+      dragConstraints={{ left: 0, right: peekOffset }}
+      dragElastic={{ left: 0.1, right: 0.2 }}
+      onDragEnd={handleDragEnd}
+      whileDrag={{ cursor: 'grabbing' }}
+    >
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -316,6 +365,6 @@ export function LiveSupportButton() {
           )}
         </AnimatePresence>
       </motion.button>
-    </div>
+    </motion.div>
   );
 }
