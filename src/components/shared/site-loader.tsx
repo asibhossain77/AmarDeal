@@ -33,7 +33,7 @@ export function SiteLoader() {
             <motion.img
               src={siteLogo}
               alt={siteName}
-              className="h-14 w-14 rounded-xl object-contain"
+              className="h-9 w-9 rounded-lg object-contain"
               animate={{
                 scale: [1, 1.08, 1],
               }}
@@ -45,7 +45,7 @@ export function SiteLoader() {
             />
             {/* Glow ring */}
             <motion.div
-              className="absolute -inset-2 rounded-2xl border-2 border-primary/30"
+              className="absolute -inset-1.5 rounded-xl border-2 border-primary/30"
               animate={{
                 scale: [1, 1.15, 1],
                 opacity: [0.3, 0.7, 0.3],
@@ -63,7 +63,7 @@ export function SiteLoader() {
             initial={{ y: 15, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-5 text-xl font-bold tracking-tight text-foreground"
+            className="mt-3 text-sm font-bold tracking-tight text-foreground"
           >
             {siteName}
           </motion.p>
@@ -73,12 +73,12 @@ export function SiteLoader() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-4 flex items-center gap-1.5"
+            className="mt-2.5 flex items-center gap-1"
           >
             {[0, 1, 2].map((i) => (
               <motion.span
                 key={i}
-                className="h-2 w-2 rounded-full bg-primary"
+                className="h-1.5 w-1.5 rounded-full bg-primary"
                 animate={{
                   y: [0, -8, 0],
                   opacity: [0.4, 1, 0.4],
