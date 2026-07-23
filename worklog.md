@@ -786,3 +786,20 @@ Stage Summary:
 - Email footer auto-sent notice is customizable (default: "এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে")
 - All changes use existing PlatformSetting DB table — no schema migration needed
 - Files modified: src/lib/email.ts, src/app/api/admin/email-template-settings/route.ts, src/components/admin/email-settings-panel.tsx
+
+---
+Task ID: swipe-click-restore
+Agent: Main Agent
+Task: Support button click-to-restore when dismissed
+
+Work Log:
+- Found existing support button at src/components/live-support-button.tsx
+- Already had swipe/drag gesture (swipe right to dismiss, swipe left to restore) via framer-motion
+- Modified FAB button onClick: when isDismissed=true, clicking now restores button to full visibility instead of toggling chat
+- When isDismissed=false, click continues to toggle chat panel as before
+
+Stage Summary:
+- Changed onClick handler from `setIsOpen(!isOpen)` to conditional: if dismissed → restore, else → toggle chat
+- No new lint errors
+- Dev server compiled successfully
+
