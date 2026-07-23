@@ -61,7 +61,7 @@ export async function POST(
       select: { email: true, name: true },
     })
     if (recipient?.email && deal) {
-      sendEmail(recipient.email, payoutCompletedEmail(
+      sendEmail(recipient.email, () => payoutCompletedEmail(
         recipient.name || 'ইউজার',
         deal.title,
         payout.amount,

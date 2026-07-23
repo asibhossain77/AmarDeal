@@ -520,9 +520,16 @@ export function emailVerificationOtpEmail(toName: string, otp: string) {
    ═══════════════════════════════════════════════════════════════ */
 
 type EmailPayload = { subject: string; html: string };
+type EmailInput = EmailPayload | (() => EmailPayload);
 
-export async function sendEmail(to: string, payload: EmailPayload): Promise<void> {
+/** Resolve email input — if it's a function, call it AFTER settings are loaded */
+function resolvePayload(input: EmailInput): EmailPayload {
+  return typeof input === 'function' ? input() : input;
+}
+
+export async function sendEmail(to: string, input: EmailInput): Promise<void> {
   const settings = await loadEmailSettings();
+  const payload = resolvePayload(input);
   const transporter = getTransporter(settings);
   if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে বা অ্যাডমিন প্যানেলে যোগ করুন।');
 
@@ -535,7 +542,7 @@ export async function sendEmail(to: string, payload: EmailPayload): Promise<void
   console.log(`[EMAIL SENT] → ${to}: ${payload.subject}`);
 }
 
-export function fireEmails(emails: Array<{ to: string; payload: EmailPayload }>) {
+export function fireEmails(emails: Array<{ to: string; payload: EmailInput }>) {
   for (const e of emails) {
     sendEmail(e.to, e.payload).catch((err) => {
       console.error(`[EMAIL ERROR] → ${e.to}:`, err);

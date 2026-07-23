@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const { type, to } = body;
 
-    // Load email settings so templates use DB values
+    // Load settings for __check__ (only checks if key exists)
     const settings = await loadEmailSettings();
 
     // Special __check__ type — verify config
@@ -72,8 +72,7 @@ export async function POST(request: NextRequest) {
     // Special __verify__ type — actually send a test email to verify connection
     if (type === '__verify__') {
       const recipient = to || TEST_TO_FALLBACK;
-      const testPayload = welcomeEmail('Admin',);
-      await sendEmail(recipient, testPayload);
+      await sendEmail(recipient, () => welcomeEmail('Admin',));
       return NextResponse.json({
         success: true,
         message: `ভেরিফিকেশন ইমেইল পাঠানো হয়েছে → ${recipient}`,
@@ -88,16 +87,13 @@ export async function POST(request: NextRequest) {
     }
 
     const recipientEmail = to || TEST_TO_FALLBACK;
-    const payload = getTestPayload(type, 'টেস্ট ইউজার');
 
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, error: `অজানা টেমপ্লেট: ${type}` },
-        { status: 400 }
-      );
-    }
-
-    await sendEmail(recipientEmail, payload);
+    // Use lazy function so template builds AFTER sendEmail loads fresh settings
+    await sendEmail(recipientEmail, () => {
+      const payload = getTestPayload(type, 'টেস্ট ইউজার');
+      if (!payload) throw new Error(`অজানা টেমপ্লেট: ${type}`);
+      return payload;
+    });
 
     return NextResponse.json({
       success: true,

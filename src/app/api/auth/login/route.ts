@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     if (user.email) {
       const loginTime = new Date().toLocaleString('en', { timeZone: 'Asia/Dhaka' })
       const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'অজানা'
-      sendEmail(user.email, loginNotificationEmail(user.name || 'ইউজার', loginTime, clientIp)).catch(() => {})
+      sendEmail(user.email, () => loginNotificationEmail(user.name || 'ইউজার', loginTime, clientIp)).catch(() => {})
     }
 
     // Set session cookie for server-side auth (used by deal-guard, chat, etc.)

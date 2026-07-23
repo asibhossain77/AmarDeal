@@ -100,7 +100,7 @@ export async function POST(
 
     // Email: payout/refund requested
     if (user?.email) {
-      sendEmail(user.email, payoutRequestedEmail(
+      sendEmail(user.email, () => payoutRequestedEmail(
         user.name || 'ইউজার',
         deal.title,
         amount,

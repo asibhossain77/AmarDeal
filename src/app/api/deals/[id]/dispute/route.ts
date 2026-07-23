@@ -73,7 +73,7 @@ export async function POST(
 
     // Email: dispute raised — notify seller
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, disputeRaisedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0)).catch(() => {})
+      sendEmail(deal.seller.email, () => disputeRaisedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0)).catch(() => {})
     }
 
     // Email: dispute raised — notify admin
@@ -83,7 +83,7 @@ export async function POST(
         select: { name: true, email: true },
       })
       if (adminUser?.email) {
-        sendEmail(adminUser.email, adminDisputeEmail(
+        sendEmail(adminUser.email, () => adminDisputeEmail(
           adminUser.name || 'অ্যাডমিন',
           deal.title,
           `৳${(deal.amount || 0).toLocaleString('en')}`,

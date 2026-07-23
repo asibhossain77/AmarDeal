@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Send verification OTP email (fire-and-forget)
-    sendEmail(user.email, emailVerificationOtpEmail(user.name, otp)).catch((err) => {
+    sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {
       console.error('[REG VERIFY EMAIL ERROR]', err)
     })
 

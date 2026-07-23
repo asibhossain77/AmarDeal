@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Email: delivery started — notify buyer
     if (updated.buyer?.email) {
-      sendEmail(updated.buyer.email, deliveryStartedEmail(
+      sendEmail(updated.buyer.email, () => deliveryStartedEmail(
         updated.buyer.name || 'ক্রেতা',
         deal.title,
         updated.amount || 0,

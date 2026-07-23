@@ -81,12 +81,12 @@ export async function POST(
 
     // Email: dispute resolved to both parties
     if (deal.buyer?.email) {
-      sendEmail(deal.buyer.email, disputeResolvedEmail(
+      sendEmail(deal.buyer.email, () => disputeResolvedEmail(
         deal.buyer.name || 'ক্রেতা', deal.title, action as 'complete' | 'refund_buyer'
       )).catch(() => {})
     }
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, disputeResolvedEmail(
+      sendEmail(deal.seller.email, () => disputeResolvedEmail(
         deal.seller.name || 'বিক্রেতা', deal.title, action as 'complete' | 'refund_buyer'
       )).catch(() => {})
     }

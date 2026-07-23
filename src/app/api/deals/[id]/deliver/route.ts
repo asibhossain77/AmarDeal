@@ -71,7 +71,7 @@ export async function POST(
 
     // Email: delivery started
     if (deal.buyer?.email) {
-      sendEmail(deal.buyer.email, deliveryStartedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, deal.seller?.name || 'বিক্রেতা')).catch(() => {})
+      sendEmail(deal.buyer.email, () => deliveryStartedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, deal.seller?.name || 'বিক্রেতা')).catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

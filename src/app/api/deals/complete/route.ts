@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
 
     // Email: deal completed
     if (updated.buyer?.email) {
-      sendEmail(updated.buyer.email, dealCompletedEmail(updated.buyer.name || 'ক্রেতা', deal.title, updated.amount || 0, 'buyer')).catch(() => {})
+      sendEmail(updated.buyer.email, () => dealCompletedEmail(updated.buyer.name || 'ক্রেতা', deal.title, updated.amount || 0, 'buyer')).catch(() => {})
     }
     if (updated.seller?.email) {
-      sendEmail(updated.seller.email, dealCompletedEmail(updated.seller.name || 'বিক্রেতা', deal.title, updated.amount || 0, 'seller')).catch(() => {})
+      sendEmail(updated.seller.email, () => dealCompletedEmail(updated.seller.name || 'বিক্রেতা', deal.title, updated.amount || 0, 'seller')).catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

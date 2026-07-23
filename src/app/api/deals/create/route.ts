@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Email notification to counterparty
-    sendEmail(counterparty.email!, dealCreatedEmail(
+    sendEmail(counterparty.email!, () => dealCreatedEmail(
       counterparty.name || 'ইউজার',
       deal.title,
       deal.amount,
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
         select: { name: true, email: true },
       })
       if (adminUser?.email) {
-        sendEmail(adminUser.email, adminNewDealEmail(
+        sendEmail(adminUser.email, () => adminNewDealEmail(
           adminUser.name || 'অ্যাডমিন',
           deal.title,
           `৳${deal.amount.toLocaleString('en')}`,
