@@ -100,6 +100,7 @@ const base = `
   /* ── Header ── */
   .header{text-align:center;padding:36px 32px 28px}
   .header-name{font-size:24px;font-weight:800;color:${primary};letter-spacing:-0.3px}
+  .header-subtitle{font-size:12px;color:${textMuted};margin-top:6px;line-height:1.5}
   .header-divider{height:1px;background:#f0f0f0;margin:0 32px}
 
   /* ── Body ── */
@@ -144,7 +145,8 @@ const base = `
   .footer{padding:24px 32px;text-align:center}
   .footer-powered{font-size:12px;color:${textMuted}}
   .footer-powered a{font-weight:600;color:${primary}}
-  .footer-copy{font-size:11px;color:#bbbbbb;margin-top:8px;line-height:1.6}
+  .footer-tagline{font-size:11.5px;color:${textBody};margin-top:6px;line-height:1.5}
+  .footer-copy{font-size:11px;color:#bbbbbb;margin-top:10px;line-height:1.6}
   .footer-copy a{color:#bbbbbb}
 
   @media only screen and (max-width:520px){
@@ -167,12 +169,14 @@ function wrap(bodyHtml: string): string {
     <div class="wrapper">
       <div class="header">
         <span class="header-name">${s('email_site_name')}</span>
+        ${s('email_header_subtitle') ? `<p class="header-subtitle">${s('email_header_subtitle')}</p>` : ''}
       </div>
       <div class="header-divider"></div>
       <div class="body">${bodyHtml}</div>
       <div class="header-divider"></div>
       <div class="footer">
         <div class="footer-powered">Powered by <a href="${s('email_site_url')}">${s('email_site_name')}</a></div>
+        ${s('email_footer_tagline') ? `<p class="footer-tagline">${s('email_footer_tagline')}</p>` : ''}
         <div class="footer-copy">© ${YEAR} ${s('email_site_name')}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
       </div>
     </div>
