@@ -764,3 +764,25 @@ Work Log:
 Stage Summary:
 - fee-structure.tsx: section header, table headers, CTA button all translated
 - faq-section.tsx: 12 Q&As + section header + bottom CTA all translated
+---
+Task ID: email-footer-year
+Agent: Main Agent
+Task: Make email template footer year, copyright text, and notice customizable from admin panel
+
+Work Log:
+- Analyzed existing email template system in src/lib/email.ts
+- Found hardcoded `const YEAR = new Date().getFullYear()` on line 54 used in footer
+- Found hardcoded copyright text "সর্বস্বত্ব সংরক্ষিত" and notice text in wrap() footer
+- Added 3 new settings keys to DEFAULTS: email_footer_year, email_footer_copyright, email_footer_notice
+- Removed hardcoded YEAR constant, made footer use `s('email_footer_year') || new Date().getFullYear()`
+- Updated wrap() footer template to use dynamic copyright and notice from settings
+- Updated API route ALL_KEYS and TEMPLATE_DEFAULTS with 3 new keys
+- Added 3 new fields to admin panel TEMPLATE_FIELDS with Bangla labels and descriptions
+- Verified lint passes (no new errors) and dev server running cleanly
+
+Stage Summary:
+- Email footer year is now customizable from admin panel (defaults to auto/current year)
+- Email footer copyright text is customizable (default: "সর্বস্বত্ব সংরক্ষিত")
+- Email footer auto-sent notice is customizable (default: "এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে")
+- All changes use existing PlatformSetting DB table — no schema migration needed
+- Files modified: src/lib/email.ts, src/app/api/admin/email-template-settings/route.ts, src/components/admin/email-settings-panel.tsx

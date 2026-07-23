@@ -77,6 +77,9 @@ const TEMPLATE_FIELDS = [
   { key: 'email_site_url', label: 'সাইট URL', placeholder: 'https://example.com', description: 'বাটন ও লিংকে ব্যবহৃত হবে' },
   { key: 'email_header_subtitle', label: 'হেডার সাবটাইটেল', placeholder: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম', description: 'হেডারে নামের নিচে দেখাবে' },
   { key: 'email_footer_tagline', label: 'ফুটার ট্যাগলাইন', placeholder: 'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন', description: 'ফুটারে ব্র্যান্ড নামের নিচে দেখাবে' },
+  { key: 'email_footer_year', label: 'ফুটার ইয়ার (Year)', placeholder: 'খালি থাকলে অটো (2025)', description: 'কপিরাইটে যে ইয়ার দেখাবে — যেমন: 2025 বা 2024-2025' },
+  { key: 'email_footer_copyright', label: 'ফুটার কপিরাইট টেক্সট', placeholder: 'সর্বস্বত্ব সংরক্ষিত', description: 'ইয়ারের পরে দেখাবে — যেমন: সর্বস্বত্ব সংরক্ষিত' },
+  { key: 'email_footer_notice', label: 'ফুটার অটো-নোটিস', placeholder: 'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে', description: 'ফুটারের শেষ লাইনে দেখাবে — খালি করলে লুকাবে' },
 ];
 
 export function EmailSettingsPanel() {

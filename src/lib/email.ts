@@ -4,14 +4,17 @@ import nodemailer from 'nodemailer';
    DEFAULTS — overridden by PlatformSetting DB values
    ═══════════════════════════════════════════════════════════════ */
 const DEFAULTS = {
-  email_site_name:       'আমারডিল.বাংলা',
-  email_from_name:       'আমারডিল.বাংলা',
-  email_site_url:        'https://xn--94b8cubil3ej.xn--54b7fta0cc',
-  email_header_subtitle: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
-  email_footer_tagline:  'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
-  brevo_smtp_key:        '',
-  brevo_smtp_user:       '',
-  brevo_from_email:      '',
+  email_site_name:         'আমারডিল.বাংলা',
+  email_from_name:         'আমারডিল.বাংলা',
+  email_site_url:          'https://xn--94b8cubil3ej.xn--54b7fta0cc',
+  email_header_subtitle:   'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
+  email_footer_tagline:    'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
+  email_footer_year:       '',  // empty = auto (current year)
+  email_footer_copyright:  'সর্বস্বত্ব সংরক্ষিত',
+  email_footer_notice:     'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে',
+  brevo_smtp_key:          '',
+  brevo_smtp_user:         '',
+  brevo_from_email:        '',
 } as const;
 
 const EMAIL_SETTING_KEYS = Object.keys(DEFAULTS);
@@ -51,7 +54,7 @@ export function clearEmailSettingsCache() {
   _transporter = null;
 }
 
-const YEAR = new Date().getFullYear();
+/* YEAR is now dynamic — read from settings or auto-detect inside wrap() */
 
 /** Sync getter — only call after loadEmailSettings() */
 function s(key: string): string {
@@ -177,7 +180,7 @@ function wrap(bodyHtml: string): string {
       <div class="footer">
         <div class="footer-powered">Powered by <a href="${s('email_site_url')}">${s('email_site_name')}</a></div>
         ${s('email_footer_tagline') ? `<p class="footer-tagline">${s('email_footer_tagline')}</p>` : ''}
-        <div class="footer-copy">© ${YEAR} ${s('email_site_name')}। সর্বস্বত্ব সংরক্ষিত।<br>এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে।</div>
+        <div class="footer-copy">© ${s('email_footer_year') || String(new Date().getFullYear())} ${s('email_site_name')}${s('email_footer_copyright') ? '। ' + s('email_footer_copyright') : ''}।${s('email_footer_notice') ? '<br>' + s('email_footer_notice') + '।' : ''}</div>
       </div>
     </div>
   </td></tr>

@@ -8,20 +8,26 @@ const ALL_KEYS = [
   'email_site_url',
   'email_header_subtitle',
   'email_footer_tagline',
+  'email_footer_year',
+  'email_footer_copyright',
+  'email_footer_notice',
   'brevo_smtp_key',
   'brevo_smtp_user',
   'brevo_from_email',
 ] as const;
 
 const TEMPLATE_DEFAULTS: Record<string, string> = {
-  email_site_name:       'আমারডিল.বাংলা',
-  email_from_name:       'আমারডিল.বাংলা',
-  email_site_url:        'https://xn--94b8cubil3ej.xn--54b7fta0cc',
-  email_header_subtitle: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
-  email_footer_tagline:  'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
-  brevo_smtp_key:        '',
-  brevo_smtp_user:       '',
-  brevo_from_email:      '',
+  email_site_name:         'আমারডিল.বাংলা',
+  email_from_name:         'আমারডিল.বাংলা',
+  email_site_url:          'https://xn--94b8cubil3ej.xn--54b7fta0cc',
+  email_header_subtitle:   'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
+  email_footer_tagline:    'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
+  email_footer_year:       '',
+  email_footer_copyright:  'সর্বস্বত্ব সংরক্ষিত',
+  email_footer_notice:     'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে',
+  brevo_smtp_key:          '',
+  brevo_smtp_user:         '',
+  brevo_from_email:        '',
 };
 
 export async function GET(req: NextRequest) {
