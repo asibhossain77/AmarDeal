@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { verifyAdmin } from '@/lib/admin-guard';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export async function GET() {
   try {
@@ -14,8 +14,8 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const admin = await verifyAdmin(req);
-    if (!admin) return NextResponse.json({ error: 'অননুমোদিত' }, { status: 401 });
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
 
     const body = await req.json();
     const { enabled, content, image, link, buttonTitle } = body;
