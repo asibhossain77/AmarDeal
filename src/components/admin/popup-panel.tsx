@@ -28,7 +28,40 @@ function execCmd(cmd: string, value?: string) {
   document.execCommand(cmd, false, value);
 }
 
-/** Wrap selected text in a span with color:var(--primary) since execCommand foreColor doesn't support CSS variables */
+/** Apply font-size via span wrap — gradual +/- 2px steps */
+function applyFontSize(editor: HTMLElement, delta: number) {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  // Find existing sized span around selection
+  let node: Node | null = sel.anchorNode;
+  let sizedSpan: HTMLSpanElement | null = null;
+  while (node && node !== editor) {
+    if (node instanceof HTMLSpanElement && node.style.fontSize) { sizedSpan = node; break; }
+    node = node.parentNode;
+  }
+  const current = sizedSpan ? (parseFloat(sizedSpan.style.fontSize) || 14) : 14;
+  const newSize = Math.max(10, Math.min(28, current + delta));
+  if (sizedSpan && range.startContainer && range.endContainer &&
+      editor.contains(range.startContainer) && editor.contains(range.endContainer) &&
+      sizedSpan.contains(range.startContainer) && sizedSpan.contains(range.endContainer)) {
+    sizedSpan.style.fontSize = `${newSize}px`;
+    return;
+  }
+  const span = document.createElement('span');
+  span.style.fontSize = `${newSize}px`;
+  try {
+    range.surroundContents(span);
+    sel.removeAllRanges();
+    const r = document.createRange();
+    r.selectNodeContents(span);
+    sel.addRange(r);
+  } catch {
+    execCmd('fontSize', '4');
+  }
+}
+
+/** Wrap selected text in a span with color:var(--primary) */
 function applyThemeColor() {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed) return;
@@ -172,19 +205,19 @@ export function PopupPanel() {
             <div className="w-px h-5 bg-border mx-0.5" />
             <ToolbarBtn
               title="ছোট টেক্সট"
-              onMouseDown={(e) => { e.preventDefault(); execCmd('fontSize', '2'); triggerAutoSave(); }}
+              onMouseDown={(e) => { e.preventDefault(); if (editorRef.current) applyFontSize(editorRef.current, -2); triggerAutoSave(); }}
             >
               <Minus className="h-4 w-4" />
             </ToolbarBtn>
             <ToolbarBtn
               title="সাধারণ টেক্সট"
-              onMouseDown={(e) => { e.preventDefault(); execCmd('fontSize', '4'); triggerAutoSave(); }}
+              onMouseDown={(e) => { e.preventDefault(); execCmd('removeFormat'); triggerAutoSave(); }}
             >
               <Type className="h-4 w-4" />
             </ToolbarBtn>
             <ToolbarBtn
               title="বড় টেক্সট"
-              onMouseDown={(e) => { e.preventDefault(); execCmd('fontSize', '6'); triggerAutoSave(); }}
+              onMouseDown={(e) => { e.preventDefault(); if (editorRef.current) applyFontSize(editorRef.current, 2); triggerAutoSave(); }}
             >
               <Plus className="h-4 w-4" />
             </ToolbarBtn>
