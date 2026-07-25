@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const securityHeaders = [
-  { key: 'X-Frame-Options', value: 'DENY' },
+  // ClickJacking — only in production (dev preview needs iframe)
+  ...(isProd ? [{ key: 'X-Frame-Options', value: 'DENY' as const }] : []),
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
@@ -13,10 +16,11 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.turso.io wss: ws:",
+      "connect-src 'self' wss: ws:",
       "object-src 'none'",
       "base-uri 'self'",
-      "frame-ancestors 'none'",
+      // frame-ancestors only in production
+      ...(isProd ? ["frame-ancestors 'none'"] : []),
       "form-action 'self'",
     ].join('; '),
   },
