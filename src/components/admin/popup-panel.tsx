@@ -28,6 +28,20 @@ function execCmd(cmd: string, value?: string) {
   document.execCommand(cmd, false, value);
 }
 
+/** Wrap selected text in a span with color:var(--primary) since execCommand foreColor doesn't support CSS variables */
+function applyThemeColor() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const span = document.createElement('span');
+  span.style.color = 'var(--primary)';
+  range.surroundContents(span);
+  sel.removeAllRanges();
+  const r = document.createRange();
+  r.selectNodeContents(span);
+  sel.addRange(r);
+}
+
 export function PopupPanel() {
   const [config, setConfig] = useState<PopupConfig>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
@@ -177,7 +191,7 @@ export function PopupPanel() {
             <div className="w-px h-5 bg-border mx-0.5" />
             <ToolbarBtn
               title="থিম কালার"
-              onMouseDown={(e) => { e.preventDefault(); execCmd('foreColor', 'var(--primary)'); triggerAutoSave(); }}
+              onMouseDown={(e) => { e.preventDefault(); applyThemeColor(); triggerAutoSave(); }}
             >
               <Palette className="h-4 w-4" />
             </ToolbarBtn>
