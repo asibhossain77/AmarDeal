@@ -247,3 +247,10 @@ html {
     opacity: 1;
   }
 }
+
+/* Popup editor placeholder */
+[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}

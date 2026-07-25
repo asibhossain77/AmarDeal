@@ -31,6 +31,7 @@ const BlogPanel = dynamic(() => import('./blog-panel').then(m => ({ default: m.B
 const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m => ({ default: m.EmailSettingsPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
 const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
 const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
 import {
   Bell,
   ShieldCheck,
@@ -3533,6 +3534,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <TwoFactorPanel />;
     case 'ai-prompt':
       return <AiPromptPanel />;
+    case 'popup':
+      return <PopupPanel />;
     default:
       return null;
   }

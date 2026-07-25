@@ -32,6 +32,7 @@ const SellerView = dynamic(() => import('@/components/seller/seller-view').then(
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
+const SitePopup = dynamic(() => import('@/components/shared/site-popup').then(m => ({ default: m.SitePopup })), { ssr: false });
 
 /* ── Eager: site loader (shown immediately) ── */
 import { SiteLoader } from '@/components/shared/site-loader';
@@ -200,6 +201,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
       <LiveSupportButton />
+      <SitePopup />
     </div>
   );
 }
