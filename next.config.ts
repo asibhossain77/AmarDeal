@@ -12,21 +12,22 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
+      // Next.js App Router requires unsafe-inline & unsafe-eval for runtime script injection
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
+      // Tailwind CSS & Next.js inject styles at runtime — unsafe-inline required
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https: http:",
       "font-src 'self' https://fonts.gstatic.com",
       "connect-src 'self' wss: ws:",
       "object-src 'none'",
       "base-uri 'self'",
-      // frame-ancestors only in production
       ...(isProd ? ["frame-ancestors 'none'"] : []),
       "form-action 'self'",
     ].join('; '),
   },
 ];
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
