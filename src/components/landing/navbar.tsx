@@ -436,25 +436,25 @@ export function Navbar() {
                       <MobileBrandHeader />
 
                       <a href="/security" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-security'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.features')}
+                        <Sparkles className="h-[18px] w-[18px] shrink-0" /> {t('nav.features')}
                       </a>
                       <a href="/fees" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-fees'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.feeStructure')}
+                        <Calculator className="h-[18px] w-[18px] shrink-0" /> {t('nav.feeStructure')}
                       </a>
                       <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-how-it-works'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.howItWorks')}
+                        <ListChecks className="h-[18px] w-[18px] shrink-0" /> {t('nav.howItWorks')}
                       </a>
                       <a href="/faq" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-faq'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.faq')}
+                        <CircleHelp className="h-[18px] w-[18px] shrink-0" /> {t('nav.faq')}
                       </a>
                       <a href="/blog" onClick={(e) => { e.preventDefault(); setOpen(false); setView('blog'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.blog')}
+                        <BookOpen className="h-[18px] w-[18px] shrink-0" /> {t('nav.blog')}
                       </a>
                       <a href="/about" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-about'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.about')}
+                        <Users className="h-[18px] w-[18px] shrink-0" /> {t('nav.about')}
                       </a>
                       <a href="/contact" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-contact'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
-                        {t('nav.contact')}
+                        <Mail className="h-[18px] w-[18px] shrink-0" /> {t('nav.contact')}
                       </a>
                       <div className="mt-4 border-t border-border pt-4">
                         <Button onClick={() => { setOpen(false); setView('auth'); }} className="w-full gap-2 rounded-lg font-medium">
