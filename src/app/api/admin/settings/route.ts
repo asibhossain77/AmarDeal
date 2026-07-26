@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/admin-guard'
 
 const settingKeys = [
   'platform_name',
+  'platform_name_en',
   'site_logo',
   'fee_percentage',
   'min_deal_amount',
@@ -29,7 +30,8 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      platform_name: map.platform_name || 'আমার ডিল',
+      platform_name: map.platform_name || 'মিডম্যান',
+      platform_name_en: map.platform_name_en || 'Midman',
       site_logo: map.site_logo || '/logo.png',
       fee_percentage: map.fee_percentage || '3',
       min_deal_amount: map.min_deal_amount || '100',

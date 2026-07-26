@@ -163,6 +163,7 @@ interface AdminStats {
 
 interface PlatformSettings {
   platform_name: string;
+  platform_name_en: string;
   site_logo: string;
   fee_percentage: string;
   min_deal_amount: string;
@@ -2052,6 +2053,7 @@ function SettingsPanel() {
   const t = useT();
   const [settings, setSettings] = useState<PlatformSettings>({
     platform_name: '',
+    platform_name_en: '',
     site_logo: '',
     fee_percentage: '',
     min_deal_amount: '',
@@ -2136,12 +2138,6 @@ function SettingsPanel() {
     type: string;
     placeholder: string;
   }[] = [
-    {
-      key: 'platform_name',
-      label: 'প্ল্যাটফর্মের নাম',
-      type: 'text',
-      placeholder: 'আমার ডিল',
-    },
     {
       key: 'fee_percentage',
       label: 'ফি শতাংশ (%)',
@@ -2261,10 +2257,27 @@ function SettingsPanel() {
               </div>
             </div>
 
-            {/* Platform Name */}
+            {/* Website Name — English */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
+              <Label htmlFor="platform_name_en" className="text-sm font-medium text-foreground text-center sm:text-left">
+                Website Name (English)
+              </Label>
+              <Input
+                id="platform_name_en"
+                type="text"
+                value={settings.platform_name_en}
+                onChange={(e) =>
+                  setSettings({ ...settings, platform_name_en: e.target.value })
+                }
+                placeholder="Midman"
+                className="max-w-sm"
+              />
+            </div>
+
+            {/* Website Name — Bangla */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
               <Label htmlFor="platform_name" className="text-sm font-medium text-foreground text-center sm:text-left">
-                Website Name
+                Website Name (বাংলা)
               </Label>
               <Input
                 id="platform_name"
@@ -2273,7 +2286,7 @@ function SettingsPanel() {
                 onChange={(e) =>
                   setSettings({ ...settings, platform_name: e.target.value })
                 }
-                placeholder="আমার ডিল"
+                placeholder="মিডম্যান"
                 className="max-w-sm"
               />
             </div>

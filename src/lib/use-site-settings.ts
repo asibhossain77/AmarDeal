@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 interface SiteSettings {
   siteName: string;
+  siteNameEn: string;
   siteLogo: string;
   footerDescription: string;
   footerCopyrightText: string;
@@ -11,7 +12,8 @@ interface SiteSettings {
 }
 
 const FALLBACK: SiteSettings = {
-  siteName: 'আমার ডিল',
+  siteName: 'মিডম্যান',
+  siteNameEn: 'Midman',
   siteLogo: '/logo.png',
   footerDescription: '',
   footerCopyrightText: '',
