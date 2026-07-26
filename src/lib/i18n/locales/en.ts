@@ -677,6 +677,162 @@ export const en: Record<TranslationKey, string> = {
   'privacy.s8i2': 'If there is a significant change, a notification will be given on the platform.',
   'privacy.s8i3': 'The latest version of the policy is always available on this page.',
 
+  // ── Common ──
+  'common.cancel': 'Cancel',
+  'common.save': 'Save',
+  'common.saving': 'Saving...',
+  'common.delete': 'Delete',
+  'common.edit': 'Edit',
+  'common.search': 'Search',
+  'common.confirm': 'Confirm',
+  'common.close': 'Close',
+  'common.yes': 'Yes',
+  'common.no': 'No',
+  'common.enabled': 'Enabled',
+  'common.disabled': 'Disabled',
+  'common.active': 'Active',
+  'common.inactive': 'Inactive',
+  'common.loading': 'Loading...',
+  'common.noData': 'No data',
+  'common.success': 'Success',
+  'common.failed': 'Failed',
+  'common.actions': 'Actions',
+  'common.status': 'Status',
+  'common.total': 'Total',
+  'common.amount': 'Amount',
+  'common.date': 'Date',
+  'common.name': 'Name',
+  'common.email': 'Email',
+  'common.phone': 'Phone',
+  'common.submit': 'Submit',
+  'common.preview': 'Preview',
+  'common.add': 'Add',
+  'common.update': 'Update',
+
+  // ── Admin Dashboard ──
+  'admin.dashboard.title': 'Admin Dashboard',
+  'admin.dashboard.totalDeals': 'Total Deals',
+  'admin.dashboard.activeDeals': 'Active Deals',
+  'admin.dashboard.totalUsers': 'Total Users',
+  'admin.dashboard.totalRevenue': 'Total Revenue',
+  'admin.dashboard.recentActivity': 'Recent Activity',
+  'admin.dashboard.pendingPayments': 'Pending Payments',
+
+  // ── Admin Deals ──
+  'admin.deals.allDeals': 'All Deals',
+  'admin.deals.searchPlaceholder': 'Search by deal ID or title...',
+  'admin.deals.buyer': 'Buyer',
+  'admin.deals.seller': 'Seller',
+  'admin.deals.cancelDeal': 'Cancel this deal?',
+  'admin.deals.paySeller': 'Pay the seller?',
+  'admin.deals.refundBuyer': 'Refund the buyer?',
+  'admin.deals.confirmPay': 'Confirm Payment',
+  'admin.deals.confirmRefund': 'Confirm Refund',
+  'admin.deals.paymentVerified': 'Payment Verified',
+  'admin.deals.approve': 'Approve',
+  'admin.deals.reject': 'Reject',
+  'admin.deals.dispute': 'Dispute',
+  'admin.deals.newPassword': 'New Password',
+  'admin.deals.writeMessage': 'Write a message...',
+  'admin.deals.endCall': 'End Call',
+
+  // ── Admin Chat ──
+  'admin.chat.message': 'Message',
+  'admin.chat.send': 'Send',
+  'admin.chat.buyerLabel': 'Buyer:',
+  'admin.chat.sellerLabel': 'Seller:',
+  'admin.chat.adminLabel': 'Admin:',
+
+  // ── Admin Users ──
+  'admin.users.title': 'User Management',
+  'admin.users.searchPlaceholder': 'Search by email or mobile...',
+  'admin.users.makeAdmin': 'Make Admin',
+  'admin.users.removeAdmin': 'Remove from Admin',
+  'admin.users.banUser': 'Ban User',
+  'admin.users.unbanUser': 'Unban User',
+
+  // ── Admin Blog ──
+  'admin.blog.title': 'Title',
+  'admin.blog.slug': 'Slug',
+  'admin.blog.coverImage': 'Cover Image URL',
+  'admin.blog.excerpt': 'Excerpt',
+  'admin.blog.content': 'Content',
+  'admin.blog.deleteConfirm': 'Delete this post?',
+  'admin.blog.newPost': 'New Post',
+  'admin.blog.editPost': 'Edit Post',
+  'admin.blog.publish': 'Publish',
+
+  // ── Admin Payment Methods ──
+  'admin.payments.title': 'Payment Methods',
+  'admin.payments.addMethod': 'New Payment Method',
+  'admin.payments.editMethod': 'Edit Method',
+  'admin.payments.deleteMethod': 'Delete Method',
+  'admin.payments.personal': 'Personal',
+  'admin.payments.merchant': 'Merchant',
+
+  // ── Admin Fee Rules ──
+  'admin.fees.title': 'Fee Rules',
+  'admin.fees.addRule': 'New Fee Rule',
+  'admin.fees.editRule': 'Edit Rule',
+  'admin.fees.minAmount': 'Min Amount',
+  'admin.fees.maxAmount': 'Max Amount',
+  'admin.fees.feePercent': 'Fee Percent',
+
+  // ── Admin Payouts ──
+  'admin.payouts.title': 'Payout Management',
+  'admin.payouts.markPaid': 'Mark as Paid',
+  'admin.payouts.completePayout': 'Complete Payout',
+
+  // ── Admin Popup ──
+  'admin.popup.notification': 'Announcement',
+  'admin.popup.popupContent': 'Popup Content',
+  'admin.popup.imageLink': 'Image Link',
+  'admin.popup.buttonLink': 'Button Link',
+  'admin.popup.buttonTitle': 'Button Title',
+  'admin.popup.seeDetails': 'See Details',
+
+  // ── Admin Contact ──
+  'admin.contact.title': 'Contact Info',
+  'admin.contact.addInfo': 'Add Info',
+  'admin.contact.editInfo': 'Edit Info',
+  'admin.contact.whatsappNumber': 'WhatsApp Number',
+  'admin.contact.telegramLink': 'Telegram Link',
+
+  // ── Admin Contract ──
+  'admin.contract.title': 'Contract Page',
+  'admin.contract.termsContent': 'Terms Content',
+  'admin.contract.saveTerms': 'Save Terms',
+
+  // ── Admin Profile ──
+  'admin.profile.title': 'Admin Profile',
+  'admin.profile.updateEmail': 'Update Email',
+  'admin.profile.updatePhone': 'Update Phone',
+  'admin.profile.saveEmail': 'Save Email',
+  'admin.profile.savePhone': 'Save Phone',
+
+  // ── Admin Email Settings ──
+  'admin.email.title': 'Email Settings',
+  'admin.email.smtpKey': 'SMTP Key',
+  'admin.email.fromEmail': 'From Email',
+  'admin.email.fromName': 'From Name',
+  'admin.email.testEmail': 'Send Test Email',
+  'admin.email.verifySuccess': 'Verification successful! A test email has been sent. Check your inbox and spam folder.',
+  'admin.email.verifyFailed': 'Verification failed. Check if the SMTP Key is correct.',
+
+  // ── Admin 2FA ──
+  'admin.twoFactor.title': 'Two-Factor Authentication',
+  'admin.twoFactor.enable': 'Enable 2FA',
+  'admin.twoFactor.disable': 'Disable 2FA',
+  'admin.twoFactor.step1': 'Enter the 6-digit code shown in the app below',
+  'admin.twoFactor.step2': 'You cannot login without this code',
+  'admin.twoFactor.backupCodes': 'Backup Codes',
+
+  // ── Admin AI Prompt ──
+  'admin.aiPrompt.title': 'AI Prompt Settings',
+  'admin.aiPrompt.systemPrompt': 'System Prompt',
+  'admin.aiPrompt.savePrompt': 'Save Prompt',
+  'admin.aiPrompt.resetDefault': 'Reset to Default',
+
   // ── Language names ──
   'lang.bn': 'বাংলা',
   'lang.en': 'English',

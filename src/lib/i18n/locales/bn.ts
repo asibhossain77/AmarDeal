@@ -675,6 +675,162 @@ export const bn = {
   'privacy.s8i2': 'যদি কোনো উল্লেখযোগ্য পরিবর্তন হয়, তবে প্ল্যাটফর্মে নোটিফিকেশন দেওয়া হবে।',
   'privacy.s8i3': 'নীতির সর্বশেষ সংস্করণ সবসময় এই পেজে পাওয়া যাবে।',
 
+  // ── Common ──
+  'common.cancel': 'বাতিল',
+  'common.save': 'সেভ করুন',
+  'common.saving': 'সেভ হচ্ছে...',
+  'common.delete': 'মুছুন',
+  'common.edit': 'সম্পাদনা',
+  'common.search': 'খুঁজুন',
+  'common.confirm': 'নিশ্চিত করুন',
+  'common.close': 'বন্ধ করুন',
+  'common.yes': 'হ্যাঁ',
+  'common.no': 'না',
+  'common.enabled': 'সক্রিয়',
+  'common.disabled': 'নিষ্ক্রিয়',
+  'common.active': 'সক্রিয়',
+  'common.inactive': 'নিষ্ক্রিয়',
+  'common.loading': 'লোড হচ্ছে...',
+  'common.noData': 'কোনো তথ্য নেই',
+  'common.success': 'সফল',
+  'common.failed': 'ব্যর্থ হয়েছে',
+  'common.actions': 'অ্যাকশন',
+  'common.status': 'স্ট্যাটাস',
+  'common.total': 'মোট',
+  'common.amount': 'পরিমাণ',
+  'common.date': 'তারিখ',
+  'common.name': 'নাম',
+  'common.email': 'ইমেইল',
+  'common.phone': 'ফোন',
+  'common.submit': 'জমা দিন',
+  'common.preview': 'প্রিভিউ',
+  'common.add': 'যোগ করুন',
+  'common.update': 'আপডেট করুন',
+
+  // ── Admin Dashboard ──
+  'admin.dashboard.title': 'অ্যাডমিন ড্যাশবোর্ড',
+  'admin.dashboard.totalDeals': 'মোট ডিল',
+  'admin.dashboard.activeDeals': 'সক্রিয় ডিল',
+  'admin.dashboard.totalUsers': 'মোট ইউজার',
+  'admin.dashboard.totalRevenue': 'মোট আয়',
+  'admin.dashboard.recentActivity': 'সাম্প্রতিক কার্যক্রম',
+  'admin.dashboard.pendingPayments': 'পেন্ডিং পেমেন্ট',
+
+  // ── Admin Deals ──
+  'admin.deals.allDeals': 'সকল ডিল',
+  'admin.deals.searchPlaceholder': 'ডিল আইডি বা টাইটেল দিয়ে খুঁজুন...',
+  'admin.deals.buyer': 'ক্রেতা',
+  'admin.deals.seller': 'বিক্রেতা',
+  'admin.deals.cancelDeal': 'ডিল বাতিল করবেন?',
+  'admin.deals.paySeller': 'সেলারকে পেমেন্ট দিবেন?',
+  'admin.deals.refundBuyer': 'ক্রেতাকে রিফান্ড দিবেন?',
+  'admin.deals.confirmPay': 'পেমেন্ট কনফার্ম করুন',
+  'admin.deals.confirmRefund': 'রিফান্ড কনফার্ম করুন',
+  'admin.deals.paymentVerified': 'পেমেন্ট ভেরিফাইড',
+  'admin.deals.approve': 'অনুমোদন',
+  'admin.deals.reject': 'বাতিল',
+  'admin.deals.dispute': 'ডিসপিউট',
+  'admin.deals.newPassword': 'নতুন পাসওয়ার্ড',
+  'admin.deals.writeMessage': 'মেসেজ লিখুন...',
+  'admin.deals.endCall': 'কল শেষ করুন',
+
+  // ── Admin Chat ──
+  'admin.chat.message': 'মেসেজ',
+  'admin.chat.send': 'পাঠান',
+  'admin.chat.buyerLabel': 'ক্রেতা:',
+  'admin.chat.sellerLabel': 'বিক্রেতা:',
+  'admin.chat.adminLabel': 'অ্যাডমিন:',
+
+  // ── Admin Users ──
+  'admin.users.title': 'ইউজার ম্যানেজমেন্ট',
+  'admin.users.searchPlaceholder': 'ইমেইল বা মোবাইল দিয়ে খুঁজুন...',
+  'admin.users.makeAdmin': 'অ্যাডমিন করুন',
+  'admin.users.removeAdmin': 'অ্যাডমিন থেকে সরান',
+  'admin.users.banUser': 'ইউজার ব্যান করুন',
+  'admin.users.unbanUser': 'ব্যান তুলুন',
+
+  // ── Admin Blog ──
+  'admin.blog.title': 'শিরোনাম',
+  'admin.blog.slug': 'স্লাগ',
+  'admin.blog.coverImage': 'কভার ইমেজ URL',
+  'admin.blog.excerpt': 'সারাংশ',
+  'admin.blog.content': 'কন্টেন্ট',
+  'admin.blog.deleteConfirm': 'পোস্ট ডিলিট করবেন?',
+  'admin.blog.newPost': 'নতুন পোস্ট',
+  'admin.blog.editPost': 'পোস্ট সম্পাদনা',
+  'admin.blog.publish': 'প্রকাশ করুন',
+
+  // ── Admin Payment Methods ──
+  'admin.payments.title': 'পেমেন্ট মেথড',
+  'admin.payments.addMethod': 'নতুন পেমেন্ট মেথড',
+  'admin.payments.editMethod': 'মেথড সম্পাদনা',
+  'admin.payments.deleteMethod': 'মেথড মুছুন',
+  'admin.payments.personal': 'পার্সোনাল',
+  'admin.payments.merchant': 'মার্চেন্ট',
+
+  // ── Admin Fee Rules ──
+  'admin.fees.title': 'ফি কাঠামো',
+  'admin.fees.addRule': 'নতুন ফি রুল',
+  'admin.fees.editRule': 'রুল সম্পাদনা',
+  'admin.fees.minAmount': 'সর্বনিম্ন পরিমাণ',
+  'admin.fees.maxAmount': 'সর্বোচ্চ পরিমাণ',
+  'admin.fees.feePercent': 'ফি শতাংশ',
+
+  // ── Admin Payouts ──
+  'admin.payouts.title': 'পেআউট ম্যানেজমেন্ট',
+  'admin.payouts.markPaid': 'পেইড হিসেবে চিহ্নিত করুন',
+  'admin.payouts.completePayout': 'পেআউট সম্পন্ন করুন',
+
+  // ── Admin Popup ──
+  'admin.popup.notification': 'ঘোষণা',
+  'admin.popup.popupContent': 'পপআপ কন্টেন্ট',
+  'admin.popup.imageLink': 'ছবির লিংক',
+  'admin.popup.buttonLink': 'বাটন লিংক',
+  'admin.popup.buttonTitle': 'বাটন টাইটেল',
+  'admin.popup.seeDetails': 'বিস্তারিত দেখুন',
+
+  // ── Admin Contact ──
+  'admin.contact.title': 'যোগাযোগ তথ্য',
+  'admin.contact.addInfo': 'তথ্য যোগ করুন',
+  'admin.contact.editInfo': 'তথ্য সম্পাদনা',
+  'admin.contact.whatsappNumber': 'হোয়াটসঅ্যাপ নম্বর',
+  'admin.contact.telegramLink': 'টেলিগ্রাম লিংক',
+
+  // ── Admin Contract ──
+  'admin.contract.title': 'চুক্তি পেজ',
+  'admin.contract.termsContent': 'চুক্তির কন্টেন্ট',
+  'admin.contract.saveTerms': 'চুক্তি সেভ করুন',
+
+  // ── Admin Profile ──
+  'admin.profile.title': 'অ্যাডমিন প্রোফাইল',
+  'admin.profile.updateEmail': 'ইমেইল আপডেট',
+  'admin.profile.updatePhone': 'ফোন আপডেট',
+  'admin.profile.saveEmail': 'ইমেইল সেভ',
+  'admin.profile.savePhone': 'ফোন সেভ',
+
+  // ── Admin Email Settings ──
+  'admin.email.title': 'ইমেইল সেটিংস',
+  'admin.email.smtpKey': 'SMTP Key',
+  'admin.email.fromEmail': 'ফ্রম ইমেইল',
+  'admin.email.fromName': 'ফ্রম নাম',
+  'admin.email.testEmail': 'টেস্ট ইমেইল পাঠান',
+  'admin.email.verifySuccess': 'ভেরিফিকেশন সফল! একটি টেস্ট ইমেইল পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার চেক করুন।',
+  'admin.email.verifyFailed': 'ভেরিফিকেশন ব্যর্থ। SMTP Key সঠিক কিনা চেক করুন।',
+
+  // ── Admin 2FA ──
+  'admin.twoFactor.title': 'টু-ফ্যাক্টর অথেন্টিকেশন',
+  'admin.twoFactor.enable': '২FA সক্রিয় করুন',
+  'admin.twoFactor.disable': '২FA নিষ্ক্রিয় করুন',
+  'admin.twoFactor.step1': 'অ্যাপে দেখানো 6 ডিজিটের কোড নিচে দিন',
+  'admin.twoFactor.step2': 'এই কোড ছাড়া আপনি লগইন করতে পারবেন না',
+  'admin.twoFactor.backupCodes': 'ব্যাকআপ কোড',
+
+  // ── Admin AI Prompt ──
+  'admin.aiPrompt.title': 'AI প্রম্পট সেটিংস',
+  'admin.aiPrompt.systemPrompt': 'সিস্টেম প্রম্পট',
+  'admin.aiPrompt.savePrompt': 'প্রম্পট সেভ',
+  'admin.aiPrompt.resetDefault': 'ডিফল্টে রিসেট',
+
   // ── Language names ──
   'lang.bn': 'বাংলা',
   'lang.en': 'English',

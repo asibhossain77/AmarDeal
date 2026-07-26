@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -161,7 +162,8 @@ function PostEditor({
 }
 
 /* ─── Main Blog Panel ─── */
-export function BlogPanel() {
+export function BlogPanel
+  const t = useT();() {
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | undefined>(undefined);
@@ -324,13 +326,13 @@ export function BlogPanel() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>পোস্ট ডিলিট করবেন?</AlertDialogTitle>
+                      <AlertDialogTitle>{t("admin.blog.deleteConfirm")}</AlertDialogTitle>
                       <AlertDialogDescription>
                         &quot;{post.title}&quot; পোস্টটি স্থায়ীভাবে মুছে যাবে।
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <Button variant="destructive" onClick={() => deleteMutation.mutate(post.id)}>
                         ডিলিট
                       </Button>

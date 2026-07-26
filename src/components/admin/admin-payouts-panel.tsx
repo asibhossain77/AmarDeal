@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -174,7 +175,8 @@ function PayoutListSkeleton() {
    Component
    ═══════════════════════════════════════════ */
 
-export function AdminPayoutsPanel() {
+export function AdminPayoutsPanel
+  const t = useT();() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');

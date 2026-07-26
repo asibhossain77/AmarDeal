@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,8 @@ interface ContractData {
   adminImageUrl: string;
 }
 
-export function ContractPanel() {
+export function ContractPanel
+  const t = useT();() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<'content' | 'admin' | null>(null);

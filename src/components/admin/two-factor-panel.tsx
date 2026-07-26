@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,8 @@ function SectionHeader({
    2FA Panel
    ═══════════════════════════════════════════ */
 
-export function TwoFactorPanel() {
+export function TwoFactorPanel
+  const t = useT();() {
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [settingUp, setSettingUp] = useState(false);

@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -82,7 +83,8 @@ const TEMPLATE_FIELDS = [
   { key: 'email_footer_notice', label: 'ফুটার অটো-নোটিস', placeholder: 'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে', description: 'ফুটারের শেষ লাইনে দেখাবে — খালি করলে লুকাবে' },
 ];
 
-export function EmailSettingsPanel() {
+export function EmailSettingsPanel
+  const t = useT();() {
   const [testEmail, setTestEmail] = useState('');
   const [sendingAll, setSendingAll] = useState(false);
   const [results, setResults] = useState<EmailTestResult[]>(

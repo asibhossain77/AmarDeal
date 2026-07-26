@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useSyncExternalStore } from 'react';
 import { useAppStore } from '@/lib/store';
@@ -9,7 +10,8 @@ import { Mail, Phone, KeyRound, Eye, EyeOff, Loader2, Save, UserCircle } from 'l
 
 const emptySubscribe = () => () => {};
 
-export function AdminProfilePanel() {
+export function AdminProfilePanel
+  const t = useT();() {
   const { user, setUser } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 

@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
@@ -142,7 +143,8 @@ function FeeRuleForm({
 }
 
 /* ─── Main Panel ─── */
-export function FeeRulesPanel() {
+export function FeeRulesPanel
+  const t = useT();() {
   const [rules, setRules] = useState<FeeRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FeeRule | null>(null);

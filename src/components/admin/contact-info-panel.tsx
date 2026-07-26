@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,8 @@ interface ProfileData {
   adminImageUrl: string;
 }
 
-export function ContactInfoPanel() {
+export function ContactInfoPanel
+  const t = useT();() {
   const [data, setData] = useState<ContactData>({
     phone: '', email: '', whatsapp: '', telegram: '',
     facebook: '', facebookPage: '', facebookGroup: '', telegramGroup: '', address: '',

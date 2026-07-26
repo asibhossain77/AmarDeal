@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useAppStore, type AdminPanel } from '@/lib/store';
 import { invalidateSiteSettingsCache, useSiteSettings } from '@/lib/use-site-settings';
+import { useT } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -868,7 +869,7 @@ function PaymentVerifyPanel() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isActing}>না</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isActing}>{t("common.no")}</AlertDialogCancel>
                   <Button
                     onClick={handleWrongInfo}
                     disabled={isActing}
@@ -905,7 +906,7 @@ function PaymentVerifyPanel() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isActing}>না</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isActing}>{t("common.no")}</AlertDialogCancel>
                   <Button
                     onClick={handleCancelDeal}
                     disabled={isActing}
@@ -1272,7 +1273,7 @@ function AllDealsPanel() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by deal ID or title..."
+            placeholder={t("admin.deals.searchPlaceholder")}
             className="w-full sm:w-48 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
         </div>
@@ -1598,7 +1599,7 @@ function UsersPanel() {
                 <div className="relative flex-1">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="New password"
+                    placeholder={t("admin.deals.newPassword")}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && newPassword.trim()) handleAction(u.id, 'change_password', newPassword); }}
@@ -1850,7 +1851,7 @@ function UsersPanel() {
       <div className="mb-3 sm:mb-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="Search by email or mobile..."
+          placeholder={t("admin.users.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10 h-10 sm:h-11 rounded-xl text-sm bg-white dark:bg-zinc-900"
@@ -2002,7 +2003,7 @@ function UsersPanel() {
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={permSaving}>বাতিল</AlertDialogCancel>
+              <AlertDialogCancel disabled={permSaving}>{t("common.cancel")}</AlertDialogCancel>
               <Button
                 onClick={async () => {
                   setPermSaving(true);
@@ -2673,7 +2674,7 @@ function PayoutsPanel() {
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isActing}>বাতিল</AlertDialogCancel>
+                      <AlertDialogCancel disabled={isActing}>{t("common.cancel")}</AlertDialogCancel>
                       <Button
                         onClick={() => handleMarkPaid(p.id)}
                         disabled={isActing}
@@ -3035,13 +3036,13 @@ function DisputesPanel() {
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle>সেলারকে পেমেন্ট দিবেন?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.deals.paySeller")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   ডিল &quot;সম্পন্ন&quot; হিসেবে চিহ্নিত হবে। সেলার পেআউট অনুরোধ করতে পারবেন।
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <Button onClick={() => handleResolve('complete')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
                   হ্যাঁ, সম্পন্ন করুন
                 </Button>
@@ -3062,13 +3063,13 @@ function DisputesPanel() {
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle>ক্রেতাকে রিফান্ড দিবেন?</AlertDialogTitle>
+                <AlertDialogTitle>{t("admin.deals.refundBuyer")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   ডিল &quot;বাতিল&quot; হিসেবে চিহ্নিত হবে। ক্রেতা ফেরতের অনুরোধ করতে পারবেন।
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <Button onClick={() => handleResolve('refund_buyer')} className="gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl">
                   হ্যাঁ, বাতিল করুন
                 </Button>
@@ -3097,7 +3098,7 @@ function DisputesPanel() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder="মেসেজ লিখুন..."
+                placeholder={t("admin.deals.writeMessage")}
                 className="flex-1 h-10 rounded-xl text-sm"
               />
               <Button
@@ -3193,8 +3194,8 @@ function DisputesPanel() {
                     <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>ক্রেতা: {deal.buyer?.name || 'N/A'}</span>
-                      <span>বিক্রেতা: {deal.seller?.name || 'N/A'}</span>
+                      <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>
+                      <span>{t("admin.chat.sellerLabel")} {deal.seller?.name || 'N/A'}</span>
                     </div>
                     <p className="text-base font-bold text-foreground mt-2">{formatAmount(deal.amount)}</p>
                   </div>
@@ -3393,7 +3394,7 @@ function AdminCallsPanel() {
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                placeholder="মেসেজ লিখুন..."
+                placeholder={t("admin.deals.writeMessage")}
                 className="flex-1 h-10 rounded-xl text-sm"
               />
               <Button
@@ -3486,8 +3487,8 @@ function AdminCallsPanel() {
                     <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>ক্রেতা: {deal.buyer?.name || 'N/A'}</span>
-                      <span>বিক্রেতা: {deal.seller?.name || 'N/A'}</span>
+                      <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>
+                      <span>{t("admin.chat.sellerLabel")} {deal.seller?.name || 'N/A'}</span>
                     </div>
                     <p className="text-base font-bold text-foreground mt-2">{formatAmount(deal.amount)}</p>
                   </div>

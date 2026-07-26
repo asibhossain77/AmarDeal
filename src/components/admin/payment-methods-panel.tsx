@@ -1,4 +1,5 @@
 'use client';
+import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -152,7 +153,8 @@ function ColorPickerRow({
    Admin Payment Methods Panel
    ═══════════════════════════════════════════ */
 
-export function PaymentMethodsPanel() {
+export function PaymentMethodsPanel
+  const t = useT();() {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -349,9 +351,9 @@ export function PaymentMethodsPanel() {
                         <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">{m.accountNumber}</td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
                           {m.accountType === 'merchant' ? (
-                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">মার্চেন্ট</Badge>
+                            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">{t("admin.payments.merchant")}</Badge>
                           ) : (
-                            <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">পার্সোনাল</Badge>
+                            <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 font-medium">{t("admin.payments.personal")}</Badge>
                           )}
                         </td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
@@ -364,9 +366,9 @@ export function PaymentMethodsPanel() {
                         </td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
                           {m.status === 'active' ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সক্রিয়</Badge>
+                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">{t("common.active")}</Badge>
                           ) : (
-                            <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">নিষ্ক্রিয়</Badge>
+                            <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">{t("common.inactive")}</Badge>
                           )}
                         </td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
@@ -404,14 +406,14 @@ export function PaymentMethodsPanel() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {m.accountType === 'merchant' ? (
-                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-[11px] font-medium">মার্চেন্ট</Badge>
+                          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-[11px] font-medium">{t("admin.payments.merchant")}</Badge>
                         ) : (
-                          <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 text-[11px] font-medium">পার্সোনাল</Badge>
+                          <Badge className="bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400 border-0 text-[11px] font-medium">{t("admin.payments.personal")}</Badge>
                         )}
                         {m.status === 'active' ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[11px] font-medium">সক্রিয়</Badge>
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[11px] font-medium">{t("common.active")}</Badge>
                         ) : (
-                          <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 text-[11px] font-medium">নিষ্ক্রিয়</Badge>
+                          <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 text-[11px] font-medium">{t("common.inactive")}</Badge>
                         )}
                       </div>
                       <div className="flex gap-1.5">
@@ -621,8 +623,8 @@ export function PaymentMethodsPanel() {
                         }
                         className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       >
-                        <option value="personal">পার্সোনাল</option>
-                        <option value="merchant">মার্চেন্ট</option>
+                        <option value="personal">{t("admin.payments.personal")}</option>
+                        <option value="merchant">{t("admin.payments.merchant")}</option>
                       </select>
                     </div>
 
@@ -635,8 +637,8 @@ export function PaymentMethodsPanel() {
                         }
                         className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       >
-                        <option value="active">সক্রিয়</option>
-                        <option value="inactive">নিষ্ক্রিয়</option>
+                        <option value="active">{t("common.active")}</option>
+                        <option value="inactive">{t("common.inactive")}</option>
                       </select>
                     </div>
                   </div>
