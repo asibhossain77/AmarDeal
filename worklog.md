@@ -803,3 +803,68 @@ Stage Summary:
 - No new lint errors
 - Dev server compiled successfully
 
+
+---
+Task ID: 2
+Agent: Main Agent (Security Improvements — Step 2)
+Task: Implement nonce-based CSP (Content Security Policy) to replace static 'unsafe-inline' script-src
+
+Work Log:
+- Read worklog.md to understand project history (Amar Deal / Midman escrow platform, Next.js 16, Turbopack, Caddy gateway)
+- Reviewed current state:
+  - next.config.ts had a STATIC CSP with `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com`
+  - No middleware.ts existed; project uses src/proxy.ts (Next.js 16 renamed middleware → "Proxy": file is proxy.ts, export is `proxy()`)
+  - Existing proxy.ts only matched `/api/admin/:path*` for session-cookie auth gate
+  - layout.tsx was a sync server component (no nonce awareness)
+- IMPORTANT ARCHITECTURAL NOTE: Next.js 16 renamed `middleware.ts` → `proxy.ts` (function `middleware` → `proxy`). The task asked to create `src/middleware.ts`, but the project already has `src/proxy.ts` serving as the middleware. Creating a separate middleware.ts would conflict / be ignored by Next.js 16. Correct approach = integrate CSP nonce logic into the existing src/proxy.ts. Verified dev log shows `proxy.ts: 3ms` on every request confirming the proxy is the active middleware.
+
+Changes made:
+
+1. src/proxy.ts — REWROTE to add CSP nonce generation while preserving the admin auth gate:
+   - Added buildCsp(nonce) helper that constructs the CSP directive string:
+     * default-src 'self'
+     * script-src 'self' 'nonce-{nonce}' 'strict-dynamic' https://www.googletagmanager.com  (+ 'unsafe-eval' ONLY in dev for Turbopack HMR; dropped in prod)
+     * style-src 'self' 'unsafe-inline'  (kept — Tailwind + next-themes inject styles, low risk)
+     * img-src 'self' data: blob: https: http:
+     * font-src 'self' https://fonts.gstatic.com
+     * connect-src 'self' wss: ws:
+     * object-src 'none'
+     * base-uri 'self'
+     * form-action 'self'
+     * frame-ancestors 'none' (PROD ONLY)
+   - Removed 'unsafe-inline' from script-src entirely (the whole point of this task)
+   - Per-request nonce via `crypto.randomUUID()` (Web Crypto global, available in Edge Runtime — no import needed)
+   - Forwards nonce to downstream server components via `x-nonce` request header (set on NextResponse.next({ request: { headers } }))
+   - Next.js itself reads `x-nonce` and auto-applies it to its own bootstrap/hydration inline scripts
+   - Sets `Content-Security-Policy` response header on ALL responses (pages + API + 401s)
+   - Preserved admin auth gate: /api/admin/* still requires `amdeal_session` cookie except /api/admin/2fa/login-verify
+   - Updated matcher from `/api/admin/:path*` → `/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|uploads).*)` so proxy runs on all HTML/API routes (excluding true static assets)
+
+2. next.config.ts — removed the static `Content-Security-Policy` entry from securityHeaders array (middleware/proxy now owns CSP). Kept all other security headers: X-Frame-Options (prod only), X-Content-Type-Options, Referrer-Policy, X-DNS-Prefetch-Control. Added a comment pointing to proxy.ts.
+
+3. src/app/layout.tsx — made RootLayout async to read per-request nonce:
+   - `import { headers } from "next/headers"` (headers() is async in Next.js 15+)
+   - `const nonce = (await headers()).get("x-nonce") ?? undefined`
+   - Passed `nonce={nonce}` to ThemeProvider (next-themes supports nonce prop — applies to its inline theme-injection script)
+   - Passed `nonce={nonce}` to GoogleAnalytics (@next/third-parties/google supports nonce prop — applies to gtag inline script)
+   - JSON-LD `<script type="application/ld+json">` left WITHOUT nonce (CSP script-src does not apply to non-JS MIME types — correct per spec)
+   - Added clarifying comments
+
+Verification:
+- `bun run lint` — no new errors in modified files (proxy.ts, layout.tsx, next.config.ts all clean; pre-existing errors in reconstruct.js/server.js/db.ts/watchdog.js remain untouched)
+- dev.log — proxy running on every request (`proxy.ts: 3ms`), all routes returning 200, no CSP violations, no crashes, server auto-restarted cleanly after next.config.ts change
+- curl -sI http://localhost:3000/ → CSP header present with real per-request nonce:
+  `script-src 'self' 'nonce-1907def9-...' 'strict-dynamic' https://www.googletagmanager.com 'unsafe-eval'` (NO 'unsafe-inline')
+- Verified nonce is UNIQUE per request (3 requests → 3 different nonces)
+- Verified CSP nonce in header EXACTLY MATCHES nonce attribute on inline <script> tags in the same response (e.g. both `473defb0-77a8-4afe-83d6-e583b2323727`) — this is the critical correctness check
+- Verified Next.js auto-applies nonce to its bundled <script src="/_next/static/..."> tags too
+- Verified admin auth gate still works: /api/admin/users → 401 (no session), /api/admin/2fa/login-verify → passes through to route handler (not 401)
+- Other security headers preserved: X-Content-Type-Options, Referrer-Policy, X-DNS-Prefetch-Control all present
+
+Stage Summary:
+- script-src no longer contains 'unsafe-inline' — inline scripts can ONLY execute if they carry the per-request nonce, defeating XSS injection of arbitrary inline scripts
+- CSP3 'strict-dynamic' allows GA's gtag.js to dynamically load its dependencies without explicitly allowlisting every domain (CSP3 browsers); 'self' + googletagmanager.com serve as CSP2-browser fallbacks
+- 'unsafe-eval' is DEV-ONLY (Turbopack HMR needs it); automatically dropped in production builds
+- style-src keeps 'unsafe-inline' intentionally (Tailwind + next-themes runtime style injection; style-based attacks are low risk and removing it would require significant refactoring)
+- Per-request nonce means each HTML response has a unique, unguessable whitelist token — an attacker who finds one nonce cannot reuse it for a different request
+- Files modified: src/proxy.ts, next.config.ts, src/app/layout.tsx

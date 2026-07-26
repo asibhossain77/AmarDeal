@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { headers } from "next/headers";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/lib/query-client";
@@ -389,11 +390,17 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the per-request nonce set by src/proxy.ts — used to whitelist inline
+  // <script> tags via CSP 'nonce-{nonce}'. Next.js also picks up `x-nonce`
+  // automatically and applies it to its own bootstrap/hydration scripts.
+  // Note: headers() is async in Next.js 15+.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html lang="bn" dir="ltr" suppressHydrationWarning>
       <head>
@@ -402,6 +409,8 @@ export default function RootLayout({
         <meta name="geo.placename" content="Dhaka" />
         <meta name="language" content="bn-BD" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        {/* JSON-LD: CSP script-src does NOT apply to application/ld+json
+            (non-JS MIME type), so no nonce is needed here. */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -413,13 +422,14 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
+          nonce={nonce}
         >
           <QueryProvider>
             <LocaleEffect />
             {children}
             <Toaster />
           </QueryProvider>
-          {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
+          {GA_ID && <GoogleAnalytics gaId={GA_ID} nonce={nonce} />}
         </ThemeProvider>
       </body>
     </html>

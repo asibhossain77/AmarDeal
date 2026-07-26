@@ -8,23 +8,9 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      // Next.js App Router requires unsafe-inline & unsafe-eval for runtime script injection
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
-      // Tailwind CSS & Next.js inject styles at runtime — unsafe-inline required
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https: http:",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' wss: ws:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      ...(isProd ? ["frame-ancestors 'none'"] : []),
-      "form-action 'self'",
-    ].join('; '),
-  },
+  // NOTE: Content-Security-Policy is now set PER-REQUEST in src/proxy.ts with a
+  // cryptographic nonce, replacing the previous static 'unsafe-inline' policy.
+  // See buildCsp() in proxy.ts for the directive list.
 ];
 
 const nextConfig = {
