@@ -868,3 +868,29 @@ Stage Summary:
 - style-src keeps 'unsafe-inline' intentionally (Tailwind + next-themes runtime style injection; style-based attacks are low risk and removing it would require significant refactoring)
 - Per-request nonce means each HTML response has a unique, unguessable whitelist token — an attacker who finds one nonce cannot reuse it for a different request
 - Files modified: src/proxy.ts, next.config.ts, src/app/layout.tsx
+---
+Task ID: 3
+Agent: Main Agent
+Task: Step 3 — Blog XSS Fix (DOMPurify HTML Sanitization)
+
+Work Log:
+- Identified 3 real XSS vectors using dangerouslySetInnerHTML with DB-sourced content:
+  1. blog-view.tsx (post.content)
+  2. site-popup.tsx (popup content from DB)
+  3. popup-panel.tsx (admin popup preview)
+- Confirmed static pages (privacy, terms, about, etc.) only use JSON-LD (not executable) — no fix needed
+- Installed dompurify@3.4.12 + @types/dompurify@3.2.0
+- Created src/lib/sanitize.ts with DOMPurify allow-list config:
+  - ALLOWED_TAGS: p, h1-h6, a, img, ul, ol, li, strong, em, b, i, u, s, blockquote, pre, code, table, thead, tbody, tfoot, tr, th, td, caption, figure, figcaption, br, hr, span, div, sub, sup, mark, small
+  - ALLOWED_ATTR: class, style, id, role, aria-label, href, target, rel, src, alt, width, height, loading, decoding, colspan, rowspan, scope, data-language
+  - ALLOWED_URI_REGEXP: blocks javascript:/data:/vbscript: URLs
+  - KEEP_CONTENT: true (strips tag but keeps text)
+- Applied sanitizeHtml() to all 3 vulnerable files
+- Verified with Agent Browser: blog listing + blog detail page render correctly, no console errors, no CSP violations, all API calls return 200
+
+Stage Summary:
+- Created src/lib/sanitize.ts (DOMPurify wrapper with strict allow-list)
+- Modified src/components/landing/blog-view.tsx (line 160: sanitizeHtml(post.content))
+- Modified src/components/shared/site-popup.tsx (line 96: sanitizeHtml(data.content))
+- Modified src/components/admin/popup-panel.tsx (line 335: sanitizeHtml(config.content))
+- Defense-in-depth: CSP nonce (Step 2) + HTML sanitization (Step 3) = dual XSS protection

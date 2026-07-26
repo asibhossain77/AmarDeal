@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Save, Eye, Image, Link, Type, Palette, Bold, Italic, Minus, Plus } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface PopupConfig {
   enabled: boolean;
@@ -331,7 +332,7 @@ export function PopupPanel() {
                 <div
                   className="text-sm text-foreground"
                   style={{ lineHeight: '1.7' }}
-                  dangerouslySetInnerHTML={{ __html: config.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(config.content) }}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground italic">কন্টেন্ট নেই</p>

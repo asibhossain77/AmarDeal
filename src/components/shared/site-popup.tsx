@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface PopupData {
   enabled: boolean;
@@ -92,7 +93,7 @@ export function SitePopup() {
                   <div
                     className="text-sm text-foreground"
                     style={{ lineHeight: '1.7' }}
-                    dangerouslySetInnerHTML={{ __html: data.content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.content) }}
                   />
                 )}
                 {data.link && (

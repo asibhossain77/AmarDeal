@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, BookOpen, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/lib/i18n';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 const PER_PAGE = 6;
 
@@ -156,7 +157,7 @@ function BlogPostDetail({ post, onBack }: { post: BlogPostFull; onBack: () => vo
           [&_li]:mb-1
           [&_strong]:font-semibold
           [&_a]:text-primary [&_a]:underline"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
       />
     </motion.article>
   );
