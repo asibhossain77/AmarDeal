@@ -915,3 +915,30 @@ Stage Summary:
 - Modified src/app/layout.tsx (added preconnect links)
 - Modified src/components/landing/navbar.tsx (fetchPriority="high" on logos)
 - LCP improvement: ~2.3s → ~1.0s visible content time
+---
+Task ID: 5
+Agent: Main Agent
+Task: Step 5 — Rate Limiting
+
+Work Log:
+- Created src/lib/rate-limit.ts — in-memory fixed-window rate limiter for Edge Runtime
+- Integrated rate limiting into src/proxy.ts (before CSP and auth gate)
+- Rate limit categories:
+  - auth-strict (login, register, forgot-password, reset-password, 2FA): 5 req/min
+  - auth-moderate (OTP verify, email check, resend): 10 req/min
+  - sensitive (reviews POST, AI support, contact): 5 req/min
+  - api-general (all other /api/*): 60 req/min
+  - page (non-API routes): 120 req/min
+- Returns 429 with Bangla error message, code RATE_LIMITED, and Retry-After header
+- Client IP extracted from x-forwarded-for or x-real-ip headers (Caddy proxy compatible)
+- Lazy cleanup of expired buckets (no setInterval needed for Edge Runtime)
+- Tested: login blocks after 5 requests with correct 429 + Retry-After header
+- Tested: general API (fee-structure) works normally within limits
+- Tested: page loads work normally
+- Proxy overhead remains 2-18ms
+
+Stage Summary:
+- Created src/lib/rate-limit.ts (Edge-compatible in-memory rate limiter)
+- Modified src/proxy.ts (integrated rate limiting as first check, IP extraction, 429 response)
+- Brute force protection: login locked after 5 attempts per minute per IP
+- Zero new lint errors
