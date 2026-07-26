@@ -404,6 +404,9 @@ export default async function RootLayout({
   return (
     <html lang="bn" dir="ltr" suppressHydrationWarning>
       <head>
+        {/* Resource hints — preconnect to 3rd-party origins for faster fetch */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {GA_ID && <link rel="preconnect" href="https://www.googletagmanager.com" />}
         <meta name="geo.region" content="BD" />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Dhaka" />

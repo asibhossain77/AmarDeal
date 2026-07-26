@@ -76,6 +76,7 @@ function LogoButton({ onClick }: { onClick: () => void }) {
       <img
         src={siteLogo}
         alt={displayName}
+        fetchPriority="high"
         className="h-9 w-9 rounded-lg object-contain"
       />
       <span className="text-lg font-bold tracking-tight text-foreground">{displayName}</span>
@@ -92,6 +93,7 @@ function MobileBrandHeader({ sub }: { sub?: string }) {
       <img
         src={siteLogo}
         alt={displayName}
+        fetchPriority="high"
         className="h-9 w-9 rounded-lg object-contain"
       />
       {sub ? (

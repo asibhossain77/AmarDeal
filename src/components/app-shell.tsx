@@ -152,15 +152,16 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
     initUrlSync();
   }, []);
 
-  // Minimum 1.8s loader display
+  // Minimum loader display — reduced from 1800ms to 600ms for faster LCP.
+  // Auth check runs in parallel; once both are done, content appears.
   useEffect(() => {
-    const t = setTimeout(() => setMinReady(true), 1800);
+    const t = setTimeout(() => setMinReady(true), 600);
     return () => clearTimeout(t);
   }, []);
 
   // Scroll to top whenever the view changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [view]);
 
   // Restore session from cookie on page load / refresh
