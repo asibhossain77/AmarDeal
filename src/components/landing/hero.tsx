@@ -140,7 +140,7 @@ export function Hero() {
 
               {/* Main Heading */}
               <h1 className="mb-5 text-center text-3xl font-bold leading-[1.2] tracking-tight sm:text-4xl md:text-left md:text-5xl lg:text-[3.4rem]">
-                {t('hero.heading.line1')}
+                <span className="relative inline-block pb-1 after:absolute after:bottom-0 after:left-0 after:h-1 after:w-full after:rounded-full after:bg-primary/40">{t('hero.heading.line1')}</span>
                 <br />
                 <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
               </h1>
