@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { ShieldCheck, Users, Target, Heart, Award, TrendingUp } from 'lucide-react';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 
 const containerVariants = {
@@ -23,7 +24,9 @@ const itemVariants = {
 };
 
 export function AboutSection() {
-  const { siteName } = useSiteSettings();
+  const { siteName, siteNameEn } = useSiteSettings();
+  const locale = useAppStore((s) => s.locale);
+  const displayName = locale === 'en' ? siteNameEn : siteName;
   const t = useT();
 
   const stats = [
@@ -191,7 +194,7 @@ export function AboutSection() {
               {t('about.quote')}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              — {siteName} {t('about.familyLabel')}
+              — {displayName} {t('about.familyLabel')}
             </p>
           </div>
         </motion.div>

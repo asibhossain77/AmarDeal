@@ -99,7 +99,7 @@ function EscrowStatusCard() {
 }
 
 export function Hero() {
-  const { siteName } = useSiteSettings();
+  const { siteName, siteNameEn } = useSiteSettings();
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -147,7 +147,7 @@ export function Hero() {
 
               {/* Subtitle */}
               <p className="mx-auto mb-8 max-w-md text-center text-base leading-relaxed text-muted-foreground md:mx-0 md:text-left sm:text-[17px]">
-                {siteName}{t('hero.subtitle.prefix')}
+                {locale === 'en' ? siteNameEn : siteName}{t('hero.subtitle.prefix')}
                 <br />
                 {t('hero.subtitle.suffix')}
               </p>

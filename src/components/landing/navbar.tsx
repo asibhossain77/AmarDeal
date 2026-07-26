@@ -68,35 +68,39 @@ function ThemeToggle() {
 }
 
 function LogoButton({ onClick }: { onClick: () => void }) {
-  const { siteName, siteLogo } = useSiteSettings();
+  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
+  const locale = useAppStore((s) => s.locale);
+  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <button onClick={onClick} className="flex items-center gap-2.5">
       <img
         src={siteLogo}
-        alt={siteName}
+        alt={displayName}
         className="h-9 w-9 rounded-lg object-contain"
       />
-      <span className="text-lg font-bold tracking-tight text-foreground">{siteName}</span>
+      <span className="text-lg font-bold tracking-tight text-foreground">{displayName}</span>
     </button>
   );
 }
 
 function MobileBrandHeader({ sub }: { sub?: string }) {
-  const { siteName, siteLogo } = useSiteSettings();
+  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
+  const locale = useAppStore((s) => s.locale);
+  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <div className="mb-4 flex items-center gap-2.5 px-1">
       <img
         src={siteLogo}
-        alt={siteName}
+        alt={displayName}
         className="h-9 w-9 rounded-lg object-contain"
       />
       {sub ? (
         <div>
-          <p className="text-base font-bold tracking-tight text-foreground">{siteName}</p>
+          <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
           <p className="text-[10px] font-semibold tracking-widest text-primary">{sub}</p>
         </div>
       ) : (
-        <p className="text-base font-bold tracking-tight text-foreground">{siteName}</p>
+        <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
       )}
     </div>
   );

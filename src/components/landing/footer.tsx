@@ -6,10 +6,11 @@ import { useTranslation } from '@/lib/i18n';
 import { Separator } from '@/components/ui/separator';
 
 export function Footer() {
-  const { siteName, siteLogo, footerDescription, footerCopyrightText, footerMadeIn } = useSiteSettings();
+  const { siteName, siteNameEn, siteLogo, footerDescription, footerCopyrightText, footerMadeIn } = useSiteSettings();
   const setView = useAppStore((s) => s.setView);
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
+  const displayName = locale === 'en' ? siteNameEn : siteName;
 
   const defaultDescription = t('footer.defaultDescription');
   const defaultMadeIn = t('footer.defaultMadeIn');
@@ -32,8 +33,8 @@ export function Footer() {
 
   const categories = [t('footer.cat.services'), t('footer.cat.company')] as const;
 
-  const description = footerDescription || `${siteName} ${defaultDescription}`;
-  const copyrightLine = footerCopyrightText || `© ${new Date().getFullYear()} ${siteName}। ${t('footer.allRightsReserved')}`;
+  const description = footerDescription || `${displayName} ${defaultDescription}`;
+  const copyrightLine = footerCopyrightText || `© ${new Date().getFullYear()} ${displayName}। ${t('footer.allRightsReserved')}`;
   const madeIn = footerMadeIn || defaultMadeIn;
 
   return (
@@ -45,12 +46,12 @@ export function Footer() {
             <a href="/" onClick={(e) => { e.preventDefault(); setView('landing'); }} className="mb-4 flex items-center gap-2.5">
               <img
                 src={siteLogo}
-                alt={siteName}
+                alt={displayName}
                 className="h-9 w-9 rounded-lg object-contain"
                 loading="lazy" decoding="async"
               />
               <span className="text-lg font-bold tracking-tight">
-                {siteName}
+                {displayName}
               </span>
             </a>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
