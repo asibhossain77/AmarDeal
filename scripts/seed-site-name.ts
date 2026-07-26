@@ -3,7 +3,7 @@ import { PrismaLibSQL } from '@prisma/adapter-libsql'
 import { createClient } from '@libsql/client'
 
 const TURSO_URL = 'libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io'
-const TURSO_TOKEN = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJleHAiOjE3ODUwMzc2MzMsImlhdCI6MTc4NDk1MTIzMywiaWQiOiIwMTlmNDc2Yi1jODAxLTc4MzctYWU1Zi1hMzkzNjhjOGY5OTAiLCJraWQiOiJPTU92OW1sMlJ2dEJPSlFrUDh3NFNUclQ0SDRPdTVSa0x0ZzBnbnlQcGJjIiwicmlkIjoiZTYwNjA2OWMtYTE0MS00MmYzLTlkNGEtMDdiZTJhZDEwNGM5In0.rBv99Bsy0DkDqi6DtoNXptXE1qMU8FX42toTj0ORfuTBr8dj2mSn0I5QGR_MYr80hXZS_KJMfTVsnRkkqGPSBA'
+const TURSO_TOKEN = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJleHAiOjE3ODUxMjQwNTYsImlhdCI6MTc4NTAzNzY1NywiaWQiOiIwMTlmNDc2Yi1jODAxLTc4MzctYWU1Zi1hMzkzNjhjOGY5OTAiLCJraWQiOiJPTU92OW1sMlJ2dEJPSlFrUDh3NFNUclQ0SDRPdTVSa0x0ZzBnbnlQcGJjIiwicmlkIjoiZTYwNjA2OWMtYTE0MS00MmYzLTlkNGEtMDdiZTJhZDEwNGM5In0.HgBbN5fSGDjNTxewUdMjYK4kb0s_XH5k18NcEboX8qMnXG2zvStNKK8r8S28lVY3Q9jS5b2EjyLTCMesUkQSCA'
 
 async function main() {
   const libsql = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN })
@@ -22,7 +22,7 @@ async function main() {
     create: { key: 'platform_name_en', value: 'Midman' },
   })
 
-  console.log('✅ Website name seeded: EN=Midman, BN=মিডম্যান')
+  console.log('✅ Turso seeded: EN=Midman, BN=মিডম্যান')
   await db.$disconnect()
 }
 
