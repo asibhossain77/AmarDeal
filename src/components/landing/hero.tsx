@@ -140,12 +140,7 @@ export function Hero() {
 
               {/* Main Heading */}
               <h1 className="mb-5 text-center text-3xl font-bold leading-[1.2] tracking-tight sm:text-4xl md:text-left md:text-5xl lg:text-[3.4rem]">
-                <span className="relative inline-block pb-3">
-                  {t('hero.heading.line1')}
-                  <svg className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" viewBox="0 0 200 12" preserveAspectRatio="none" fill="none">
-                    <path d="M2 8 C30 2, 50 11, 80 5 S130 1, 160 7 S185 3, 198 6" stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" opacity="0.7" fill="none" />
-                  </svg>
-                </span>
+                {t('hero.heading.line1')}
                 <br />
                 <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
               </h1>
