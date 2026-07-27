@@ -260,13 +260,13 @@ function StatusBadge({ status }: { status: string }) {
 function RoleBadge({ isAdmin, adminRole, adminPermissions }: { isAdmin: boolean; adminRole: string | null; adminPermissions?: string[] }) {
   const t = useT();
   if (isAdmin) {
-    let label = 'Support';
+    let label = t('admin.users.roleSupport');
     let colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0';
     if (adminRole === 'super_admin') {
       label = t('profile.roleSuperAdmin');
       colorClass = 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0';
     } else if (adminRole === 'staff') {
-      label = 'Staff';
+      label = t('admin.users.roleStaff');
       colorClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0';
       const count = (adminPermissions || []).length;
       if (count > 0) label += ` (${count})`;
@@ -295,12 +295,82 @@ function AdminStatCardSkeleton() {
   );
 }
 
-/* ─── Loading Spinner ─── */
-function LoadingSpinner() {
+/* ─── Skeleton Table Row ─── */
+function SkeletonTableRow({ cols = 5 }: { cols?: number }) {
   return (
-    <div className="flex items-center justify-center py-16">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-    </div>
+    <tr className="border-b border-border/20">
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} className="px-5 py-4">
+          <div className="h-4 w-full max-w-[120px] animate-pulse rounded bg-muted" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+/* ─── Skeleton Mobile Card ─── */
+function SkeletonMobileCard() {
+  return (
+    <SolidCard className="!p-0">
+      <div className="p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-5 w-14 animate-pulse rounded-md bg-muted" />
+        </div>
+        <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+          </div>
+          <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+        </div>
+      </div>
+    </SolidCard>
+  );
+}
+
+/* ─── Skeleton Compact Card (for payment verify / payout) ─── */
+function SkeletonCompactCard() {
+  return (
+    <SolidCard className="!p-0">
+      <div className="p-3.5 flex items-center justify-between">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-14 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-10 animate-pulse rounded-md bg-muted" />
+          </div>
+          <div className="h-4 w-28 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="h-5 w-16 animate-pulse rounded bg-muted" />
+      </div>
+    </SolidCard>
+  );
+}
+
+/* ─── Skeleton Table (with header) ─── */
+function SkeletonTable({ cols = 5, rows = 5 }: { cols?: number; rows?: number }) {
+  return (
+    <SolidCard className="!p-0 overflow-hidden">
+      <div className="max-h-[500px] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+            <tr className="border-b border-border bg-muted/30">
+              {Array.from({ length: cols }).map((_, i) => (
+                <th key={i} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                  <div className="h-3 w-16 animate-pulse rounded bg-muted/60" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }).map((_, i) => (
+              <SkeletonTableRow key={i} cols={cols} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </SolidCard>
   );
 }
 
@@ -384,7 +454,7 @@ function DashboardStatsPanel() {
           target: 'disputes' as const,
         },
         {
-          label: 'Total Transactions (৳)',
+          label: `${t('admin.verify.totalTransactions')} (৳)`,
           value: stats.completedAmount.toLocaleString('en'),
           icon: Wallet,
           color: 'text-emerald-500 dark:text-emerald-400',
@@ -392,7 +462,7 @@ function DashboardStatsPanel() {
           target: 'all-deals' as const,
         },
         {
-          label: 'Total Profit (৳)',
+          label: `${t('admin.verify.totalProfit')} (৳)`,
           value: stats.totalProfit.toLocaleString('en'),
           icon: TrendingUp,
           color: 'text-teal-500 dark:text-teal-400',
@@ -690,7 +760,7 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">Sender Account</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.verify.senderAccount')}</span>
               </div>
               <p className="text-lg font-bold font-mono text-foreground tracking-wide break-all">
                 {deal.senderNumber || 'N/A'}
@@ -701,7 +771,7 @@ function PaymentVerifyPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">Transaction ID</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.verify.transactionId')}</span>
               </div>
               <p className="text-base font-bold font-mono text-foreground tracking-wide break-all">
                 {deal.transactionId || t('admin.deals.notProvided')}
@@ -950,9 +1020,7 @@ function PaymentVerifyPanel() {
       {/* Desktop Table */}
       <SolidCard className="!p-0 overflow-hidden hidden lg:block">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <SkeletonTable cols={5} rows={4} />
         ) : pendingDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
@@ -1021,8 +1089,10 @@ function PaymentVerifyPanel() {
       {/* Mobile Cards — clickable, no action buttons */}
       <div className="lg:hidden space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCompactCard key={i} />
+            ))}
           </div>
         ) : pendingDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -1286,7 +1356,7 @@ function AllDealsPanel() {
       {/* Desktop Table */}
       <SolidCard className="!p-0 overflow-hidden hidden lg:block">
         {loading ? (
-          <LoadingSpinner />
+          <SkeletonTable cols={7} rows={5} />
         ) : filteredDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
@@ -1341,7 +1411,11 @@ function AllDealsPanel() {
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-3">
         {loading ? (
-          <LoadingSpinner />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonMobileCard key={i} />
+            ))}
+          </div>
         ) : filteredDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
@@ -1865,7 +1939,7 @@ function UsersPanel() {
       {/* Desktop Table */}
       <SolidCard className="!p-0 overflow-hidden hidden lg:block">
         {loading ? (
-          <LoadingSpinner />
+          <SkeletonTable cols={5} rows={5} />
         ) : filteredUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="mb-3 h-10 w-10 text-muted-foreground" />
@@ -1924,7 +1998,11 @@ function UsersPanel() {
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-2">
         {loading ? (
-          <LoadingSpinner />
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonMobileCard key={i} />
+            ))}
+          </div>
         ) : filteredUsers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="mb-3 h-10 w-10 text-muted-foreground" />
@@ -2746,9 +2824,7 @@ function PayoutsPanel() {
       {/* Desktop Table */}
       <SolidCard className="!p-0 overflow-hidden hidden lg:block">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <SkeletonTable cols={5} rows={4} />
         ) : filteredPayouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Banknote className="mb-3 h-10 w-10 text-muted-foreground/30" />
@@ -2815,8 +2891,10 @@ function PayoutsPanel() {
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonMobileCard key={i} />
+            ))}
           </div>
         ) : filteredPayouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -3142,7 +3220,14 @@ function DisputesPanel() {
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SolidCard key={i}><div className="h-24 animate-pulse rounded-lg bg-muted" /></SolidCard>
+            <SolidCard key={i}>
+              <div className="space-y-2">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+                <div className="h-8 w-20 animate-pulse rounded-lg bg-muted" />
+              </div>
+            </SolidCard>
           ))}
         </div>
       ) : deals.length === 0 ? (
@@ -3436,7 +3521,14 @@ function AdminCallsPanel() {
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SolidCard key={i}><div className="h-24 animate-pulse rounded-lg bg-muted" /></SolidCard>
+            <SolidCard key={i}>
+              <div className="space-y-2">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+                <div className="h-8 w-20 animate-pulse rounded-lg bg-muted" />
+              </div>
+            </SolidCard>
           ))}
         </div>
       ) : deals.length === 0 ? (
