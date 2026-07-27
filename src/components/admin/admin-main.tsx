@@ -72,7 +72,6 @@ import {
   UserCog,
   User,
 } from 'lucide-react';
-import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 
