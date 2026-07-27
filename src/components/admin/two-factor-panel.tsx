@@ -72,8 +72,8 @@ function SectionHeader({
    2FA Panel
    ═══════════════════════════════════════════ */
 
-export function TwoFactorPanel
-  const t = useT();() {
+export function TwoFactorPanel() {
+  const t = useT();
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [statusLoaded, setStatusLoaded] = useState(false);
   const [settingUp, setSettingUp] = useState(false);

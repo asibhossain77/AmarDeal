@@ -24,8 +24,8 @@ interface ContractData {
   adminImageUrl: string;
 }
 
-export function ContractPanel
-  const t = useT();() {
+export function ContractPanel() {
+  const t = useT();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<'content' | 'admin' | null>(null);

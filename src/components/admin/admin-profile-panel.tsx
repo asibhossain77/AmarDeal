@@ -10,8 +10,8 @@ import { Mail, Phone, KeyRound, Eye, EyeOff, Loader2, Save, UserCircle } from 'l
 
 const emptySubscribe = () => () => {};
 
-export function AdminProfilePanel
-  const t = useT();() {
+export function AdminProfilePanel() {
+  const t = useT();
   const { user, setUser } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
@@ -39,10 +39,10 @@ export function AdminProfilePanel
         toast.success(data.message);
         setUser({ ...user, email: email.trim() });
       } else {
-        toast.error(data.error || 'ব্যর্থ');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(null);
     }
@@ -62,10 +62,10 @@ export function AdminProfilePanel
         toast.success(data.message);
         setUser({ ...user, phone: phone.trim() });
       } else {
-        toast.error(data.error || 'ব্যর্থ');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(null);
     }
@@ -86,10 +86,10 @@ export function AdminProfilePanel
         setCurrentPassword('');
         setNewPassword('');
       } else {
-        toast.error(data.error || 'ব্যর্থ');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(null);
     }
@@ -101,10 +101,10 @@ export function AdminProfilePanel
       <div>
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           <UserCircle className="h-5 w-5 text-primary" />
-          অ্যাডমিন প্রোফাইল
+          {t('admin.profile.title')}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          ইমেইল, ফোন নম্বর ও পাসওয়ার্ড পরিবর্তন করুন
+          {t('admin.profile.subtitle')}
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export function AdminProfilePanel
           <div>
             <p className="text-base font-bold text-foreground">{user.name}</p>
             <p className="text-xs text-muted-foreground">
-              {user.adminRole === 'super_admin' ? 'সুপার অ্যাডমিন' : 'সাপোর্ট অ্যাডমিন'}
+              {user.adminRole === 'super_admin' ? t('admin.profile.superAdmin') : t('admin.profile.supportAdmin')}
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export function AdminProfilePanel
       <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Mail className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">ইমেইল পরিবর্তন</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changeEmail')}</h3>
         </div>
         <div className="flex gap-2">
           <Input
@@ -136,7 +136,7 @@ export function AdminProfilePanel
             onChange={(e) => setEmail(e.target.value)}
             className="h-11 text-sm rounded-xl flex-1"
             disabled={saving === 'email'}
-            placeholder="নতুন ইমেইল"
+            placeholder={t('admin.profile.newEmail')}
           />
           <Button
             size="sm"
@@ -145,7 +145,7 @@ export function AdminProfilePanel
             className="h-11 gap-1.5 rounded-xl text-xs font-semibold shrink-0 px-4"
           >
             {saving === 'email' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            সেভ
+            {t('common.save')}
           </Button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function AdminProfilePanel
       <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">ফোন নম্বর পরিবর্তন</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changePhone')}</h3>
         </div>
         <div className="flex gap-2">
           <Input
@@ -163,7 +163,7 @@ export function AdminProfilePanel
             onChange={(e) => setPhone(e.target.value)}
             className="h-11 text-sm rounded-xl flex-1 font-mono"
             disabled={saving === 'phone'}
-            placeholder="নতুন ফোন নম্বর"
+            placeholder={t('admin.profile.newPhone')}
           />
           <Button
             size="sm"
@@ -172,7 +172,7 @@ export function AdminProfilePanel
             className="h-11 gap-1.5 rounded-xl text-xs font-semibold shrink-0 px-4"
           >
             {saving === 'phone' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            সেভ
+            {t('common.save')}
           </Button>
         </div>
       </div>
@@ -181,13 +181,13 @@ export function AdminProfilePanel
       <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-semibold text-foreground">পাসওয়ার্ড পরিবর্তন</h3>
+          <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changePassword')}</h3>
         </div>
         <div className="space-y-2.5">
           <div className="relative">
             <Input
               type={showCurrent ? 'text' : 'password'}
-              placeholder="বর্তমান পাসওয়ার্ড"
+              placeholder={t('admin.profile.currentPassword')}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               className="h-11 text-sm rounded-xl pr-10"
@@ -204,7 +204,7 @@ export function AdminProfilePanel
           <div className="relative">
             <Input
               type={showNew ? 'text' : 'password'}
-              placeholder="নতুন পাসওয়ার্ড (কমপক্ষে ৪ অক্ষর)"
+              placeholder={t('admin.profile.newPasswordMin4')}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && currentPassword && newPassword) handleSavePassword(); }}
@@ -225,7 +225,7 @@ export function AdminProfilePanel
             onClick={handleSavePassword}
           >
             {saving === 'password' ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-            পাসওয়ার্ড পরিবর্তন করুন
+            {t('admin.profile.changePasswordBtn')}
           </Button>
         </div>
       </div>

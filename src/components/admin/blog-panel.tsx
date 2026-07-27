@@ -162,8 +162,8 @@ function PostEditor({
 }
 
 /* ─── Main Blog Panel ─── */
-export function BlogPanel
-  const t = useT();() {
+export function BlogPanel() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | undefined>(undefined);

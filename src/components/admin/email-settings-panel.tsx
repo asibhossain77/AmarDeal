@@ -83,12 +83,12 @@ const TEMPLATE_FIELDS = [
   { key: 'email_footer_notice', label: 'ফুটার অটো-নোটিস', placeholder: 'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে', description: 'ফুটারের শেষ লাইনে দেখাবে — খালি করলে লুকাবে' },
 ];
 
-export function EmailSettingsPanel
-  const t = useT();() {
+export function EmailSettingsPanel() {
+  const t = useT();
   const [testEmail, setTestEmail] = useState('');
   const [sendingAll, setSendingAll] = useState(false);
   const [results, setResults] = useState<EmailTestResult[]>(
-    EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' })),
+    EMAIL_TEMPLATES.map((tmpl) => ({ type: tmpl.type, label: tmpl.label, status: 'idle' })),
   );
   const [configStatus, setConfigStatus] = useState<'loading' | 'configured' | 'not-configured' | 'error'>('loading');
   const [configError, setConfigError] = useState('');
@@ -175,7 +175,7 @@ export function EmailSettingsPanel
   };
 
   const resetResults = () => {
-    setResults(EMAIL_TEMPLATES.map((t) => ({ type: t.type, label: t.label, status: 'idle' })));
+    setResults(EMAIL_TEMPLATES.map((tmpl) => ({ type: tmpl.type, label: tmpl.label, status: "idle" })));
     setVerifyResult('idle');
   };
 

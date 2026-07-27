@@ -65,8 +65,8 @@ const DEFAULT_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর A
 • "পেমেন্ট কিভাবে?" → বিকাশ, নগদ, রকেট, ব্যাংক ট্রান্সফার, ক্যাশ অন ডেলিভারি — যেকোনো মাধ্যমে পেমেন্ট করতে পারবেন।
 `;
 
-export function AiPromptPanel
-  const t = useT();() {
+export function AiPromptPanel() {
+  const t = useT();
   const [prompt, setPrompt] = useState('');
   const [originalPrompt, setOriginalPrompt] = useState('');
   const [loading, setLoading] = useState(true);

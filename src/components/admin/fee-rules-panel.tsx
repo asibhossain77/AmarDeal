@@ -143,8 +143,8 @@ function FeeRuleForm({
 }
 
 /* ─── Main Panel ─── */
-export function FeeRulesPanel
-  const t = useT();() {
+export function FeeRulesPanel() {
+  const t = useT();
   const [rules, setRules] = useState<FeeRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FeeRule | null>(null);

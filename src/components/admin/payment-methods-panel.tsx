@@ -153,8 +153,8 @@ function ColorPickerRow({
    Admin Payment Methods Panel
    ═══════════════════════════════════════════ */
 
-export function PaymentMethodsPanel
-  const t = useT();() {
+export function PaymentMethodsPanel() {
+  const t = useT();
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
