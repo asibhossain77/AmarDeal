@@ -201,7 +201,7 @@ export function PaymentMethodsPanel() {
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.accountNumber.trim()) {
-      toast.error('নাম এবং অ্যাকাউন্ট নম্বর আবশ্যক');
+      toast.error(t('admin.payments.nameAndNumberRequired'));
       return;
     }
     setSaving(true);
@@ -219,15 +219,15 @@ export function PaymentMethodsPanel() {
       }),
       });
       if (res.ok) {
-        toast.success(editingId ? 'মেথড আপডেট হয়েছে' : 'নতুন মেথড যোগ হয়েছে');
+        toast.success(editingId ? t('admin.payments.methodUpdated') : t('admin.payments.methodAdded'));
         setDialogOpen(false);
         fetchMethods();
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'সংরক্ষণ ব্যর্থ হয়েছে');
+        toast.error(data.error || t('admin.payments.saveFailed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(false);
     }
@@ -240,13 +240,13 @@ export function PaymentMethodsPanel() {
         method: 'DELETE',
       });
       if (res.ok) {
-        toast.success('মেথড মুছে ফেলা হয়েছে');
+        toast.success(t('admin.payments.methodDeleted'));
         fetchMethods();
       } else {
-        toast.error('মুছে ফেলা ব্যর্থ হয়েছে');
+        toast.error(t('admin.payments.deleteFailed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setDeletingId(null);
     }
@@ -286,10 +286,10 @@ export function PaymentMethodsPanel() {
           <div className="text-center sm:text-left">
             <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
               <CreditCard className="h-5 w-5 text-primary" />
-              পেমেন্ট গেটওয়ে ম্যানেজমেন্ট
+              {t('admin.payments.management')}
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              গেটওয়ে তৈরি, সম্পাদনা ও কালার কাস্টমাইজ করুন
+              {t('admin.payments.managementDesc')}
             </p>
           </div>
           <Button
@@ -297,7 +297,7 @@ export function PaymentMethodsPanel() {
             className="h-9 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
           >
             <Plus className="h-4 w-4" />
-            নতুন গেটওয়ে যোগ করুন
+            {t('admin.payments.addGateway')}
           </Button>
         </div>
 
@@ -312,10 +312,10 @@ export function PaymentMethodsPanel() {
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <CreditCard className="mb-3 h-10 w-10 text-muted-foreground" />
                 <p className="text-sm font-semibold text-foreground">
-                  কোনো পেমেন্ট গেটওয়ে নেই
+                  {t('admin.payments.noGateways')}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  নতুন গেটওয়ে যোগ করতে উপরের বাটনে ক্লিক করুন
+                  {t('admin.payments.noGatewayHint')}
                 </p>
               </div>
             </SolidCard>
@@ -326,12 +326,12 @@ export function PaymentMethodsPanel() {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
                     <tr className="border-b border-border bg-muted/30">
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">গেটওয়ে</th>
-                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">অ্যাকাউন্ট নম্বর</th>
-                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">টাইপ</th>
-                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">কালার</th>
-                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
-                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">অ্যাকশন</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.gateway')}</th>
+                      <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.accountNumber')}</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.type')}</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.color')}</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.users.status')}</th>
+                      <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('common.edit')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -344,7 +344,7 @@ export function PaymentMethodsPanel() {
                             </div>
                             <div>
                               <p className="font-medium text-foreground">{m.name}</p>
-                              <p className="text-[11px] text-muted-foreground">অর্ডার: {m.sortOrder}</p>
+                              <p className="text-[11px] text-muted-foreground">{t('admin.payments.sortOrder')}: {m.sortOrder}</p>
                             </div>
                           </div>
                         </td>
@@ -358,7 +358,7 @@ export function PaymentMethodsPanel() {
                         </td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                            <div className="relative h-8 w-8 rounded-lg border border-border/50 cursor-pointer transition-transform hover:scale-110" style={{ backgroundColor: m.color || '#84CC16' }} title="ক্লিক করে কালার পরিবর্তন করুন">
+                            <div className="relative h-8 w-8 rounded-lg border border-border/50 cursor-pointer transition-transform hover:scale-110" style={{ backgroundColor: m.color || '#84CC16' }} title={t('admin.payments.editGateway')}>
                               <input type="color" value={m.color || '#84CC16'} onChange={(e) => handleQuickColorChange(m.id, e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                             </div>
                             <span className="font-mono text-[11px] text-muted-foreground">{m.color || '#84CC16'}</span>
@@ -373,9 +373,9 @@ export function PaymentMethodsPanel() {
                         </td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 gap-1.5 rounded-lg text-xs font-medium"><Pencil className="h-3.5 w-3.5" /> সম্পাদনা</Button>
+                            <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 gap-1.5 rounded-lg text-xs font-medium"><Pencil className="h-3.5 w-3.5" /> {t("common.edit")}</Button>
                             <Button size="sm" variant="outline" disabled={deletingId === m.id} onClick={() => handleDelete(m.id)} className="h-8 gap-1.5 rounded-lg text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10">
-                              {deletingId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} মুছুন
+                              {deletingId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {t("common.delete")}
                             </Button>
                           </div>
                         </td>
@@ -417,7 +417,7 @@ export function PaymentMethodsPanel() {
                         )}
                       </div>
                       <div className="flex gap-1.5">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 px-2.5 rounded-lg text-[11px] font-medium"><Pencil className="h-3 w-3" /> সম্পাদনা</Button>
+                        <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 px-2.5 rounded-lg text-[11px] font-medium"><Pencil className="h-3 w-3" /> {t("common.edit")}</Button>
                         <Button size="sm" variant="outline" disabled={deletingId === m.id} onClick={() => handleDelete(m.id)} className="h-8 px-2.5 rounded-lg text-[11px] font-medium border-red-200 text-red-600 dark:border-red-800/50 dark:text-red-400">
                           {deletingId === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                         </Button>
@@ -442,10 +442,10 @@ export function PaymentMethodsPanel() {
           <div className="mb-5 text-center sm:text-left">
             <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
               <Palette className="h-5 w-5 text-primary" />
-              গেটওয়ে কালার প্রিভিউ
+              {t("admin.payments.colorPreview")}
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              প্রতিটি গেটওয়ের নিজস্ব কালার পেমেন্ট পেজে দেখাবে
+              {t("admin.payments.colorPreviewDesc")}
             </p>
           </div>
 
@@ -456,7 +456,7 @@ export function PaymentMethodsPanel() {
                 <div className="mb-4 flex items-center gap-2">
                   <Eye className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-semibold text-foreground">
-                    পেমেন্ট পেজ প্রিভিউ
+                    {t("admin.payments.pagePreview")}
                   </span>
                 </div>
 
@@ -499,17 +499,17 @@ export function PaymentMethodsPanel() {
                       style={{ borderLeftColor: activeMethods[0].color || '#84CC16' }}
                     >
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">মোট পরিমাণ</span>
+                        <span className="text-muted-foreground">{t("admin.payments.totalAmount")}</span>
                         <span
                           className="font-bold"
                           style={{ color: activeMethods[0].color || '#84CC16' }}
                         >
-                          ৳১,০৩,০০০.০০
+                          ৳1,03,000.00
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs mt-1">
                         <span className="text-muted-foreground">
-                          {activeMethods[0].name} এ পেমেন্ট পাঠান
+                          {activeMethods[0].name}
                         </span>
                         <span className="font-mono font-medium text-foreground">
                           {activeMethods[0].accountNumber}
@@ -526,7 +526,7 @@ export function PaymentMethodsPanel() {
                       }}
                     >
                       <ShieldCheckIcon />
-                      কনফার্ম পেমেন্ট
+                      {t("admin.payments.confirmPayment")}
                     </button>
                   </>
                 )}
@@ -563,7 +563,7 @@ export function PaymentMethodsPanel() {
                 {/* Modal Header */}
                 <div className="mb-5 flex items-center justify-between">
                   <h3 className="text-base font-bold text-foreground">
-                    {editingId ? 'গেটওয়ে সম্পাদনা করুন' : 'নতুন গেটওয়ে যোগ করুন'}
+                    {editingId ? t('admin.payments.editGateway') : t('admin.payments.addGatewayTitle')}
                   </h3>
                   <button
                     onClick={() => setDialogOpen(false)}
@@ -576,7 +576,7 @@ export function PaymentMethodsPanel() {
                 {/* Modal Form */}
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">গেটওয়ে নাম</Label>
+                    <Label className="text-sm font-medium">{t("admin.payments.gatewayName")}</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => {
@@ -588,25 +588,25 @@ export function PaymentMethodsPanel() {
                           ...(!editingId && { color: getGatewayColor(name) }),
                         });
                       }}
-                      placeholder="যেমন: bKash, Nagad, Rocket"
+                      placeholder="e.g.: bKash, Nagad, Rocket"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">
-                      অ্যাকাউন্ট নম্বর
+                      {t("admin.payments.accountNumber")}
                     </Label>
                     <Input
                       value={form.accountNumber}
                       onChange={(e) =>
                         setForm({ ...form, accountNumber: e.target.value })
                       }
-                      placeholder="০১XXXXXXXXX"
+                      placeholder="01XXXXXXXXX"
                     />
                   </div>
 
                   <ColorPickerRow
-                    label="গেটওয়ে কালার"
+                    label={t("admin.payments.gatewayColor")}
                     color={form.color}
                     onChange={(c) => setForm({ ...form, color: c })}
                   />
@@ -614,7 +614,7 @@ export function PaymentMethodsPanel() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium">
-                        অ্যাকাউন্ট টাইপ
+                        {t("admin.payments.accountType")}
                       </Label>
                       <select
                         value={form.accountType}
@@ -629,7 +629,7 @@ export function PaymentMethodsPanel() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">স্ট্যাটাস</Label>
+                      <Label className="text-sm font-medium">{t("admin.users.status")}</Label>
                       <select
                         value={form.status}
                         onChange={(e) =>
@@ -644,7 +644,7 @@ export function PaymentMethodsPanel() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">সর্ট অর্ডার</Label>
+                    <Label className="text-sm font-medium">{t("admin.payments.sortOrder")}</Label>
                     <Input
                       type="number"
                       value={form.sortOrder}
@@ -654,17 +654,17 @@ export function PaymentMethodsPanel() {
                           sortOrder: parseInt(e.target.value) || 0,
                         })
                       }
-                      placeholder="০"
+                      placeholder="0"
                     />
                     <p className="text-xs text-muted-foreground">
-                      কম মান মানে পেমেন্ট পেজে আগে দেখাবে
+                      {t("admin.payments.sortOrderHint")}
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium flex items-center gap-1.5">
                       <ImageIcon className="h-3.5 w-3.5" />
-                      লোগো ইমেজ লিংক
+                      {t("admin.payments.logoImageLink")}
                     </Label>
                     <Input
                       value={form.image}
@@ -674,7 +674,7 @@ export function PaymentMethodsPanel() {
                       placeholder="https://example.com/logo.png"
                     />
                     <p className="text-xs text-muted-foreground">
-                      ঐচ্ছিক — লিংক দিলে আইকনের জায়গায় এই ইমেজ দেখাবে
+                      {t("admin.payments.logoImageHint")}
                     </p>
                   </div>
 
@@ -705,10 +705,10 @@ export function PaymentMethodsPanel() {
                       )}
                     </div>
                     <p className="font-semibold text-sm">
-                      {form.name || 'গেটওয়ে নাম'}
+                      {form.name || t('admin.payments.gatewayName')}
                     </p>
                     <p className="mt-0.5 font-mono text-[10px] opacity-70">
-                      {form.accountNumber || 'অ্যাকাউন্ট নম্বর'}
+                      {form.accountNumber || t('admin.payments.accountNumber')}
                     </p>
                   </div>
                 </div>
@@ -720,7 +720,7 @@ export function PaymentMethodsPanel() {
                     onClick={() => setDialogOpen(false)}
                     className="h-10 rounded-xl px-5 text-sm font-medium"
                   >
-                    বাতিল
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleSave}
@@ -732,7 +732,7 @@ export function PaymentMethodsPanel() {
                     ) : (
                       <Save className="h-4 w-4" />
                     )}
-                    সংরক্ষণ করুন
+                    {t('common.save')}
                   </Button>
                 </div>
               </div>

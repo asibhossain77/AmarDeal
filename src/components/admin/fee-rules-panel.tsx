@@ -43,6 +43,7 @@ function FeeRuleForm({
   onCancel: () => void;
   loading: boolean;
 }) {
+  const t = useT();
   const [minAmount, setMinAmount] = useState(initial?.minimum_amount?.toString() || '');
   const [maxAmount, setMaxAmount] = useState(initial?.maximum_amount?.toString() || '0');
   const [fee, setFee] = useState(initial?.fee?.toString() || '');
@@ -54,19 +55,19 @@ function FeeRuleForm({
     const feeVal = parseInt(fee, 10);
 
     if (isNaN(min) || isNaN(feeVal)) {
-      toast.error('সর্বনিম্ন পরিমাণ এবং ফি সঠিকভাবে পূরণ করুন');
+      toast.error(t('admin.fees.minMaxRequired'));
       return;
     }
     if (isNaN(max)) {
-      toast.error('সর্বোচ্চ পরিমাণ সঠিকভাবে পূরণ করুন (0 = সীমাহীন)');
+      toast.error(t('admin.fees.maxRequired'));
       return;
     }
     if (min < 0 || (max !== 0 && max < 0) || feeVal < 0) {
-      toast.error('নেগেটিভ মান গ্রহণযোগ্য নয়');
+      toast.error(t('admin.fees.noNegative'));
       return;
     }
     if (max !== 0 && max <= min) {
-      toast.error('সর্বোচ্চ পরিমাণ সর্বনিম্ন পরিমাণের চেয়ে বড় হতে হবে');
+      toast.error(t('admin.fees.maxGtMin'));
       return;
     }
 
@@ -78,41 +79,41 @@ function FeeRuleForm({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground">
-            সর্বনিম্ন পরিমাণ (৳)
+            {t('admin.fees.minAmountLabel')}
           </Label>
           <Input
             type="number"
             min="0"
             value={minAmount}
             onChange={(e) => setMinAmount(e.target.value)}
-            placeholder="যেমন: 500"
+            placeholder="e.g., 500"
             className="rounded-xl"
             required
           />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground">
-            সর্বোচ্চ পরিমাণ (৳) — <span className="text-primary">0 = সীমাহীন</span>
+            {t('admin.fees.maxAmountLabel')}
           </Label>
           <Input
             type="number"
             min="0"
             value={maxAmount}
             onChange={(e) => setMaxAmount(e.target.value)}
-            placeholder="0 = সীমাহীন"
+            placeholder={`0 = ${t('fee.unlimited')}`}
             className="rounded-xl"
           />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground">
-            ফি (৳)
+            {t('admin.fees.feeLabel')}
           </Label>
           <Input
             type="number"
             min="0"
             value={fee}
             onChange={(e) => setFee(e.target.value)}
-            placeholder="যেমন: 30"
+            placeholder="e.g., 30"
             className="rounded-xl"
             required
           />
@@ -125,7 +126,7 @@ function FeeRuleForm({
           className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {initial ? 'আপডেট করুন' : 'যোগ করুন'}
+          {initial ? t('common.update') : t('common.add')}
         </Button>
         <Button
           type="button"
@@ -135,7 +136,7 @@ function FeeRuleForm({
           className="gap-2 rounded-xl"
         >
           <X className="h-4 w-4" />
-          বাতিল
+          {t('common.cancel')}
         </Button>
       </div>
     </form>
@@ -181,14 +182,14 @@ export function FeeRulesPanel() {
       });
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || 'তৈরি করতে ব্যর্থ');
+        toast.error(err.error || t('admin.fees.addFailed'));
         return;
       }
-      toast.success('ফি নিয়ম সফলভাবে যোগ হয়েছে');
+      toast.success(t('admin.fees.addSuccess'));
       setShowForm(false);
       fetchRules();
     } catch {
-      toast.error('নেটওয়ার্ক ত্রুটি');
+      toast.error(t('common.networkError'));
     } finally {
       setFormLoading(false);
     }
@@ -205,31 +206,31 @@ export function FeeRulesPanel() {
       });
       if (!res.ok) {
         const err = await res.json();
-        toast.error(err.error || 'আপডেট করতে ব্যর্থ');
+        toast.error(err.error || t('admin.fees.updateFailed'));
         return;
       }
-      toast.success('ফি নিয়ম আপডেট হয়েছে');
+      toast.success(t('admin.fees.updateSuccess'));
       setEditing(null);
       fetchRules();
     } catch {
-      toast.error('নেটওয়ার্ক ত্রুটি');
+      toast.error(t('common.networkError'));
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('আপনি কি নিশ্চিত যে এই নিয়মটি মুছে ফেলতে চান?')) return;
+    if (!confirm(t('admin.fees.deleteConfirm'))) return;
     try {
       const res = await fetch(`/api/admin/fee-rules/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('ফি নিয়ম মুছে ফেলা হয়েছে');
+        toast.success(t('admin.fees.deleteSuccess'));
         fetchRules();
       } else {
-        toast.error('মুছে ফেলতে ব্যর্থ');
+        toast.error(t('admin.fees.deleteFailed'));
       }
     } catch {
-      toast.error('নেটওয়ার্ক ত্রুটি');
+      toast.error(t('common.networkError'));
     }
   };
 
@@ -241,13 +242,13 @@ export function FeeRulesPanel() {
         body: JSON.stringify({ is_active: !rule.is_active }),
       });
       if (res.ok) {
-        toast.success(rule.is_active ? 'নিয়ম নিষ্ক্রিয় করা হয়েছে' : 'নিয়ম সক্রিয় করা হয়েছে');
+        toast.success(rule.is_active ? t('admin.fees.ruleDisabled') : t('admin.fees.ruleEnabled'));
         fetchRules();
       } else {
-        toast.error('অবস্থা পরিবর্তন করতে ব্যর্থ');
+        toast.error(t('admin.fees.toggleFailed'));
       }
     } catch {
-      toast.error('নেটওয়ার্ক ত্রুটি');
+      toast.error(t('common.networkError'));
     }
   };
 
@@ -264,9 +265,9 @@ export function FeeRulesPanel() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-foreground">ফি কাঠামো ম্যানেজমেন্ট</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-foreground">{t('admin.fees.management')}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            লেনদেনের পরিসর অনুযায়ী ফি নিয়ম তৈরি, সম্পাদনা ও মুছে ফেলুন
+            {t('admin.fees.managementDesc')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -277,7 +278,7 @@ export function FeeRulesPanel() {
             className="gap-1.5 rounded-xl"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            রিফ্রেশ
+            {t('admin.fees.refresh')}
           </Button>
           {!showForm && !editing && (
             <Button
@@ -286,7 +287,7 @@ export function FeeRulesPanel() {
               className="gap-1.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
             >
               <Plus className="h-3.5 w-3.5" />
-              নতুন নিয়ম
+              {t('admin.fees.newRule')}
             </Button>
           )}
         </div>
@@ -296,7 +297,7 @@ export function FeeRulesPanel() {
       {(showForm || editing) && (
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 p-5 shadow-lg">
           <h3 className="text-sm font-bold text-foreground mb-4">
-            {editing ? 'নিয়ম সম্পাদনা করুন' : 'নতুন ফি নিয়ম যোগ করুন'}
+            {editing ? t('admin.fees.editRuleTitle') : t('admin.fees.addRuleTitle')}
           </h3>
           <FeeRuleForm
             key={editing?.id ?? 'new'}
@@ -321,10 +322,10 @@ export function FeeRulesPanel() {
           <table className="w-full">
             <thead>
               <tr className="bg-primary text-primary-foreground">
-                <th className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider">সীমা</th>
-                <th className="px-5 py-3.5 text-center text-xs font-bold uppercase tracking-wider">ফি</th>
-                <th className="px-5 py-3.5 text-center text-xs font-bold uppercase tracking-wider">অবস্থা</th>
-                <th className="px-5 py-3.5 text-right text-xs font-bold uppercase tracking-wider">অ্যাকশন</th>
+                <th className="px-5 py-3.5 text-left text-xs font-bold uppercase tracking-wider">{t('admin.fees.limit')}</th>
+                <th className="px-5 py-3.5 text-center text-xs font-bold uppercase tracking-wider">{t('admin.fees.feeLabel')}</th>
+                <th className="px-5 py-3.5 text-center text-xs font-bold uppercase tracking-wider">{t('common.status')}</th>
+                <th className="px-5 py-3.5 text-right text-xs font-bold uppercase tracking-wider">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
@@ -350,7 +351,7 @@ export function FeeRulesPanel() {
                       }`}
                     >
                       {rule.is_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      {rule.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                      {rule.is_active ? t('common.active') : t('common.inactive')}
                     </button>
                   </td>
                   <td className="px-5 py-3.5 text-right">
@@ -358,14 +359,14 @@ export function FeeRulesPanel() {
                       <button
                         onClick={() => setEditing(rule)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-                        title="সম্পাদনা"
+                        title={t('common.edit')}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(rule.id)}
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400 transition-colors"
-                        title="মুছুন"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -404,7 +405,7 @@ export function FeeRulesPanel() {
                   }`}
                 >
                   {rule.is_active ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                  {rule.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                  {rule.is_active ? t('common.active') : t('common.inactive')}
                 </button>
               </div>
               <div className="flex gap-2 border-t border-border/30 pt-3">
@@ -415,7 +416,7 @@ export function FeeRulesPanel() {
                   className="flex-1 gap-1.5 rounded-xl text-xs"
                 >
                   <Pencil className="h-3 w-3" />
-                  সম্পাদনা
+                  {t('common.edit')}
                 </Button>
                 <Button
                   variant="outline"
@@ -424,7 +425,7 @@ export function FeeRulesPanel() {
                   className="flex-1 gap-1.5 rounded-xl text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
                   <Trash2 className="h-3 w-3" />
-                  মুছুন
+                  {t('common.delete')}
                 </Button>
               </div>
             </div>
@@ -435,13 +436,13 @@ export function FeeRulesPanel() {
       {/* Empty State */}
       {!loading && rules.length === 0 && (
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 p-12 text-center shadow-lg">
-          <p className="text-muted-foreground mb-4">কোনো ফি নিয়ম নেই</p>
+          <p className="text-muted-foreground mb-4">{t('admin.fees.noRules')}</p>
           <Button
             onClick={() => setShowForm(true)}
             className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             <Plus className="h-4 w-4" />
-            প্রথম নিয়ম যোগ করুন
+            {t('admin.fees.addFirst')}
           </Button>
         </div>
       )}

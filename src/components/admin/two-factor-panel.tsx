@@ -116,22 +116,22 @@ export function TwoFactorPanel() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'সেটআপ ব্যর্থ হয়েছে');
+        toast.error(data.error || t('admin.twoFactor.setupFailed'));
         return;
       }
       setQrDataUrl(data.qrCodeDataUrl);
       setSecret(data.secret);
       setSettingUp(true);
-      toast.success('QR কোড তৈরি হয়েছে');
+      toast.success(t('admin.twoFactor.qrGenerated'));
     } catch {
-      toast.error('সার্ভার ত্রুটি');
+      toast.error(t('admin.twoFactor.serverError'));
     }
   };
 
   // ── Enable: Verify code ──
   const handleEnable = async () => {
     if (!verifyCode || verifyCode.length !== 6) {
-      toast.error('6 ডিজিটের কোড দিন');
+      toast.error(t('admin.twoFactor.enter6Digit'));
       return;
     }
     setEnabling(true);
@@ -143,7 +143,7 @@ export function TwoFactorPanel() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'ভুল কোড');
+        toast.error(data.error || t('admin.twoFactor.wrongCode'));
         return;
       }
       setTotpEnabled(true);
@@ -151,9 +151,9 @@ export function TwoFactorPanel() {
       setVerifyCode('');
       setQrDataUrl('');
       setSecret('');
-      toast.success('টু-ফ্যাক্টর অথেনটিকেশন সফলভাবে চালু হয়েছে!');
+      toast.success(t('admin.twoFactor.enableSuccess'));
     } catch {
-      toast.error('সার্ভার ত্রুটি');
+      toast.error(t('admin.twoFactor.serverError'));
     } finally {
       setEnabling(false);
     }
@@ -162,7 +162,7 @@ export function TwoFactorPanel() {
   // ── Disable ──
   const handleDisable = async () => {
     if (!disableCode || disableCode.length !== 6) {
-      toast.error('6 ডিজিটের কোড দিন');
+      toast.error(t('admin.twoFactor.enter6Digit'));
       return;
     }
     setDisabling(true);
@@ -174,15 +174,15 @@ export function TwoFactorPanel() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || 'ভুল কোড');
+        toast.error(data.error || t('admin.twoFactor.wrongCode'));
         return;
       }
       setTotpEnabled(false);
       setShowDisable(false);
       setDisableCode('');
-      toast.success('টু-ফ্যাক্টর অথেনটিকেশন বন্ধ হয়েছে');
+      toast.success(t('admin.twoFactor.disableSuccess'));
     } catch {
-      toast.error('সার্ভার ত্রুটি');
+      toast.error(t('admin.twoFactor.serverError'));
     } finally {
       setDisabling(false);
     }
@@ -206,17 +206,17 @@ export function TwoFactorPanel() {
       {/* ── Header ── */}
       <SectionHeader
         icon={<ShieldAlert className="h-5 w-5 text-primary" />}
-        title="টু-ফ্যাক্টর অথেনটিকেশন (2FA)"
-        desc="Google Authenticator দিয়ে আপনার অ্যাকাউন্ট সুরক্ষিত রাখুন"
+        title={t('admin.twoFactor.headerTitle')}
+        desc={t('admin.twoFactor.headerDesc')}
         badge={
           statusLoaded ? (
             totpEnabled ? (
               <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                <ShieldCheck className="h-3 w-3" /> সক্রিয়
+                <ShieldCheck className="h-3 w-3" /> {t('common.enabled')}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                নিষ্ক্রিয়
+                {t('common.disabled')}
               </span>
             )
           ) : (
@@ -236,10 +236,10 @@ export function TwoFactorPanel() {
                 </div>
               </div>
               <h4 className="text-base font-bold text-foreground">
-                Google Authenticator সেটআপ করুন
+                {t('admin.twoFactor.setupTitle')}
               </h4>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                নিচের QR কোড স্ক্যান করুন অথবা ম্যানুয়ালি কোড কপি করে Google Authenticator অ্যাপে পেস্ট করুন
+                {t('admin.twoFactor.setupDesc')}
               </p>
             </div>
 
@@ -260,7 +260,7 @@ export function TwoFactorPanel() {
             {/* Secret Key */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">
-                ম্যানুয়ালি কোড (Secret Key)
+                {t('admin.twoFactor.manualCode')}
               </label>
               <div className="flex gap-2">
                 <Input
@@ -275,7 +275,7 @@ export function TwoFactorPanel() {
                   className="shrink-0 gap-1.5"
                 >
                   {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copied ? 'কপি হয়েছে' : 'কপি'}
+                  {copied ? t('admin.twoFactor.copied') : t('admin.twoFactor.copy')}
                 </Button>
               </div>
             </div>
@@ -284,24 +284,24 @@ export function TwoFactorPanel() {
             <div className="bg-amber-50 dark:bg-amber-500/10 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                গুরুত্বপূর্ণ নির্দেশনা
+                {t('admin.twoFactor.importantNote')}
               </div>
               <ol className="text-xs text-amber-700/80 dark:text-amber-400/80 space-y-1.5 list-decimal list-inside">
-                <li>Google Authenticator অ্যাপ ইনস্টল করুন</li>
-                <li>QR কোড স্ক্যান করুন অথবা ম্যানুয়ালি কোড দিন</li>
-                <li>অ্যাপে দেখানো 6 ডিজিটের কোড নিচে দিন</li>
-                <li>এই কোড ছাড়া আপনি লগইন করতে পারবেন না</li>
+                <li>{t('admin.twoFactor.step.1')}</li>
+                <li>{t('admin.twoFactor.step.2')}</li>
+                <li>{t('admin.twoFactor.step.3')}</li>
+                <li>{t('admin.twoFactor.step2')}</li>
               </ol>
             </div>
 
             {/* Verify Code */}
             <div className="space-y-3">
               <label className="text-sm font-medium text-foreground">
-                ভেরিফিকেশন কোড দিন
+                {t('admin.twoFactor.verifyCode')}
               </label>
               <div className="flex gap-3">
                 <Input
-                  placeholder="6 ডিজিটের কোড"
+                  placeholder={t('admin.twoFactor.codePlaceholder')}
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className="font-mono text-lg tracking-widest text-center max-w-[200px]"
@@ -313,7 +313,7 @@ export function TwoFactorPanel() {
                   className="gap-2"
                 >
                   {enabling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  {enabling ? 'যাচাই হচ্ছে...' : 'সক্রিয় করুন'}
+                  {enabling ? t('admin.twoFactor.verifying') : t('admin.twoFactor.activateBtn')}
                 </Button>
               </div>
             </div>
@@ -324,7 +324,7 @@ export function TwoFactorPanel() {
               onClick={cancelSetup}
               className="w-full text-muted-foreground"
             >
-              বাতিল করুন
+              {t('admin.twoFactor.cancelSetup')}
             </Button>
           </div>
         </SolidCard>
@@ -343,10 +343,10 @@ export function TwoFactorPanel() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-bold text-foreground">
-                      2FA সক্রিয় আছে
+                      {t('admin.twoFactor.isActive')}
                     </h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      আপনার অ্যাকাউন্ট Google Authenticator দিয়ে সুরক্ষিত। লগইন করার সময় 6 ডিজিটের কোড প্রয়োজন হবে।
+                      {t('admin.twoFactor.activeDesc')}
                     </p>
                   </div>
                 </div>
@@ -359,17 +359,17 @@ export function TwoFactorPanel() {
                     className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 border-red-200 dark:border-red-500/20"
                   >
                     <Trash2 className="h-4 w-4" />
-                    2FA বন্ধ করুন
+                    {t('admin.twoFactor.disable2fa')}
                   </Button>
                 ) : (
                   <div className="space-y-3 p-4 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-500/5">
                     <div className="flex items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
                       <AlertTriangle className="h-4 w-4" />
-                      সতর্কতা: 2FA বন্ধ করলে আপনার অ্যাকাউন্ট কম সুরক্ষিত হবে
+                      {t('admin.twoFactor.disableWarning')}
                     </div>
                     <div className="flex gap-3">
                       <Input
-                        placeholder="বর্তমান 6 ডিজিটের কোড"
+                        placeholder={t('admin.twoFactor.currentCode')}
                         value={disableCode}
                         onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="font-mono text-sm tracking-widest"
@@ -382,7 +382,7 @@ export function TwoFactorPanel() {
                         className="gap-2 shrink-0"
                       >
                         {disabling ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        নিশ্চিত করুন
+                        {t('common.confirm')}
                       </Button>
                     </div>
                     <Button
@@ -391,7 +391,7 @@ export function TwoFactorPanel() {
                       onClick={() => { setShowDisable(false); setDisableCode(''); }}
                       className="text-muted-foreground"
                     >
-                      বাতিল
+                      {t('common.cancel')}
                     </Button>
                   </div>
                 )}
@@ -405,10 +405,10 @@ export function TwoFactorPanel() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-bold text-foreground">
-                      2FA নিষ্ক্রিয়
+                      {t('admin.twoFactor.isDisabled')}
                     </h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      আপনার অ্যাকাউন্টে টু-ফ্যাক্টর অথেনটিকেশন চালু নেই। শুধুমাত্র পাসওয়ার্ড দিয়ে লগইন করা যাচ্ছে।
+                      {t('admin.twoFactor.disabledDesc')}
                     </p>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export function TwoFactorPanel() {
                   className="w-full gap-2 shadow-lg shadow-primary/20"
                 >
                   <ShieldCheck className="h-4 w-4" />
-                  Google Authenticator সেটআপ করুন
+                  {t('admin.twoFactor.setupTitle')}
                 </Button>
               </>
             )}

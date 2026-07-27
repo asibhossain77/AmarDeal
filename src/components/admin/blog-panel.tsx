@@ -76,6 +76,7 @@ function PostEditor({
   const [content, setContent] = useState(post?.content || '');
   const [coverImage, setCoverImage] = useState(post?.coverImage || '');
   const [published, setPublished] = useState(post?.published || false);
+  const t = useT();
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
@@ -84,7 +85,7 @@ function PostEditor({
 
   const handleSubmit = () => {
     if (!title.trim() || !slug.trim() || !content.trim()) {
-      toast.error('শিরোনাম, স্লাগ এবং কন্টেন্ট আবশ্যক');
+      toast.error(t('admin.blog.requiredFields'));
       return;
     }
     onSave({ id: post?.id, title, slug, excerpt, content, coverImage, published });
@@ -97,41 +98,41 @@ function PostEditor({
         className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        ফিরে যান
+        {t('admin.blog.back')}
       </button>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
-          <Label>শিরোনাম *</Label>
-          <Input value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="ব্লগ পোস্টের শিরোনাম" />
+          <Label>{t('admin.blog.titleField')} *</Label>
+          <Input value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder={t('admin.blog.titlePlaceholder')} />
         </div>
 
         <div className="space-y-2">
-          <Label>স্লাগ *</Label>
+          <Label>{t('admin.blog.slugField')} *</Label>
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="post-url-slug" className="font-mono text-sm" />
         </div>
 
         <div className="space-y-2">
-          <Label>কভার ইমেজ URL</Label>
+          <Label>{t('admin.blog.coverImageField')}</Label>
           <Input value={coverImage} onChange={(e) => setCoverImage(e.target.value)} placeholder="https://..." />
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>সারাংশ</Label>
-          <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="সংক্ষিপ্ত বিবরণ (ঐচ্ছিক)" rows={2} />
+          <Label>{t('admin.blog.excerptField')}</Label>
+          <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder={t('admin.blog.excerptPlaceholder')} rows={2} />
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>কন্টেন্ট *</Label>
+          <Label>{t('admin.blog.contentField')} *</Label>
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="ব্লগ কন্টেন্ট লিখুন..."
+            placeholder={t('admin.blog.contentPlaceholder')}
             rows={14}
             className="min-h-[300px]"
           />
           <p className="text-xs text-muted-foreground">
-            HTML ট্যাগ ব্যবহার করতে পারবেন। যেমন: &lt;h2&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt; ইত্যাদি।
+            {t('admin.blog.htmlHint')}
           </p>
         </div>
 
@@ -143,7 +144,7 @@ function PostEditor({
             <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform shadow ${published ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
           <Label className="cursor-pointer" onClick={() => setPublished(!published)}>
-            {published ? 'প্রকাশিত' : 'ড্রাফট'}
+            {published ? t('admin.blog.published') : t('admin.blog.draft')}
           </Label>
         </div>
       </div>
@@ -151,10 +152,10 @@ function PostEditor({
       <div className="flex items-center gap-3 pt-2">
         <Button onClick={handleSubmit} className="gap-2">
           <Save className="h-4 w-4" />
-          {post ? 'আপডেট করুন' : 'তৈরি করুন'}
+          {post ? t('admin.blog.update') : t('admin.blog.create')}
         </Button>
         <Button variant="outline" onClick={onCancel}>
-          বাতিল
+          {t('admin.blog.cancel')}
         </Button>
       </div>
     </div>
@@ -187,7 +188,7 @@ export function BlogPanel() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'সমস্যা হয়েছে');
+        throw new Error(err.error || t('admin.blog.generalError'));
       }
       return res.json();
     },
@@ -195,7 +196,7 @@ export function BlogPanel() {
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
       setEditorOpen(false);
       setEditingPost(undefined);
-      toast.success('ব্লগ পোস্ট সফল হয়েছে!');
+      toast.success(t('admin.blog.saveSuccess'));
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -208,10 +209,10 @@ export function BlogPanel() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-blog-posts'] });
-      toast.success('পোস্ট ডিলিট হয়েছে');
+      toast.success(t('admin.blog.deleteSuccess'));
     },
     onError: () => {
-      toast.error('ডিলিটে সমস্যা হয়েছে');
+      toast.error(t('admin.blog.deleteError'));
     },
   });
 
@@ -248,9 +249,9 @@ export function BlogPanel() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">ব্লগ ম্যানেজমেন্ট</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('admin.blog.title')}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            মোট {(posts?.length || 0).toLocaleString('en')}টি পোস্ট • প্রকাশিত {(posts?.filter((p) => p.published).length || 0).toLocaleString('en')}টি
+            {t('admin.blog.totalPosts', { total: String(posts?.length || 0), published: String(posts?.filter((p) => p.published).length || 0) })}
           </p>
         </div>
         <Button
@@ -261,15 +262,15 @@ export function BlogPanel() {
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          নতুন পোস্ট
+          {t('admin.blog.newPost')}
         </Button>
       </div>
 
       {!posts?.length ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground">কোনো ব্লগ পোস্ট নেই</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">নতুন পোস্ট তৈরি করুন</p>
+          <p className="text-muted-foreground">{t('admin.blog.noPosts')}</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">{t('admin.blog.createFirst')}</p>
         </div>
       ) : (
         <div className="space-y-3 max-h-[65vh] overflow-y-auto">
@@ -300,7 +301,7 @@ export function BlogPanel() {
                     variant={post.published ? 'default' : 'secondary'}
                     className="text-[10px] shrink-0"
                   >
-                    {post.published ? 'প্রকাশিত' : 'ড্রাফট'}
+                    {post.published ? t('admin.blog.published') : t('admin.blog.draft')}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground font-mono mt-0.5">/{post.slug}</p>
@@ -328,13 +329,13 @@ export function BlogPanel() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t("admin.blog.deleteConfirm")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        &quot;{post.title}&quot; পোস্টটি স্থায়ীভাবে মুছে যাবে।
+                        {t('admin.blog.deleteDesc')}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                       <Button variant="destructive" onClick={() => deleteMutation.mutate(post.id)}>
-                        ডিলিট
+                        {t('admin.blog.delete')}
                       </Button>
                     </AlertDialogFooter>
                   </AlertDialogContent>

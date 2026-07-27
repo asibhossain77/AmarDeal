@@ -59,24 +59,16 @@ interface PayoutRow {
 
 type FilterTab = 'all' | 'pending' | 'paid' | 'seller_payout' | 'buyer_refund';
 
-const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: 'সব' },
-  { key: 'pending', label: 'পেন্ডিং' },
-  { key: 'paid', label: 'পরিশোধিত' },
-  { key: 'seller_payout', label: 'বিক্রেতা পেআউট' },
-  { key: 'buyer_refund', label: 'ক্রেতা রিফান্ড' },
-];
-
 /* ═══════════════════════════════════════════
    Helpers
    ═══════════════════════════════════════════ */
 
 function getAccountTypeLabel(type: string): string {
   switch (type) {
-    case 'bkash': return 'বিকাশ';
-    case 'nagad': return 'নগদ';
-    case 'rocket': return 'রকেট';
-    case 'bank': return 'ব্যাংক ট্রান্সফার';
+    case 'bkash': return 'bKash';
+    case 'nagad': return 'Nagad';
+    case 'rocket': return 'Rocket';
+    case 'bank': return 'Bank Transfer';
     default: return type;
   }
 }
@@ -88,14 +80,6 @@ function getAccountTypeColor(type: string): string {
     case 'rocket': return '#8C3494';
     case 'bank': return '#1A56DB';
     default: return '#6B7280';
-  }
-}
-
-function getPayoutTypeLabel(type: string): string {
-  switch (type) {
-    case 'seller_payout': return 'বিক্রেতা পেআউট';
-    case 'buyer_refund': return 'ক্রেতা রিফান্ড';
-    default: return type;
   }
 }
 
@@ -175,12 +159,30 @@ function PayoutListSkeleton() {
    Component
    ═══════════════════════════════════════════ */
 
-export function AdminPayoutsPanel
-  const t = useT();() {
+export function AdminPayoutsPanel() {
+  const t = useT();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
   const [completingId, setCompletingId] = useState<string | null>(null);
+
+  /* ── Filter tabs (need t() for labels) ── */
+  const FILTER_TABS: { key: FilterTab; label: string }[] = [
+    { key: 'all', label: t('admin.payouts.all') },
+    { key: 'pending', label: t('admin.payouts.pending') },
+    { key: 'paid', label: t('admin.payouts.paid') },
+    { key: 'seller_payout', label: t('admin.payouts.sellerPayout') },
+    { key: 'buyer_refund', label: t('admin.payouts.buyerRefund') },
+  ];
+
+  /* ── Payout type label (needs t()) ── */
+  const getPayoutTypeLabel = (type: string): string => {
+    switch (type) {
+      case 'seller_payout': return t('admin.payouts.sellerPayout');
+      case 'buyer_refund': return t('admin.payouts.buyerRefund');
+      default: return type;
+    }
+  };
 
   /* ── Build query params ── */
   const getQueryParams = () => {
@@ -199,7 +201,7 @@ export function AdminPayoutsPanel
       const res = await fetch(`/api/admin/payouts${params}`);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'পেআউট তথ্য লোড করা যায়নি');
+        throw new Error(err.error || t('admin.payouts.loadError'));
       }
       return res.json();
     },
@@ -231,7 +233,7 @@ export function AdminPayoutsPanel
 
   /* ── Mark as paid ── */
   const handleComplete = async (id: string) => {
-    if (!window.confirm('আপনি কি নিশ্চিত যে এই পেআউটটি পরিশোধিত হিসেবে চিহ্নিত করতে চান?')) {
+    if (!window.confirm(t('admin.payouts.confirmMarkPaid'))) {
       return;
     }
 
@@ -241,14 +243,14 @@ export function AdminPayoutsPanel
         method: 'POST',
       });
       if (res.ok) {
-        toast.success('পেআউট সফলভাবে সম্পন্ন হয়েছে');
+        toast.success(t('admin.payouts.completeSuccess'));
         queryClient.invalidateQueries({ queryKey: ['admin-payouts'] });
       } else {
         const errData = await res.json().catch(() => ({}));
-        toast.error(errData.error || 'পেআউট সম্পন্ন করা ব্যর্থ হয়েছে');
+        toast.error(errData.error || t('admin.payouts.completeFailed'));
       }
     } catch {
-      toast.error('নেটওয়ার্ক সমস্যা');
+      toast.error(t('admin.payouts.networkError'));
     } finally {
       setCompletingId(null);
     }
@@ -272,10 +274,10 @@ export function AdminPayoutsPanel
           >
             <Wallet className="h-5 w-5 text-white" />
           </div>
-          পেআউট ম্যানেজমেন্ট
+          {t('admin.payouts.title')}
         </h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          সকল পেআউট ও রিফান্ড পরিচালনা করুন
+          {t('admin.payouts.desc')}
         </p>
       </div>
 
@@ -286,7 +288,7 @@ export function AdminPayoutsPanel
         <StatsSkeleton />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          {/* মোট পেন্ডিং */}
+          {/* Total Pending */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -302,7 +304,7 @@ export function AdminPayoutsPanel
               </div>
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  মোট পেন্ডিং
+                  {t('admin.payouts.totalPending')}
                 </p>
                 <p className="text-xl font-bold text-foreground">
                   {pendingCount.toLocaleString('en')}
@@ -311,7 +313,7 @@ export function AdminPayoutsPanel
             </div>
           </motion.div>
 
-          {/* মোট পরিশোধিত */}
+          {/* Total Paid */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -327,7 +329,7 @@ export function AdminPayoutsPanel
               </div>
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  মোট পরিশোধিত
+                  {t('admin.payouts.totalPaid')}
                 </p>
                 <p className="text-xl font-bold text-foreground">
                   {paidCount.toLocaleString('en')}
@@ -336,7 +338,7 @@ export function AdminPayoutsPanel
             </div>
           </motion.div>
 
-          {/* মোট পরিমাণ */}
+          {/* Total Amount */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -352,7 +354,7 @@ export function AdminPayoutsPanel
               </div>
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">
-                  মোট পরিমাণ (পেন্ডিং)
+                  {t('admin.payouts.totalAmountPending')}
                 </p>
                 <p className="text-xl font-bold text-foreground">
                   {formatAmount(totalPendingAmount)}
@@ -411,10 +413,10 @@ export function AdminPayoutsPanel
         >
           <Inbox className="h-14 w-14 text-muted-foreground/25 mb-3" />
           <p className="text-sm font-semibold text-muted-foreground">
-            কোনো পেআউট পাওয়া যায়নি
+            {t('admin.payouts.noPayouts')}
           </p>
           <p className="mt-1 text-xs text-muted-foreground/60">
-            এই ফিল্টারে কোনো পেআউট নেই
+            {t('admin.payouts.noPayoutsForFilter')}
           </p>
         </motion.div>
       ) : (
@@ -467,7 +469,7 @@ export function AdminPayoutsPanel
 
                     {/* Deal title */}
                     <p className="text-sm font-semibold text-foreground truncate">
-                      {payout.deal?.title || 'ডিল'}
+                      {payout.deal?.title || t('payment.deal')}
                     </p>
 
                     {/* Recipient name + phone */}
@@ -499,7 +501,7 @@ export function AdminPayoutsPanel
 
                     {/* Account holder */}
                     <p className="text-[11px] text-muted-foreground/70">
-                      অ্যাকাউন্ট হোল্ডার: {payout.accountName || '---'}
+                      {t('admin.payouts.accountHolder', { name: payout.accountName || '---' })}
                     </p>
                   </div>
 
@@ -510,11 +512,11 @@ export function AdminPayoutsPanel
                     </p>
                     {payout.status === 'pending' ? (
                       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium text-[11px]">
-                        পেন্ডিং
+                        {t('admin.payouts.pending')}
                       </Badge>
                     ) : (
                       <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium text-[11px]">
-                        পরিশোধিত
+                        {t('admin.payouts.paid')}
                       </Badge>
                     )}
                     <p className="text-[11px] text-muted-foreground/70">
@@ -527,8 +529,8 @@ export function AdminPayoutsPanel
                 <div className="flex items-center justify-between pt-3 border-t border-border/30">
                   <p className="text-[11px] text-muted-foreground/60">
                     {payout.status === 'paid' && payout.paidAt
-                      ? `পরিশোধিত: ${formatDate(payout.paidAt)}`
-                      : 'অপেক্ষমান'}
+                      ? t('admin.payouts.paidOn', { date: formatDate(payout.paidAt) })
+                      : t('admin.payouts.waiting')}
                   </p>
 
                   {payout.status === 'pending' ? (
@@ -551,13 +553,13 @@ export function AdminPayoutsPanel
                       ) : (
                         <CheckCircle className="h-4 w-4" />
                       )}
-                      পে করা হয়েছে
+                      {t('admin.payouts.hasBeenPaid')}
                     </Button>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       <CheckCircle className="h-4 w-4 text-emerald-500" />
                       <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        পরিশোধিত
+                        {t('admin.payouts.paid')}
                       </span>
                     </div>
                   )}

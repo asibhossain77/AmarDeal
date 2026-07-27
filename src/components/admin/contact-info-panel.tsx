@@ -158,7 +158,7 @@ export function ContactInfoPanel() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.phoneNumber')}</Label>
-            <Input type="tel" placeholder="০৯XXXXXXXXX" value={data.phone || ''} onChange={e => updateField('phone', e.target.value)} className="rounded-xl border-border/60" />
+            <Input type="tel" placeholder="01XXXXXXXXX" value={data.phone || ''} onChange={e => updateField('phone', e.target.value)} className="rounded-xl border-border/60" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.whatsappLink')}</Label>

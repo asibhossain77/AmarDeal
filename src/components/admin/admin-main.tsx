@@ -23,16 +23,21 @@ import {
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
 
-const PaymentMethodsPanel = dynamic(() => import('./payment-methods-panel').then(m => ({ default: m.PaymentMethodsPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const FeeRulesPanel = dynamic(() => import('./fee-rules-panel').then(m => ({ default: m.FeeRulesPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const ContactInfoPanel = dynamic(() => import('./contact-info-panel').then(m => ({ default: m.ContactInfoPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const AdminProfilePanel = dynamic(() => import('./admin-profile-panel').then(m => ({ default: m.AdminProfilePanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const ContractPanel = dynamic(() => import('./contract-panel').then(m => ({ default: m.ContractPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const BlogPanel = dynamic(() => import('./blog-panel').then(m => ({ default: m.BlogPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m => ({ default: m.EmailSettingsPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
-const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">লোড হচ্ছে...</span></div> });
+function PanelLoader() {
+  const t = useT();
+  return <div className="flex items-center justify-center py-20"><span className="text-muted-foreground text-sm">{t('common.loading')}</span></div>;
+}
+
+const PaymentMethodsPanel = dynamic(() => import('./payment-methods-panel').then(m => ({ default: m.PaymentMethodsPanel })), { loading: () => <PanelLoader /> });
+const FeeRulesPanel = dynamic(() => import('./fee-rules-panel').then(m => ({ default: m.FeeRulesPanel })), { loading: () => <PanelLoader /> });
+const ContactInfoPanel = dynamic(() => import('./contact-info-panel').then(m => ({ default: m.ContactInfoPanel })), { loading: () => <PanelLoader /> });
+const AdminProfilePanel = dynamic(() => import('./admin-profile-panel').then(m => ({ default: m.AdminProfilePanel })), { loading: () => <PanelLoader /> });
+const ContractPanel = dynamic(() => import('./contract-panel').then(m => ({ default: m.ContractPanel })), { loading: () => <PanelLoader /> });
+const BlogPanel = dynamic(() => import('./blog-panel').then(m => ({ default: m.BlogPanel })), { loading: () => <PanelLoader /> });
+const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m => ({ default: m.EmailSettingsPanel })), { loading: () => <PanelLoader /> });
+const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <PanelLoader /> });
+const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <PanelLoader /> });
+const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <PanelLoader /> });
 import {
   Bell,
   ShieldCheck,
@@ -300,7 +305,7 @@ function LoadingSpinner() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel 1: ড্যাশবোর্ড — 3 Stats Cards
+   Panel 1: Dashboard — 3 Stats Cards
    ═══════════════════════════════════════════ */
 
 function DashboardStatsPanel() {
@@ -447,7 +452,7 @@ function DashboardStatsPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel 2: পেমেন্ট ভেরিফিকেশন (Core)
+   Panel 2: Payment Verification (Core)
    ═══════════════════════════════════════════ */
 
 function PaymentVerifyPanel() {
@@ -536,7 +541,7 @@ function PaymentVerifyPanel() {
         setConfirmDialog(null);
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
       setConfirmDialog(null);
     } finally {
       setActionLoading(null);
@@ -564,7 +569,7 @@ function PaymentVerifyPanel() {
         setConfirmDialog(null);
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
       setConfirmDialog(null);
     } finally {
       setActionLoading(null);
@@ -599,7 +604,7 @@ function PaymentVerifyPanel() {
         toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setIsUpdatingAmount(false);
     }
@@ -632,7 +637,7 @@ function PaymentVerifyPanel() {
             className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            ফিরে যান
+            {t('common.back')}
           </button>
         </div>
 
@@ -699,7 +704,7 @@ function PaymentVerifyPanel() {
                 <span className="text-xs font-medium text-muted-foreground">Transaction ID</span>
               </div>
               <p className="text-base font-bold font-mono text-foreground tracking-wide break-all">
-                {deal.transactionId || 'দেওয়া হয়নি'}
+                {deal.transactionId || t('admin.deals.notProvided')}
               </p>
             </div>
 
@@ -732,7 +737,7 @@ function PaymentVerifyPanel() {
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  আপডেট
+                  {t('admin.deals.update')}
                 </Button>
               </div>
               {/* Deal amount for comparison */}
@@ -856,7 +861,7 @@ function PaymentVerifyPanel() {
                     <span>If payment info is wrong, the deal will be <strong className="text-amber-600 dark:text-amber-400">recreated</strong> and the buyer can submit payment again.</span>
                     <span className="block rounded-xl border border-amber-200/50 bg-amber-50/50 dark:bg-amber-500/5 p-3 space-y-1.5">
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">ইউজার</span>
+                        <span className="text-muted-foreground">{t('nav.user')}</span>
                         <span className="font-semibold text-foreground">{userName}</span>
                       </span>
                       <span className="flex justify-between text-sm">
@@ -893,11 +898,11 @@ function PaymentVerifyPanel() {
                     <span>The deal will be permanently <strong className="text-red-600 dark:text-red-400">cancelled</strong>. This cannot be undone.</span>
                     <span className="block rounded-xl border border-red-200/50 bg-red-50/50 dark:bg-red-500/5 p-3 space-y-1.5">
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">ইউজার</span>
+                        <span className="text-muted-foreground">{t('nav.user')}</span>
                         <span className="font-semibold text-foreground">{userName}</span>
                       </span>
                       <span className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">পরিমাণ</span>
+                        <span className="text-muted-foreground">{t('common.amount')}</span>
                         <span className="font-bold text-foreground">৳{deal.amount.toLocaleString('en')}</span>
                       </span>
                     </span>
@@ -983,7 +988,7 @@ function PaymentVerifyPanel() {
                     ? 'DL-' + deal.id.slice(-5)
                     : deal.id;
                 const userName =
-                  deal.creator?.name || deal.buyer?.name || 'ইউজার';
+                  deal.creator?.name || deal.buyer?.name || t('nav.user');
 
                 return (
                   <tr
@@ -1022,12 +1027,12 @@ function PaymentVerifyPanel() {
         ) : pendingDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
-            <p className="text-sm font-semibold text-foreground">সব পেমেন্ট ভেরিফাই হয়েছে</p>
+            <p className="text-sm font-semibold text-foreground">{t('admin.deals.allPaymentsVerified')}</p>
           </div>
         ) : (
           pendingDeals.map((deal) => {
             const shortId = deal.id.length > 10 ? 'DL-' + deal.id.slice(-5) : deal.id;
-            const userName = deal.creator?.name || deal.buyer?.name || 'ইউজার';
+            const userName = deal.creator?.name || deal.buyer?.name || t('nav.user');
             return (
               <SolidCard
                 key={deal.id}
@@ -1054,7 +1059,7 @@ function PaymentVerifyPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel 3: সকল ডিল
+   Panel 3: All Deals
    ═══════════════════════════════════════════ */
 
 type DealFilter = 'all' | 'pending' | 'verified' | 'delivery' | 'completed';
@@ -1293,7 +1298,7 @@ function AllDealsPanel() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ডিল আইডি</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.deals.dealId')}</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Buyer</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Seller</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Title</th>
@@ -1321,7 +1326,7 @@ function AllDealsPanel() {
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1.5 text-xs font-semibold transition-colors"
                         >
                           <MessageCircle className="h-3.5 w-3.5" />
-                          চ্যাট
+                          {t('admin.deals.chat')}
                         </button>
                       </td>
                     </tr>
@@ -1340,13 +1345,13 @@ function AllDealsPanel() {
         ) : filteredDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
-            <p className="text-sm font-semibold text-foreground">কোনো ডিল পাওয়া যায়নি</p>
+            <p className="text-sm font-semibold text-foreground">{t('admin.deals.noDealsFound')}</p>
           </div>
         ) : (
           filteredDeals.map((deal) => {
             const shortId = deal.id.length > 10 ? 'DL-' + deal.id.slice(-5) : deal.id;
             const buyerName = deal.buyer?.name || '—';
-            const sellerName = deal.seller?.name || 'অনির্ধারিত';
+            const sellerName = deal.seller?.name || t('common.unspecified');
             return (
               <SolidCard key={deal.id} className="!p-0">
                 <div className="p-3.5 space-y-2.5">
@@ -1382,7 +1387,7 @@ function AllDealsPanel() {
 
 
 /* ═══════════════════════════════════════════
-   Panel 4: ইউজার ম্যানেজমেন্ট
+   Panel 4: User Management
    ═══════════════════════════════════════════ */
 
 function UsersPanel() {
@@ -1474,7 +1479,7 @@ function UsersPanel() {
         toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setActionLoading(null);
       setOpenDropdown(null);
@@ -1532,7 +1537,7 @@ function UsersPanel() {
             className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            ফিরে যান
+            {t('common.back')}
           </button>
         </div>
 
@@ -1563,7 +1568,7 @@ function UsersPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">ইমেইল</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('common.email')}</span>
               </div>
               <p className="text-sm font-semibold text-foreground break-all">{u.email}</p>
             </div>
@@ -1592,7 +1597,7 @@ function UsersPanel() {
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-2.5">
                 <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">পাসওয়ার্ড পরিবর্তন</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('admin.users.passwordChange')}</span>
               </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -1620,7 +1625,7 @@ function UsersPanel() {
                   className="h-10 gap-1.5 rounded-lg text-xs font-semibold shrink-0"
                 >
                   {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  সেভ
+                  {t('common.save')}
                 </Button>
               </div>
             </div>
@@ -1874,10 +1879,10 @@ function UsersPanel() {
               <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Name</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ইমেইল</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('common.email')}</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Mobile</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">নিবন্ধনের তারিখ</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('common.status')}</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.users.registrationDate')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1902,7 +1907,7 @@ function UsersPanel() {
                     <td className="px-5 py-4 text-muted-foreground font-mono whitespace-nowrap">{u.phone}</td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Badge className={`${u.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'} border-0 text-xs font-medium`}>
-                        {u.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                        {u.isActive ? t('common.active') : t('common.inactive')}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-muted-foreground whitespace-nowrap text-xs">
@@ -1924,7 +1929,7 @@ function UsersPanel() {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users className="mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm font-semibold text-foreground">
-              {searchQuery ? 'কোনো ইউজার পাওয়া যায়নি' : 'কোনো ইউজার নেই'}
+              {searchQuery ? t('admin.users.noUsersFound') : t('admin.users.noUsers')}
             </p>
           </div>
         ) : (
@@ -1946,7 +1951,7 @@ function UsersPanel() {
                   <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{u.email}</p>
                   <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-px">{u.phone}</p>
                 </div>
-                <div className={`h-2 w-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} title={u.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'} />
+                <div className={`h-2 w-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} title={u.isActive ? t('common.active') : t('common.inactive')} />
               </div>
             </SolidCard>
           ))
@@ -1963,7 +1968,7 @@ function UsersPanel() {
                 Set Staff Permissions
               </AlertDialogTitle>
               <AlertDialogDescription>
-                <span className="text-foreground font-semibold">{staffPermDialog.userName}</span> — নিচের প্যানেলগুলোতে অ্যাক্সেস দিন
+                <span className="text-foreground font-semibold">{staffPermDialog.userName}</span> — {t('admin.users.staffPerm.grantAccess')}
               </AlertDialogDescription>
             </AlertDialogHeader>
 
@@ -1998,7 +2003,7 @@ function UsersPanel() {
 
             <div className="flex items-center justify-between text-xs text-muted-foreground mt-1 px-1">
               <span>Note: Dashboard and Profile are always accessible</span>
-              <span className="font-semibold text-foreground">{tempPermissions.length}টি নির্বাচিত</span>
+              <span className="font-semibold text-foreground">{t('admin.users.staffPerm.selectedCount', { count: tempPermissions.length })}</span>
             </div>
 
             <AlertDialogFooter>
@@ -2023,10 +2028,10 @@ function UsersPanel() {
                       fetchUsers();
                     } else {
                       const data = await res.json().catch(() => ({}));
-                      toast.error(data.error || 'ব্যর্থ');
+                      toast.error(data.error || t('common.failed'));
                     }
                   } catch {
-                    toast.error('সার্ভারে সমস্যা');
+                    toast.error(t('common.serverError'));
                   } finally {
                     setPermSaving(false);
                   }
@@ -2046,7 +2051,7 @@ function UsersPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel 5: ওয়েবসাইট সেটিংস
+   Panel 5: Website Settings
    ═══════════════════════════════════════════ */
 
 function SettingsPanel() {
@@ -2099,7 +2104,7 @@ function SettingsPanel() {
         toast.error(t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(false);
     }
@@ -2122,10 +2127,10 @@ function SettingsPanel() {
         invalidateSiteSettingsCache();
         toast.success('Logo updated!');
       } else {
-        toast.error('Upload Logo ব্যর্থ হয়েছে');
+        toast.error(t('admin.settings.uploadLogoFailed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setLogoUploading(false);
       e.target.value = '';
@@ -2140,45 +2145,45 @@ function SettingsPanel() {
   }[] = [
     {
       key: 'fee_percentage',
-      label: 'ফি শতাংশ (%)',
+      label: t('admin.settings.feePercent'),
       type: 'number',
-      placeholder: '৩',
+      placeholder: '3',
     },
     {
       key: 'min_deal_amount',
-      label: 'ন্যূনতম ডিল পরিমাণ (৳)',
+      label: t('admin.settings.minDealAmount'),
       type: 'number',
-      placeholder: '১০০',
+      placeholder: '100',
     },
     {
       key: 'max_deal_amount',
-      label: 'সর্বোচ্চ ডিল পরিমাণ (৳)',
+      label: t('admin.settings.maxDealAmount'),
       type: 'number',
-      placeholder: '১০০০০০০',
+      placeholder: '1000000',
     },
     {
       key: 'support_number',
-      label: 'সাপোর্ট নাম্বার',
+      label: t('admin.settings.supportNumber'),
       type: 'text',
-      placeholder: '০১৭০০০০০০০০',
+      placeholder: '01700000000',
     },
     {
       key: 'footer_description',
-      label: 'ফুটার বিবরণ',
+      label: t('admin.settings.footerDescription'),
       type: 'textarea',
-      placeholder: 'আপনার প্ল্যাটফর্মের সম্পর্কে একটি সংক্ষিপ্ত বিবরণ লিখুন...',
+      placeholder: t('admin.settings.footerDescriptionPlaceholder'),
     },
     {
       key: 'footer_copyright_text',
-      label: 'ফুটার কপিরাইট লাইন',
+      label: t('admin.settings.footerCopyrightLabel'),
       type: 'text',
-      placeholder: '© ২০২৬ আমার ডিল। সর্বস্বত্ব সংরক্ষিত।',
+      placeholder: t('admin.settings.footerCopyrightPlaceholder'),
     },
     {
       key: 'footer_made_in',
-      label: 'ফুটার "তৈরি" টেক্সট',
+      label: t('admin.settings.footerMadeInLabel'),
       type: 'text',
-      placeholder: 'বাংলাদেশে তৈরি',
+      placeholder: t('admin.settings.footerMadeInPlaceholder'),
     },
   ];
 
@@ -2227,7 +2232,7 @@ function SettingsPanel() {
                   {settings.site_logo ? (
                     <img
                       src={settings.site_logo}
-                      alt="লোগো"
+                      alt={t('admin.settings.logoAlt')}
                       className="h-full w-full object-contain p-1"
                       loading="lazy" decoding="async"
                     />
@@ -2249,10 +2254,10 @@ function SettingsPanel() {
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
                       )}
-                      {logoUploading ? 'Uploading...' : 'লোগো আপলোড'}
+                      {logoUploading ? 'Uploading...' : t('admin.settings.uploadLogo')}
                     </span>
                   </label>
-                  <span className="text-[10px] text-muted-foreground">PNG, JPG — সর্বোচ্চ ২MB</span>
+                  <span className="text-[10px] text-muted-foreground">{t('admin.settings.logoUploadHint')}</span>
                 </div>
               </div>
             </div>
@@ -2277,7 +2282,7 @@ function SettingsPanel() {
             {/* Website Name — Bangla */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
               <Label htmlFor="platform_name" className="text-sm font-medium text-foreground text-center sm:text-left">
-                Website Name (বাংলা)
+                {t('admin.settings.websiteNameBn')}
               </Label>
               <Input
                 id="platform_name"
@@ -2286,7 +2291,7 @@ function SettingsPanel() {
                 onChange={(e) =>
                   setSettings({ ...settings, platform_name: e.target.value })
                 }
-                placeholder="মিডম্যান"
+                placeholder={t('admin.settings.websiteNameBnPlaceholder')}
                 className="max-w-sm"
               />
             </div>
@@ -2424,7 +2429,7 @@ function SettingsPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel: পেআউট ম্যানেজমেন্ট
+   Panel: Payout Management
    ═══════════════════════════════════════════ */
 
 interface PayoutRow {
@@ -2484,7 +2489,7 @@ function PayoutsPanel() {
         toast.error(t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setActingId(null);
     }
@@ -2520,7 +2525,7 @@ function PayoutsPanel() {
             className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            ফিরে যান
+            {t('common.back')}
           </button>
         </div>
 
@@ -2535,7 +2540,7 @@ function PayoutsPanel() {
                 </Badge>
               ) : (
                 <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-xs font-medium">
-                  পেন্ডিং
+                  {t('admin.payouts.pending')}
                 </Badge>
               )}
             </div>
@@ -2554,7 +2559,7 @@ function PayoutsPanel() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground">Recipient</p>
-                <p className="text-sm font-semibold text-foreground">{p.recipient?.name || 'অজানা'}</p>
+                <p className="text-sm font-semibold text-foreground">{p.recipient?.name || t('common.unknown')}</p>
                 <p className="text-xs text-muted-foreground">{p.recipient?.phone || ''}</p>
               </div>
             </div>
@@ -2589,7 +2594,7 @@ function PayoutsPanel() {
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-[10px] text-muted-foreground">ডিল আইডি</p>
+                  <p className="text-[10px] text-muted-foreground">{t('admin.deals.dealId')}</p>
                   <p className="font-mono font-medium text-foreground">{shortDealId}</p>
                 </div>
                 <div>
@@ -2624,7 +2629,7 @@ function PayoutsPanel() {
                 </div>
                 {paidTime && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">পেমেন্ট সম্পন্ন</span>
+                    <span className="text-muted-foreground">{t('admin.payouts.paymentComplete')}</span>
                     <span className="font-medium text-emerald-600 dark:text-emerald-400">{paidTime}</span>
                   </div>
                 )}
@@ -2657,19 +2662,19 @@ function PayoutsPanel() {
                         <span>Are you sure you want to mark this payout as paid?</span>
                         <span className="block rounded-xl border border-border/50 bg-muted/30 p-3 space-y-1.5">
                           <span className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">প্রাপক</span>
-                            <span className="font-semibold text-foreground">{p.recipient?.name || 'অজানা'}</span>
+                            <span className="text-muted-foreground">{t('admin.payouts.recipient')}</span>
+                            <span className="font-semibold text-foreground">{p.recipient?.name || t('common.unknown')}</span>
                           </span>
                           <span className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">পরিমাণ</span>
+                            <span className="text-muted-foreground">{t('common.amount')}</span>
                             <span className="font-bold text-foreground">৳{p.amount.toLocaleString('en')}</span>
                           </span>
                           <span className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">একাউন্ট</span>
+                            <span className="text-muted-foreground">{t('admin.payouts.account')}</span>
                             <span className="font-mono text-xs text-foreground">{p.accountNumber} ({p.accountName})</span>
                           </span>
                         </span>
-                        <span className="text-xs text-emerald-600 dark:text-emerald-400">✅ পেমেন্ট ডান করলে ইউজারের ডিলে "পেআউট সম্পন্ন" দেখাবে।</span>
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400">{t('admin.payouts.markPaidHint')}</span>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -2680,7 +2685,7 @@ function PayoutsPanel() {
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                       >
                         {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                        হ্যাঁ, পেমেন্ট ডান করুন
+                        {t('admin.payouts.confirmMarkPaidBtn')}
                       </Button>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -2695,9 +2700,9 @@ function PayoutsPanel() {
 
   /* ─── List View ─── */
   const tabs: { key: 'pending' | 'paid' | 'all'; label: string; count: number }[] = [
-    { key: 'pending', label: 'পেন্ডিং', count: pendingCount },
-    { key: 'paid', label: 'সম্পন্ন', count: paidCount },
-    { key: 'all', label: 'সকল', count: payouts.length },
+    { key: 'pending', label: t('admin.payouts.pending'), count: pendingCount },
+    { key: 'paid', label: t('status.completed'), count: paidCount },
+    { key: 'all', label: t('admin.payouts.all'), count: payouts.length },
   ];
 
   return (
@@ -2707,15 +2712,15 @@ function PayoutsPanel() {
         <div className="text-center sm:text-left">
           <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
             <Banknote className="h-5 w-5 text-primary" />
-            পেআউট ম্যানেজমেন্ট
+            {t('admin.payouts.title')}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            ইউজারদের পেআউট ও ফেরতের অনুরোধ পর্যালোচনা করুন
+            {t('admin.payouts.subtitle')}
           </p>
         </div>
         {pendingCount > 0 && (
           <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-xs font-medium">
-            {pendingCount} পেন্ডিং
+            {t('admin.payouts.pendingCount', { count: pendingCount })}
           </Badge>
         )}
       </div>
@@ -2747,20 +2752,20 @@ function PayoutsPanel() {
         ) : filteredPayouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Banknote className="mb-3 h-10 w-10 text-muted-foreground/30" />
-            <p className="text-sm font-semibold text-foreground">কোনো পেআউট নেই</p>
+            <p className="text-sm font-semibold text-foreground">{t('admin.payouts.noPayouts')}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {activeTab === 'pending' ? 'বর্তমানে কোনো পেন্ডিং পেআউট নেই' : 'এখানে কোনো পেআউট দেখা যাচ্ছে না'}
+              {activeTab === 'pending' ? t('admin.payouts.noPayoutsPending') : t('admin.payouts.noPayoutsHere')}
             </p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">প্রাপক</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">ধরন</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">পরিমাণ (৳)</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">একাউন্ট</th>
-                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground">স্ট্যাটাস</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">{t('admin.payouts.recipient')}</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">{t('admin.payouts.type')}</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground">{t('common.amount')} (৳)</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground">{t('admin.payouts.account')}</th>
+                <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground">{t('common.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -2773,12 +2778,12 @@ function PayoutsPanel() {
                     className="border-b border-border/30 transition-colors hover:bg-muted/20 last:border-0 cursor-pointer"
                   >
                     <td className="px-5 py-4">
-                      <p className="font-medium text-foreground">{payout.recipient?.name || 'অজানা'}</p>
+                      <p className="font-medium text-foreground">{payout.recipient?.name || t('common.unknown')}</p>
                       <p className="text-xs text-muted-foreground">{payout.recipient?.phone || ''}</p>
                     </td>
                     <td className="px-5 py-4">
                       <Badge className={`border-0 text-[10px] font-medium ${isRefund ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' : 'bg-primary/10 text-primary'}`}>
-                        {isRefund ? 'ফেরত' : 'পেআউট'}
+                        {isRefund ? t('admin.payouts.refund') : t('admin.payouts.payout')}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
@@ -2791,11 +2796,11 @@ function PayoutsPanel() {
                     <td className="px-5 py-4 text-center">
                       {payout.status === 'paid' ? (
                         <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px] font-medium">
-                          সম্পন্ন
+                          {t('status.completed')}
                         </Badge>
                       ) : (
                         <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-[10px] font-medium">
-                          পেন্ডিং
+                          {t('admin.payouts.pending')}
                         </Badge>
                       )}
                     </td>
@@ -2816,7 +2821,7 @@ function PayoutsPanel() {
         ) : filteredPayouts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Banknote className="mb-3 h-10 w-10 text-muted-foreground/30" />
-            <p className="text-sm font-semibold text-foreground">কোনো পেআউট নেই</p>
+            <p className="text-sm font-semibold text-foreground">{t('admin.payouts.noPayouts')}</p>
           </div>
         ) : (
           filteredPayouts.map((payout) => {
@@ -2831,17 +2836,17 @@ function PayoutsPanel() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Badge className={`border-0 text-[10px] ${isRefund ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' : 'bg-primary/10 text-primary'}`}>
-                        {isRefund ? 'ফেরত' : 'পেআউট'}
+                        {isRefund ? t('admin.payouts.refund') : t('admin.payouts.payout')}
                       </Badge>
                       {payout.status === 'paid' ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px]">সম্পন্ন</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px]">{t('status.completed')}</Badge>
                       ) : (
-                        <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-[10px]">পেন্ডিং</Badge>
+                        <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 text-[10px]">{t('admin.payouts.pending')}</Badge>
                       )}
                     </div>
                     <p className="text-lg font-bold text-foreground">৳{payout.amount.toLocaleString('en')}</p>
                   </div>
-                  <p className="text-sm font-semibold text-foreground">{payout.recipient?.name || 'অজানা'}</p>
+                  <p className="text-sm font-semibold text-foreground">{payout.recipient?.name || t('common.unknown')}</p>
                   <p className="text-xs text-muted-foreground">
                     {payout.accountType} · {payout.accountNumber}
                   </p>
@@ -2856,7 +2861,7 @@ function PayoutsPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel: বিরোধ ম্যানেজমেন্ট
+   Panel: Dispute Management
    ═══════════════════════════════════════════ */
 
 interface DisputeDeal {
@@ -2870,6 +2875,7 @@ interface DisputeDeal {
 }
 
 function DisputesPanel() {
+  const t = useT();
   const [deals, setDeals] = useState<DisputeDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<DisputeDeal | null>(null);
@@ -2952,15 +2958,15 @@ function DisputesPanel() {
         body: JSON.stringify({ action }),
       });
       if (res.ok) {
-        toast.success(action === 'complete' ? 'ডিল সম্পন্ন করা হয়েছে' : 'ডিল বাতিল করা হয়েছে');
+        toast.success(action === 'complete' ? t('admin.disputes.dealCompleted') : t('admin.disputes.dealCancelled'));
         setSelectedDeal(null);
         fetchDeals();
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'সমস্যা হয়েছে');
+        toast.error(data.error || t('common.error'));
       }
     } catch {
-      toast.error('সমস্যা হয়েছে');
+      toast.error(t('common.error'));
     } finally {
       setResolving(null);
     }
@@ -2997,7 +3003,7 @@ function DisputesPanel() {
             </p>
           </div>
           <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 text-[10px] font-medium">
-            বিরোধ চলছে
+            {t('status.activeDispute')}
           </Badge>
         </div>
 
@@ -3005,18 +3011,18 @@ function DisputesPanel() {
         <SolidCard className="mb-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-[10px] text-muted-foreground">ক্রেতা</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.deals.buyer')}</p>
               <p className="font-semibold text-foreground">{selectedDeal.buyer?.name || 'N/A'}</p>
               <p className="text-[10px] text-muted-foreground font-mono">{selectedDeal.buyer?.phone || ''}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">বিক্রেতা</p>
+              <p className="text-[10px] text-muted-foreground">{t('admin.deals.seller')}</p>
               <p className="font-semibold text-foreground">{selectedDeal.seller?.name || 'N/A'}</p>
               <p className="text-[10px] text-muted-foreground font-mono">{selectedDeal.seller?.phone || ''}</p>
             </div>
           </div>
           <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">বিরোধ তৈরি: {formatDate(selectedDeal.updatedAt)}</span>
+            <span className="text-[10px] text-muted-foreground">{t('admin.disputes.disputeCreated', { date: formatDate(selectedDeal.updatedAt) })}</span>
             <span className="text-sm font-bold text-foreground">{formatAmount(selectedDeal.amount)}</span>
           </div>
         </SolidCard>
@@ -3030,20 +3036,20 @@ function DisputesPanel() {
                 className="w-full h-11 gap-2 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 {resolving === 'complete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                সেলারকে পেমেন্ট
+                {t('admin.disputes.paySeller')}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
                 <AlertDialogTitle>{t("admin.deals.paySeller")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  ডিল &quot;সম্পন্ন&quot; হিসেবে চিহ্নিত হবে। সেলার পেআউট অনুরোধ করতে পারবেন।
+                  {t('admin.disputes.completeDescription')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <Button onClick={() => handleResolve('complete')} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl">
-                  হ্যাঁ, সম্পন্ন করুন
+                  {t('admin.disputes.confirmComplete')}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -3057,20 +3063,20 @@ function DisputesPanel() {
                 className="w-full h-11 gap-2 rounded-xl text-sm font-bold border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
               >
                 {resolving === 'refund_buyer' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                ক্রেতাকে রিফান্ড
+                {t('admin.disputes.refundBuyer')}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
                 <AlertDialogTitle>{t("admin.deals.refundBuyer")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  ডিল &quot;বাতিল&quot; হিসেবে চিহ্নিত হবে। ক্রেতা ফেরতের অনুরোধ করতে পারবেন।
+                  {t('admin.disputes.refundDescription')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <Button onClick={() => handleResolve('refund_buyer')} className="gap-2 bg-red-600 hover:bg-red-700 text-white rounded-xl">
-                  হ্যাঁ, বাতিল করুন
+                  {t('admin.disputes.confirmCancel')}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -3083,7 +3089,7 @@ function DisputesPanel() {
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <MessageCircle className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">কোনো মেসেজ নেই</p>
+                <p className="text-sm text-muted-foreground">{t('common.noMessages')}</p>
               </div>
             )}
             {messages.map((msg) => <AdminChatBubble key={msg.id} msg={msg} />)}
@@ -3107,7 +3113,7 @@ function DisputesPanel() {
                 className="h-10 rounded-xl px-4 gap-2"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
-                <span className="hidden sm:inline">পাঠান</span>
+                <span className="hidden sm:inline">{t('admin.chat.send')}</span>
               </Button>
             </div>
           </div>
@@ -3123,13 +3129,13 @@ function DisputesPanel() {
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-rose-500" />
-            বিরোধ ম্যানেজমেন্ট
+            {t('adminNav.disputeManagement')}
           </h2>
-          <p className="text-sm text-muted-foreground">বিরোধ চলমান ডিলসমূহ পর্যালোচনা ও রিজোলভ করুন</p>
+          <p className="text-sm text-muted-foreground">{t('admin.disputes.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDeals} className="gap-2 rounded-xl">
           <Loader2 className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : 'hidden'}`} />
-          রিফ্রেশ
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -3142,8 +3148,8 @@ function DisputesPanel() {
       ) : deals.length === 0 ? (
         <SolidCard className="text-center py-16">
           <AlertTriangle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">কোনো বিরোধ নেই</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">ক্রেতা বিরোধ দায়ের করলে এখানে দেখা যাবে</p>
+          <p className="text-sm font-medium text-muted-foreground">{t('admin.disputes.noDisputes')}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">{t('admin.disputes.noDisputesHint')}</p>
         </SolidCard>
       ) : (
         <>
@@ -3153,12 +3159,12 @@ function DisputesPanel() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50 bg-muted/30">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">ডিল</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">ক্রেতা</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">বিক্রেতা</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">পরিমাণ</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">তারিখ</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground">অ্যাকশন</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.disputes.deal')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.deals.buyer')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.deals.seller')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('common.amount')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('common.date')}</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3174,7 +3180,7 @@ function DisputesPanel() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(deal.updatedAt)}</td>
                       <td className="px-4 py-3 text-right">
                         <Button size="sm" className="gap-1.5 rounded-lg text-xs font-medium" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); }}>
-                          দেখুন <ArrowRight className="h-3 w-3" />
+                          {t('admin.disputes.view')} <ArrowRight className="h-3 w-3" />
                         </Button>
                       </td>
                     </tr>
@@ -3200,7 +3206,7 @@ function DisputesPanel() {
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 text-[10px] font-medium">
-                      <AlertTriangle className="h-3 w-3 mr-1" /> বিরোধ
+                      <AlertTriangle className="h-3 w-3 mr-1" /> {t('admin.disputes.dispute')}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">{formatDate(deal.updatedAt)}</span>
                   </div>
@@ -3215,7 +3221,7 @@ function DisputesPanel() {
 }
 
 /* ═══════════════════════════════════════════
-   Panel: লাইভ চ্যাট — Admin Chat with Users
+   Panel: Live Chat — Admin Chat with Users
    ═══════════════════════════════════════════ */
 
 interface CalledDeal {
@@ -3238,6 +3244,7 @@ interface AdminChatMsg {
 }
 
 function AdminCallsPanel() {
+  const t = useT();
   const [deals, setDeals] = useState<CalledDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<CalledDeal | null>(null);
@@ -3329,15 +3336,15 @@ function AdminCallsPanel() {
         method: 'POST',
       });
       if (res.ok) {
-        toast.success('চ্যাট শেষ করা হয়েছে');
+        toast.success(t('admin.liveChat.chatEnded'));
         setSelectedDeal(null);
         fetchDeals();
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'সমস্যা হয়েছে');
+        toast.error(data.error || t('common.error'));
       }
     } catch {
-      toast.error('সমস্যা হয়েছে');
+      toast.error(t('common.error'));
     } finally {
       setEndingCall(false);
     }
@@ -3369,7 +3376,7 @@ function AdminCallsPanel() {
             className="gap-1.5 rounded-xl text-xs font-medium border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
           >
             {endingCall ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
-            <span className="hidden sm:inline">চ্যাট শেষ করুন</span>
+            <span className="hidden sm:inline">{t('admin.liveChat.endChat')}</span>
           </Button>
         </div>
 
@@ -3379,7 +3386,7 @@ function AdminCallsPanel() {
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
                 <MessageCircle className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">কোনো মেসেজ নেই</p>
+                <p className="text-sm text-muted-foreground">{t('common.noMessages')}</p>
               </div>
             )}
             {messages.map((msg) => <AdminChatBubble key={msg.id} msg={msg} />)}
@@ -3403,7 +3410,7 @@ function AdminCallsPanel() {
                 className="h-10 rounded-xl px-4 gap-2"
               >
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
-                <span className="hidden sm:inline">পাঠান</span>
+                <span className="hidden sm:inline">{t('admin.chat.send')}</span>
               </Button>
             </div>
           </div>
@@ -3417,12 +3424,12 @@ function AdminCallsPanel() {
     <div>
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-bold text-foreground">লাইভ চ্যাট</h2>
-          <p className="text-sm text-muted-foreground">ইউজারদের ডাকা ডিলসমূহ</p>
+          <h2 className="text-lg font-bold text-foreground">{t('admin.liveChat.title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('admin.liveChat.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDeals} className="gap-2 rounded-xl">
           <Loader2 className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : 'hidden'}`} />
-          রিফ্রেশ
+          {t('common.refresh')}
         </Button>
       </div>
 
@@ -3435,8 +3442,8 @@ function AdminCallsPanel() {
       ) : deals.length === 0 ? (
         <SolidCard className="text-center py-16">
           <Headphones className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">কোনো অ্যাডমিন কল নেই</p>
-          <p className="text-xs text-muted-foreground/70 mt-1">ইউজাররা যখন অ্যাডমিন ডাকবে, এখানে দেখা যাবে</p>
+          <p className="text-sm font-medium text-muted-foreground">{t('admin.liveChat.noCalls')}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">{t('admin.liveChat.noCallsHint')}</p>
         </SolidCard>
       ) : (
         <>
@@ -3446,12 +3453,12 @@ function AdminCallsPanel() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/50 bg-muted/30">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">ডিল</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">ক্রেতা</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">বিক্রেতা</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">পরিমাণ</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">ডাকার সময়</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground">অ্যাকশন</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.disputes.deal')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.deals.buyer')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.deals.seller')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('common.amount')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground">{t('admin.liveChat.calledAt')}</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold text-muted-foreground">{t('common.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3467,7 +3474,7 @@ function AdminCallsPanel() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">{deal.adminCalledAt ? formatTime(deal.adminCalledAt) : '—'}</td>
                       <td className="px-4 py-3 text-right">
                         <Button size="sm" className="gap-1.5 rounded-lg text-xs font-medium" onClick={(e) => { e.stopPropagation(); setSelectedDeal(deal); }}>
-                          চ্যাট খুলুন <ArrowRight className="h-3 w-3" />
+                          {t('admin.liveChat.openChat')} <ArrowRight className="h-3 w-3" />
                         </Button>
                       </td>
                     </tr>
@@ -3493,7 +3500,7 @@ function AdminCallsPanel() {
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-0 text-[10px] font-medium">
-                      <Headphones className="h-3 w-3 mr-1" /> কল
+                      <Headphones className="h-3 w-3 mr-1" /> {t('admin.liveChat.call')}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
                       {deal.adminCalledAt ? formatTime(deal.adminCalledAt) : ''}
@@ -3594,8 +3601,8 @@ export function AdminMain() {
             <div className="h-16 w-16 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center mb-4">
               <ShieldX className="h-8 w-8 text-red-500" />
             </div>
-            <h2 className="text-lg font-bold text-foreground mb-1">অ্যাক্সেস নেই</h2>
-            <p className="text-sm text-muted-foreground">এই প্যানেলে আপনার অ্যাক্সেস নেই। সুপার অ্যাডমিনের সাথে যোগাযোগ করুন।</p>
+            <h2 className="text-lg font-bold text-foreground mb-1">{t('admin.accessDenied.title')}</h2>
+            <p className="text-sm text-muted-foreground">{t('admin.accessDenied.description')}</p>
           </div>
         </div>
       );
@@ -3609,25 +3616,25 @@ export function AdminMain() {
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
             <span className="text-primary">{siteName}</span>
             <span className="text-muted-foreground font-normal text-sm sm:text-base">
-              {' '}— অ্যাডমিন প্যানেল
+              {' '}— {t('admin.panelSuffix')}
             </span>
           </h1>
           <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            এসক্রো ম্যানেজমেন্ট ড্যাশবোর্ড
+            {t('admin.escrowDashboard')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {/* Notification Bell */}
           <button
             className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            aria-label="নোটিফিকেশন"
+            aria-label={t('admin.notifications')}
           >
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
           </button>
           {/* Admin Avatar */}
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
-            {user?.name?.charAt(0) || 'অ'}
+            {user?.name?.charAt(0) || '?'}
           </div>
         </div>
       </div>

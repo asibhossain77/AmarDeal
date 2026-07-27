@@ -36,16 +36,16 @@ const DEFAULT_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর A
 ফি কাঠামো (প্ল্যাটফর্ম ফি):
 • ৩০-১৯৯ টাকা → ১০ টাকা ফি
 • ২০০-৫৯৯ টাকা → ২০ টাকা ফি
-• ৬০০-৯৯৯ টাকা → ৩০ টাকা ফি
+• ৫০০-৯৯৯ টাকা → ৩০ টাকা ফি
 • ১,০০০-১,৯৯৯ টাকা → ৪০ টাকা ফি
 • ২,০০০-৩,৯৯৯ টাকা → ৫০ টাকা ফি
-• ৪,০০০-৯,৯৯৯ টাকা → ৮০ টাকা ফি
+• ৪,০০০-৯,৯৯৯ টাকা → ২০ টাকা ফি
 • ১০,০০০-১৯,৯৯৯ টাকা → ১৫০ টাকা ফি
 • ২০,০০০-৪৯,৯৯৯ টাকা → ২৫০ টাকা ফি
 • ৫০,০০০+ টাকা → ১,০০০ টাকা ফি
 
 পেমেন্ট মেথড:
-• বিকাশ, নগদ, রকেট, ক্যাশ অন ডেলিভারি
+• বিকাশ, নগদ, রকেট, ক্যাশ অন ডেলিভারী
 • ব্যাংক ট্রান্সফার
 
 নিরাপত্তা:
@@ -62,7 +62,7 @@ const DEFAULT_PROMPT = `তুমি "আমারডিল" (AmarDeal) এর A
 • "ফি কত?" → ডিলের পরিমাণ অনুযায়ী ফি ভিন্ন। ৩০-১৯৯ টাকার ডিলে ১০ টাকা, ২০০-৫৯৯ টাকায় ২০ টাকা। বিস্তারিত ফি কাঠামো ওয়েবসাইটে দেখুন।
 • "কিভাবে ডিল করবো?" → লগইন করুন → নতুন ডিল তৈরি করুন → ক্রেতা পেমেন্ট জমা দেবে → বিক্রেতা পণ্য দেবে → কনফার্ম করলে টাকা যাবে।
 • "টাকা ফেরত পাবো?" → বিক্রেতা পণ্য না দিলে বা কোনো সমস্যা হলে অ্যাডমিন যাচাই করে টাকা ফেরত দেয়।
-• "পেমেন্ট কিভাবে?" → বিকাশ, নগদ, রকেট, ব্যাংক ট্রান্সফার, ক্যাশ অন ডেলিভারি — যেকোনো মাধ্যমে পেমেন্ট করতে পারবেন।
+• "পেমেন্ট কিভাবে?" → বিকাশ, নগদ, রকেট, ব্যাংক ট্রান্সফার, ক্যাশ অন ডেলিভারী — যেকোনো মাধ্যমে পেমেন্ট করতে পারবেন।
 `;
 
 export function AiPromptPanel() {
@@ -90,7 +90,7 @@ export function AiPromptPanel() {
         setIsCustom(val.length > 0 && val !== DEFAULT_PROMPT);
       })
       .catch(() => {
-        toast.error('AI প্রম্পট লোড করতে সমস্যা');
+        toast.error(t('admin.aiPrompt.loadError'));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -101,7 +101,7 @@ export function AiPromptPanel() {
 
   const handleSave = async () => {
     if (!prompt.trim()) {
-      toast.error('প্রম্পট খালি হতে পারে না');
+      toast.error(t('admin.aiPrompt.emptyError'));
       return;
     }
     setSaving(true);
@@ -115,12 +115,12 @@ export function AiPromptPanel() {
       if (data.success) {
         setOriginalPrompt(prompt);
         setIsCustom(prompt !== DEFAULT_PROMPT);
-        toast.success('AI প্রম্পট সফলভাবে সংরক্ষিত হয়েছে');
+        toast.success(t('admin.aiPrompt.saveSuccess'));
       } else {
-        toast.error(data.error || 'সংরক্ষণ করতে সমস্যা');
+        toast.error(data.error || t('admin.aiPrompt.saveError'));
       }
     } catch {
-      toast.error('সংরক্ষণ করতে সমস্যা');
+      toast.error(t('admin.aiPrompt.saveError'));
     } finally {
       setSaving(false);
     }
@@ -129,7 +129,7 @@ export function AiPromptPanel() {
   const handleReset = () => {
     setPrompt(DEFAULT_PROMPT);
     setIsCustom(false);
-    toast.success('ডিফল্ট প্রম্পট লোড হয়েছে');
+    toast.success(t('admin.aiPrompt.resetSuccess'));
   };
 
   const handleTestSend = async () => {
@@ -155,13 +155,13 @@ export function AiPromptPanel() {
       } else {
         setTestMessages((prev) => [
           ...prev,
-          { role: 'ai', text: data.error || 'সার্ভারে সমস্যা হয়েছে' },
+          { role: 'ai', text: data.error || t('admin.aiPrompt.serverError') },
         ]);
       }
     } catch {
       setTestMessages((prev) => [
         ...prev,
-        { role: 'ai', text: 'সংযোগে সমস্যা হয়েছে' },
+        { role: 'ai', text: t('admin.aiPrompt.connectionError') },
       ]);
     } finally {
       setTestLoading(false);
@@ -189,21 +189,21 @@ export function AiPromptPanel() {
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-base font-bold">AI সাপোর্ট প্রম্পট</CardTitle>
+                <CardTitle className="text-base font-bold">{t('admin.aiPrompt.title')}</CardTitle>
                 <CardDescription className="mt-0.5 text-xs">
-                  ইউজারদের প্রশ্নের উত্তর এই তথ্য অনুযায়ী দেবে
+                  {t('admin.aiPrompt.desc')}
                 </CardDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {isCustom && (
                 <Badge variant="secondary" className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border-0">
-                  কাস্টম
+                  {t('admin.aiPrompt.custom')}
                 </Badge>
               )}
               {hasUnsavedChanges && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-400">
-                  আনসেভড
+                  {t('admin.aiPrompt.unsaved')}
                 </Badge>
               )}
             </div>
@@ -213,23 +213,23 @@ export function AiPromptPanel() {
           <div className="space-y-2">
             <Label htmlFor="ai-prompt" className="text-sm font-medium text-foreground flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
-              সিস্টেম প্রম্পট
+              {t('admin.aiPrompt.systemPrompt')}
             </Label>
             <Textarea
               id="ai-prompt"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="AI অ্যাসিস্ট্যান্ট এর জন্য প্রম্পট লিখুন..."
+              placeholder={t('admin.aiPrompt.promptPlaceholder')}
               rows={14}
               className="rounded-xl border-border/60 bg-background font-mono text-sm resize-y min-h-[280px] leading-relaxed"
             />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                {prompt.length} অক্ষর
+                {t('admin.aiPrompt.chars', { count: prompt.length })}
               </p>
               {hasUnsavedChanges && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  পরিবর্তন সেভ করা হয়নি
+                  {t('admin.aiPrompt.unsavedWarning')}
                 </p>
               )}
             </div>
@@ -241,7 +241,7 @@ export function AiPromptPanel() {
               className="rounded-xl gap-2 text-muted-foreground"
             >
               <RotateCcw className="h-4 w-4" />
-              ডিফল্টে ফিরুন
+              {t('admin.aiPrompt.resetToDefault')}
             </Button>
             <Button
               onClick={handleSave}
@@ -253,7 +253,7 @@ export function AiPromptPanel() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              সেভ করুন
+              {t('admin.aiPrompt.save')}
             </Button>
           </div>
         </CardContent>
@@ -267,23 +267,23 @@ export function AiPromptPanel() {
               <Info className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
             </div>
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-foreground">প্রম্পট লেখার টিপস</p>
+              <p className="text-sm font-semibold text-foreground">{t('admin.aiPrompt.tips')}</p>
               <ul className="text-xs text-muted-foreground space-y-1.5 leading-relaxed">
                 <li className="flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>
-                  আপনার প্ল্যাটফর্মের তথ্য (ফি কাঠামো, পেমেন্ট মেথড, কাজের পদ্ধতি) বিস্তারিত লিখুন
+                  {t('admin.aiPrompt.tip1')}
                 </li>
                 <li className="flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>
-                  সাধারণ প্রশ্ন ও উত্তর যোগ করলে AI আরও ভালো উত্তর দেবে
+                  {t('admin.aiPrompt.tip2')}
                 </li>
                 <li className="flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>
-                  নতুন ফি বা নিয়ম যোগ করলে এখানে আপডেট করুন — AI সাথে সাথে আপডেট হবে
+                  {t('admin.aiPrompt.tip3')}
                 </li>
                 <li className="flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>
-                  সেভ করার পর ৫ মিনিটের মধ্যে নতুন প্রম্পট কার্যকর হবে
+                  {t('admin.aiPrompt.tip4')}
                 </li>
               </ul>
             </div>
@@ -300,9 +300,9 @@ export function AiPromptPanel() {
                 <MessageSquare className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <CardTitle className="text-base font-bold">AI টেস্ট করুন</CardTitle>
+                <CardTitle className="text-base font-bold">{t('admin.aiPrompt.testTitle')}</CardTitle>
                 <CardDescription className="mt-0.5 text-xs">
-                  সেভ করার আগে প্রম্পট টেস্ট করুন
+                  {t('admin.aiPrompt.testDesc')}
                 </CardDescription>
               </div>
             </div>
@@ -315,7 +315,7 @@ export function AiPromptPanel() {
               }}
               className="text-xs text-muted-foreground"
             >
-              {showTest ? 'আড়াল করুন' : 'খুলুন'}
+              {showTest ? t('admin.aiPrompt.hide') : t('admin.aiPrompt.open')}
             </Button>
           </div>
         </CardHeader>
@@ -358,7 +358,7 @@ export function AiPromptPanel() {
                 value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleTestSend()}
-                placeholder="প্রশ্ন লিখুন... (যেমন: ফি কত?)"
+                placeholder={t('admin.aiPrompt.testPlaceholder')}
                 disabled={testLoading}
                 className="rounded-xl border-border/60 flex-1"
               />
@@ -377,7 +377,7 @@ export function AiPromptPanel() {
             {hasUnsavedChanges && (
               <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                আপনার পরিবর্তন সেভ করা হয়নি — টেস্টে পুরানো প্রম্পট ব্যবহার হচ্ছে
+                {t('admin.aiPrompt.unsavedTestWarning')}
               </p>
             )}
           </CardContent>

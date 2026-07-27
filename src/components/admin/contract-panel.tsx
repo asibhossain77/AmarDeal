@@ -60,10 +60,10 @@ export function ContractPanel() {
       if (res.ok) {
         toast.success(data.message);
       } else {
-        toast.error(data.error || 'ব্যর্থ');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(null);
     }
@@ -71,7 +71,7 @@ export function ContractPanel() {
 
   const handleSaveAdminInfo = async () => {
     if (!adminName.trim()) {
-      toast.error('নাম দিন');
+      toast.error(t('admin.contract.nameRequired'));
       return;
     }
     setSaving('admin');
@@ -85,10 +85,10 @@ export function ContractPanel() {
       if (res.ok) {
         toast.success(data.message);
       } else {
-        toast.error(data.error || 'ব্যর্থ');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSaving(null);
     }
@@ -117,10 +117,10 @@ export function ContractPanel() {
       <div>
         <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          চুক্তি ও শর্তাবলী
+          {t('admin.contract.headerTitle')}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          পাবলিক চুক্তি পেজের কন্টেন্ট ও অ্যাডমিন তথ্য পরিবর্তন করুন
+          {t('admin.contract.headerDesc')}
         </p>
       </div>
 
@@ -129,24 +129,24 @@ export function ContractPanel() {
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">
-            পাবলিক পেজে অ্যাডমিন তথ্য
+            {t('admin.contract.adminInfoTitle')}
           </h3>
         </div>
 
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-          পাবলিক চুক্তি পেজে আপনার নাম ও ছবি দেখাবে। ছবি লিংক দিয়ে আপডেট করুন।
+          {t('admin.contract.adminInfoHint')}
         </p>
 
         <div className="space-y-3">
           {/* Admin Name */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-              অ্যাডমিন নাম
+              {t('admin.contract.adminName')}
             </label>
             <Input
               value={adminName}
               onChange={(e) => setAdminName(e.target.value)}
-              placeholder="প্রদর্শন নাম লিখুন"
+              placeholder={t('admin.contract.adminNamePlaceholder')}
               className="h-11 text-sm rounded-xl"
               disabled={saving === 'admin'}
             />
@@ -155,7 +155,7 @@ export function ContractPanel() {
           {/* Admin Image URL */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-              ছবি লিংক (URL)
+              {t('admin.contract.imageLink')}
             </label>
             <div className="flex gap-2">
               <Input
@@ -183,7 +183,7 @@ export function ContractPanel() {
             <div className="rounded-xl border border-border/50 p-3 flex items-center gap-3">
               <img
                 src={previewUrl}
-                alt="প্রিভিউ"
+                alt={t('admin.contract.previewAlt')}
                 className="h-12 w-12 rounded-full object-cover"
                 loading="lazy" decoding="async"
                 onError={(e) => {
@@ -191,7 +191,7 @@ export function ContractPanel() {
                 }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground">ছবি প্রিভিউ</p>
+                <p className="text-xs font-medium text-foreground">{t('admin.contract.imagePreview')}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{previewUrl}</p>
               </div>
               <button
@@ -213,7 +213,7 @@ export function ContractPanel() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            অ্যাডমিন তথ্য সেভ করুন
+            {t('admin.contract.saveAdminInfo')}
           </Button>
         </div>
       </div>
@@ -223,25 +223,25 @@ export function ContractPanel() {
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">
-            চুক্তির কন্টেন্ট
+            {t('admin.contract.termsContent')}
           </h3>
         </div>
 
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-          প্রতিটি লাইন নতুন প্যারাগ্রাফ হিসেবে দেখাবে। হেডিং এর শেষে কোলন (:) দিন। বুলেট পয়েন্টের জন্য লাইনের শুরুতে ড্যাশ (-) দিন।
+          {t('admin.contract.contentHint')}
         </p>
 
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={`এসক্রো পরিষেবার শর্তাবলী:\n\nএই প্ল্যাটফর্মটি ব্যবহার করে আপনি নিম্নলিখিত শর্তাবলীতে সম্মত হচ্ছেন:\n\nলেনদেনের শর্ত:\n- সকল লেনদেন এসক্রো পদ্ধতিতে সম্পন্ন হবে\n- পেমেন্ট ভেরিফিকেশনের পর টাকা রিলিজ হবে\n- কোনো পক্ষ শর্ত ভঙ্গ করলে টাকা ফেরত দেওয়া হবে`}
+          placeholder={t('admin.contract.contentPlaceholder')}
           className="min-h-[300px] text-sm rounded-xl resize-y leading-relaxed"
           disabled={saving === 'content'}
         />
 
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            {content.length} অক্ষর
+            {t('admin.contract.contentChars', { count: content.length })}
           </p>
           <Button
             className="h-11 rounded-xl text-sm font-bold gap-2 px-5"
@@ -253,7 +253,7 @@ export function ContractPanel() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            কন্টেন্ট সেভ করুন
+            {t('admin.contract.saveContent')}
           </Button>
         </div>
       </div>

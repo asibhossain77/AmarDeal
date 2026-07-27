@@ -50,37 +50,37 @@ interface EmailTestResult {
 }
 
 const EMAIL_TEMPLATES: { type: string; label: string; description: string; icon: string }[] = [
-  { type: 'welcome', label: 'ওয়েলকাম ইমেইল', description: 'নতুন ইউজার রেজিস্ট্রেশন', icon: '🎉' },
-  { type: 'email_verification_otp', label: 'ইমেইল ভেরিফিকেশন OTP', description: 'রেজিস্ট্রেশনের পর', icon: '✉️' },
-  { type: 'password_reset_otp', label: 'পাসওয়ার্ড রিসেট OTP', description: 'ফরগট পাসওয়ার্ড', icon: '🔑' },
-  { type: 'deal_created', label: 'ডিল তৈরি', description: 'নতুন ডিল অনুরোধ জানানো', icon: '🤝' },
-  { type: 'payment_submitted', label: 'পেমেন্ট জমা', description: 'পেমেন্ট সাবমিট হলে', icon: '💰' },
-  { type: 'payment_verified', label: 'পেমেন্ট ভেরিফাইড', description: 'অ্যাডমিন পেমেন্ট ভেরিফাই করলে', icon: '✅' },
-  { type: 'delivery_started', label: 'ডেলিভারি শুরু', description: 'বিক্রেতা ডেলিভারি দিলে', icon: '📦' },
-  { type: 'deal_completed', label: 'ডিল সম্পন্ন', description: 'ক্রেতা কনফার্ম করলে', icon: '🎊' },
-  { type: 'deal_cancelled', label: 'ডিল বাতিল', description: 'ডিল ক্যান্সেল হলে', icon: '❌' },
-  { type: 'dispute_raised', label: 'বিরোধ দায়ের', description: 'ক্রেতা ডিসপিউট করলে', icon: '⚠️' },
-  { type: 'dispute_resolved', label: 'বিরোধ নিষ্পত্তি', description: 'অ্যাডমিন রিজোলভ করলে', icon: '⚖️' },
-  { type: 'login_notification', label: 'লগইন নোটিফিকেশন', description: 'নতুন লগইন হলে', icon: '🔐' },
-  { type: 'payout_requested', label: 'পেআউট অনুরোধ', description: 'পেআউট/রিফান্ড রিকোয়েস্ট', icon: '💸' },
-  { type: 'payout_completed', label: 'পেআউট সম্পন্ন', description: 'অ্যাডমিন পেমেন্ট দিলে', icon: '💳' },
+  { type: 'welcome', label: 'Welcome Email', description: 'New user registration', icon: '🎉' },
+  { type: 'email_verification_otp', label: 'Email Verification OTP', description: 'After registration', icon: '✉️' },
+  { type: 'password_reset_otp', label: 'Password Reset OTP', description: 'Forgot password', icon: '🔑' },
+  { type: 'deal_created', label: 'Deal Created', description: 'New deal request', icon: '🤝' },
+  { type: 'payment_submitted', label: 'Payment Submitted', description: 'When payment submitted', icon: '💰' },
+  { type: 'payment_verified', label: 'Payment Verified', description: 'Admin verified payment', icon: '✅' },
+  { type: 'delivery_started', label: 'Delivery Started', description: 'Seller delivered', icon: '📦' },
+  { type: 'deal_completed', label: 'Deal Completed', description: 'Buyer confirmed', icon: '🎊' },
+  { type: 'deal_cancelled', label: 'Deal Cancelled', description: 'Deal cancelled', icon: '❌' },
+  { type: 'dispute_raised', label: 'Dispute Raised', description: 'Buyer disputed', icon: '⚠️' },
+  { type: 'dispute_resolved', label: 'Dispute Resolved', description: 'Admin resolved', icon: '⚖️' },
+  { type: 'login_notification', label: 'Login Notification', description: 'New login', icon: '🔐' },
+  { type: 'payout_requested', label: 'Payout Requested', description: 'Payout/refund request', icon: '💸' },
+  { type: 'payout_completed', label: 'Payout Completed', description: 'Admin paid', icon: '💳' },
 ];
 
 const BREVO_FIELDS = [
-  { key: 'brevo_smtp_key', label: 'SMTP Key', placeholder: 'xkeysib-xxxxxxxxxxxx', description: 'Brevo Dashboard → SMTP & API → তৈরি করুন' },
-  { key: 'brevo_smtp_user', label: 'SMTP User (ইমেইল)', placeholder: 'your@email.com', description: 'আপনার Brevo অ্যাকাউন্টের লগইন ইমেইল' },
-  { key: 'brevo_from_email', label: 'From Email', placeholder: 'noreply@yourdomain.com', description: 'প্রেরকের ইমেইল (খালি থাকলে SMTP User ব্যবহার হবে)' },
+  { key: 'brevo_smtp_key', label: 'SMTP Key', placeholder: 'xkeysib-xxxxxxxxxxxx', description: 'Brevo Dashboard → SMTP & API → Create' },
+  { key: 'brevo_smtp_user', label: 'SMTP User (Email)', placeholder: 'your@email.com', description: 'Your Brevo account login email' },
+  { key: 'brevo_from_email', label: 'From Email', placeholder: 'noreply@yourdomain.com', description: 'Sender email (if empty, SMTP User will be used)' },
 ];
 
 const TEMPLATE_FIELDS = [
-  { key: 'email_site_name', label: 'সাইট নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইলের হেডার ও ফুটারে দেখাবে' },
-  { key: 'email_from_name', label: 'প্রেরকের নাম', placeholder: 'আমারডিল.বাংলা', description: 'ইমেইল প্রেরকের নাম (From Name)' },
-  { key: 'email_site_url', label: 'সাইট URL', placeholder: 'https://example.com', description: 'বাটন ও লিংকে ব্যবহৃত হবে' },
-  { key: 'email_header_subtitle', label: 'হেডার সাবটাইটেল', placeholder: 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম', description: 'হেডারে নামের নিচে দেখাবে' },
-  { key: 'email_footer_tagline', label: 'ফুটার ট্যাগলাইন', placeholder: 'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন', description: 'ফুটারে ব্র্যান্ড নামের নিচে দেখাবে' },
-  { key: 'email_footer_year', label: 'ফুটার ইয়ার (Year)', placeholder: 'খালি থাকলে অটো (2025)', description: 'কপিরাইটে যে ইয়ার দেখাবে — যেমন: 2025 বা 2024-2025' },
-  { key: 'email_footer_copyright', label: 'ফুটার কপিরাইট টেক্সট', placeholder: 'সর্বস্বত্ব সংরক্ষিত', description: 'ইয়ারের পরে দেখাবে — যেমন: সর্বস্বত্ব সংরক্ষিত' },
-  { key: 'email_footer_notice', label: 'ফুটার অটো-নোটিস', placeholder: 'এই ইমেইলটি স্বয়ংক্রিয়ভাবে পাঠানো হয়েছে', description: 'ফুটারের শেষ লাইনে দেখাবে — খালি করলে লুকাবে' },
+  { key: 'email_site_name', labelKey: 'admin.email.siteName' as const, placeholder: 'AmarDeal.bangla', description: 'Shows in email header and footer' },
+  { key: 'email_from_name', labelKey: 'admin.email.fromSenderName' as const, placeholder: 'AmarDeal.bangla', description: 'Email sender name (From Name)' },
+  { key: 'email_site_url', labelKey: 'admin.email.siteUrl' as const, placeholder: 'https://example.com', description: 'Will be used in buttons and links' },
+  { key: 'email_header_subtitle', labelKey: 'admin.email.headerSubtitle' as const, placeholder: 'Trusted platform for secure online transactions', description: 'Shows below name in header' },
+  { key: 'email_footer_tagline', labelKey: 'admin.email.footerTagline' as const, placeholder: 'Buy safely, sell safely', description: 'Shows below brand name in footer' },
+  { key: 'email_footer_year', labelKey: 'admin.email.footerYear' as const, placeholder: 'If empty, auto (2025)', description: 'Year shown in copyright — e.g., 2025 or 2024-2025' },
+  { key: 'email_footer_copyright', labelKey: 'admin.email.footerCopyright' as const, placeholder: 'All rights reserved', description: 'Shows after year — e.g., All rights reserved' },
+  { key: 'email_footer_notice', labelKey: 'admin.email.footerNotice' as const, placeholder: 'This email was sent automatically', description: 'Last line of footer — hidden if empty' },
 ];
 
 export function EmailSettingsPanel() {
@@ -114,13 +114,13 @@ export function EmailSettingsPanel() {
         if (res.ok && data.success) {
           setConfigStatus('configured');
         } else {
-          setConfigError(data.error || 'কনফিগারেশন পাওয়া যায়নি');
+          setConfigError(data.error || t('admin.email.configNotFound'));
           setConfigStatus('not-configured');
         }
       })
       .catch(() => {
         setConfigStatus('error');
-        setConfigError('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+        setConfigError(t('admin.email.serverProblem'));
       });
 
     // Load all settings
@@ -153,14 +153,14 @@ export function EmailSettingsPanel() {
       const data = await res.json();
       if (data.success) {
         updateResult(type, { status: 'success', message: data.message });
-        toast.success(`${label} — সফল!`);
+        toast.success(t('admin.email.testSuccess', { label }));
       } else {
         updateResult(type, { status: 'error', message: data.error });
-        toast.error(`${label} — ব্যর্থ: ${data.error}`);
+        toast.error(t('admin.email.testFailed', { label, error: data.error || '' }));
       }
     } catch {
-      updateResult(type, { status: 'error', message: 'নেটওয়ার্ক ত্রুটি' });
-      toast.error(`${label} — নেটওয়ার্ক ত্রুটি`);
+      updateResult(type, { status: 'error', message: t('common.networkError') });
+      toast.error(t('admin.email.testFailed', { label, error: t('common.networkError') }));
     }
   };
 
@@ -171,7 +171,7 @@ export function EmailSettingsPanel() {
       await new Promise((r) => setTimeout(r, 500));
     }
     setSendingAll(false);
-    toast.success('সকল টেস্ট ইমেইল পাঠানো হয়েছে!');
+    toast.success(t('admin.email.allTestsSent'));
   };
 
   const resetResults = () => {
@@ -191,14 +191,14 @@ export function EmailSettingsPanel() {
       const data = await res.json();
       if (data.success) {
         setVerifyResult('success');
-        toast.success('✅ ইমেইল ভেরিফিকেশন সফল! ইনবক্স চেক করুন।');
+        toast.success(t('admin.email.verifySuccessBanner'));
       } else {
         setVerifyResult('error');
-        toast.error(`ভেরিফিকেশন ব্যর্থ: ${data.error}`);
+        toast.error(t('admin.email.verifyFailBanner'));
       }
     } catch {
       setVerifyResult('error');
-      toast.error('ভেরিফিকেশন ব্যর্থ: নেটওয়ার্ক ত্রুটি');
+      toast.error(t('admin.email.verifyFailBanner'));
     } finally {
       setVerifying(false);
     }
@@ -220,12 +220,12 @@ export function EmailSettingsPanel() {
       const data = await res.json();
       if (data.success) {
         setOriginalSettings({ ...settings });
-        toast.success('সেটিংস সেভ হয়েছে!');
+        toast.success(t('admin.email.settingsSaved'));
       } else {
-        toast.error(data.error || 'সেভ করতে সমস্যা');
+        toast.error(data.error || t('common.failed'));
       }
     } catch {
-      toast.error('সার্ভারে সমস্যা');
+      toast.error(t('common.serverError'));
     } finally {
       setSavingSettings(false);
     }
@@ -241,10 +241,10 @@ export function EmailSettingsPanel() {
       <div className="mb-1">
         <h2 className="text-lg font-bold text-foreground flex items-center justify-center sm:justify-start gap-2">
           <Mail className="h-5 w-5 text-primary" />
-          ইমেইল সেটিংস
+          {t('admin.email.title')}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground text-center sm:text-left">
-          Brevo SMTP কনফিগারেশন, টেমপ্লেট কাস্টমাইজেশন ও টেস্টিং
+          {t('admin.email.headerDesc')}
         </p>
       </div>
 
@@ -255,16 +255,16 @@ export function EmailSettingsPanel() {
             <Server className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground">Brevo SMTP Credentials</p>
-            <p className="text-[11px] text-muted-foreground">SMTP কী, ইউজার ও ফ্রম ইমেইল কনফিগার করুন</p>
+            <p className="text-sm font-bold text-foreground">{t('admin.email.smtpSection')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('admin.email.smtpDesc')}</p>
           </div>
-          <Badge variant="outline" className="text-[10px] shrink-0">DB সংরক্ষিত</Badge>
+          <Badge variant="outline" className="text-[10px] shrink-0">{t('admin.email.dbSaved')}</Badge>
         </div>
 
         {loadingSettings ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">লোড হচ্ছে...</span>
+            <span className="ml-2 text-sm text-muted-foreground">{t('common.loading')}</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -272,8 +272,7 @@ export function EmailSettingsPanel() {
             <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/30 p-3">
               <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                <strong>.env ফাইলের পরিবর্তে</strong> এখান থেকে Brevo credentials সেট করুন।
-                DB-তে সংরক্ষিত থাকবে। দুই জায়গায়ই থাকলে DB এর ভ্যালু অগ্রাধিকার পাবে।
+                {t('admin.email.envWarning')}
               </p>
             </div>
 
@@ -329,12 +328,12 @@ export function EmailSettingsPanel() {
             <Palette className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground">টেমপ্লেট কাস্টমাইজেশন</p>
-            <p className="text-[11px] text-muted-foreground">ইমেইল টেমপ্লেটের ব্র্যান্ডিং পরিবর্তন করুন</p>
+            <p className="text-sm font-bold text-foreground">{t('admin.email.templateCustom')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('admin.email.templateCustomDesc')}</p>
           </div>
           {hasChanged && (
             <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700 shrink-0">
-              পরিবর্তন আছে
+              {t('admin.email.hasChanges')}
             </Badge>
           )}
         </div>
@@ -354,7 +353,7 @@ export function EmailSettingsPanel() {
                   htmlFor={f.key}
                   className="text-sm font-medium text-foreground text-center sm:text-left"
                 >
-                  {f.label}
+                  {t(f.labelKey)}
                 </Label>
                 <Input
                   id={f.key}
@@ -384,7 +383,7 @@ export function EmailSettingsPanel() {
             ) : (
               <Save className="h-4 w-4" />
             )}
-            {savingSettings ? 'সেভ হচ্ছে...' : 'সেটিংস সেভ করুন'}
+            {savingSettings ? t('common.saving') : t('common.save')}
           </Button>
         </div>
       </SolidCard>
@@ -396,8 +395,8 @@ export function EmailSettingsPanel() {
             <Key className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-bold text-foreground">কনফিগারেশন ও ভেরিফিকেশন</p>
-            <p className="text-[11px] text-muted-foreground">SMTP সংযোগ পরীক্ষা ও টেস্ট ইমেইল পাঠান</p>
+            <p className="text-sm font-bold text-foreground">{t('admin.email.configAndVerify')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('admin.email.configVerifyDesc')}</p>
           </div>
         </div>
 
@@ -414,18 +413,18 @@ export function EmailSettingsPanel() {
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground">
                 {configStatus === 'loading'
-                  ? 'চেক করা হচ্ছে...'
+                  ? t('admin.email.checking')
                   : configStatus === 'configured'
-                    ? 'Brevo SMTP কনফিগার আছে'
+                    ? t('admin.email.configured')
                     : configStatus === 'error'
-                      ? 'সার্ভার ত্রুটি'
-                      : 'Brevo SMTP কনফিগার নেই'}
+                      ? t('admin.email.serverError')
+                      : t('admin.email.notConfigured')}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {configStatus === 'loading'
                   ? ''
                   : configStatus === 'configured'
-                    ? 'SMTP Key পাওয়া গেছে। নিচে থেকে ভেরিফাই করুন।'
+                    ? t('admin.email.configuredHint')
                     : configError}
               </p>
             </div>
@@ -437,13 +436,13 @@ export function EmailSettingsPanel() {
               htmlFor="test-email"
               className="text-sm font-medium text-foreground text-center sm:text-left"
             >
-              ইমেইল ঠিকানা
+              {t('admin.email.emailAddress')}
             </Label>
             <div className="flex items-center gap-3">
               <Input
                 id="test-email"
                 type="email"
-                placeholder="আপনার ইমেইল দিন"
+                placeholder={t('admin.email.enterYourEmail')}
                 value={testEmail}
                 onChange={(e) => { setTestEmail(e.target.value); setVerifyResult('idle'); }}
                 className="max-w-sm"
@@ -462,7 +461,7 @@ export function EmailSettingsPanel() {
                 ) : (
                   <ShieldCheck className="h-4 w-4" />
                 )}
-                {verifying ? 'যাচাই হচ্ছে...' : 'ভেরিফাই'}
+                {verifying ? t('admin.email.verifying') : t('admin.email.verify')}
               </Button>
             </div>
           </div>
@@ -472,7 +471,7 @@ export function EmailSettingsPanel() {
             <div className="flex items-start gap-2.5 rounded-xl border border-green-200 bg-green-50 dark:border-green-800/50 dark:bg-green-950/30 p-3">
               <Zap className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
               <p className="text-xs text-green-800 dark:text-green-300 leading-relaxed">
-                <strong>ভেরিফিকেশন সফল!</strong> একটি টেস্ট ইমেইল পাঠানো হয়েছে। ইনবক্স ও স্প্যাম ফোল্ডার চেক করুন।
+                {t('admin.email.verifySuccessBanner')}
               </p>
             </div>
           )}
@@ -480,7 +479,7 @@ export function EmailSettingsPanel() {
             <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 dark:border-red-800/50 dark:bg-red-950/30 p-3">
               <XCircle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
               <p className="text-xs text-red-800 dark:text-red-300 leading-relaxed">
-                <strong>ভেরিফিকেশন ব্যর্থ।</strong> SMTP Key সঠিক কিনা চেক করুন।
+                {t('admin.email.verifyFailBanner')}
               </p>
             </div>
           )}
@@ -494,11 +493,11 @@ export function EmailSettingsPanel() {
             <TestTube className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground">টেমপ্লেট টেস্ট</p>
-            <p className="text-[11px] text-muted-foreground">প্রতিটি টেমপ্লেট আলাদাভাবে পরীক্ষা করুন</p>
+            <p className="text-sm font-bold text-foreground">{t('admin.email.templateTest')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('admin.email.templateTestDesc')}</p>
           </div>
           <Badge variant="secondary" className="text-[10px] shrink-0">
-            {EMAIL_TEMPLATES.length}টি টেমপ্লেট
+            {t('admin.email.templateCount', { count: EMAIL_TEMPLATES.length })}
           </Badge>
         </div>
 
@@ -513,16 +512,16 @@ export function EmailSettingsPanel() {
               className="rounded-xl"
             >
               {sendingAll ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />পাঠানো হচ্ছে...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('admin.email.sending')}</>
               ) : (
-                <><Send className="h-4 w-4 mr-2" />সব টেস্ট পাঠান</>
+                <><Send className="h-4 w-4 mr-2" />{t('admin.email.sendAllTests')}</>
               )}
             </Button>
             <Button onClick={resetResults} variant="outline" size="sm" disabled={sendingAll} className="rounded-xl">
-              রিসেট
+              {t('admin.email.reset')}
             </Button>
             {configStatus !== 'configured' && (
-              <p className="text-xs text-red-500">প্রথমে SMTP কনফিগার করুন</p>
+              <p className="text-xs text-red-500">{t('admin.email.configureFirst')}</p>
             )}
           </div>
 
@@ -560,7 +559,7 @@ export function EmailSettingsPanel() {
                     ) : (
                       <Send className="h-3.5 w-3.5 mr-1.5" />
                     )}
-                    টেস্ট পাঠান
+                    {t('admin.email.sendTest')}
                   </Button>
                 </div>
               );
