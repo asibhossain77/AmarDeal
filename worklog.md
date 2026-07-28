@@ -1283,3 +1283,22 @@ Stage Summary:
 - Visually polished with glow effect and hover animations
 - All 9 steps of the improvement list are now COMPLETE
 
+---
+Task ID: logo-loading-fix
+Agent: Main Agent
+Task: Fix old logo showing during loading after logo update
+
+Work Log:
+- Analyzed useSiteSettings hook — found it returns hardcoded FALLBACK.siteLogo='/logo.png' during loading before API responds
+- Identified two sub-issues: (1) No persistence across page reloads, (2) React Query cache not invalidated when admin updates logo
+- Added localStorage persistence: readFromStorage/writeToStorage functions
+- Modified fetchSiteSettings to save fetched data to localStorage
+- Added initialData option using localStorage data so React Query has instant data on reload
+- Added module-level _queryClient ref captured via useEffect for invalidation
+- Updated invalidateSiteSettingsCache to also call queryClient.invalidateQueries
+- Verified: localStorage populated with 'midman-site-settings', zero console errors, clean page reload
+
+Stage Summary:
+- File modified: src/lib/use-site-settings.ts
+- Logo now persists to localStorage and loads instantly on page reload (no flash of old default logo)
+- Admin logo update now properly invalidates React Query cache so all components refresh immediately
