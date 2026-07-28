@@ -225,7 +225,7 @@ export function LiveSupportButton() {
                   <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 max-w-[85%]">
                     <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                       আসসালামু আলাইকুম! 👋
-                      {'\n'}আমারডিল এ স্বাগতম। আমি AI অ্যাসিস্ট্যান্ট। কিভাবে সাহায্য করতে পারি?
+                      {'\n'}মিডম্যান এ স্বাগতম। আমি AI সাপোর্ট। কিভাবে সাহায্য করতে পারি?
                     </p>
                   </div>
 
