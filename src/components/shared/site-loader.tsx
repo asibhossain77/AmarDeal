@@ -23,15 +23,21 @@ export function SiteLoader() {
       className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background transition-opacity duration-400 ${exiting ? 'opacity-0' : 'opacity-100'}`}
     >
       {/* Logo */}
-      <div className="relative">
-        <img
-          src={siteLogo}
-          alt={siteName}
-          className="h-9 w-9 rounded-lg object-contain animate-[logo-pulse_2s_ease-in-out_infinite]"
-        />
-        {/* Glow ring */}
-        <div className="absolute -inset-1.5 rounded-xl border-2 border-primary/30 animate-[ring-pulse_2s_ease-in-out_infinite]" />
-      </div>
+      {siteLogo ? (
+        <div className="relative">
+          <img
+            src={siteLogo}
+            alt={siteName}
+            className="h-9 w-9 rounded-lg object-contain animate-[logo-pulse_2s_ease-in-out_infinite]"
+          />
+          {/* Glow ring */}
+          <div className="absolute -inset-1.5 rounded-xl border-2 border-primary/30 animate-[ring-pulse_2s_ease-in-out_infinite]" />
+        </div>
+      ) : (
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 animate-[logo-pulse_2s_ease-in-out_infinite]">
+          <span className="text-sm font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>
+        </div>
+      )}
 
       {/* Site Name */}
       <p className="mt-3 text-sm font-bold tracking-tight text-foreground animate-[fade-up_0.4s_ease-out_0.2s_both]">

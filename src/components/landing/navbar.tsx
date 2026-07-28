@@ -73,12 +73,18 @@ function LogoButton({ onClick }: { onClick: () => void }) {
   const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <button onClick={onClick} className="flex items-center gap-2.5">
-      <img
-        src={siteLogo}
-        alt={displayName}
-        fetchPriority="high"
-        className="h-9 w-9 rounded-lg object-contain"
-      />
+      {siteLogo ? (
+        <img
+          src={siteLogo}
+          alt={displayName}
+          fetchPriority="high"
+          className="h-9 w-9 rounded-lg object-contain"
+        />
+      ) : (
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
+        </div>
+      )}
       <span className="text-lg font-bold tracking-tight text-foreground">{displayName}</span>
     </button>
   );
@@ -90,12 +96,18 @@ function MobileBrandHeader({ sub }: { sub?: string }) {
   const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <div className="mb-4 flex items-center gap-2.5 px-1">
-      <img
-        src={siteLogo}
-        alt={displayName}
-        fetchPriority="high"
-        className="h-9 w-9 rounded-lg object-contain"
-      />
+      {siteLogo ? (
+        <img
+          src={siteLogo}
+          alt={displayName}
+          fetchPriority="high"
+          className="h-9 w-9 rounded-lg object-contain"
+        />
+      ) : (
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
+        </div>
+      )}
       {sub ? (
         <div>
           <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>

@@ -47,12 +47,18 @@ export function SellerSidebar() {
       {/* Brand Header */}
       <div className="flex items-center justify-between p-5 pb-6">
         <div className="flex items-center gap-2.5">
-          <img
-            src={siteLogo}
-            alt={siteName}
-            className="h-9 w-9 rounded-lg object-contain"
-            loading="lazy" decoding="async"
-          />
+          {siteLogo ? (
+            <img
+              src={siteLogo}
+              alt={siteName}
+              className="h-9 w-9 rounded-lg object-contain"
+              loading="lazy" decoding="async"
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <span className="text-sm font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>
+            </div>
+          )}
           <span className="text-lg font-bold tracking-tight text-foreground">{siteName}</span>
         </div>
         <button

@@ -11,6 +11,8 @@ export function DynamicFavicon() {
   const { siteLogo } = useSiteSettings();
 
   useEffect(() => {
+    if (!siteLogo) return; // Don't set empty favicon
+
     // Find or create the favicon <link> element
     let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!link) {

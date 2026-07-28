@@ -751,7 +751,13 @@ export function AuthView() {
         <div className="relative">
           <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-8">
             <div className="mb-6 flex flex-col items-center gap-3 text-center">
-              <img src={siteLogo} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+              {siteLogo ? (
+                <img src={siteLogo} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-lg">
+                  <span className="text-base font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>
+                </div>
+              )}
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">{getHeaderTitle()}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">{getHeaderDesc()}</p>

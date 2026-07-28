@@ -15,7 +15,7 @@ interface SiteSettings {
 const FALLBACK: SiteSettings = {
   siteName: 'মিডম্যান',
   siteNameEn: 'Midman',
-  siteLogo: '/logo.png',
+  siteLogo: '',
   footerDescription: '',
   footerCopyrightText: '',
   footerMadeIn: '',

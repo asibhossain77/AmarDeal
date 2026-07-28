@@ -44,12 +44,18 @@ export function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <a href="/" onClick={(e) => { e.preventDefault(); setView('landing'); }} className="mb-4 flex items-center gap-2.5">
-              <img
-                src={siteLogo}
-                alt={displayName}
-                className="h-9 w-9 rounded-lg object-contain"
-                loading="lazy" decoding="async"
-              />
+              {siteLogo ? (
+                <img
+                  src={siteLogo}
+                  alt={displayName}
+                  className="h-9 w-9 rounded-lg object-contain"
+                  loading="lazy" decoding="async"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
+                </div>
+              )}
               <span className="text-lg font-bold tracking-tight">
                 {displayName}
               </span>
