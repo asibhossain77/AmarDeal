@@ -11,31 +11,60 @@ import { Navbar } from '@/components/landing/navbar';
 import { Hero } from '@/components/landing/hero';
 import { PageWrapper } from '@/components/landing/page-wrapper';
 
-/* ── Dynamic: below-the-fold landing sections ── */
-const TrustSecurity = dynamic(() => import('@/components/landing/trust-security').then(m => ({ default: m.TrustSecurity })), { ssr: false });
+/* ── Dynamic: landing sections with section skeleton fallback ── */
+const TrustSecurity = dynamic(() => import('@/components/landing/trust-security').then(m => ({ default: m.TrustSecurity })), { ssr: false, loading: () => <SectionSkeleton /> });
 const Footer = dynamic(() => import('@/components/landing/footer').then(m => ({ default: m.Footer })), { ssr: false });
-const ReviewSection = dynamic(() => import('@/components/landing/review-section').then(m => ({ default: m.ReviewSection })), { ssr: false });
-const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(m => ({ default: m.HowItWorks })), { ssr: false });
-const FeeStructure = dynamic(() => import('@/components/landing/fee-structure').then(m => ({ default: m.FeeStructure })), { ssr: false });
-const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(m => ({ default: m.FAQSection })), { ssr: false });
-const AboutSection = dynamic(() => import('@/components/landing/about-section').then(m => ({ default: m.AboutSection })), { ssr: false });
-const PrivacySection = dynamic(() => import('@/components/landing/privacy-section').then(m => ({ default: m.PrivacySection })), { ssr: false });
-const ContactSection = dynamic(() => import('@/components/landing/contact-section').then(m => ({ default: m.ContactSection })), { ssr: false });
-const ContractSection = dynamic(() => import('@/components/landing/contract-section').then(m => ({ default: m.ContractSection })), { ssr: false });
-const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false });
-
-/* ── Dynamic: heavy views (admin, dashboard, auth, seller) ── */
-const AuthView = dynamic(() => import('@/components/auth/auth-view').then(m => ({ default: m.AuthView })), { ssr: false });
-const DashboardView = dynamic(() => import('@/components/dashboard/dashboard-view').then(m => ({ default: m.DashboardView })), { ssr: false });
-const AdminView = dynamic(() => import('@/components/admin/admin-view').then(m => ({ default: m.AdminView })), { ssr: false });
-const SellerView = dynamic(() => import('@/components/seller/seller-view').then(m => ({ default: m.SellerView })), { ssr: false });
+const ReviewSection = dynamic(() => import('@/components/landing/review-section').then(m => ({ default: m.ReviewSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const HowItWorks = dynamic(() => import('@/components/landing/how-it-works').then(m => ({ default: m.HowItWorks })), { ssr: false, loading: () => <SectionSkeleton /> });
+const FeeStructure = dynamic(() => import('@/components/landing/fee-structure').then(m => ({ default: m.FeeStructure })), { ssr: false, loading: () => <SectionSkeleton /> });
+const FAQSection = dynamic(() => import('@/components/landing/faq-section').then(m => ({ default: m.FAQSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const AboutSection = dynamic(() => import('@/components/landing/about-section').then(m => ({ default: m.AboutSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const PrivacySection = dynamic(() => import('@/components/landing/privacy-section').then(m => ({ default: m.PrivacySection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const ContactSection = dynamic(() => import('@/components/landing/contact-section').then(m => ({ default: m.ContactSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const ContractSection = dynamic(() => import('@/components/landing/contract-section').then(m => ({ default: m.ContractSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
 const SitePopup = dynamic(() => import('@/components/shared/site-popup').then(m => ({ default: m.SitePopup })), { ssr: false });
 
+/* ── Skeletons for dynamic imports ── */
+import { AuthSkeleton } from '@/components/shared/skeletons/auth-skeleton';
+import { PanelSkeleton, SidebarSkeleton } from '@/components/shared/skeletons/panel-skeleton';
+import { SectionSkeleton } from '@/components/shared/skeletons/landing-skeleton';
+
 /* ── Eager: site loader (shown immediately) ── */
+import { DynamicFavicon } from '@/components/shared/dynamic-favicon';
 import { SiteLoader } from '@/components/shared/site-loader';
+
+/* ── Dynamic: heavy views (admin, dashboard, auth, seller) — with skeleton fallbacks ── */
+const AuthView = dynamic(() => import('@/components/auth/auth-view').then(m => ({ default: m.AuthView })), { ssr: false, loading: () => <AuthSkeleton /> });
+const DashboardView = dynamic(() => import('@/components/dashboard/dashboard-view').then(m => ({ default: m.DashboardView })), { ssr: false, loading: () => <DashboardLoadingShell /> });
+const AdminView = dynamic(() => import('@/components/admin/admin-view').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <PanelLoadingShell /> });
+const SellerView = dynamic(() => import('@/components/seller/seller-view').then(m => ({ default: m.SellerView })), { ssr: false, loading: () => <PanelLoadingShell /> });
+
+/* ── Panel loading shells — sidebar + content skeleton ── */
+function PanelLoadingShell() {
+  return (
+    <div className="flex min-h-[calc(100vh-4rem)]">
+      <SidebarSkeleton />
+      <div className="flex-1 md:pl-64">
+        <PanelSkeleton />
+      </div>
+    </div>
+  );
+}
+
+function DashboardLoadingShell() {
+  return (
+    <div className="flex min-h-[calc(100vh-4rem)] min-w-0">
+      <SidebarSkeleton />
+      <div className="flex-1 min-w-0 md:pl-64 overflow-x-hidden">
+        <PanelSkeleton />
+      </div>
+    </div>
+  );
+}
 
 /* ── Slim landing — only Hero + Trust + CTA ── */
 function LandingView() {
@@ -201,6 +230,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-privacy' && <PagePrivacy />}
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
+      <DynamicFavicon />
       <LiveSupportButton />
       <SitePopup />
     </div>

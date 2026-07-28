@@ -1215,3 +1215,71 @@ Stage Summary:
 - Auth view (login/register) was already fully translated in previous steps
 - Browser verification: page renders correctly, language switching works, no console errors
 - Lint passes (only pre-existing errors remain)
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Step 7 — Loading Skeletons
+
+Work Log:
+- Created `src/components/shared/skeletons/` directory with 3 skeleton modules:
+  - `panel-skeleton.tsx`: SidebarSkeleton, StatCardSkeleton, TableSkeleton, PanelSkeleton
+  - `landing-skeleton.tsx`: NavbarSkeleton, HeroSkeleton, SectionSkeleton, ReviewSkeleton, FooterSkeleton, LandingSkeleton
+  - `auth-skeleton.tsx`: AuthSkeleton (login/register form layout)
+  - `index.ts`: barrel export
+- Created `src/app/loading.tsx` — root route loading page using LandingSkeleton
+- Updated `src/components/app-shell.tsx`:
+  - Added `loading` prop to all 11 dynamic landing section imports (SectionSkeleton fallback)
+  - Added `loading` prop to AuthView (AuthSkeleton), DashboardView (DashboardLoadingShell), AdminView (PanelLoadingShell), SellerView (PanelLoadingShell)
+  - Created PanelLoadingShell and DashboardLoadingShell wrapper components (sidebar + panel skeleton)
+- Verified: dev log shows all 200s, no compile errors, lint passes (pre-existing errors only)
+
+Stage Summary:
+- Step 7 (Loading Skeletons) is COMPLETE
+- All dynamic imports now show content-matched skeleton fallbacks during code-split loading
+- Admin/Dashboard/Seller views show sidebar + stats + table skeleton
+- Auth view shows login form skeleton
+- Landing sections show generic section skeleton
+- Root loading.tsx shows full landing page skeleton
+
+---
+Task ID: 8
+Agent: Main Agent
+Task: Step 8 — Dynamic Favicon
+
+Work Log:
+- Created `src/components/shared/dynamic-favicon.tsx` — client component that:
+  - Reads `siteLogo` from `useSiteSettings()` hook (site-settings API)
+  - Updates `<link rel="icon">` and `<link rel="apple-touch-icon">` in document head
+  - Overrides the static favicon set in layout.tsx metadata
+- Added `<DynamicFavicon />` to AppShell render output
+- Verified: dev log shows all 200s, no compile errors
+
+Stage Summary:
+- Step 8 (Dynamic Favicon) is COMPLETE
+- Favicon now dynamically updates from the site-settings API (admin-uploadable logo)
+- Falls back to `/logo.png` default when API hasn't loaded yet
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Step 9 — Custom 404 Page (i18n + Polish)
+
+Work Log:
+- Rewrote `src/app/not-found.tsx` as a client component using `useT()` hook
+- Replaced all hardcoded Bangla text with i18n keys:
+  - `notFound.title` → "Page Not Found" / "পেজ পাওয়া যায়নি"
+  - `notFound.description` → "The page you are looking for..." / "আপনি যেই পেজটি..."
+  - `notFound.backHome` → "Go Back Home" / "হোমে ফিরে যান"
+- Visual improvements:
+  - Large "404" text with primary color and blur glow effect
+  - Home icon button with shadow and hover scale animation
+  - Matches site background colors (light/dark mode)
+- Verified: dev log shows all 200s, browser verification passes with zero console errors
+
+Stage Summary:
+- Step 9 (Custom 404 Page) is COMPLETE
+- 404 page is fully i18n-aware (Bangla/English)
+- Visually polished with glow effect and hover animations
+- All 9 steps of the improvement list are now COMPLETE
+
