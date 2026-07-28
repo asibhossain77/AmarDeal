@@ -1,0 +1,95 @@
+=========================================
+  Vercel Environment Variables Setup
+  মিডম্যান (Midman) — AmarDeal
+=========================================
+
+Vercel Dashboard → Settings → Environment Variables এ নিচের গুলো add করুন।
+সব variable Production, Preview ও Development তে সব সিলেক্ট করে দিন।
+
+─────────────────────────────────────
+  ১. প্রয়োজনীয় (Required)
+─────────────────────────────────────
+
+DATABASE_URL
+  উদাহরণ: libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io
+  কোথায় পাবে: Turso DB Dashboard → Databases → তোমার DB → Connection URL
+  কী: তোমার Turso database এর URL (libsql://...)
+
+TURSO_AUTH_TOKEN
+  উদাহরণ: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  কোথায় পাবে: Turso DB Dashboard → Databases → তোমার DB → Auth Token
+  কী: তোমার Turso database এর authentication token
+
+─────────────────────────────────────
+  ২. AI সাপোর্ট (Required for AI chat)
+─────────────────────────────────────
+
+GROQ_API_KEY
+  উদাহরণ: gsk_abc123xyz...
+  কোথায় পাবে: https://console.groq.com/keys
+  কী: Groq AI এর API key (AI chatbot এবং email reply তে ব্যবহৃত)
+
+GEMINI_API_KEY
+  উদাহরণ: AIzaSy...
+  কোথায় পাবে: https://aistudio.google.com/apikey
+  কী: Google Gemini API key (alternative AI model)
+
+─────────────────────────────────────
+  ৩. Email (Required for email features)
+─────────────────────────────────────
+
+BREVO_SMTP_USER
+  উদাহরণ: your-email@gmail.com
+  কোথায় পাবে: https://app.brevo.com/ → SMTP Settings
+  কী: Brevo (Sonntic) SMTP login email
+
+BREVO_SMTP_KEY
+  উদাহরণ: xkeysib-abc123...
+  কোথায় পাবে: https://app.brevo.com/ → SMTP Settings → API Key
+  কী: Brevo SMTP API key / password
+
+─────────────────────────────────────
+  ৪. Analytics (Optional)
+─────────────────────────────────────
+
+NEXT_PUBLIC_GA_ID
+  উদাহরণ: G-XXXXXXXXXX
+  কোথায় পাবে: Google Analytics → Admin → Data Streams
+  কী: Google Analytics Measurement ID
+  ছাড়াও চলবে, শুধু tracking হবে না।
+
+─────────────────────────────────────
+  অটো-সেট (Auto-set, তোমার দরকার নেই)
+─────────────────────────────────────
+
+NODE_ENV
+  Vercel নিজেই 'production' সেট করে দেয়। ম্যানুয়ালি সেট করার দরকার নেই।
+
+=========================================
+  Setup করার ধাপ
+=========================================
+
+1. https://vercel.com/asibhossain77/amardeal/settings/environment-variables
+   এ যান
+
+2. প্রতিটা variable একটা একটা করে add করুন:
+   - Name: variable এর নাম (যেমন DATABASE_URL)
+   - Value: তোমার actual value
+   - Environments: Production ✅ Preview ✅ Development ✅
+
+3. সব add করা হলে পেজ এর নিচে 'Save' বাটনে ক্লিক করুন
+
+4. তারপর Redeploy করুন:
+   Deployments → সর্বশেষ deployment → ⋯ → Redeploy
+
+=========================================
+  মোট ৬টি Variable (1টি optional)
+=========================================
+
+  ✅ DATABASE_URL      — Turso DB URL
+  ✅ TURSO_AUTH_TOKEN   — Turso Auth Token
+  ✅ GROQ_API_KEY      — AI Chat (Groq)
+  ✅ GEMINI_API_KEY    — AI Chat (Gemini)
+  ✅ BREVO_SMTP_USER   — Email Sender
+  ✅ BREVO_SMTP_KEY    — Email API Key
+  ⭕ NEXT_PUBLIC_GA_ID — Google Analytics (optional)
