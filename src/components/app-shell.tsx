@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
+import { toast } from 'sonner';
 
 /* ── Eager: above-the-fold landing components ── */
 import { Navbar } from '@/components/landing/navbar';
@@ -194,7 +195,19 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   }, [view]);
 
   // Restore session from cookie on page load / refresh
+  // Also handles Google OAuth callback (?google_login=success)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleLogin = params.get('google_login');
+
+    const cleanup = () => {
+      // Remove google_login params from URL without full reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete('google_login');
+      url.searchParams.delete('msg');
+      window.history.replaceState({}, '', url.pathname);
+    };
+
     fetch('/api/auth/me')
       .then((res) => {
         if (!res.ok) throw new Error('no session');
@@ -202,11 +215,20 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       })
       .then((user) => {
         setUser(user);
-        // After login, re-apply URL so panel routes work
         setTimeout(() => reapplyUrlAfterLogin(), 0);
+        if (googleLogin === 'success') {
+          toast.success('Google দিয়ে লগইন সফল!');
+        }
       })
-      .catch(() => {})
-      .finally(() => setChecking(false));
+      .catch(() => {
+        if (googleLogin === 'error') {
+          toast.error('Google লগইন ব্যর্থ হয়েছে');
+        }
+      })
+      .finally(() => {
+        cleanup();
+        setChecking(false);
+      });
   }, [setUser]);
 
   if (!minReady || checking) {

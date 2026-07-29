@@ -49,7 +49,29 @@ BREVO_SMTP_KEY
   কী: Brevo SMTP API key / password
 
 ─────────────────────────────────────
-  ৪. Analytics (Optional)
+  ৪. Google Login (Required for Google OAuth)
+─────────────────────────────────────
+
+GOOGLE_CLIENT_ID
+  উদাহরণ: 123456789-abc.apps.googleusercontent.com
+  কোথায় পাবে: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+  কী: Google OAuth Client ID
+
+GOOGLE_CLIENT_SECRET
+  উদাহরণ: GOCSPX-abc123...
+  কোথায় পাবে: Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client ID
+  কী: Google OAuth Client Secret
+
+NEXT_PUBLIC_APP_URL
+  উদাহরণ: https://মিডম্যান.com
+  কোথায় পাবে: তোমার website এর public URL
+  কী: Google OAuth callback redirect এর জন্য দরকার
+
+  ⚠️ Google Cloud Console এ Authorized redirect URI সেট করতে হবে:
+     https://তোমার-ডোমেইন.com/api/auth/google/callback
+
+─────────────────────────────────────
+  ৫. Analytics (Optional)
 ─────────────────────────────────────
 
 NEXT_PUBLIC_GA_ID
@@ -92,4 +114,7 @@ NODE_ENV
   ✅ GEMINI_API_KEY    — AI Chat (Gemini)
   ✅ BREVO_SMTP_USER   — Email Sender
   ✅ BREVO_SMTP_KEY    — Email API Key
+  ✅ GOOGLE_CLIENT_ID  — Google OAuth (for Google Login)
+  ✅ GOOGLE_CLIENT_SECRET — Google OAuth Secret
+  ✅ NEXT_PUBLIC_APP_URL — Website URL (for OAuth callback)
   ⭕ NEXT_PUBLIC_GA_ID — Google Analytics (optional)
