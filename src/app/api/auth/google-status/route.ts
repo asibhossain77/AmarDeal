@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  // Only return false — the actual check is done client-side by trying /api/auth/google
-  // This avoids a DB call on every login page load
-  return NextResponse.json({ enabled: false })
+  try {
+    const { db } = await import('@/lib/db')
+    const rows = await db.platformSetting.findMany({
+      where: { key: 'google_client_id' },
+      select: { value: true },
+    })
+    const clientId = rows[0]?.value
+    return NextResponse.json({ enabled: !!clientId })
+  } catch {
+    return NextResponse.json({ enabled: false })
+  }
 }
