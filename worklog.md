@@ -1348,3 +1348,24 @@ Stage Summary:
 - The "সার্ভারে সমস্যা হয়েছে" message appears because the serverless function crashes when Turso connection fails, and Vercel returns HTML error instead of JSON.
 - Improved error handling will help diagnose the exact issue on Vercel via /api/health endpoint.
 - User needs to: 1) Verify Turso DB URL is correct, 2) Generate a fresh auth token from Turso dashboard, 3) Check Vercel function logs after deployment
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Diagnose and fix Vercel login failure after Google OAuth changes
+
+Work Log:
+- Read all relevant source files to understand the login flow
+- Verified google-status endpoint returns {enabled: false} without DB call
+- Confirmed login/register/verify-otp routes were NOT modified by Google OAuth changes
+- Tested Turso connection with provided credentials - timed out after 30 seconds
+- Improved db.ts with better error handling and init error caching
+- Improved /api/health endpoint to test actual DB connectivity
+- Improved auth routes with better error logging and error codes
+- Committed and pushed 2 commits to Vercel
+
+Stage Summary:
+- ROOT CAUSE: Turso database connection is failing (timeout). NOT caused by Google OAuth changes.
+- Google OAuth code only adds new routes, does NOT modify existing login flow.
+- Pushed improved error handling to help diagnose on Vercel via /api/health endpoint.
+- User needs to verify Turso credentials and check Vercel function logs.
