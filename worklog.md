@@ -1325,3 +1325,26 @@ Stage Summary:
 - Setup guide with step-by-step instructions in Bengali
 - Google login button on auth page shows/hides based on DB config
 - All data stored in PlatformSetting table (key-value pairs: google_client_id, google_client_secret, google_redirect_url)
+---
+Task ID: 1
+Agent: Main Agent
+Task: Diagnose and fix Vercel login failure after Google OAuth changes
+
+Work Log:
+- Read all relevant source files: auth routes, db.ts, proxy.ts, auth-view.tsx, rate-limit.ts
+- Verified google-status endpoint returns {enabled: false} without DB call (safe)
+- Verified login/register/verify-otp routes were NOT modified by Google OAuth changes
+- Checked git diff between working version and current - only Google OAuth files changed
+- Tested Turso connection with provided credentials - CONNECTION TIMED OUT (30s)
+- Improved db.ts: added init error caching, better Turso auth error messages
+- Improved /api/health endpoint: now tests actual DB connectivity, returns 503 if DB is down
+- Improved auth routes error logging: added [Login], [Register], [VerifyOTP] prefixes and error codes
+- Committed and pushed all changes to Vercel
+
+Stage Summary:
+- ROOT CAUSE: Turso database connection is failing (timeout). This is NOT caused by Google OAuth code changes.
+- The Google OAuth changes only added new routes and don't affect the login flow.
+- Login, register, and verify-otp routes were NOT modified.
+- The "সার্ভারে সমস্যা হয়েছে" message appears because the serverless function crashes when Turso connection fails, and Vercel returns HTML error instead of JSON.
+- Improved error handling will help diagnose the exact issue on Vercel via /api/health endpoint.
+- User needs to: 1) Verify Turso DB URL is correct, 2) Generate a fresh auth token from Turso dashboard, 3) Check Vercel function logs after deployment
