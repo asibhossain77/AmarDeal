@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Bot,
   Megaphone,
+  LogIn,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -66,6 +67,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { label: 'ব্লগ', icon: BookOpen, panel: 'blog' },
       { label: 'পপআপ', icon: Megaphone, panel: 'popup' },
       { label: 'যোগাযোগ', icon: MessageCircle, panel: 'contact-info' },
+      { label: 'Google OAuth', icon: LogIn, panel: 'google-oauth' },
     ],
   },
   {
@@ -114,6 +116,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
         { label: t('adminNav.blog'), icon: BookOpen, panel: 'blog' },
         { label: 'পপআপ', icon: Megaphone, panel: 'popup' },
         { label: t('adminNav.contact'), icon: MessageCircle, panel: 'contact-info' },
+        { label: 'Google OAuth', icon: LogIn, panel: 'google-oauth' },
       ],
     },
     {

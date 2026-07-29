@@ -38,6 +38,7 @@ const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m
 const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <PanelLoader /> });
 const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <PanelLoader /> });
 const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <PanelLoader /> });
+const GoogleOAuthPanel = dynamic(() => import('./google-oauth-panel').then(m => ({ default: m.GoogleOAuthPanel })), { loading: () => <PanelLoader /> });
 import {
   Bell,
   ShieldCheck,
@@ -3648,6 +3649,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AiPromptPanel />;
     case 'popup':
       return <PopupPanel />;
+    case 'google-oauth':
+      return <GoogleOAuthPanel />;
     default:
       return null;
   }

@@ -1302,3 +1302,26 @@ Stage Summary:
 - File modified: src/lib/use-site-settings.ts
 - Logo now persists to localStorage and loads instantly on page reload (no flash of old default logo)
 - Admin logo update now properly invalidates React Query cache so all components refresh immediately
+---
+Task ID: google-oauth-admin-panel
+Agent: Main Agent
+Task: Create admin panel page for Google OAuth settings (Client ID, Secret, Redirect URL) stored in DB instead of Vercel env vars
+
+Work Log:
+- Added 'google-oauth' to AdminPanel type in store.ts
+- Added 'Google OAuth' nav item with LogIn icon to admin-nav-config.ts (both static and translated groups)
+- Added dynamic import for GoogleOAuthPanel and case in admin-main.tsx panel router
+- Created /api/admin/google-oauth/route.ts (GET/POST) — reads/writes google_client_id, google_client_secret, google_redirect_url from PlatformSetting table
+- Created /api/auth/google-status/route.ts — public endpoint to check if Google login is enabled (for auth page)
+- Created /src/components/admin/google-oauth-panel.tsx — full admin panel with status banner, setup guide, credentials form, auto-detect redirect URL, save button
+- Modified /api/auth/google/route.ts — now reads Client ID and Redirect URL from DB instead of process.env
+- Modified /api/auth/google/callback/route.ts — now reads Client ID, Client Secret, Redirect URL from DB instead of process.env
+- Modified auth-view.tsx — Google login button now conditionally renders based on /api/auth/google-status response
+
+Stage Summary:
+- Google OAuth settings are now fully managed from admin panel (no Vercel env vars needed)
+- Admin can configure: Client ID, Client Secret (masked), Redirect URL
+- Auto-detect button fills redirect URL from current origin
+- Setup guide with step-by-step instructions in Bengali
+- Google login button on auth page shows/hides based on DB config
+- All data stored in PlatformSetting table (key-value pairs: google_client_id, google_client_secret, google_redirect_url)
