@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/deal-guard'
+import { requireAdmin } from '@/lib/admin-guard'
 
 const PIPRAPAY_KEYS = ['piprapay_api_key', 'piprapay_base_url', 'piprapay_enabled']
 
