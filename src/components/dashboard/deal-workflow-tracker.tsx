@@ -455,11 +455,9 @@ function PayoutRefundDialog({
   const [accountName, setAccountName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Calculate payout/refund amount
+  // Payout amount = full deal amount (fee is paid by buyer on top, not deducted from seller)
   const baseAmount = dealPaymentAmount || dealAmount || 0;
-  const payoutAmount = isPayout
-    ? baseAmount - (dealPlatformFee || 0)
-    : baseAmount;
+  const payoutAmount = baseAmount;
 
   // Fetch payment methods on open
   useEffect(() => {
@@ -658,18 +656,6 @@ function PayoutRefundDialog({
                 >
                   ৳{Math.round(payoutAmount).toLocaleString('en')}
                 </p>
-                {isPayout && dealPlatformFee ? (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">মোট পেমেন্ট</span>
-                      <span className="font-medium text-foreground">৳{Math.round(baseAmount).toLocaleString('en')}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">প্ল্যাটফর্ম ফি</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">- ৳{Math.round(dealPlatformFee).toLocaleString('en')}</span>
-                    </div>
-                  </div>
-                ) : null}
                 <div className="flex items-center gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: themeColor + '20' }}>
                   <Wallet className="h-3 w-3" style={{ color: themeColor + 'aa' }} />
                   <span className="text-[11px] font-medium" style={{ color: themeColor + 'cc' }}>

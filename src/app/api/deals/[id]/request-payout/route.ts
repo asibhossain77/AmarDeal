@@ -75,13 +75,8 @@ export async function POST(
     }
 
     // Calculate amount (use admin-updated paymentAmount if available)
-    const baseAmount = deal.paymentAmount || deal.amount
-    let amount: number
-    if (payoutType === 'buyer_refund') {
-      amount = baseAmount
-    } else {
-      amount = baseAmount - (deal.platformFee || 0)
-    }
+    // Fee is paid by buyer on top of deal amount, so seller gets full deal amount
+    const amount = deal.paymentAmount || deal.amount
 
     // Get user email for notification
     const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
