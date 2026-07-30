@@ -155,6 +155,8 @@ function PaymentDialog({
   };
 
   const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId);
+  const total = (parseFloat(amount) || 0) + (fee || 0);
+  const numAmount = parseFloat(amount) || 0;
 
   const handleSubmit = async () => {
     if (!dealId || !senderNumber.trim() || !transactionId.trim()) {
@@ -188,8 +190,6 @@ function PaymentDialog({
       setSubmitting(false);
     }
   };
-
-  const total = (parseFloat(amount) || 0) + (fee || 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -247,6 +247,15 @@ function PaymentDialog({
             )}
           </div>
 
+          {/* Selected method — big number display */}
+          {selectedMethod && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5">
+              <p className="text-[11px] font-medium text-muted-foreground mb-1">{selectedMethod.name} এ পাঠান</p>
+              <p className="text-xl font-bold font-mono tracking-wider text-primary select-all">{selectedMethod.accountNumber}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর</p>
+            </div>
+          )}
+
           {/* Amount */}
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-foreground">পেমেন্টের পরিমাণ (৳)</Label>
@@ -257,18 +266,25 @@ function PaymentDialog({
               onChange={(e) => handleAmountChange(e.target.value)}
               className="h-11 rounded-xl text-base"
             />
-            {dealAmount && (
-              <p className="text-[11px] text-muted-foreground">
-                ডিল পরিমাণ: ৳{Math.round(dealAmount).toLocaleString('en')}
-              </p>
-            )}
           </div>
 
-          {/* Fee Display */}
-          {fee !== null && (
-            <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-2.5">
-              <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
-              <span className="text-sm font-semibold text-foreground">৳{Math.round(fee).toLocaleString('en')}</span>
+          {/* Fee + Total Summary */}
+          {numAmount > 0 && (
+            <div className="rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-xs text-muted-foreground">ডিল পরিমাণ</span>
+                <span className="text-sm font-semibold text-foreground">৳{Math.round(numAmount).toLocaleString('en')}</span>
+              </div>
+              {fee !== null && fee > 0 && (
+                <div className="border-t border-border/30 flex items-center justify-between px-4 py-2.5">
+                  <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
+                  <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">+ ৳{Math.round(fee).toLocaleString('en')}</span>
+                </div>
+              )}
+              <div className="border-t border-primary/20 flex items-center justify-between px-4 py-3 bg-primary/5">
+                <span className="text-sm font-bold text-foreground">মোট প্রদান</span>
+                <span className="text-lg font-bold text-primary">৳{Math.round(total).toLocaleString('en')}</span>
+              </div>
             </div>
           )}
 
@@ -293,14 +309,6 @@ function PaymentDialog({
               className="h-11 rounded-xl"
             />
           </div>
-
-          {/* Total */}
-          {(parseFloat(amount) || 0) > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-              <span className="text-sm font-medium text-foreground">মোট প্রদান</span>
-              <span className="text-lg font-bold text-primary">৳{Math.round(total).toLocaleString('en')}</span>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
