@@ -1466,3 +1466,26 @@ Stage Summary:
 - File: src/components/dashboard/deal-workflow-tracker.tsx
 - Two-step payment flow with theme-colored UI implemented
 
+---
+Task ID: 1
+Agent: Main Agent
+Task: Create payment gateway style popup dialogs for payout and refund
+
+Work Log:
+- Explored codebase to understand deal workflow, PaymentDialog design, payout/refund API routes
+- Created PayoutRefundDialog component with 3-step flow (select → form → success)
+- Step 1: Payment method selection grid with themed colors (same style as PaymentDialog)
+- Step 2: Themed form showing amount summary (payout = total - fee, refund = full amount), account number, account name
+- Step 3: Animated success state with check icon, submitted info summary, and confirmation button
+- Replaced inline payout form (seller completed deal) with button opening PayoutRefundDialog
+- Replaced inline refund form (buyer cancelled deal) with button opening PayoutRefundDialog
+- Kept payout status tracking (submitted/paid) and display of submitted info
+- Removed unused code: PayoutMethodSelect component, old form state variables, handlePayoutRequest function, payment methods fetch useEffect
+- Fixed JSX comment parse error (missing closing })
+- Removed unused Lock import
+
+Stage Summary:
+- PayoutRefundDialog handles both seller_payout and buyer_refund types
+- Auto-advances to form step if deal already has a payment method
+- Themed colors derived from payment method color property
+- Committed and pushed: 65583e8..13a89a7
