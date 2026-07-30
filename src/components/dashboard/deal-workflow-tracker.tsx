@@ -139,8 +139,17 @@ function PaymentDialog({
     // Reset form
     setSenderNumber('');
     setTransactionId('');
-    setAmount(dealAmount ? String(dealAmount) : '');
+    const initAmount = dealAmount ? String(dealAmount) : '';
+    setAmount(initAmount);
     setFee(null);
+    // Fetch fee for pre-filled amount
+    const num = parseFloat(initAmount);
+    if (num && num > 0) {
+      fetch(`/api/deals/calculate-fee?amount=${num}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d?.fee !== undefined) setFee(d.fee); })
+        .catch(() => {});
+    }
   }, [open, dealPaymentMethod?.id, dealAmount]);
 
   // Calculate fee when amount changes

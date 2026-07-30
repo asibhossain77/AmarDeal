@@ -1434,3 +1434,19 @@ Stage Summary:
 - optimizePackageImports tree-shakes heavy packages to reduce bundle and CSS chunk sizes
 - Est. improvement: ~670ms savings on FCP/LCP as indicated by Lighthouse
 
+---
+Task ID: 1
+Agent: main
+Task: Fix PaymentDialog fee not being added to amount for total display
+
+Work Log:
+- Read PaymentDialog component in deal-workflow-tracker.tsx (lines 101-339)
+- Identified root cause: When dialog opens, amount is pre-filled from dealAmount but handleAmountChange (which fetches fee API) is only called on user input change
+- Added fee API fetch in the useEffect that runs on dialog open, for the pre-filled initial amount
+- Verified calculate-fee API returns correct { fee, total } response
+- Confirmed total display logic (amount + fee) was already correct
+
+Stage Summary:
+- Fixed fee calculation on dialog open by adding fetch call in useEffect for initial amount
+- File modified: src/components/dashboard/deal-workflow-tracker.tsx
+- No new lint errors introduced
