@@ -69,9 +69,18 @@ export function DashboardSidebar() {
         {/* User Info + Logout at bottom — pl-5 aligns with header logo area */}
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4">
           <div className="flex items-center gap-3 rounded-xl py-2 mb-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
+            {user?.imageLink ? (
+              <img
+                src={user.imageLink}
+                alt={user.name}
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            ) : (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+                {user?.name?.charAt(0) || 'U'}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('dashboard.user')}</p>
               <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>

@@ -10,7 +10,7 @@ export async function PUT(req: NextRequest) {
     const id = guard.userId
 
     const body = await req.json()
-    const { action, currentPassword, newPassword, email, phone } = body
+    const { action, currentPassword, newPassword, email, phone, imageLink } = body
 
     const user = await db.user.findUnique({ where: { id } })
     if (!user) {
@@ -37,6 +37,15 @@ export async function PUT(req: NextRequest) {
         data: { password: hashedPassword },
       })
       return NextResponse.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে' })
+    }
+
+    /* ─── Update Profile Image Link ─── */
+    if (action === 'update_image_link') {
+      await db.user.update({
+        where: { id },
+        data: { imageLink: imageLink || null },
+      })
+      return NextResponse.json({ success: true, message: 'প্রোফাইল ছবি আপডেট হয়েছে' })
     }
 
     return NextResponse.json({ error: 'অবৈধ অ্যাকশন' }, { status: 400 })

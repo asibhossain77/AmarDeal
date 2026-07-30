@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       adminRole: user.admin?.role ?? null,
       permissions: adminPermissions,
       isSeller: user.isSeller,
+      imageLink: user.imageLink ?? null,
     })
 
     // Login notification email (fire-and-forget)

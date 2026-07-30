@@ -29,8 +29,8 @@ export async function GET(
     const deal = await db.deal.findUnique({
       where: { id: dealId },
       include: {
-        buyer: { select: { id: true, name: true, email: true, phone: true } },
-        seller: { select: { id: true, name: true, email: true, phone: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
         creator: { select: { id: true, name: true, email: true } },
         paymentMethod: { select: { id: true, name: true, accountType: true } },
       },

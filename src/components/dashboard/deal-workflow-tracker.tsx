@@ -613,8 +613,8 @@ interface DealData {
   rejectionReason?: string | null;
   adminCalled?: boolean | null;
   adminCalledAt?: string | null;
-  buyer: { id: string; name: string; email: string; phone: string } | null;
-  seller: { id: string; name: string; email: string; phone: string } | null;
+  buyer: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
+  seller: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   creator: { id: string; name: string; email: string } | null;
   paymentMethod?: { id: string; name: string; accountType: string } | null;
 }
@@ -906,19 +906,30 @@ function InfoCard({
   icon: Icon,
   label,
   value,
+  avatar,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
+  avatar?: string | null;
 }) {
   return (
     <div className="group flex items-center gap-3 rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-4 transition-all duration-200 hover:border-[rgba(101,163,13,0.25)] hover:shadow-md hover:shadow-[rgba(101,163,13,0.06)]">
-      <div
-        className="flex h-9 w-9 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-lg md:rounded-xl transition-transform duration-200 group-hover:scale-105"
-        style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
-      >
-        <Icon className="h-4 w-4 md:h-5 md:w-5" />
-      </div>
+      {avatar ? (
+        <img
+          src={avatar}
+          alt={label}
+          className="h-9 w-9 md:h-11 md:w-11 shrink-0 rounded-lg md:rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      ) : (
+        <div
+          className="flex h-9 w-9 md:h-11 md:w-11 shrink-0 items-center justify-center rounded-lg md:rounded-xl transition-transform duration-200 group-hover:scale-105"
+          style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+        >
+          <Icon className="h-4 w-4 md:h-5 md:w-5" />
+        </div>
+      )}
       <div className="min-w-0">
         <p className="text-[11px] md:text-xs font-medium text-muted-foreground">
           {label}
@@ -1377,6 +1388,7 @@ export function DealWorkflowTracker() {
     : '---';
   const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || user?.name || 'ক্রেতা';
   const sellerName = dealData?.seller?.name || activeDeal?.sellerName || 'বিক্রেতা';
+  const counterpartyImage = isBuyer ? dealData?.seller?.imageLink : dealData?.buyer?.imageLink;
   const dealTerms = dealData?.terms;
 
   /* ── Action handlers ── */
@@ -1762,11 +1774,13 @@ export function DealWorkflowTracker() {
                     icon={User}
                     label="ক্রেতা"
                     value={buyerName}
+                    avatar={dealData?.buyer?.imageLink}
                   />
                   <InfoCard
                     icon={User}
                     label="বিক্রেতা"
                     value={sellerName}
+                    avatar={dealData?.seller?.imageLink}
                   />
                   <div className="hidden sm:block">
                     <InfoCard
@@ -2208,12 +2222,21 @@ export function DealWorkflowTracker() {
                 style={{ backgroundColor: 'var(--card)' }}
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                    style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
-                  >
-                    {isBuyer ? 'ক' : 'ব'}
-                  </div>
+                  {counterpartyImage ? (
+                    <img
+                      src={counterpartyImage}
+                      alt={isBuyer ? sellerName : buyerName}
+                      className="h-10 w-10 rounded-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                      style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+                    >
+                      {isBuyer ? 'ক' : 'ব'}
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-semibold text-foreground">
                       {isBuyer ? sellerName : buyerName}
