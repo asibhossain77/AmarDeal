@@ -117,29 +117,29 @@ export function ProfilePanel() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-      <div className="text-center lg:text-left">
+      <div>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('profile.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('profile.subtitle')}</p>
       </div>
 
-      <div className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
-        {/* Avatar with image */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative group">
+      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
+        {/* Avatar with image */
+        <div className="flex items-center gap-4">
+          <div className="relative group shrink-0">
             {currentImage ? (
               <img
                 src={currentImage}
                 alt={user?.name || 'Profile'}
-                className="h-20 w-20 rounded-full object-cover ring-3 ring-primary/20"
+                className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-3 ring-primary/20"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             ) : (
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/15 text-3xl font-bold text-primary">
+              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/15 text-2xl sm:text-3xl font-bold text-primary">
                 {user?.name?.charAt(0) || 'U'}
               </div>
             )}
           </div>
-          <div className="text-center">
+          <div>
             <h3 className="text-lg font-bold text-foreground">{user?.name || t('dashboard.user')}</h3>
             <Badge className={`${roleBadgeClass} border-0 font-medium mt-1`}>{roleLabel}</Badge>
           </div>

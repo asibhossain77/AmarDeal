@@ -60,12 +60,12 @@ export function SettingsPanel() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
-      <div className="text-center lg:text-left">
+      <div>
         <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('settings.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('settings.subtitle')}</p>
       </div>
 
-      <div className="mx-auto w-full max-w-md space-y-4">
+      <div className="w-full max-w-lg space-y-4">
         {/* Theme Toggle */}
         <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t('settings.theme')}</h3>
