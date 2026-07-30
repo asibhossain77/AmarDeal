@@ -6,6 +6,14 @@ import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -34,6 +42,8 @@ import {
   Lock,
   Headphones,
   Zap,
+  Wallet,
+  ArrowRight,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -84,6 +94,239 @@ function PipraPayButton({ dealId }: { dealId?: string }) {
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
       {loading ? 'পেমেন্ট হচ্ছে...' : 'PipraPay অটোমেশন'}
     </button>
+  );
+}
+
+/* ── Manual Payment Dialog ── */
+function PaymentDialog({
+  open,
+  onOpenChange,
+  dealId,
+  dealAmount,
+  dealPaymentMethod,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  dealId?: string;
+  dealAmount?: number;
+  dealPaymentMethod?: { id: string; name: string; accountType: string } | null;
+  onSuccess: () => void;
+}) {
+  const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string; accountNumber: string; accountType: string; color: string; image: string | null }[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState('');
+  const [senderNumber, setSenderNumber] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [fee, setFee] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch payment methods on open
+  useEffect(() => {
+    if (!open) return;
+    fetch('/api/payment-methods')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        setPaymentMethods(data);
+        // Auto-select deal's existing method
+        if (dealPaymentMethod?.id) {
+          setSelectedMethodId(dealPaymentMethod.id);
+        } else if (data.length > 0) {
+          setSelectedMethodId(data[0].id);
+        }
+      })
+      .catch(() => {});
+    // Reset form
+    setSenderNumber('');
+    setTransactionId('');
+    setAmount(dealAmount ? String(dealAmount) : '');
+    setFee(null);
+  }, [open, dealPaymentMethod?.id, dealAmount]);
+
+  // Calculate fee when amount changes
+  const handleAmountChange = (val: string) => {
+    setAmount(val);
+    const num = parseFloat(val);
+    if (!num || num <= 0) { setFee(null); return; }
+    fetch(`/api/deals/calculate-fee?amount=${num}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.fee !== undefined) setFee(d.fee); })
+      .catch(() => {});
+  };
+
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId);
+
+  const handleSubmit = async () => {
+    if (!dealId || !senderNumber.trim() || !transactionId.trim()) {
+      toast.error('সকল তথ্য প্রদান করুন');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/deals/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dealId,
+          paymentMethodId: selectedMethodId || undefined,
+          senderNumber: senderNumber.trim(),
+          transactionId: transactionId.trim(),
+          amount: parseFloat(amount) || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success('পেমেন্ট সফলভাবে জমা হয়েছে!');
+        onOpenChange(false);
+        onSuccess();
+      } else {
+        toast.error(data.error || 'পেমেন্ট জমা করতে সমস্যা হয়েছে');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const total = (parseFloat(amount) || 0) + (fee || 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
+                <Wallet className="h-4.5 w-4.5 text-primary" />
+              </div>
+              ম্যানুয়াল পেমেন্ট
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              নির্বাচিত পেমেন্ট মাধ্যমে টাকা পাঠান এবং তথ্য দিন
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+          {/* Payment Method Selection */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-foreground">পেমেন্ট মাধ্যম</Label>
+            {paymentMethods.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
+            ) : (
+              <div className="grid gap-2">
+                {paymentMethods.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedMethodId(m.id)}
+                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                      selectedMethodId === m.id
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                        : 'border-border/50 hover:border-border'
+                    }`}
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: (m.color || '#f0f0f0') + '20' }}>
+                      <Wallet className="h-4 w-4" style={{ color: m.color || 'var(--muted-foreground)' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{m.name}</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">{m.accountNumber}</p>
+                    </div>
+                    {selectedMethodId === m.id && (
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-foreground">পেমেন্টের পরিমাণ (৳)</Label>
+            <Input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              className="h-11 rounded-xl text-base"
+            />
+            {dealAmount && (
+              <p className="text-[11px] text-muted-foreground">
+                ডিল পরিমাণ: ৳{Math.round(dealAmount).toLocaleString('en')}
+              </p>
+            )}
+          </div>
+
+          {/* Fee Display */}
+          {fee !== null && (
+            <div className="flex items-center justify-between rounded-xl bg-muted/50 px-4 py-2.5">
+              <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
+              <span className="text-sm font-semibold text-foreground">৳{Math.round(fee).toLocaleString('en')}</span>
+            </div>
+          )}
+
+          {/* Sender Number */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-foreground">আপনার {selectedMethod?.name || 'পেমেন্ট'} নম্বর</Label>
+            <Input
+              placeholder="01XXXXXXXXX"
+              value={senderNumber}
+              onChange={(e) => setSenderNumber(e.target.value)}
+              className="h-11 rounded-xl"
+            />
+          </div>
+
+          {/* Transaction ID */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-foreground">ট্রানজেকশন আইডি / রেফারেন্স</Label>
+            <Input
+              placeholder="Transaction ID"
+              value={transactionId}
+              onChange={(e) => setTransactionId(e.target.value)}
+              className="h-11 rounded-xl"
+            />
+          </div>
+
+          {/* Total */}
+          {(parseFloat(amount) || 0) > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <span className="text-sm font-medium text-foreground">মোট প্রদান</span>
+              <span className="text-lg font-bold text-primary">৳{Math.round(total).toLocaleString('en')}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border/50 px-6 py-4 flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 h-11 rounded-xl"
+            onClick={() => onOpenChange(false)}
+          >
+            বাতিল
+          </Button>
+          <Button
+            className="flex-1 h-11 rounded-xl font-semibold gap-2"
+            onClick={handleSubmit}
+            disabled={submitting || !senderNumber.trim() || !transactionId.trim()}
+          >
+            {submitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="h-4 w-4" />
+            )}
+            {submitting ? 'জমা হচ্ছে...' : 'পেমেন্ট জমা দিন'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -825,6 +1068,9 @@ export function DealWorkflowTracker() {
   const [payoutChecking, setPayoutChecking] = useState(true);
   const [submittedPayoutInfo, setSubmittedPayoutInfo] = useState<{ accountType: string; accountNumber: string; accountName: string } | null>(null);
 
+  /* ── Payment dialog state ── */
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
   /* ── Derived state ── */
   const status = dealData?.status || activeDeal?.status || 'created';
   const activeStep = statusToActiveStep(status);
@@ -1479,7 +1725,7 @@ export function DealWorkflowTracker() {
                         </div>
                       </div>
                     )}
-                    <ActionButton onClick={() => setDashboardPanel('payment')} variant="primary">
+                    <ActionButton onClick={() => setPaymentDialogOpen(true)} variant="primary">
                       <ShieldCheck className="h-5 w-5" />
                       পেমেন্ট করুন
                     </ActionButton>
@@ -1989,6 +2235,16 @@ export function DealWorkflowTracker() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Manual Payment Dialog ── */}
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        dealId={dealData?.id}
+        dealAmount={dealData?.amount}
+        dealPaymentMethod={dealData?.paymentMethod}
+        onSuccess={fetchDeal}
+      />
     </motion.div>
   );
 }
