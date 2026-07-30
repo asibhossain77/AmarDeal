@@ -1,0 +1,20 @@
+{
+  "code": 200,
+  "data": {
+    "description": "",
+    "html": "<html><head><meta name=\"color-scheme\" content=\"light dark\"></head><body><pre style=\"word-wrap: break-word; white-space: pre-wrap;\"># PipraPay Documentation\n\n> PipraPay is an open-source payment automation platform you can host yourself. Customize everything with powerful plugins and themes — no monthly fees, no limits, forever free.\n\n## API Reference\n- [PipraPay Developer Documentation](https://docs.piprapay.com/reference/overview.md)\n- [Create Charge](https://docs.piprapay.com/reference/create-charge.md)\n- [Verify Payment](https://docs.piprapay.com/reference/verify-payments.md)\n- [Validate Webhook](https://docs.piprapay.com/reference/validate-webhook.md)\n- [Redirect checkout](https://docs.piprapay.com/reference/redirect-checkout.md)\n- [Verify Payment](https://docs.piprapay.com/reference/verify-payment.md)\n- [Refund Payment](https://docs.piprapay.com/reference/refund-payment.md)\n- [Webhook Guides](https://docs.piprapay.com/reference/webhook-guides.md): PipraPay sends real-time updates about payment status through webhooks. Integrate this API to automatically process payments, refunds, and transaction events.\n</pre></body></html>",
+    "httpStatus": 200,
+    "httpStatusText": "",
+    "title": "",
+    "url": "https://docs.piprapay.com/llms.txt",
+    "usage": {
+      "tokens": 277
+    }
+  },
+  "meta": {
+    "usage": {
+      "tokens": 277
+    }
+  },
+  "status": 20000
+}
