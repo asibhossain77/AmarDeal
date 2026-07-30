@@ -122,7 +122,7 @@ export function ProfilePanel() {
         <p className="mt-1 text-sm text-muted-foreground">{t('profile.subtitle')}</p>
       </div>
 
-      <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
+      <div className="w-full rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
         {/* Avatar with image */}
         <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
