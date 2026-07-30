@@ -1450,3 +1450,19 @@ Stage Summary:
 - Fixed fee calculation on dialog open by adding fetch call in useEffect for initial amount
 - File modified: src/components/dashboard/deal-workflow-tracker.tsx
 - No new lint errors introduced
+---
+Task ID: 2
+Agent: main
+Task: Redesign PaymentDialog with two-step flow and theme color
+
+Work Log:
+- Added step state for two-step flow (select/pay)
+- Step 1: themed payment method cards with gradient, hover glow
+- Step 2: full payment form with selected method theme color
+- framer-motion AnimatePresence for smooth transitions
+- Auto-advance if deal already has method
+
+Stage Summary:
+- File: src/components/dashboard/deal-workflow-tracker.tsx
+- Two-step payment flow with theme-colored UI implemented
+

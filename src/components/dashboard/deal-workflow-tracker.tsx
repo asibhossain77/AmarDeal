@@ -113,6 +113,7 @@ function PaymentDialog({
   dealPaymentMethod?: { id: string; name: string; accountType: string } | null;
   onSuccess: () => void;
 }) {
+  const [step, setStep] = useState<'select' | 'pay'>('select');
   const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string; accountNumber: string; accountType: string; color: string; image: string | null }[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState('');
   const [senderNumber, setSenderNumber] = useState('');
@@ -124,15 +125,16 @@ function PaymentDialog({
   // Fetch payment methods on open
   useEffect(() => {
     if (!open) return;
+    setStep('select');
     fetch('/api/payment-methods')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
         setPaymentMethods(data);
-        // Auto-select deal's existing method
-        if (dealPaymentMethod?.id) {
+        if (data.length === 0) return;
+        // If deal already has a method, auto-advance to pay step
+        if (dealPaymentMethod?.id && data.some((m: { id: string }[]) => m.id === dealPaymentMethod.id)) {
           setSelectedMethodId(dealPaymentMethod.id);
-        } else if (data.length > 0) {
-          setSelectedMethodId(data[0].id);
+          setStep('pay');
         }
       })
       .catch(() => {});
@@ -152,7 +154,7 @@ function PaymentDialog({
     }
   }, [open, dealPaymentMethod?.id, dealAmount]);
 
-  // Calculate fee when amount changes
+  // Fetch fee when amount changes
   const handleAmountChange = (val: string) => {
     setAmount(val);
     const num = parseFloat(val);
@@ -163,7 +165,15 @@ function PaymentDialog({
       .catch(() => {});
   };
 
+  // Handle method selection → go to pay step
+  const handleMethodSelect = (methodId: string) => {
+    setSelectedMethodId(methodId);
+    // Small delay for visual feedback, then advance
+    setTimeout(() => setStep('pay'), 200);
+  };
+
   const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId);
+  const themeColor = selectedMethod?.color || 'var(--primary)';
   const total = (parseFloat(amount) || 0) + (fee || 0);
   const numAmount = parseFloat(amount) || 0;
 
@@ -203,145 +213,233 @@ function PaymentDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-4">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-                <Wallet className="h-4.5 w-4.5 text-primary" />
-              </div>
-              ম্যানুয়াল পেমেন্ট
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              নির্বাচিত পেমেন্ট মাধ্যমে টাকা পাঠান এবং তথ্য দিন
-            </DialogDescription>
-          </DialogHeader>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
-          {/* Payment Method Selection */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-foreground">পেমেন্ট মাধ্যম</Label>
-            {paymentMethods.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
-            ) : (
-              <div className="grid gap-2">
-                {paymentMethods.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setSelectedMethodId(m.id)}
-                    className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                      selectedMethodId === m.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                        : 'border-border/50 hover:border-border'
-                    }`}
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: (m.color || '#f0f0f0') + '20' }}>
-                      <Wallet className="h-4 w-4" style={{ color: m.color || 'var(--muted-foreground)' }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{m.name}</p>
-                      <p className="text-[11px] text-muted-foreground font-mono">{m.accountNumber}</p>
-                    </div>
-                    {selectedMethodId === m.id && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
-                        <Check className="h-3 w-3 text-primary-foreground" />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Selected method — big number display */}
-          {selectedMethod && (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3.5">
-              <p className="text-[11px] font-medium text-muted-foreground mb-1">{selectedMethod.name} এ পাঠান</p>
-              <p className="text-xl font-bold font-mono tracking-wider text-primary select-all">{selectedMethod.accountNumber}</p>
-              <p className="text-[11px] text-muted-foreground mt-1">{selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর</p>
+        <AnimatePresence mode="wait">
+        {/* ──────── STEP 1: Payment Method Selection ──────── */}
+        {step === 'select' && (
+          <motion.div
+            key="select"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Header */}
+            <div className="px-6 pt-6 pb-3">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+                    <Wallet className="h-5 w-5 text-primary" />
+                  </div>
+                  পেমেন্ট মাধ্যম নির্বাচন করুন
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-1">
+                  আপনার পছন্দের মাধ্যমে পেমেন্ট করুন
+                </DialogDescription>
+              </DialogHeader>
             </div>
-          )}
 
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-foreground">পেমেন্টের পরিমাণ (৳)</Label>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => handleAmountChange(e.target.value)}
-              className="h-11 rounded-xl text-base"
-            />
-          </div>
-
-          {/* Fee + Total Summary */}
-          {numAmount > 0 && (
-            <div className="rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <span className="text-xs text-muted-foreground">ডিল পরিমাণ</span>
-                <span className="text-sm font-semibold text-foreground">৳{Math.round(numAmount).toLocaleString('en')}</span>
-              </div>
-              {fee !== null && fee > 0 && (
-                <div className="border-t border-border/30 flex items-center justify-between px-4 py-2.5">
-                  <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
-                  <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">+ ৳{Math.round(fee).toLocaleString('en')}</span>
+            {/* Method List */}
+            <div className="px-5 pb-6">
+              {paymentMethods.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
+              ) : (
+                <div className="grid gap-3 mt-2">
+                  {paymentMethods.map((m) => {
+                    const mc = m.color || '#6b7280';
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleMethodSelect(m.id)}
+                        className="group relative flex items-center gap-4 rounded-2xl border border-border/50 p-4 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:shadow-lg"
+                        style={{
+                          borderColor: 'transparent',
+                          background: `linear-gradient(135deg, ${mc}12 0%, ${mc}06 100%)`,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = mc + '50';
+                          e.currentTarget.style.boxShadow = `0 8px 25px ${mc}18`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'transparent';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      >
+                        <div
+                          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm"
+                          style={{ backgroundColor: mc + '20' }}
+                        >
+                          <Wallet className="h-5.5 w-5.5" style={{ color: mc }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-bold text-foreground">{m.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {m.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
+                          </p>
+                        </div>
+                        <ArrowRight
+                          className="h-4.5 w-4.5 text-muted-foreground/50 transition-transform group-hover:translate-x-1"
+                          style={{ color: mc + '80' }}
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-              <div className="border-t border-primary/20 flex items-center justify-between px-4 py-3 bg-primary/5">
-                <span className="text-sm font-bold text-foreground">মোট প্রদান</span>
-                <span className="text-lg font-bold text-primary">৳{Math.round(total).toLocaleString('en')}</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ──────── STEP 2: Payment Form ──────── */}
+        {step === 'pay' && selectedMethod && (
+          <motion.div
+            key="pay"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Themed Header */}
+            <div
+              className="px-6 pt-6 pb-4"
+              style={{
+                background: `linear-gradient(135deg, ${themeColor}15 0%, ${themeColor}05 100%)`,
+              }}
+            >
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setStep('select')}
+                    className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                  >
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: themeColor + '20' }}
+                  >
+                    <Wallet className="h-4.5 w-4.5" style={{ color: themeColor }} />
+                  </div>
+                  {selectedMethod.name}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  নিচের নম্বরে টাকা পাঠান এবং তথ্য দিন
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            {/* Account Number — Prominent Display */}
+            <div
+              className="mx-5 mt-4 rounded-2xl px-5 py-4"
+              style={{
+                backgroundColor: themeColor + '0d',
+                border: `1.5px solid ${themeColor}30`,
+              }}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: themeColor + 'aa' }}>
+                {selectedMethod.name} এ পাঠান
+              </p>
+              <p
+                className="text-2xl font-extrabold font-mono tracking-[0.15em] select-all leading-tight"
+                style={{ color: themeColor }}
+              >
+                {selectedMethod.accountNumber}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1.5">
+                {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
+              </p>
+            </div>
+
+            {/* Form Fields */}
+            <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">
+              {/* Amount */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">পেমেন্টের পরিমাণ (৳)</Label>
+                <Input
+                  type="number"
+                  placeholder="Amount"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  className="h-11 rounded-xl text-base"
+                />
+              </div>
+
+              {/* Fee + Total Summary */}
+              {numAmount > 0 && (
+                <div className="rounded-xl border overflow-hidden" style={{ borderColor: themeColor + '20', backgroundColor: themeColor + '08' }}>
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs text-muted-foreground">ডিল পরিমাণ</span>
+                    <span className="text-sm font-semibold text-foreground">৳{Math.round(numAmount).toLocaleString('en')}</span>
+                  </div>
+                  {fee !== null && fee > 0 && (
+                    <div className="border-t flex items-center justify-between px-4 py-2.5" style={{ borderColor: themeColor + '15' }}>
+                      <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
+                      <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">+ ৳{Math.round(fee).toLocaleString('en')}</span>
+                    </div>
+                  )}
+                  <div
+                    className="border-t flex items-center justify-between px-4 py-3"
+                    style={{ borderColor: themeColor + '30', backgroundColor: themeColor + '10' }}
+                  >
+                    <span className="text-sm font-bold text-foreground">মোট প্রদান</span>
+                    <span className="text-lg font-extrabold" style={{ color: themeColor }}>
+                      ৳{Math.round(total).toLocaleString('en')}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Sender Number */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">আপনার {selectedMethod.name} নম্বর</Label>
+                <Input
+                  placeholder="01XXXXXXXXX"
+                  value={senderNumber}
+                  onChange={(e) => setSenderNumber(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+
+              {/* Transaction ID */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-foreground">ট্রানজেকশন আইডি / রেফারেন্স</Label>
+                <Input
+                  placeholder="Transaction ID"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
               </div>
             </div>
-          )}
 
-          {/* Sender Number */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-foreground">আপনার {selectedMethod?.name || 'পেমেন্ট'} নম্বর</Label>
-            <Input
-              placeholder="01XXXXXXXXX"
-              value={senderNumber}
-              onChange={(e) => setSenderNumber(e.target.value)}
-              className="h-11 rounded-xl"
-            />
-          </div>
-
-          {/* Transaction ID */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-foreground">ট্রানজেকশন আইডি / রেফারেন্স</Label>
-            <Input
-              placeholder="Transaction ID"
-              value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
-              className="h-11 rounded-xl"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-border/50 px-6 py-4 flex gap-3">
-          <Button
-            variant="outline"
-            className="flex-1 h-11 rounded-xl"
-            onClick={() => onOpenChange(false)}
-          >
-            বাতিল
-          </Button>
-          <Button
-            className="flex-1 h-11 rounded-xl font-semibold gap-2"
-            onClick={handleSubmit}
-            disabled={submitting || !senderNumber.trim() || !transactionId.trim()}
-          >
-            {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowRight className="h-4 w-4" />
-            )}
-            {submitting ? 'জমা হচ্ছে...' : 'পেমেন্ট জমা দিন'}
-          </Button>
-        </div>
+            {/* Footer */}
+            <div className="border-t border-border/50 px-6 py-4 flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 h-11 rounded-xl"
+                onClick={() => setStep('select')}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                পরিবর্তন
+              </Button>
+              <Button
+                className="flex-1 h-11 rounded-xl font-semibold gap-2"
+                style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                onClick={handleSubmit}
+                disabled={submitting || !senderNumber.trim() || !transactionId.trim()}
+              >
+                {submitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-4 w-4" />
+                )}
+                {submitting ? 'জমা হচ্ছে...' : 'পেমেন্ট জমা দিন'}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
