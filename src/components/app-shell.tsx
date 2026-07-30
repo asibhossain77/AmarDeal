@@ -6,6 +6,7 @@ import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
 import { toast } from 'sonner';
+import { DeferredStyles } from '@/components/shared/deferred-styles';
 
 /* ── Eager: above-the-fold landing components ── */
 import { Navbar } from '@/components/landing/navbar';
@@ -274,6 +275,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-privacy' && <PagePrivacy />}
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
+      <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />
       <SitePopup />

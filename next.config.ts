@@ -25,6 +25,17 @@ const nextConfig = {
       exclude: ['warn', 'error'],
     } : false,
   },
+  // Tree-shake heavy packages so only imported sub-paths are bundled
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      'recharts',
+      'framer-motion',
+      'date-fns',
+      '@radix-ui/react-icons',
+      'react-syntax-highlighter',
+    ],
+  },
   async headers() {
     return [{
       source: '/(.*)',

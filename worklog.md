@@ -1413,3 +1413,24 @@ Stage Summary:
 - Added removeConsole compiler option to strip console.log in production
 - Changes: package.json (browserslist), next.config.ts (compiler config)
 
+---
+Task ID: 2
+Agent: Main
+Task: Fix Lighthouse render-blocking CSS resources (670ms savings)
+
+Work Log:
+- Analyzed screenshot via VLM — identified 3 render-blocking resources (31 KiB HTML, 29.6 KiB CSS, 1.4 KiB CSS)
+- Read globals.css (256 lines) and identified non-critical styles: animations, glow effects, scrollbar utilities, typing dots
+- Created `/public/non-critical.css` with all non-critical styles extracted from globals.css
+- Created `src/components/shared/deferred-styles.tsx` client component that loads non-critical.css via JS after mount
+- Added `<DeferredStyles />` to AppShell component (already a client component)
+- Trimmed globals.css to only critical styles (CSS variables, @layer base)
+- Added `experimental.optimizePackageImports` in next.config.ts for lucide-react, recharts, framer-motion, date-fns, @radix-ui/react-icons, react-syntax-highlighter
+- Verified via agent-browser: page renders correctly, no console errors, non-critical.css returns 200
+
+Stage Summary:
+- Render-blocking CSS reduced by removing animations/effects/glow/scrollbar styles from critical path
+- Non-critical CSS (~130 lines) now loads asynchronously after first paint via DeferredStyles component
+- optimizePackageImports tree-shakes heavy packages to reduce bundle and CSS chunk sizes
+- Est. improvement: ~670ms savings on FCP/LCP as indicated by Lighthouse
+
