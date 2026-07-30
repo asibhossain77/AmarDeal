@@ -122,6 +122,28 @@ function PaymentDialog({
   const [amount, setAmount] = useState('');
   const [fee, setFee] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [txnDuplicate, setTxnDuplicate] = useState<{ title: string; status: string } | null>(null);
+  const [txnChecking, setTxnChecking] = useState(false);
+
+  // Real-time duplicate transaction ID check (debounced on change, also on blur)
+  useEffect(() => {
+    if (!open || !transactionId.trim()) { setTxnDuplicate(null); return; }
+    const tid = transactionId.trim();
+    setTxnChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/deals/check-transaction?tid=${encodeURIComponent(tid)}&dealId=${dealId || ''}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exists) setTxnDuplicate({ title: data.deal.title, status: data.deal.status });
+          else setTxnDuplicate(null);
+        }
+      } catch { /* silent */ }
+      finally { setTxnChecking(false); }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [open, transactionId, dealId]);
 
   // Fetch payment methods on open
   useEffect(() => {
@@ -169,9 +191,15 @@ function PaymentDialog({
 
   const handleSubmit = async () => {
     if (!dealId || !senderNumber.trim() || !transactionId.trim()) {
-      toast.error('সকল তথ্য প্রদান করুন');
+ toast.error('সকল তথ্য প্রদান করুন');
       return;
     }
+    // Block submit if duplicate transaction is detected
+    if (txnDuplicate) {
+      setSubmitError('এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে ("' + txnDuplicate.title + '")। অনুগ্রহ করে নতুন ট্রানজেকশন আইডি দিন।');
+      return;
+    }
+    setSubmitError('');
     setSubmitting(true);
     try {
       const res = await fetch('/api/deals/payment', {
@@ -191,9 +219,11 @@ function PaymentDialog({
         onOpenChange(false);
         onSuccess();
       } else {
+        setSubmitError(data.error || 'পেমেন্ট জমা করতে সমস্যা হয়েছে');
         toast.error(data.error || 'পেমেন্ট জমা করতে সমস্যা হয়েছে');
       }
     } catch {
+      setSubmitError('সার্ভারে সমস্যা হয়েছে');
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
       setSubmitting(false);
@@ -382,14 +412,44 @@ function PaymentDialog({
               {/* Transaction ID */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-foreground">ট্রানজেকশন আইডি / রেফারেন্স</Label>
-                <Input
-                  placeholder="Transaction ID"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  className="h-11 rounded-xl"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="Transaction ID"
+                    value={transactionId}
+                    onChange={(e) => { setTransactionId(e.target.value); setSubmitError(''); }}
+                    className={`h-11 rounded-xl pr-9 ${txnDuplicate ? 'border-red-500 focus-visible:ring-red-500/30' : ''}`}
+                  />
+                  {txnChecking && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                  )}
+                </div>
+                {txnDuplicate && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3.5 py-2.5"
+                  >
+                    <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[11px] font-bold text-red-700 dark:text-red-400">এই ট্রানজেকশন আইডি আগেই ব্যবহার করা হয়েছে!</p>
+                      <p className="text-[10px] text-red-600/80 dark:text-red-400/70 mt-0.5">ডিল: &quot;{txnDuplicate.title}&quot; ({txnDuplicate.status})</p>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
+
+            {/* Inline Error Message */}
+            {submitError && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mx-5 mt-3 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3.5 py-2.5"
+              >
+                <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                <p className="text-[11px] font-medium text-red-700 dark:text-red-400">{submitError}</p>
+              </motion.div>
+            )}
 
             {/* Footer */}
             <div className="border-t border-border/50 px-6 py-4 flex gap-3">
@@ -405,7 +465,7 @@ function PaymentDialog({
                 className="flex-1 h-11 rounded-xl font-semibold gap-2"
                 style={{ backgroundColor: themeColor, borderColor: themeColor }}
                 onClick={handleSubmit}
-                disabled={submitting || !senderNumber.trim() || !transactionId.trim()}
+                disabled={submitting || !senderNumber.trim() || !transactionId.trim() || !!txnDuplicate}
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -454,6 +514,7 @@ function PayoutRefundDialog({
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // Payout amount = full deal amount (fee is paid by buyer on top, not deducted from seller)
   const baseAmount = dealPaymentAmount || dealAmount || 0;
@@ -489,6 +550,7 @@ function PayoutRefundDialog({
 
   const handleSubmit = async () => {
     if (!dealId || !accountNumber.trim() || !accountName.trim() || !selectedMethod) return;
+    setSubmitError('');
     setSubmitting(true);
     try {
       const res = await fetch(`/api/deals/${encodeURIComponent(dealId)}/request-payout`, {
@@ -505,9 +567,11 @@ function PayoutRefundDialog({
         setStep('success');
         onSuccess();
       } else {
+        setSubmitError(data.error || (isPayout ? 'পেআউট অনুরোধে সমস্যা' : 'ফেরতের অনুরোধে সমস্যা'));
         toast.error(data.error || (isPayout ? 'পেআউট অনুরোধে সমস্যা' : 'ফেরতের অনুরোধে সমস্যা'));
       }
     } catch {
+      setSubmitError('সার্ভারে সমস্যা হয়েছে');
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
       setSubmitting(false);
@@ -685,6 +749,18 @@ function PayoutRefundDialog({
                   />
                 </div>
               </div>
+
+              {/* Inline Error Message */}
+              {submitError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mx-6 mt-2 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3.5 py-2.5"
+                >
+                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-medium text-red-700 dark:text-red-400">{submitError}</p>
+                </motion.div>
+              )}
 
               {/* Footer */}
               <div className="border-t border-border/50 px-6 py-4 flex gap-3">
