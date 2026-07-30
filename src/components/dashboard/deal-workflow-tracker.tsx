@@ -154,17 +154,6 @@ function PaymentDialog({
     }
   }, [open, dealPaymentMethod?.id, dealAmount]);
 
-  // Fetch fee when amount changes
-  const handleAmountChange = (val: string) => {
-    setAmount(val);
-    const num = parseFloat(val);
-    if (!num || num <= 0) { setFee(null); return; }
-    fetch(`/api/deals/calculate-fee?amount=${num}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.fee !== undefined) setFee(d.fee); })
-      .catch(() => {});
-  };
-
   // Handle method selection → go to pay step
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethodId(methodId);
@@ -353,19 +342,7 @@ function PaymentDialog({
 
             {/* Form Fields */}
             <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">
-              {/* Amount */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">পেমেন্টের পরিমাণ (৳)</Label>
-                <Input
-                  type="number"
-                  placeholder="Amount"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  className="h-11 rounded-xl text-base"
-                />
-              </div>
-
-              {/* Fee + Total Summary */}
+              {/* Fixed Amount + Fee + Total Summary */}
               {numAmount > 0 && (
                 <div className="rounded-xl border overflow-hidden" style={{ borderColor: themeColor + '20', backgroundColor: themeColor + '08' }}>
                   <div className="flex items-center justify-between px-4 py-2.5">
