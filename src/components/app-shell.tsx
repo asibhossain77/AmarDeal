@@ -196,15 +196,20 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   // Restore session from cookie on page load / refresh
   // Also handles Google OAuth callback (?google_login=success)
+  // Also handles PipraPay callback (?piprapay=success&pp_id=xxx)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const googleLogin = params.get('google_login');
+    const piprapay = params.get('piprapay');
+    const ppId = params.get('pp_id');
 
     const cleanup = () => {
-      // Remove google_login params from URL without full reload
+      // Remove query params from URL without full reload
       const url = new URL(window.location.href);
       url.searchParams.delete('google_login');
       url.searchParams.delete('msg');
+      url.searchParams.delete('piprapay');
+      url.searchParams.delete('pp_id');
       window.history.replaceState({}, '', url.pathname);
     };
 
@@ -219,10 +224,27 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
         if (googleLogin === 'success') {
           toast.success('Google দিয়ে লগইন সফল!');
         }
+        if (piprapay === 'success' && ppId) {
+          toast.success('পেমেন্ট সফল হয়েছে! ভেরিফিকেশন চলছে...');
+          // Auto-verify the payment
+          fetch('/api/payment/piprapay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pp_id: ppId }),
+          }).then((r) => r.json()).then((d) => {
+            if (d.success) toast.success('পেমেন্ট ভেরিফাইড! বিক্রেতা এখন কাজ শুরু করবেন।');
+          }).catch(() => {});
+        }
+        if (piprapay === 'cancel') {
+          toast.error('পেমেন্ট বাতিল হয়েছে');
+        }
       })
       .catch(() => {
         if (googleLogin === 'error') {
           toast.error('Google লগইন ব্যর্থ হয়েছে');
+        }
+        if (piprapay === 'success') {
+          toast.error('পেমেন্ট ভেরিফিকেশনে সমস্যা — লগইন করুন');
         }
       })
       .finally(() => {

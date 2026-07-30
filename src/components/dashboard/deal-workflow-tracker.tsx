@@ -33,9 +33,59 @@ import {
   Info,
   Lock,
   Headphones,
+  Zap,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
+
+/* ── PipraPay Auto Payment Button ── */
+function PipraPayButton({ dealId }: { dealId?: string }) {
+  const [loading, setLoading] = useState(false);
+  const [available, setAvailable] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/piprapay-status')
+      .then((r) => r.json())
+      .then((d) => setAvailable(!!d.enabled))
+      .catch(() => setAvailable(false));
+  }, []);
+
+  const handlePipraPay = async () => {
+    if (!dealId) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/payment/piprapay/create-charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId }),
+      });
+      const data = await res.json();
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        toast.error(data.error || 'PipraPay পেমেন্ট শুরু করতে সমস্যা হয়েছে');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (available === null) return null;
+  if (!available) return null;
+
+  return (
+    <button
+      onClick={handlePipraPay}
+      disabled={loading}
+      className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-semibold transition-all disabled:opacity-50 shadow-md"
+    >
+      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+      {loading ? 'পেমেন্ট হচ্ছে...' : 'PipraPay অটোমেশন'}
+    </button>
+  );
+}
 
 /* ── Payout method select (auto-locked to deal's payment method) ── */
 function PayoutMethodSelect({
@@ -1433,6 +1483,7 @@ export function DealWorkflowTracker() {
                       <ShieldCheck className="h-5 w-5" />
                       পেমেন্ট করুন
                     </ActionButton>
+                    <PipraPayButton dealId={dealData?.id} />
                   </div>
                 )}
 

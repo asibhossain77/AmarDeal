@@ -18,6 +18,7 @@ import {
   Bot,
   Megaphone,
   LogIn,
+  Zap,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -68,6 +69,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { label: 'পপআপ', icon: Megaphone, panel: 'popup' },
       { label: 'যোগাযোগ', icon: MessageCircle, panel: 'contact-info' },
       { label: 'Google OAuth', icon: LogIn, panel: 'google-oauth' },
+      { label: 'PipraPay Gateway', icon: Zap, panel: 'piprapay' },
     ],
   },
   {
@@ -117,6 +119,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
         { label: 'পপআপ', icon: Megaphone, panel: 'popup' },
         { label: t('adminNav.contact'), icon: MessageCircle, panel: 'contact-info' },
         { label: 'Google OAuth', icon: LogIn, panel: 'google-oauth' },
+        { label: 'PipraPay Gateway', icon: Zap, panel: 'piprapay' },
       ],
     },
     {

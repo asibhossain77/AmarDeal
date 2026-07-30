@@ -1369,3 +1369,29 @@ Stage Summary:
 - Google OAuth code only adds new routes, does NOT modify existing login flow.
 - Pushed improved error handling to help diagnose on Vercel via /api/health endpoint.
 - User needs to verify Turso credentials and check Vercel function logs.
+
+---
+Task ID: 2
+Agent: piprapay-backend
+Task: Create PipraPay payment gateway backend API routes
+
+Work Log:
+- Read worklog and reference files for existing code patterns
+- Studied auth pattern (requireAuth from deal-guard), lazy DB import, PlatformSetting CRUD, error handling
+- Created 5 API route files under src/app/api/payment/piprapay/
+  1. create-charge/route.ts (POST) - Authenticated, creates PipraPay charge, updates deal status to payment_pending
+  2. success/route.ts (GET) - Redirects to /?piprapay=success&pp_id={pp_id}
+  3. cancel/route.ts (GET) - Redirects to /?piprapay=cancel
+  4. webhook/route.ts (POST) - Public, verifies payment via PipraPay API, updates deal to payment_verified
+  5. verify/route.ts (POST) - Authenticated manual verify, finds deal by transactionId, updates to payment_verified
+- All routes use lazy DB import pattern: `const { db } = await import('@/lib/db')`
+- All PipraPay API calls use `MHS-PIPRAPAY-API-KEY` header
+- PipraPay settings loaded from PlatformSetting table (piprapay_api_key, piprapay_base_url, piprapay_enabled)
+- Ran lint: no new errors introduced (all 9 errors/warnings pre-existing)
+- Dev server confirmed running without issues
+
+Stage Summary:
+- 5 PipraPay backend API routes created and verified
+- Payment flow: create-charge → user pays at PipraPay → success/cancel redirect → webhook auto-verifies
+- Manual verify endpoint also available for client-side verification after redirect
+- All routes follow existing codebase patterns (auth guard, lazy DB, error messages, logging)
