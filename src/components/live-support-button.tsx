@@ -55,6 +55,17 @@ function FacebookIcon({ className }: { className?: string }) {
 }
 
 export function LiveSupportButton() {
+  const view = useAppStore((s) => s.view);
+  const dashboardPanel = useAppStore((s) => s.dashboardPanel);
+  const sellerPanel = useAppStore((s) => s.sellerPanel);
+  const adminPanel = useAppStore((s) => s.adminPanel);
+
+  // Hide support button on deal detail pages (they have their own admin call button in chat)
+  const isDealDetail =
+    (view === 'dashboard' && dashboardPanel === 'deal-detail') ||
+    (view === 'seller' && sellerPanel === 'deal-detail') ||
+    (view === 'admin' && adminPanel === 'all-deals');
+
   const [isOpen, setIsOpen] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [contact, setContact] = useState<ContactInfo>(FALLBACK_CONTACT);
@@ -168,6 +179,8 @@ export function LiveSupportButton() {
   if (contact.email) contactLinks.push({ href: `mailto:${contact.email}`, icon: Mail, label: 'Email', color: 'bg-orange-50', hoverColor: 'hover:bg-orange-100', darkColor: 'dark:bg-orange-950/30', darkHover: 'dark:hover:bg-orange-950/50' });
   if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', color: 'bg-sky-50', hoverColor: 'hover:bg-sky-100', darkColor: 'dark:bg-sky-950/30', darkHover: 'dark:hover:bg-sky-950/50' });
   if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
+
+  if (isDealDetail) return null;
 
   return (
     <motion.div
