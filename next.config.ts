@@ -19,6 +19,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  compiler: {
+    // Strip console.log in production for smaller bundle
+    removeConsole: isProd ? {
+      exclude: ['warn', 'error'],
+    } : false,
+  },
   async headers() {
     return [{
       source: '/(.*)',
