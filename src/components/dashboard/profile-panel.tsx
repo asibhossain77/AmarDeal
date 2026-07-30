@@ -123,7 +123,7 @@ export function ProfilePanel() {
       </div>
 
       <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
-        {/* Avatar with image */
+        {/* Avatar with image */}
         <div className="flex items-center gap-4">
           <div className="relative group shrink-0">
             {currentImage ? (
