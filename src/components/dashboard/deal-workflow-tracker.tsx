@@ -39,11 +39,12 @@ import {
   Ban,
   MessageCircle,
   Info,
-  Lock,
   Headphones,
   Zap,
   Wallet,
   ArrowRight,
+  RotateCcw,
+  CircleCheckBig,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -422,59 +423,396 @@ function PaymentDialog({
   );
 }
 
-/* ── Payout method select (auto-locked to deal's payment method) ── */
-function PayoutMethodSelect({
-  methods,
-  value,
-  onChange,
-  locked,
+/* ── Payout / Refund Gateway Dialog ── */
+function PayoutRefundDialog({
+  open,
+  onOpenChange,
+  dealId,
+  dealTitle,
+  dealAmount,
+  dealPaymentAmount,
+  dealPlatformFee,
+  dealPaymentMethod,
+  type, // 'seller_payout' | 'buyer_refund'
+  onSuccess,
 }: {
-  methods: { id: string; name: string; accountType: string }[];
-  value: string;
-  onChange: (v: string) => void;
-  locked: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  dealId?: string;
+  dealTitle?: string;
+  dealAmount?: number;
+  dealPaymentAmount?: number | null;
+  dealPlatformFee?: number | null;
+  dealPaymentMethod?: { id: string; name: string; accountType: string; color?: string } | null;
+  type: 'seller_payout' | 'buyer_refund';
+  onSuccess: () => void;
 }) {
-  const sel = methods.find((m) => m.name === value);
+  const isPayout = type === 'seller_payout';
+  const [step, setStep] = useState<'select' | 'form' | 'success'>('select');
+  const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string; accountType: string; color: string }[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Calculate payout/refund amount
+  const baseAmount = dealPaymentAmount || dealAmount || 0;
+  const payoutAmount = isPayout
+    ? baseAmount - (dealPlatformFee || 0)
+    : baseAmount;
+
+  // Fetch payment methods on open
+  useEffect(() => {
+    if (!open) return;
+    setStep('select');
+    setAccountNumber('');
+    setAccountName('');
+    fetch('/api/payment-methods')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        setPaymentMethods(data);
+        if (data.length === 0) return;
+        // If deal already has a method, auto-advance to form step
+        if (dealPaymentMethod?.id && data.some((m: { id: string }) => m.id === dealPaymentMethod.id)) {
+          setSelectedMethodId(dealPaymentMethod.id);
+          setTimeout(() => setStep('form'), 150);
+        }
+      })
+      .catch(() => {});
+  }, [open, dealPaymentMethod?.id]);
+
+  const handleMethodSelect = (methodId: string) => {
+    setSelectedMethodId(methodId);
+    setTimeout(() => setStep('form'), 200);
+  };
+
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId);
+  const themeColor = selectedMethod?.color || (isPayout ? '#65A30D' : '#EF4444');
+
+  const handleSubmit = async () => {
+    if (!dealId || !accountNumber.trim() || !accountName.trim() || !selectedMethod) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/deals/${encodeURIComponent(dealId)}/request-payout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountType: selectedMethod.name,
+          accountNumber: accountNumber.trim(),
+          accountName: accountName.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStep('success');
+        onSuccess();
+      } else {
+        toast.error(data.error || (isPayout ? 'পেআউট অনুরোধে সমস্যা' : 'ফেরতের অনুরোধে সমস্যা'));
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={locked}
-          className={`w-full h-10 rounded-xl border border-border/50 bg-background px-3 pr-8 text-sm outline-none transition-colors ${
-            locked
-              ? 'opacity-70 cursor-not-allowed bg-muted/30'
-              : 'focus:border-[rgba(101,163,13,0.4)] focus:ring-1 focus:ring-[rgba(101,163,13,0.15)]'
-          }`}
-        >
-          {methods.map((m) => (
-            <option key={m.id} value={m.name}>
-              {m.name} — {m.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
-            </option>
-          ))}
-        </select>
-        {locked && (
-          <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        )}
-      </div>
-      {sel && (
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-              sel.accountType === 'merchant'
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
-                : 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400'
-            }`}
-          >
-            {sel.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
-          </span>
-          {locked && (
-            <span className="text-[10px] text-muted-foreground">ডিলের পেমেন্ট মেথড</span>
+    <Dialog open={open} onOpenChange={(v) => { if (!submitting) onOpenChange(v); }}>
+      <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden">
+        <AnimatePresence mode="wait">
+          {/* ──────── STEP 1: Method Selection ──────── */}
+          {step === 'select' && (
+            <motion.div
+              key="select"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="px-6 pt-6 pb-3">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl"
+                      style={{ backgroundColor: themeColor + '15' }}
+                    >
+                      {isPayout ? (
+                        <Banknote className="h-5 w-5" style={{ color: themeColor }} />
+                      ) : (
+                        <RotateCcw className="h-5 w-5" style={{ color: themeColor }} />
+                      )}
+                    </div>
+                    {isPayout ? 'পেআউট মাধ্যম নির্বাচন' : 'ফেরত মাধ্যম নির্বাচন'}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-1">
+                    আপনার যে মাধ্যমে টাকা পেতে চান সেটি নির্বাচন করুন
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+              <div className="px-5 pb-6">
+                {paymentMethods.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
+                ) : (
+                  <div className="grid gap-3 mt-2">
+                    {paymentMethods.map((m) => {
+                      const mc = m.color || '#6b7280';
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => handleMethodSelect(m.id)}
+                          className="group relative flex items-center gap-4 rounded-2xl border border-border/50 p-4 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:shadow-lg"
+                          style={{
+                            borderColor: 'transparent',
+                            background: `linear-gradient(135deg, ${mc}12 0%, ${mc}06 100%)`,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = mc + '50';
+                            e.currentTarget.style.boxShadow = `0 8px 25px ${mc}18`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'transparent';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        >
+                          <div
+                            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm"
+                            style={{ backgroundColor: mc + '20' }}
+                          >
+                            <Wallet className="h-5.5 w-5.5" style={{ color: mc }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[15px] font-bold text-foreground">{m.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {m.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
+                            </p>
+                          </div>
+                          <ArrowRight
+                            className="h-4.5 w-4.5 transition-transform group-hover:translate-x-1"
+                            style={{ color: mc + '80' }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
-        </div>
-      )}
-    </>
+
+          {/* ──────── STEP 2: Form ──────── */}
+          {step === 'form' && selectedMethod && (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Themed Header */}
+              <div
+                className="px-6 pt-6 pb-4"
+                style={{ background: `linear-gradient(135deg, ${themeColor}15 0%, ${themeColor}05 100%)` }}
+              >
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setStep('select')}
+                      className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                    >
+                      <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: themeColor + '20' }}
+                    >
+                      {isPayout ? (
+                        <Banknote className="h-4.5 w-4.5" style={{ color: themeColor }} />
+                      ) : (
+                        <RotateCcw className="h-4.5 w-4.5" style={{ color: themeColor }} />
+                      )}
+                    </div>
+                    {isPayout ? 'পেআউট অনুরোধ' : 'ফেরতের অনুরোধ'}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    {isPayout ? 'আপনার পেমেন্ট পেতে নিচের তথ্য দিন' : 'আপনার অর্থ ফেরত পেতে নিচের তথ্য দিন'}
+                  </DialogDescription>
+                </DialogHeader>
+              </div>
+
+              {/* Amount Summary */}
+              <div
+                className="mx-5 mt-4 rounded-2xl px-5 py-4"
+                style={{
+                  backgroundColor: themeColor + '0d',
+                  border: `1.5px solid ${themeColor}30`,
+                }}
+              >
+                <p className="text-[11px] font-semibold text-muted-foreground mb-1">
+                  {isPayout ? 'আপনি পাবেন' : 'ফেরত পাবেন'}
+                </p>
+                <p
+                  className="text-2xl font-extrabold tracking-tight leading-tight"
+                  style={{ color: themeColor }}
+                >
+                  ৳{Math.round(payoutAmount).toLocaleString('en')}
+                </p>
+                {isPayout && dealPlatformFee ? (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">মোট পেমেন্ট</span>
+                      <span className="font-medium text-foreground">৳{Math.round(baseAmount).toLocaleString('en')}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground">প্ল্যাটফর্ম ফি</span>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">- ৳{Math.round(dealPlatformFee).toLocaleString('en')}</span>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-1.5 mt-2 pt-2 border-t" style={{ borderColor: themeColor + '20' }}>
+                  <Wallet className="h-3 w-3" style={{ color: themeColor + 'aa' }} />
+                  <span className="text-[11px] font-medium" style={{ color: themeColor + 'cc' }}>
+                    {selectedMethod.name} — {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Form Fields */}
+              <div className="px-6 py-5 space-y-4 max-h-[45vh] overflow-y-auto">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">আপনার {selectedMethod.name} নম্বর</Label>
+                  <Input
+                    placeholder="০১XXXXXXXXX"
+                    value={accountNumber}
+                    onChange={(e) => setAccountNumber(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">অ্যাকাউন্টের নাম</Label>
+                  <Input
+                    placeholder="আপনার নাম"
+                    value={accountName}
+                    onChange={(e) => setAccountName(e.target.value)}
+                    className="h-11 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-border/50 px-6 py-4 flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11 rounded-xl"
+                  onClick={() => setStep('select')}
+                  disabled={!!dealPaymentMethod?.id}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1.5" />
+                  পরিবর্তন
+                </Button>
+                <Button
+                  className="flex-1 h-11 rounded-xl font-semibold gap-2"
+                  style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                  onClick={handleSubmit}
+                  disabled={submitting || !accountNumber.trim() || !accountName.trim()}
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isPayout ? (
+                    <Banknote className="h-4 w-4" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                  {submitting
+                    ? 'জমা হচ্ছে...'
+                    : isPayout
+                    ? 'পেআউট অনুরোধ'
+                    : 'ফেরতের অনুরোধ'}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ──────── STEP 3: Success ──────── */}
+          {step === 'success' && selectedMethod && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.25 }}
+              className="px-6 py-10 text-center"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+                className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full"
+                style={{ backgroundColor: themeColor + '15' }}
+              >
+                <CircleCheckBig className="h-8 w-8" style={{ color: themeColor }} />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <p className="text-lg font-bold text-foreground">
+                  {isPayout ? 'পেআউট অনুরোধ সফল!' : 'ফেরতের অনুরোধ সফল!'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1.5">
+                  অ্যাডমিন যাচাই করে আপনার একাউন্টে টাকা পাঠাবেন
+                </p>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-5 rounded-2xl px-5 py-4 text-left"
+                style={{
+                  backgroundColor: themeColor + '0d',
+                  border: `1.5px solid ${themeColor}30`,
+                }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] text-muted-foreground">পেমেন্ট মাধ্যম</span>
+                  <span className="text-xs font-semibold text-foreground">{selectedMethod.name}</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] text-muted-foreground">একাউন্ট নম্বর</span>
+                  <span className="text-xs font-mono font-semibold text-foreground">{accountNumber}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">একাউন্টের নাম</span>
+                  <span className="text-xs font-semibold text-foreground">{accountName}</span>
+                </div>
+                <div className="border-t mt-3 pt-3 flex items-center justify-between" style={{ borderColor: themeColor + '20' }}>
+                  <span className="text-xs font-bold text-foreground">{isPayout ? 'পেআউট পরিমাণ' : 'ফেরতের পরিমাণ'}</span>
+                  <span className="text-sm font-extrabold" style={{ color: themeColor }}>
+                    ৳{Math.round(payoutAmount).toLocaleString('en')}
+                  </span>
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="mt-5"
+              >
+                <Button
+                  className="h-11 rounded-xl font-semibold px-8"
+                  style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                  onClick={() => onOpenChange(false)}
+                >
+                  ঠিক আছে
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1160,12 +1498,7 @@ export function DealWorkflowTracker() {
   const inputRef = useRef<HTMLInputElement>(null);
   const lastMsgCountRef = useRef(0);
 
-  /* ── Payout form state ── */
-  const [payoutMethods, setPayoutMethods] = useState<{ id: string; name: string; accountType: string }[]>([]);
-  const [payoutAccountType, setPayoutAccountType] = useState('');
-  const [payoutAccountNumber, setPayoutAccountNumber] = useState('');
-  const [payoutAccountName, setPayoutAccountName] = useState('');
-  const [payoutLoading, setPayoutLoading] = useState(false);
+  /* ── Payout status state ── */
   const [payoutSubmitted, setPayoutSubmitted] = useState(false);
   const [payoutPaid, setPayoutPaid] = useState(false);
   const [payoutChecking, setPayoutChecking] = useState(true);
@@ -1173,6 +1506,8 @@ export function DealWorkflowTracker() {
 
   /* ── Payment dialog state ── */
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  /* ── Payout/Refund dialog state ── */
+  const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
 
   /* ── Derived state ── */
   const status = dealData?.status || activeDeal?.status || 'created';
@@ -1180,28 +1515,9 @@ export function DealWorkflowTracker() {
   const isDisputed = status === 'disputed';
   const isCancelled = status === 'cancelled' || status === 'rejected';
   const isCompleted = status === 'completed';
-  const dealHasPaymentMethod = !!dealData?.paymentMethod?.name;
   const userId = user?.id;
   const isBuyer = userId === (dealData?.buyerId || activeDeal?.buyerId) || (userId === activeDeal?.buyerId);
   const isSeller = userId === (dealData?.sellerId) || userId === activeDeal?.sellerId || (!isBuyer && user?.isSeller);
-
-  /* ── Fetch active payment methods & auto-select deal's method ── */
-  useEffect(() => {
-    fetch('/api/payment-methods')
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: { id: string; name: string; accountType: string; status: string }[]) => {
-        const active = data.filter((m) => m.status === 'active');
-        setPayoutMethods(active);
-        // Auto-select the deal's own payment method
-        const dealMethodName = dealData?.paymentMethod?.name;
-        if (dealMethodName && active.some((m) => m.name === dealMethodName)) {
-          setPayoutAccountType(dealMethodName);
-        } else if (active.length > 0) {
-          setPayoutAccountType(active[0].name);
-        }
-      })
-      .catch(() => {});
-  }, [dealData?.paymentMethod?.name]);
 
   /* ── Check if payout already submitted for current deal ── */
   const checkPayoutStatus = useCallback((showLoading = false) => {
@@ -1458,35 +1774,6 @@ export function DealWorkflowTracker() {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
       setActionLoading(false);
-    }
-  };
-
-  const handlePayoutRequest = async () => {
-    if (!dealData || !userId || !payoutAccountType || !payoutAccountNumber || !payoutAccountName) return;
-    setPayoutLoading(true);
-    try {
-      const res = await fetch(`/api/deals/${encodeURIComponent(dealData.id)}/request-payout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          accountType: payoutAccountType,
-          accountNumber: payoutAccountNumber,
-          accountName: payoutAccountName,
-        }),
-      });
-      if (res.ok) {
-        toast.success(isCompleted ? 'পেআউট অনুরোধ জমা হয়েছে!' : 'ফেরতের অনুরোধ জমা হয়েছে!');
-        setPayoutSubmitted(true);
-        setSubmittedPayoutInfo({ accountType: payoutAccountType, accountNumber: payoutAccountNumber, accountName: payoutAccountName });
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast.error(data.error || 'পেআউট অনুরোধে সমস্যা');
-      }
-    } catch {
-      toast.error('নেটওয়ার্ক সমস্যা');
-    } finally {
-      setPayoutLoading(false);
     }
   };
 
@@ -1934,49 +2221,13 @@ export function DealWorkflowTracker() {
                         <div className="h-3 w-40 animate-pulse rounded bg-muted" />
                         <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
                         <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
-                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
                       </div>
                     ) : !payoutSubmitted ? (
                       <div className="space-y-3">
-                        <p className="text-xs text-muted-foreground font-medium">আপনার পেমেন্ট পেতে নিচের ফর্ম পূরণ করুন</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">পেমেন্ট পদ্ধতি</label>
-                            {payoutMethods.length > 0 ? (
-                              <PayoutMethodSelect
-                                methods={payoutMethods}
-                                value={payoutAccountType}
-                                onChange={setPayoutAccountType}
-                                locked={dealHasPaymentMethod}
-                              />
-                            ) : (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 py-2">কোনো সক্রিয় পেমেন্ট পদ্ধতি পাওয়া যায়নি</p>
-                            )}
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্ট নম্বর</label>
-                            <Input
-                              value={payoutAccountNumber}
-                              onChange={(e) => setPayoutAccountNumber(e.target.value)}
-                              placeholder="০১XXXXXXXXX"
-                              className="h-10 rounded-xl border-border/50 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের নাম</label>
-                          <Input
-                            value={payoutAccountName}
-                            onChange={(e) => setPayoutAccountName(e.target.value)}
-                            placeholder="আপনার নাম"
-                            className="h-10 rounded-xl border-border/50 text-sm"
-                          />
-                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">আপনার পেমেন্ট পেতে পেআউট অনুরোধ করুন</p>
                         <ActionButton
-                          onClick={handlePayoutRequest}
-                          loading={payoutLoading}
+                          onClick={() => setPayoutDialogOpen(true)}
                           variant="primary"
-                          disabled={!payoutAccountType || !payoutAccountNumber || !payoutAccountName || payoutMethods.length === 0}
                         >
                           <Banknote className="h-5 w-5" />
                           পেআউট অনুরোধ করুন
@@ -2073,51 +2324,15 @@ export function DealWorkflowTracker() {
                         <div className="h-3 w-40 animate-pulse rounded bg-muted" />
                         <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
                         <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
-                        <div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
                       </div>
                     ) : !payoutSubmitted ? (
                       <div className="space-y-3">
-                        <p className="text-xs text-muted-foreground font-medium">আপনার অর্থ ফেরত পেতে নিচের ফর্ম পূরণ করুন</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">পেমেন্ট পদ্ধতি</label>
-                            {payoutMethods.length > 0 ? (
-                              <PayoutMethodSelect
-                                methods={payoutMethods}
-                                value={payoutAccountType}
-                                onChange={setPayoutAccountType}
-                                locked={dealHasPaymentMethod}
-                              />
-                            ) : (
-                              <p className="text-xs text-amber-600 dark:text-amber-400 py-2">কোনো সক্রিয় পেমেন্ট পদ্ধতি পাওয়া যায়নি</p>
-                            )}
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্ট নম্বর</label>
-                            <Input
-                              value={payoutAccountNumber}
-                              onChange={(e) => setPayoutAccountNumber(e.target.value)}
-                              placeholder="০১XXXXXXXXX"
-                              className="h-10 rounded-xl border-border/50 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">অ্যাকাউন্টের নাম</label>
-                          <Input
-                            value={payoutAccountName}
-                            onChange={(e) => setPayoutAccountName(e.target.value)}
-                            placeholder="আপনার নাম"
-                            className="h-10 rounded-xl border-border/50 text-sm"
-                          />
-                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">আপনার অর্থ ফেরত পেতে ফেরতের অনুরোধ করুন</p>
                         <ActionButton
-                          onClick={handlePayoutRequest}
-                          loading={payoutLoading}
-                          variant="primary"
-                          disabled={!payoutAccountType || !payoutAccountNumber || !payoutAccountName || payoutMethods.length === 0}
+                          onClick={() => setPayoutDialogOpen(true)}
+                          variant="danger"
                         >
-                          <Banknote className="h-5 w-5" />
+                          <RotateCcw className="h-5 w-5" />
                           ফেরতের অনুরোধ করুন
                         </ActionButton>
                       </div>
@@ -2359,6 +2574,20 @@ export function DealWorkflowTracker() {
         dealAmount={dealData?.amount}
         dealPaymentMethod={dealData?.paymentMethod}
         onSuccess={fetchDeal}
+      />
+
+      {/* ── Payout / Refund Dialog ── */}
+      <PayoutRefundDialog
+        open={payoutDialogOpen}
+        onOpenChange={setPayoutDialogOpen}
+        dealId={dealData?.id}
+        dealTitle={dealData?.title}
+        dealAmount={dealData?.amount}
+        dealPaymentAmount={dealData?.paymentAmount}
+        dealPlatformFee={dealData?.platformFee}
+        dealPaymentMethod={dealData?.paymentMethod}
+        type={isCompleted && isSeller ? 'seller_payout' : 'buyer_refund'}
+        onSuccess={() => checkPayoutStatus(true)}
       />
     </motion.div>
   );
