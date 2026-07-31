@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCompletedEmail } from '@/lib/email'
 import { requireAuth } from '@/lib/deal-guard'
+import { processAffiliateCommission } from '@/lib/affiliate-commission'
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,6 +43,9 @@ export async function POST(req: NextRequest) {
     if (updated.seller?.email) {
       sendEmail(updated.seller.email, () => dealCompletedEmail(updated.seller.name || 'বিক্রেতা', deal.title, updated.amount || 0, 'seller')).catch(() => {})
     }
+
+    // Process affiliate commission (fire-and-forget)
+    processAffiliateCommission(dealId).catch(() => {})
 
     return NextResponse.json({ success: true, deal: updated })
   } catch {

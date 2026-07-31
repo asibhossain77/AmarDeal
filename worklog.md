@@ -1581,3 +1581,28 @@ Stage Summary:
 - Referral link format: `{site_url}/ref/{CODE}` (e.g., `/ref/ASI-X7K9M`)
 - Cookie name: `amardeal_ref`, 30-day expiry
 - Security: Referrer verified against DB on registration, code cross-checked
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Step 4 - Commission processing on deal completion
+
+Work Log:
+- Analyzed deal lifecycle: created → payment_pending → payment_verified → in_delivery → completed
+- Confirmed `/api/deals/complete` is the single entry point for `status: 'completed'`
+- Created `src/lib/affiliate-commission.ts` with `processAffiliateCommission()`:
+  - Idempotent: checks AffiliateEarning unique constraint on dealId first
+  - Buyer affiliate priority > Seller affiliate (only 1 commission per deal)
+  - Commission % from PlatformSetting 'affiliate_commission_percent' (default 30%)
+  - Self-referral protection (affiliate can't earn from own deals)
+  - Affiliate must be active
+  - Uses DB transaction: creates AffiliateEarning + increments affiliateBalance atomically
+  - Amount rounded to 2 decimal places
+- Integrated into `/api/deals/complete/route.ts` as fire-and-forget call
+
+Stage Summary:
+- New file: `src/lib/affiliate-commission.ts`
+- Modified: `src/app/api/deals/complete/route.ts`
+- Commission = platformFee × (commissionPercent / 100)
+- Admin configurable: PlatformSetting key `affiliate_commission_percent` (default: 30)
+- Safe to retry: won't double-credit due to dealId unique constraint
