@@ -1408,6 +1408,21 @@ export const bn = {
   'affiliate.pending': 'পেন্ডিং',
   'affiliate.noEarnings': 'এখনো কোনো আয় নেই',
   'affiliate.noEarningsDesc': 'রেফারেল লিংক শেয়ার করুন এবং কমিশন আয় করুন',
+  'affiliate.withdrawTitle': 'টাকা উত্তোলন',
+  'affiliate.withdrawBtn': 'উত্তোলন করুন',
+  'affiliate.minWithdrawInfo': 'সর্বনিম্ন উত্তোলন পরিমাণ ৳{min}',
+  'affiliate.withdrawInfo': 'উপরের বাটনে ক্লিক করে টাকা উত্তোলনের অনুরোধ করুন',
+  'affiliate.amountLabel': 'পরিমাণ',
+  'affiliate.accountTypeLabel': 'পেমেন্ট মাধ্যম',
+  'affiliate.accountNumberLabel': 'অ্যাকাউন্ট নাম্বার',
+  'affiliate.accountNameLabel': 'অ্যাকাউন্টের নাম',
+  'affiliate.accountNamePlaceholder': 'আপনার নাম',
+  'affiliate.submitWithdraw': 'উত্তোলনের অনুরোধ জমা দিন',
+  'affiliate.cancel': 'বাতিল',
+  'affiliate.fillAllFields': 'সকল তথ্য পূরণ করুন (সর্বনিম্ন ৳100)',
+  'affiliate.insufficientBalance': 'পর্যাপ্ত ব্যালেন্স নেই',
+  'affiliate.withdrawSuccess': 'উত্তোলনের অনুরোধ সফলভাবে জমা হয়েছে!',
+  'affiliate.withdrawFailed': 'উত্তোলনে সমস্যা হয়েছে',
 } as const;
 
 export type TranslationKey = keyof typeof bn;

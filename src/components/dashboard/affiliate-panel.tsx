@@ -14,10 +14,16 @@ import {
   TrendingUp,
   Clock,
   Link2,
+  ArrowDownToLine,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useT } from '@/lib/i18n';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const emptySubscribe = () => () => {};
 
@@ -73,6 +79,10 @@ export function AffiliatePanel() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
   const [copied, setCopied] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({ amount: '', accountType: 'bkash', accountNumber: '', accountName: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
   const userId = user?.id;
 
   const { data, isLoading } = useQuery<AffiliateData>({
@@ -97,6 +107,36 @@ export function AffiliatePanel() {
     }).catch(() => {
       toast.error(t('affiliate.copyFailed'));
     });
+  };
+
+  const handleWithdraw = async () => {
+    const numAmount = Number(withdrawForm.amount);
+    if (!numAmount || numAmount < 100 || !withdrawForm.accountNumber || !withdrawForm.accountName) {
+      toast.error(t('affiliate.fillAllFields'));
+      return;
+    }
+    if (numAmount > (data?.affiliateBalance ?? 0)) {
+      toast.error(t('affiliate.insufficientBalance'));
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/user/affiliate/withdraw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(withdrawForm),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed');
+      toast.success(result.message || t('affiliate.withdrawSuccess'));
+      setShowWithdraw(false);
+      setWithdrawForm({ amount: '', accountType: 'bkash', accountNumber: '', accountName: '' });
+      queryClient.invalidateQueries({ queryKey: ['user-affiliate', userId] });
+    } catch (err: any) {
+      toast.error(err.message || t('affiliate.withdrawFailed'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!mounted) return null;
@@ -323,6 +363,105 @@ export function AffiliatePanel() {
                   <p className="text-sm font-medium text-muted-foreground">{t('affiliate.noEarnings')}</p>
                   <p className="mt-1 text-xs text-muted-foreground/70">{t('affiliate.noEarningsDesc')}</p>
                 </div>
+              )}
+            </GlassCard>
+          </motion.div>
+
+          {/* ── Withdrawal Section ── */}
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+            <GlassCard>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <ArrowDownToLine className="h-4 w-4 text-primary" />
+                  <h3 className="text-base font-semibold text-foreground">{t('affiliate.withdrawTitle')}</h3>
+                </div>
+                {!showWithdraw && data.affiliateBalance >= 100 && (
+                  <Button size="sm" className="gap-1.5 h-9" onClick={() => setShowWithdraw(true)}>
+                    <ArrowDownToLine className="h-3.5 w-3.5" />
+                    {t('affiliate.withdrawBtn')}
+                  </Button>
+                )}
+              </div>
+
+              {data.affiliateBalance < 100 ? (
+                <p className="text-sm text-muted-foreground">{t('affiliate.minWithdrawInfo', { min: '100' })}</p>
+              ) : showWithdraw ? (
+                <div className="space-y-4">
+                  {/* Balance display */}
+                  <div className="rounded-lg bg-muted/50 p-3 flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{t('affiliate.availableBalance')}</span>
+                    <span className="text-lg font-bold text-foreground">{formatTaka(data.affiliateBalance)}</span>
+                  </div>
+
+                  {/* Form */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t('affiliate.amountLabel')} (৳)</Label>
+                      <Input
+                        type="number"
+                        placeholder="100"
+                        min={100}
+                        max={data.affiliateBalance}
+                        value={withdrawForm.amount}
+                        onChange={(e) => setWithdrawForm((p) => ({ ...p, amount: e.target.value }))}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t('affiliate.accountTypeLabel')}</Label>
+                      <select
+                        value={withdrawForm.accountType}
+                        onChange={(e) => setWithdrawForm((p) => ({ ...p, accountType: e.target.value }))}
+                        className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="bkash">bKash</option>
+                        <option value="nagad">Nagad</option>
+                        <option value="rocket">Rocket</option>
+                        <option value="bank">Bank</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t('affiliate.accountNumberLabel')}</Label>
+                      <Input
+                        placeholder="01XXXXXXXXX"
+                        value={withdrawForm.accountNumber}
+                        onChange={(e) => setWithdrawForm((p) => ({ ...p, accountNumber: e.target.value }))}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">{t('affiliate.accountNameLabel')}</Label>
+                      <Input
+                        placeholder={t('affiliate.accountNamePlaceholder')}
+                        value={withdrawForm.accountName}
+                        onChange={(e) => setWithdrawForm((p) => ({ ...p, accountName: e.target.value }))}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      onClick={handleWithdraw}
+                      disabled={isSubmitting}
+                      className="flex-1 h-11 gap-2 font-semibold"
+                    >
+                      {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {t('affiliate.submitWithdraw')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowWithdraw(false)}
+                      className="h-11 gap-1.5"
+                      disabled={isSubmitting}
+                    >
+                      <X className="h-4 w-4" />
+                      {t('affiliate.cancel')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('affiliate.withdrawInfo')}</p>
               )}
             </GlassCard>
           </motion.div>

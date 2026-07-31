@@ -1636,3 +1636,33 @@ Stage Summary:
 - Modified: store.ts, dashboard-sidebar.tsx, dashboard-main.tsx, url-sync.ts, bn.ts, en.ts
 - URL: `/dashboard/affiliate` works with browser back/forward
 - Nav: 'অ্যাফিলিয়েট' in sidebar between Profile and Settings
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Step 6 - Withdrawal request API
+
+Work Log:
+- Added AffiliateWithdrawal model to prisma/schema.prisma
+  - Fields: id, userId, amount, accountType, accountNumber, accountName, status (pending/approved/rejected), note, timestamps
+  - Indexes on userId and status
+- Pushed AffiliateWithdrawal table + indexes to Turso remote DB
+- Created `src/app/api/user/affiliate/withdraw/route.ts`
+  - POST: Submit withdrawal (validates amount >= 100, balance, account type, prevents duplicate pending)
+  - GET: Fetch withdrawal history (last 30)
+  - Transaction: deducts balance + creates record + marks earnings as 'paid'
+- Updated `src/components/dashboard/affiliate-panel.tsx`
+  - Added withdrawal section with form (amount, payment method, account number, name)
+  - Payment methods: bKash, Nagad, Rocket, Bank
+  - Balance < 100: shows minimum info message
+  - Balance >= 100: shows withdraw button, opens inline form
+  - Loading state, success/error toasts, query invalidation after success
+- Added 16 new i18n keys for withdrawal UI (bn + en)
+
+Stage Summary:
+- New files: `src/app/api/user/affiliate/withdraw/route.ts`
+- Modified: prisma/schema.prisma, affiliate-panel.tsx, bn.ts, en.ts
+- DB: AffiliateWithdrawal table created in Turso
+- Min withdrawal: ৳100
+- Duplicate prevention: Only 1 pending withdrawal at a time
+- Admin payout handling in Step 7/8
