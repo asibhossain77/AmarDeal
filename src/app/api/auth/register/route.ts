@@ -1,8 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { sendEmail, emailVerificationOtpEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
+
+const REFERRAL_COOKIE_NAME = 'amardeal_ref'
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,6 +45,28 @@ export async function POST(req: NextRequest) {
     // Generate unique referral code
     const referralCode = await generateUniqueReferralCode(name)
 
+    // Check referral cookie to link referredBy
+    let referredBy: string | undefined
+    try {
+      const cookieStore = await cookies()
+      const refCookie = cookieStore.get(REFERRAL_COOKIE_NAME)
+      if (refCookie?.value) {
+        const parsed = JSON.parse(refCookie.value)
+        if (parsed?.referrerId) {
+          // Verify the referrer exists and is active
+          const referrer = await db.user.findUnique({
+            where: { id: parsed.referrerId },
+            select: { id: true, referralCode: true, isActive: true },
+          })
+          if (referrer?.isActive && referrer.referralCode === parsed.code) {
+            referredBy = referrer.id
+          }
+        }
+      }
+    } catch {
+      // If cookie parsing fails, just skip referral linking
+    }
+
     // Hash the password before storing
     const hashedPassword = await hashPassword(password)
 
@@ -55,8 +80,19 @@ export async function POST(req: NextRequest) {
         resetToken: otp,
         resetTokenExpiry: otpExpiry,
         referralCode,
+        ...(referredBy ? { referredBy } : {}),
       },
     })
+
+    // Clear referral cookie after successful registration
+    if (referredBy) {
+      try {
+        const cookieStore = await cookies()
+        cookieStore.delete(REFERRAL_COOKIE_NAME)
+      } catch {
+        // Ignore cookie deletion errors
+      }
+    }
 
     // Send verification OTP email (fire-and-forget)
     sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {

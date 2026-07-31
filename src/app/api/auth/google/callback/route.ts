@@ -1,9 +1,11 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
+const REFERRAL_COOKIE_NAME = 'amardeal_ref'
 
 interface GoogleTokenResponse {
   access_token: string
@@ -92,6 +94,27 @@ export async function GET(req: NextRequest) {
       const dummyPhone = `g_${phoneSuffix}${randomDigits}`
       const referralCode = await generateUniqueReferralCode(googleUser.name || googleUser.email.split('@')[0])
 
+      // Check referral cookie for new Google users
+      let referredBy: string | undefined
+      try {
+        const cookieStore = await cookies()
+        const refCookie = cookieStore.get(REFERRAL_COOKIE_NAME)
+        if (refCookie?.value) {
+          const parsed = JSON.parse(refCookie.value)
+          if (parsed?.referrerId) {
+            const referrer = await db.user.findUnique({
+              where: { id: parsed.referrerId },
+              select: { id: true, referralCode: true, isActive: true },
+            })
+            if (referrer?.isActive && referrer.referralCode === parsed.code) {
+              referredBy = referrer.id
+            }
+          }
+        }
+      } catch {
+        // Skip referral linking on error
+      }
+
       user = await db.user.create({
         data: {
           name: googleUser.name || googleUser.email.split('@')[0],
@@ -101,9 +124,18 @@ export async function GET(req: NextRequest) {
           googleId: googleUser.sub,
           emailVerified: googleUser.email_verified,
           referralCode,
+          ...(referredBy ? { referredBy } : {}),
         },
         include: { admin: true },
       })
+
+      // Clear referral cookie after successful registration
+      if (referredBy) {
+        try {
+          const cookieStore = await cookies()
+          cookieStore.delete(REFERRAL_COOKIE_NAME)
+        } catch { /* ignore */ }
+      }
     } else {
       // Link Google account if not already linked
       if (!user.googleId) {

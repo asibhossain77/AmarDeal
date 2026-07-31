@@ -1553,3 +1553,31 @@ Stage Summary:
 - Modified files: `src/app/api/auth/register/route.ts`, `src/app/api/auth/google/callback/route.ts`
 - Every new registration (email + Google OAuth) will auto-generate a unique referral code
 - Admin can batch-generate codes for existing users via POST /api/admin/generate-referral-codes
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Step 3 - Referral tracking — /ref/[code] route + cookie + registration link
+
+Work Log:
+- Created `src/app/ref/[code]/page.tsx` server component
+  - Validates referral code against database
+  - Valid code → sets `amardeal_ref` cookie (30 days, httpOnly, secure in production)
+  - Cookie stores JSON: `{ code, referrerId }`
+  - Invalid code → clears any existing referral cookie
+  - Always redirects to `/` (homepage)
+- Updated `src/app/api/auth/register/route.ts`
+  - Reads `amardeal_ref` cookie on registration
+  - Verifies referrer exists, is active, and code matches
+  - Sets `referredBy` field on new user if valid
+  - Clears referral cookie after successful use
+- Updated `src/app/api/auth/google/callback/route.ts`
+  - Same referral cookie logic for Google OAuth new users
+  - Verifies referrer and clears cookie after use
+
+Stage Summary:
+- New file: `src/app/ref/[code]/page.tsx`
+- Modified: `src/app/api/auth/register/route.ts`, `src/app/api/auth/google/callback/route.ts`
+- Referral link format: `{site_url}/ref/{CODE}` (e.g., `/ref/ASI-X7K9M`)
+- Cookie name: `amardeal_ref`, 30-day expiry
+- Security: Referrer verified against DB on registration, code cross-checked
