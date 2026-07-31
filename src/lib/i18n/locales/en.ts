@@ -7,6 +7,7 @@ export const en: Record<TranslationKey, string> = {
   'nav.transactions': 'Transactions',
   'nav.profile': 'Profile',
   'nav.settings': 'Settings',
+  'nav.affiliate': 'Affiliate',
   'nav.logout': 'Logout',
   'nav.loginRegister': 'Login / Register',
   'nav.newDeal': 'New Deal',

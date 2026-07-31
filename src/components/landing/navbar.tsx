@@ -149,6 +149,7 @@ function useAdminNavItems() {
     { label: t('adminNav.liveChat'), icon: Headphones, panel: 'admin-calls' },
     { label: t('adminNav.paymentMethods'), icon: CreditCard, panel: 'payment-methods' },
     { label: t('adminNav.feeRules'), icon: Receipt, panel: 'fee-rules' },
+    { label: t('adminNav.affiliate'), icon: Users, panel: 'affiliate' },
     { label: t('adminNav.allDeals'), icon: Handshake, panel: 'all-deals' },
     { label: t('adminNav.userManagement'), icon: Users, panel: 'users' },
     { label: t('adminNav.contact'), icon: MessageCircle, panel: 'contact-info' },
