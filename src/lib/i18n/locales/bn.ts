@@ -1424,6 +1424,8 @@ export const bn = {
   'affiliate.insufficientBalance': 'পর্যাপ্ত ব্যালেন্স নেই',
   'affiliate.withdrawSuccess': 'উত্তোলনের অনুরোধ সফলভাবে জমা হয়েছে!',
   'affiliate.withdrawFailed': 'উত্তোলনে সমস্যা হয়েছে',
+  'affiliate.loadError': 'তথ্য লোড করতে সমস্যা হয়েছে',
+  'affiliate.retry': 'আবার চেষ্টা করুন',
   'adminAff.withdrawalMgmt': 'উত্তোলন ম্যানেজমেন্ট',
   'adminAff.withdrawalMgmtDesc': 'অ্যাফিলিয়েট উত্তোলন অনুরোধ পর্যালোচনা ও প্রক্রিয়া করুন',
   'adminAff.all': 'সব',

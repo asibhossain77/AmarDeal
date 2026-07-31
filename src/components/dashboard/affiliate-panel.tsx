@@ -17,6 +17,8 @@ import {
   ArrowDownToLine,
   X,
   Loader2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
@@ -85,7 +87,7 @@ export function AffiliatePanel() {
   const queryClient = useQueryClient();
   const userId = user?.id;
 
-  const { data, isLoading } = useQuery<AffiliateData>({
+  const { data, isLoading, error, refetch } = useQuery<AffiliateData>({
     queryKey: ['user-affiliate', userId],
     queryFn: async () => {
       const res = await fetch('/api/user/affiliate', {
@@ -466,6 +468,20 @@ export function AffiliatePanel() {
             </GlassCard>
           </motion.div>
         </>
+      ) : error ? (
+        <GlassCard className="flex flex-col items-center justify-center py-12 text-center">
+          <AlertCircle className="h-10 w-10 text-destructive/60 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">{t('affiliate.loadError')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 gap-1.5"
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            {t('affiliate.retry')}
+          </Button>
+        </GlassCard>
       ) : null}
     </motion.div>
   );

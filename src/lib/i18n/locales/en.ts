@@ -1426,6 +1426,8 @@ export const en: Record<TranslationKey, string> = {
   'affiliate.insufficientBalance': 'Insufficient balance',
   'affiliate.withdrawSuccess': 'Withdrawal request submitted successfully!',
   'affiliate.withdrawFailed': 'Withdrawal failed',
+  'affiliate.loadError': 'Failed to load affiliate data',
+  'affiliate.retry': 'Retry',
   'adminAff.withdrawalMgmt': 'Withdrawal Management',
   'adminAff.withdrawalMgmtDesc': 'Review and process affiliate withdrawal requests',
   'adminAff.all': 'All',

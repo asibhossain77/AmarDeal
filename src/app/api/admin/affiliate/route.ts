@@ -28,16 +28,51 @@ export async function GET(req: NextRequest) {
       take: 20,
     })
 
-    // Recent earnings
+    // Recent earnings (no invalid include — deal/referredUser not relations)
     const recentEarnings = await db.affiliateEarning.findMany({
       include: {
         affiliate: { select: { name: true, referralCode: true } },
-        referredUser: { select: { name: true } },
-        deal: { select: { title: true, amount: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
     })
+
+    // Batch-resolve deal & user data for recent earnings
+    const dealIds = [...new Set(recentEarnings.map((e) => e.dealId))]
+    const userIds = [...new Set(recentEarnings.map((e) => e.referredUserId))]
+    let dealMap: Record<string, { title: string; amount: number }> = {}
+    let userMap: Record<string, { name: string }> = {}
+
+    try {
+      if (dealIds.length > 0) {
+        const deals = await db.deal.findMany({
+          where: { id: { in: dealIds } },
+          select: { id: true, title: true, amount: true },
+        })
+        dealMap = Object.fromEntries(deals.map((d) => [d.id, d]))
+      }
+    } catch { /* ignore */ }
+
+    try {
+      if (userIds.length > 0) {
+        const users = await db.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true },
+        })
+        userMap = Object.fromEntries(users.map((u) => [u.id, u]))
+      }
+    } catch { /* ignore */ }
+
+    const recentEarningsEnriched = recentEarnings.map((e) => ({
+      id: e.id,
+      amount: e.amount,
+      percentage: e.percentage,
+      status: e.status,
+      createdAt: e.createdAt,
+      affiliate: e.affiliate,
+      deal: dealMap[e.dealId] || null,
+      referredUser: userMap[e.referredUserId] || null,
+    }))
 
     // Pending withdrawals
     const pendingWdList = await db.affiliateWithdrawal.findMany({
@@ -66,7 +101,7 @@ export async function GET(req: NextRequest) {
         completedWithdrawalAmount: completedWithdrawals._sum.amount || 0,
       },
       topAffiliates,
-      recentEarnings,
+      recentEarnings: recentEarningsEnriched,
       pendingWithdrawals: pendingWdList,
       commissionPercent,
     })

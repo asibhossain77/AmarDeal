@@ -39,20 +39,39 @@ export async function POST(req: NextRequest) {
       where: { referredBy: userId },
     })
 
-    // Fetch affiliate earnings with deal info
+    // Fetch affiliate earnings (no include — relations not defined in schema)
     const earnings = await db.affiliateEarning.findMany({
       where: { affiliateId: userId },
-      include: {
-        deal: {
-          select: { id: true, title: true, amount: true },
-        },
-        referredUser: {
-          select: { id: true, name: true },
-        },
-      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     })
+
+    // Batch-resolve deal titles and referred user names
+    const dealIds = [...new Set(earnings.map((e) => e.dealId))]
+    const userIds = [...new Set(earnings.map((e) => e.referredUserId))]
+
+    let dealMap: Record<string, { id: string; title: string; amount: number }> = {}
+    let userMap: Record<string, { id: string; name: string }> = {}
+
+    try {
+      if (dealIds.length > 0) {
+        const deals = await db.deal.findMany({
+          where: { id: { in: dealIds } },
+          select: { id: true, title: true, amount: true },
+        })
+        dealMap = Object.fromEntries(deals.map((d) => [d.id, d]))
+      }
+    } catch { /* ignore if deal lookup fails */ }
+
+    try {
+      if (userIds.length > 0) {
+        const users = await db.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, name: true },
+        })
+        userMap = Object.fromEntries(users.map((u) => [u.id, u]))
+      }
+    } catch { /* ignore if user lookup fails */ }
 
     // Stats
     const totalEarnings = await db.affiliateEarning.aggregate({
@@ -101,11 +120,12 @@ export async function POST(req: NextRequest) {
         percentage: e.percentage,
         status: e.status,
         createdAt: e.createdAt,
-        deal: e.deal,
-        referredUser: e.referredUser,
+        deal: dealMap[e.dealId] || null,
+        referredUser: userMap[e.referredUserId] || null,
       })),
     })
-  } catch {
+  } catch (err) {
+    console.error('[affiliate] Error:', err)
     return NextResponse.json({ error: 'তথ্য পেতে সমস্যা' }, { status: 500 })
   }
 }
