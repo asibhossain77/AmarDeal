@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { generateUniqueReferralCode } from '@/lib/referral-code'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest) {
       where: { id: userId },
       select: {
         id: true,
+        name: true,
         referralCode: true,
         referredBy: true,
         affiliateBalance: true,
@@ -20,6 +22,16 @@ export async function POST(req: NextRequest) {
     })
     if (!user) {
       return NextResponse.json({ error: 'ইউজার পাওয়া যায়নি' }, { status: 404 })
+    }
+
+    // Auto-generate referral code if missing
+    let referralCode = user.referralCode
+    if (!referralCode) {
+      referralCode = await generateUniqueReferralCode(user.name)
+      await db.user.update({
+        where: { id: userId },
+        data: { referralCode },
+      })
     }
 
     // Count referred users
@@ -72,10 +84,10 @@ export async function POST(req: NextRequest) {
 
     // Build referral link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
-    const referralLink = user.referralCode ? `${baseUrl}/ref/${user.referralCode}` : null
+    const referralLink = `${baseUrl}/ref/${referralCode}`
 
     return NextResponse.json({
-      referralCode: user.referralCode,
+      referralCode,
       referralLink,
       affiliateBalance: user.affiliateBalance,
       referredCount,
