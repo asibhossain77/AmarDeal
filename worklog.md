@@ -1528,3 +1528,28 @@ Stage Summary:
 - prisma/schema.prisma updated with affiliate system schema
 - Database synced and Prisma Client regenerated
 - Ready for Step 2: Referral code generation
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Step 2 - Referral code auto-generation on registration + batch for existing users
+
+Work Log:
+- Created `src/lib/referral-code.ts` with `generateReferralCode()` and `generateUniqueReferralCode()`
+  - Code format: {3-char Latin prefix from name}-{5 random alphanumeric chars}
+  - Uses crypto.getRandomValues for secure randomness
+  - Avoids confusing chars (I, O, 0, 1)
+  - Collision retry up to 5 attempts, fallback to 8-char random segment
+- Updated `src/app/api/auth/register/route.ts` to auto-generate referralCode on registration
+- Updated `src/app/api/auth/google/callback/route.ts` to auto-generate referralCode on Google OAuth signup
+- Created `src/app/api/admin/generate-referral-codes/route.ts` (POST, admin-only)
+  - Finds all users with `referralCode: null`
+  - Generates unique codes for each in batch
+  - Returns count of generated/failed
+- All lint checks pass (only pre-existing errors remain)
+
+Stage Summary:
+- New files: `src/lib/referral-code.ts`, `src/app/api/admin/generate-referral-codes/route.ts`
+- Modified files: `src/app/api/auth/register/route.ts`, `src/app/api/auth/google/callback/route.ts`
+- Every new registration (email + Google OAuth) will auto-generate a unique referral code
+- Admin can batch-generate codes for existing users via POST /api/admin/generate-referral-codes

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { hashPassword } from '@/lib/password'
+import { generateUniqueReferralCode } from '@/lib/referral-code'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
 
@@ -89,6 +90,7 @@ export async function GET(req: NextRequest) {
       const phoneSuffix = googleUser.email.split('@')[0].replace(/[^a-z0-9]/gi, '').slice(0, 8)
       const randomDigits = Math.floor(10000 + Math.random() * 90000)
       const dummyPhone = `g_${phoneSuffix}${randomDigits}`
+      const referralCode = await generateUniqueReferralCode(googleUser.name || googleUser.email.split('@')[0])
 
       user = await db.user.create({
         data: {
@@ -98,6 +100,7 @@ export async function GET(req: NextRequest) {
           password: await hashPassword(crypto.randomUUID()),
           googleId: googleUser.sub,
           emailVerified: googleUser.email_verified,
+          referralCode,
         },
         include: { admin: true },
       })
