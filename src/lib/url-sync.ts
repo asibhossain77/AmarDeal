@@ -148,6 +148,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       'dashboard', 'payment-verify', 'payouts', 'all-deals', 'users',
       'settings', 'payment-methods', 'fee-rules', 'contact-info',
       'profile', 'contract', 'admin-calls', 'disputes', 'blog', 'email-settings',
+      'two-factor', 'ai-prompt', 'popup', 'google-oauth', 'piprapay', 'affiliate',
     ];
     result.adminPanel = valid.includes(seg2 as AdminPanel) ? seg2 as AdminPanel : 'dashboard';
     return result;

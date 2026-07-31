@@ -40,6 +40,7 @@ const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ def
 const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <PanelLoader /> });
 const GoogleOAuthPanel = dynamic(() => import('./google-oauth-panel').then(m => ({ default: m.GoogleOAuthPanel })), { loading: () => <PanelLoader /> });
 const PipraPayPanel = dynamic(() => import('./piprapay-panel').then(m => ({ default: m.PipraPayPanel })), { loading: () => <PanelLoader /> });
+const AdminAffiliatePanel = dynamic(() => import('./affiliate-panel').then(m => ({ default: m.AdminAffiliatePanel })), { loading: () => <PanelLoader /> });
 import {
   Bell,
   ShieldCheck,
@@ -3648,6 +3649,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <GoogleOAuthPanel />;
     case 'piprapay':
       return <PipraPayPanel />;
+    case 'affiliate':
+      return <AdminAffiliatePanel />;
     default:
       return null;
   }

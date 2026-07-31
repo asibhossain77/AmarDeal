@@ -430,6 +430,7 @@ export const bn = {
   'adminNav.emailSettings': 'ইমেইল সেটিংস',
   'adminNav.aiSupport': 'AI সাপোর্ট',
   'adminNav.twoFactor': 'টু-ফ্যাক্টর অথেনটিকেশন',
+  'adminNav.affiliate': 'অ্যাফিলিয়েট',
 
   // ── Admin Users Panel ──
   'adminUsers.all': 'সবাই',

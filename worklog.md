@@ -1666,3 +1666,31 @@ Stage Summary:
 - Min withdrawal: ৳100
 - Duplicate prevention: Only 1 pending withdrawal at a time
 - Admin payout handling in Step 7/8
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Step 7 - Admin affiliate panel
+
+Work Log:
+- Created `src/app/api/admin/affiliate/route.ts`
+  - GET: Returns stats, top 20 affiliates, recent 20 earnings, pending withdrawals, commission %
+  - PUT: Update commission percentage via PlatformSetting
+- Created `src/components/admin/affiliate-panel.tsx`
+  - 4 stat cards: Active Affiliates, Total Distributed, Pending Withdrawals, Total Paid Out
+  - Commission % setting with save button
+  - Pending withdrawals table (user, amount, method, account, date)
+  - Top affiliates table with copy-code button and referral count
+  - Recent commissions table (affiliate, referred user, deal, amount, date)
+- Integrated into admin:
+  - `src/lib/store.ts`: Added 'affiliate' to AdminPanel type
+  - `src/components/admin/admin-main.tsx`: Dynamic import + switch case
+  - `src/components/admin/admin-nav-config.ts`: Added to 'Finance' nav group (both arrays)
+  - `src/lib/url-sync.ts`: Added to valid panels (also backfilled missing panels)
+- Added i18n key `adminNav.affiliate` (bn + en)
+
+Stage Summary:
+- New files: `src/app/api/admin/affiliate/route.ts`, `src/components/admin/affiliate-panel.tsx`
+- Admin URL: `/admin/affiliate`
+- Nav location: 'Finance' group, between Fee Rules and other finance items
+- Admin can: view stats, see top affiliates, view pending withdrawals, change commission %

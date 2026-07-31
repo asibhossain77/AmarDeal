@@ -431,6 +431,7 @@ export const en: Record<TranslationKey, string> = {
   'adminNav.emailSettings': 'Email Settings',
   'adminNav.aiSupport': 'AI Support',
   'adminNav.twoFactor': 'Two-Factor Authentication',
+  'adminNav.affiliate': 'Affiliate',
 
   // ── Admin Users Panel ──
   'adminUsers.all': 'All',
