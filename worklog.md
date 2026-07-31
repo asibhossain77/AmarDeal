@@ -1507,3 +1507,24 @@ Stage Summary:
 - Mobile cards now match spacing pattern of AllDealsPanel and PaymentVerifyPanel
 - Detail view has better mobile spacing, proper bottom padding, and cleaner button layout
 - Desktop view unchanged and still professional
+
+---
+Task ID: step-1-db-update
+Agent: Main Agent
+Task: Step 1 - Database update for affiliate system
+
+Work Log:
+- Added 3 new fields to User model: referralCode (unique), referredBy, affiliateBalance (default 0)
+- Added referrer relation field for self-referencing UserReferral relation
+- Added referredUsers back-relation for tracking who a user referred
+- Created new AffiliateEarning table with fields: id, affiliateId, dealId, referredUserId, amount, percentage, status, timestamps
+- Added @@unique([dealId]) to prevent duplicate commission per deal
+- Added @@index([affiliateId]) and @@index([status]) for query performance
+- Fixed Prisma self-referencing relation error (missing opposite field)
+- Successfully pushed schema to database
+- Verified: AffiliateEarning table exists, User fields accessible
+
+Stage Summary:
+- prisma/schema.prisma updated with affiliate system schema
+- Database synced and Prisma Client regenerated
+- Ready for Step 2: Referral code generation
