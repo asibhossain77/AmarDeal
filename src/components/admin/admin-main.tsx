@@ -1605,12 +1605,12 @@ function UsersPanel() {
     const u = selectedUser;
     const isActing = actionLoading === u.id;
     return (
-      <div>
+      <div className="pb-16">
         {/* Back button */}
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-3 sm:mb-4 flex items-center gap-2">
           <button
             onClick={() => { setSelectedUser(null); setNewPassword(''); setShowPassword(false); setViewUserDeals(false); setUserDeals([]); }}
-            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             {t('common.back')}
@@ -1619,14 +1619,14 @@ function UsersPanel() {
 
         <SolidCard className="!p-0">
           {/* Header */}
-          <div className="border-b border-border/50 bg-muted/30 px-4 sm:px-5 py-4">
-            <div className="flex items-center gap-3 mb-2">
+          <div className="border-b border-border/50 bg-muted/30 px-4 sm:px-5 py-3.5 sm:py-4">
+            <div className="flex items-center gap-3">
               <div className="h-11 w-11 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
                 <span className="text-base font-bold text-primary">{u.name.charAt(0)}</span>
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-base font-bold text-foreground truncate">{u.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[15px] sm:text-base font-bold text-foreground truncate">{u.name}</p>
+                <div className="flex items-center gap-2 mt-1">
                   <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
                   {u.isAdmin ? null : (
                     <Badge className={`${u.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'} border-0 text-xs font-medium`}>
@@ -1639,7 +1639,7 @@ function UsersPanel() {
           </div>
 
           {/* Details */}
-          <div className="p-4 sm:p-5 space-y-4">
+          <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
             {/* Email */}
             <div className="rounded-xl border border-border/50 bg-muted/20 p-3.5">
               <div className="flex items-center gap-2 mb-1.5">
@@ -1708,14 +1708,14 @@ function UsersPanel() {
 
             {/* Action Buttons */}
             {!u.isAdmin && (
-              <>
+              <div className="space-y-2.5">
                 {/* View User Panel */}
                 <Button
                   size="lg"
                   variant="outline"
                   disabled={isActing}
                   onClick={handleViewUserPanel}
-                  className="w-full h-12 gap-2 rounded-xl text-sm font-semibold"
+                  className="w-full h-11 sm:h-12 gap-2 rounded-xl text-sm font-semibold"
                 >
                   <Eye className="h-4 w-4" />
                   View User Panel
@@ -1727,7 +1727,7 @@ function UsersPanel() {
                   disabled={isActing}
                   onClick={() => handleAction(u.id, 'toggle_active', !u.isActive)}
                   variant={u.isActive ? 'outline' : 'default'}
-                  className={`w-full h-12 gap-2 rounded-xl text-sm font-bold ${
+                  className={`w-full h-11 sm:h-12 gap-2 rounded-xl text-sm font-bold ${
                     u.isActive
                       ? 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10'
                       : 'shadow-lg shadow-primary/25'
@@ -1742,97 +1742,91 @@ function UsersPanel() {
                   )}
                   {u.isActive ? 'Deactivate User' : 'Activate User'}
                 </Button>
-              </>
+              </div>
             )}
 
             {/* Admin Role Management (for non-admin users) */}
             {!u.isAdmin && (
-              <div className="pt-1">
-                <div className="relative inline-block w-full">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    disabled={isActing}
-                    onClick={() => setOpenDropdown(openDropdown === u.id ? null : u.id)}
-                    className="w-full h-11 gap-2 rounded-xl text-sm font-semibold"
+              <div className="relative w-full">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  disabled={isActing}
+                  onClick={() => setOpenDropdown(openDropdown === u.id ? null : u.id)}
+                  className="w-full h-11 gap-2 rounded-xl text-sm font-semibold"
+                >
+                  <Settings className="h-4 w-4" />
+                  Assign Admin Role
+                  <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${openDropdown === u.id ? 'rotate-180' : ''}`} />
+                </Button>
+                {openDropdown === u.id && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-xl border border-border bg-white p-1.5 shadow-xl dark:bg-zinc-800"
                   >
-                    <Settings className="h-4 w-4" />
-                    Assign Admin Role
-                    <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform ${openDropdown === u.id ? 'rotate-180' : ''}`} />
-                  </Button>
-                  {openDropdown === u.id && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-border bg-white p-1.5 shadow-lg dark:bg-zinc-800"
+                    <button
+                      onClick={() => handleAction(u.id, 'set_admin', 'support')}
+                      disabled={isActing}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
                     >
-                      <button
-                        onClick={() => handleAction(u.id, 'set_admin', 'support')}
-                        disabled={isActing}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
-                      >
-                        Support Admin
-                      </button>
-                      <button
-                        onClick={() => handleAction(u.id, 'set_admin', 'super_admin')}
-                        disabled={isActing}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
-                      >
-                        Super Admin
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleAction(u.id, 'set_admin', 'staff');
-                        }}
-                        disabled={isActing}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 disabled:opacity-50"
-                      >
-                        Staff
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
+                      Support Admin
+                    </button>
+                    <button
+                      onClick={() => handleAction(u.id, 'set_admin', 'super_admin')}
+                      disabled={isActing}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-foreground hover:bg-muted disabled:opacity-50"
+                    >
+                      Super Admin
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAction(u.id, 'set_admin', 'staff');
+                      }}
+                      disabled={isActing}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 disabled:opacity-50"
+                    >
+                      Staff
+                    </button>
+                  </motion.div>
+                )}
               </div>
             )}
 
             {/* Staff Permission Editor (for staff role users) */}
             {u.isAdmin && u.adminRole === 'staff' && (
-              <div className="pt-1">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  disabled={isActing}
-                  onClick={() => {
-                    setTempPermissions([...u.adminPermissions]);
-                    setStaffPermDialog({ userId: u.id, userName: u.name, currentPerms: [...u.adminPermissions] });
-                  }}
-                  className="w-full h-11 gap-2 rounded-xl text-sm font-semibold border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
-                >
-                  <ShieldCheck className="h-4 w-4" />
-                  Manage Permissions
-                  {(u.adminPermissions || []).length > 0 && (
-                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px] ml-auto px-1.5">
-                      {(u.adminPermissions || []).length}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
+              <Button
+                size="lg"
+                variant="outline"
+                disabled={isActing}
+                onClick={() => {
+                  setTempPermissions([...u.adminPermissions]);
+                  setStaffPermDialog({ userId: u.id, userName: u.name, currentPerms: [...u.adminPermissions] });
+                }}
+                className="w-full h-11 gap-2 rounded-xl text-sm font-semibold border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-800/50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Manage Permissions
+                {(u.adminPermissions || []).length > 0 && (
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[10px] ml-auto px-1.5">
+                    {(u.adminPermissions || []).length}
+                  </Badge>
+                )}
+              </Button>
             )}
 
             {/* Remove admin (for admin users) */}
             {u.isAdmin && (
-              <div className="pt-1">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  disabled={isActing}
-                  onClick={() => handleAction(u.id, 'remove_admin')}
-                  className="w-full h-11 gap-2 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
-                >
-                  <XCircle className="h-4 w-4" />
-                  Remove Admin Role
-                </Button>
-              </div>
+              <Button
+                size="lg"
+                variant="outline"
+                disabled={isActing}
+                onClick={() => handleAction(u.id, 'remove_admin')}
+                className="w-full h-11 gap-2 rounded-xl text-sm font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10"
+              >
+                <XCircle className="h-4 w-4" />
+                Remove Admin Role
+              </Button>
             )}
           </div>
         </SolidCard>
@@ -1998,9 +1992,9 @@ function UsersPanel() {
       </SolidCard>
 
       {/* Mobile Cards */}
-      <div className="lg:hidden space-y-2">
+      <div className="lg:hidden space-y-3">
         {loading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <SkeletonMobileCard key={i} />
             ))}
@@ -2019,19 +2013,19 @@ function UsersPanel() {
               className="!p-0 cursor-pointer active:scale-[0.98] transition-transform"
               onClick={() => setSelectedUser(u)}
             >
-              <div className="px-3 py-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3">
-                <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-xs sm:text-sm font-bold text-primary">{u.name.charAt(0)}</span>
+              <div className="p-3.5 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-primary">{u.name.charAt(0)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
-                    <p className="text-[13px] sm:text-sm font-semibold text-foreground truncate">{u.name}</p>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-sm font-semibold text-foreground truncate">{u.name}</p>
                     <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
                   </div>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{u.email}</p>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-px">{u.phone}</p>
+                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">{u.phone}</p>
                 </div>
-                <div className={`h-2 w-2 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} title={u.isActive ? t('common.active') : t('common.inactive')} />
+                <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${u.isActive ? 'bg-emerald-500' : 'bg-red-400'}`} title={u.isActive ? t('common.active') : t('common.inactive')} />
               </div>
             </SolidCard>
           ))

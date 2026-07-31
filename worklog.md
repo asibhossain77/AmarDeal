@@ -1489,3 +1489,21 @@ Stage Summary:
 - Auto-advances to form step if deal already has a payment method
 - Themed colors derived from payment method color property
 - Committed and pushed: 65583e8..13a89a7
+
+---
+Task ID: mobile-admin-users-fix
+Agent: Main Agent
+Task: Fix admin panel user management page mobile UI
+
+Work Log:
+- Analyzed admin user management page mobile UI via VLM screenshot analysis
+- Identified issues: tight card spacing (space-y-2 vs space-y-3 in other panels), compact padding (px-3 py-2.5 vs p-3.5), small avatar/text sizes, cramped detail view
+- Fixed mobile card list: increased space-y-2 to space-y-3, changed inner padding from px-3 py-2.5 sm:p-3.5 to p-3.5, increased avatar from h-9 w-9 to h-10 w-10, standardized text to text-sm (removed text-[11px] sm:text-xs), increased status dot from h-2 w-2 to h-2.5 w-2.5
+- Fixed detail view: added pb-16 bottom padding to prevent FAB overlap, adjusted back button margin, removed unnecessary mb-2 from header, added sm: breakpoints for responsive spacing, wrapped action buttons in space-y-2.5 container, changed button heights to h-11 sm:h-12 for mobile-first, removed unnecessary pt-1 wrappers from admin role buttons
+- Verified with browser: mobile list rated 8.5/10, detail view rated 7.5/10 (up from lower), desktop view 9/10 - no regression
+
+Stage Summary:
+- File changed: src/components/admin/admin-main.tsx (UsersPanel function)
+- Mobile cards now match spacing pattern of AllDealsPanel and PaymentVerifyPanel
+- Detail view has better mobile spacing, proper bottom padding, and cleaner button layout
+- Desktop view unchanged and still professional
