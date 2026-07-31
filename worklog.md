@@ -1694,3 +1694,25 @@ Stage Summary:
 - Admin URL: `/admin/affiliate`
 - Nav location: 'Finance' group, between Fee Rules and other finance items
 - Admin can: view stats, see top affiliates, view pending withdrawals, change commission %
+---
+Task ID: 8
+Agent: Main Agent
+Task: Step 8 — Admin Commission Payout (Affiliate Withdrawal Management)
+
+Work Log:
+- Read existing affiliate system files: schema (AffiliateWithdrawal model exists), admin affiliate panel (read-only), user withdraw API
+- Created `GET /api/admin/affiliate/withdrawals` — lists all withdrawals with status filter + summary stats (pending/approved/rejected/completed counts + amounts)
+- Created `POST /api/admin/affiliate/withdrawals/[id]/approve` — changes status from pending → approved
+- Created `POST /api/admin/affiliate/withdrawals/[id]/reject` — rejects + refunds balance to user + reverts earnings status back to pending (all in transaction)
+- Created `POST /api/admin/affiliate/withdrawals/[id]/complete` — changes status from approved → completed (after admin sends payment)
+- Created `POST /api/admin/affiliate/withdrawals/batch-approve` — batch approves all pending withdrawals
+- Added 35 new i18n keys (adminAff.*) to both bn.ts and en.ts
+- Completely rewrote `affiliate-panel.tsx` with full withdrawal management: GlassCard design, animated tabs (All/Pending/Approved/Rejected/Completed) with count badges, parrot-green styling, approve/reject/complete action buttons, reject dialog with reason textarea, batch approve all pending, info banner for approved tab, top affiliates + recent commissions tables preserved
+- Verified: lint clean (no new errors), dev server no errors, API routes compile correctly, landing page renders
+
+Stage Summary:
+- Admin can now manage full withdrawal lifecycle: Pending → Approve → Complete (or Reject + Refund)
+- Batch approve for quick processing
+- Reject refunds balance + reverts earnings to pending status
+- UI follows existing GlassCard + parrot-green design system
+- All routes are admin-protected via requireAdmin()
