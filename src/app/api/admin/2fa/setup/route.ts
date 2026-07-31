@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
       data: { totpSecret: secret },
     })
 
-    const issuer = 'AmarDeal'
-    const label = `AmarDeal (%E0%A6%86%E0%A6%AE%E0%A6%BE%E0%A6%B0%E0%A6%A1%E0%A6%BF%E0%A6%B2):${admin.user.email}`
+    const issuer = 'Midman'
+    const label = `Midman (${encodeURIComponent('মিডম্যান')}):${admin.user.email}`
     const otpauthUrl = `otpauth://totp/${label}?secret=${secret}&issuer=${issuer}`
 
     const qrCodeDataUrl = generateQRDataURL(otpauthUrl)

@@ -2,20 +2,20 @@ import type { Metadata } from 'next';
 import { SeoPageLayout } from '@/components/seo-page-layout';
 import { ContractSection } from '@/components/landing/contract-section';
 
-const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+const SITE_URL = 'https://midman.bd';
 
 export const metadata: Metadata = {
   title: 'শর্তাবলী ও চুক্তি',
-  description: 'AmarDeal (আমারডিল) ব্যবহারের শর্তাবলী ও চুক্তি। এসক্রো সার্ভিস ব্যবহারের নিয়ম, দায়িত্ব ও সীমাবদ্ধতা সম্পর্কে জানুন। Amar Deal ব্যবহারের সম্পূর্ণ শর্তাবলী।',
-  keywords: ['amardeal terms', 'আমারডিল শর্তাবলী', 'amar deal terms of service', 'এসক্রো শর্ত'],
+  description: 'Midman (মিডম্যান) ব্যবহারের শর্তাবলী ও চুক্তি। এসক্রো সার্ভিস ব্যবহারের নিয়ম, দায়িত্ব ও সীমাবদ্ধতা সম্পর্কে জানুন। Midman ব্যবহারের সম্পূর্ণ শর্তাবলী।',
+  keywords: ['midman terms', 'মিডম্যান শর্তাবলী', 'midman bd terms of service', 'এসক্রো শর্ত'],
   alternates: { canonical: `${SITE_URL}/terms` },
   openGraph: {
-    title: 'শর্তাবলী | AmarDeal আমারডিল',
-    description: 'সেবার শর্তাবলী ও ব্যবহারের শর্ত - AmarDeal (আমারডিল)',
+    title: 'শর্তাবলী | Midman মিডম্যান',
+    description: 'সেবার শর্তাবলী ও ব্যবহারের শর্ত - Midman (মিডম্যান)',
     url: `${SITE_URL}/terms`,
     type: 'website',
     locale: 'bn_BD',
-    siteName: 'AmarDeal আমারডিল',
+    siteName: 'Midman মিডম্যান',
   },
 };
 

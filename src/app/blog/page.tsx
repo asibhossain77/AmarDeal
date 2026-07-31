@@ -1,20 +1,20 @@
 import type { Metadata } from 'next';
 import { AppShell } from '@/components/app-shell';
 
-const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+const SITE_URL = 'https://midman.bd';
 
 export const metadata: Metadata = {
   title: 'ব্লগ - নিরাপদ লেনদেন ও এসক্রো সম্পর্কে আর্টিকেল',
-  description: 'AmarDeal (আমারডিল) ব্লগে নিরাপদ অনলাইন লেনদেন, এসক্রো সার্ভিস, ফ্রিল্যান্সিং পেমেন্ট ও অনলাইন কেনাবেচার টিপস সম্পর্কে বিস্তারিত আর্টিকেল পড়ুন। Amar Deal এর সর্বশেষ আপডেট ও গাইড।',
-  keywords: ['amardeal blog', 'আমারডিল ব্লগ', 'এসক্রো ব্লগ', 'নিরাপদ লেনদেন গাইড', 'অনলাইন লেনদেন টিপস', 'amar deal article'],
+  description: 'Midman (মিডম্যান) ব্লগে নিরাপদ অনলাইন লেনদেন, এসক্রো সার্ভিস, ফ্রিল্যান্সিং পেমেন্ট ও অনলাইন কেনাবেচার টিপস সম্পর্কে বিস্তারিত আর্টিকেল পড়ুন। Midman এর সর্বশেষ আপডেট ও গাইড।',
+  keywords: ['midman blog', 'মিডম্যান ব্লগ', 'এসক্রো ব্লগ', 'নিরাপদ লেনদেন গাইড', 'অনলাইন লেনদেন টিপস', 'midman article'],
   alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: {
-    title: 'ব্লগ | AmarDeal আমারডিল',
-    description: 'নিরাপদ অনলাইন লেনদেন ও এসক্রো সম্পর্কে আর্টিকেল - AmarDeal (আমারডিল)',
+    title: 'ব্লগ | Midman মিডম্যান',
+    description: 'নিরাপদ অনলাইন লেনদেন ও এসক্রো সম্পর্কে আর্টিকেল - Midman (মিডম্যান)',
     url: `${SITE_URL}/blog`,
     type: 'website',
     locale: 'bn_BD',
-    siteName: 'AmarDeal আমারডিল',
+    siteName: 'Midman মিডম্যান',
   },
 };
 

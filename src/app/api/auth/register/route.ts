@@ -5,7 +5,7 @@ import { sendEmail, emailVerificationOtpEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
 
-const REFERRAL_COOKIE_NAME = 'amardeal_ref'
+const REFERRAL_COOKIE_NAME = 'midman_ref'
 
 export async function POST(req: NextRequest) {
   try {

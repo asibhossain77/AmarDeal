@@ -13,7 +13,7 @@ interface PopupData {
   buttonTitle: string;
 }
 
-const STORAGE_KEY = 'amardeal-popup-dismissed';
+const STORAGE_KEY = 'midman-popup-dismissed';
 
 export function SitePopup() {
   const [data, setData] = useState<PopupData | null>(null);

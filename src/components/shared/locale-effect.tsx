@@ -12,7 +12,7 @@ export function LocaleEffect() {
   const locale = useAppStore((s) => s.locale);
 
   useEffect(() => {
-    const saved = localStorage.getItem('amardeal-locale');
+    const saved = localStorage.getItem('midman-locale');
     const resolved = saved === 'en' ? 'en' : 'bn';
     document.documentElement.lang = resolved;
   }, [locale]);

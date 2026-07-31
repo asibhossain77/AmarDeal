@@ -4,9 +4,9 @@ import nodemailer from 'nodemailer';
    DEFAULTS — overridden by PlatformSetting DB values
    ═══════════════════════════════════════════════════════════════ */
 const DEFAULTS = {
-  email_site_name:         'আমারডিল.বাংলা',
-  email_from_name:         'আমারডিল.বাংলা',
-  email_site_url:          'https://xn--94b8cubil3ej.xn--54b7fta0cc',
+  email_site_name:         'মিডম্যান',
+  email_from_name:         'মিডম্যান',
+  email_site_url:          'https://midman.bd',
   email_header_subtitle:   'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
   email_footer_tagline:    'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
   email_footer_year:       '',  // empty = auto (current year)
@@ -79,11 +79,11 @@ function getTransporter(settings?: EmailSettings): nodemailer.Transporter | null
 }
 
 function getFromAddress(settings?: EmailSettings): string {
-  return settings?.brevo_from_email || process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'noreply@amardeal.com';
+  return settings?.brevo_from_email || process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'noreply@midman.bd';
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MINIMALIST EMAIL TEMPLATE SYSTEM — আমার ডিল
+   MINIMALIST EMAIL TEMPLATE SYSTEM — মিডম্যান
    Clean • No Gradients • No Decorative Borders • White Space
    ═══════════════════════════════════════════════════════════════ */
 

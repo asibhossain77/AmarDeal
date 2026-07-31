@@ -2,20 +2,20 @@ import type { Metadata } from 'next';
 import { SeoPageLayout } from '@/components/seo-page-layout';
 import { AboutSection } from '@/components/landing/about-section';
 
-const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+const SITE_URL = 'https://midman.bd';
 
 export const metadata: Metadata = {
   title: 'আমাদের সম্পর্কে - নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা',
-  description: 'AmarDeal (আমারডিল) বাংলাদেশের প্রথম বাংলা ভাষার এসক্রো প্ল্যাটফর্ম। আমাদের লক্ষ্য, মিশন ও সেবা সম্পর্কে জানুন। Amar Deal দিয়ে প্রতারণামুক্ত লেনদেন করুন।',
-  keywords: ['amardeal about', 'আমারডিল সম্পর্কে', 'amar deal company', 'এসক্রো প্ল্যাটফর্ম বাংলাদেশ', 'বাংলা এসক্রো'],
+  description: 'Midman (মিডম্যান) বাংলাদেশের প্রথম বাংলা ভাষার এসক্রো প্ল্যাটফর্ম। আমাদের লক্ষ্য, মিশন ও সেবা সম্পর্কে জানুন। Midman দিয়ে প্রতারণামুক্ত লেনদেন করুন।',
+  keywords: ['midman about', 'মিডম্যান সম্পর্কে', 'midman company', 'এসক্রো প্ল্যাটফর্ম বাংলাদেশ', 'বাংলা এসক্রো'],
   alternates: { canonical: `${SITE_URL}/about` },
   openGraph: {
-    title: 'আমাদের সম্পর্কে | AmarDeal আমারডিল',
-    description: 'নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা - AmarDeal (আমারডিল)',
+    title: 'আমাদের সম্পর্কে | Midman মিডম্যান',
+    description: 'নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা - Midman (মিডম্যান)',
     url: `${SITE_URL}/about`,
     type: 'website',
     locale: 'bn_BD',
-    siteName: 'AmarDeal আমারডিল',
+    siteName: 'Midman মিডম্যান',
   },
 };
 

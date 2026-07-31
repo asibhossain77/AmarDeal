@@ -72,7 +72,7 @@ interface AppState {
 /* Persist locale in localStorage */
 function getSavedLocale(): Locale {
   if (typeof window === 'undefined') return 'bn';
-  return (localStorage.getItem('amardeal-locale') as Locale) || 'bn';
+  return (localStorage.getItem('midman-locale') as Locale) || 'bn';
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -113,7 +113,7 @@ export const useAppStore = create<AppState>((set) => ({
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
   setLocale: (locale) => {
-    localStorage.setItem('amardeal-locale', locale);
+    localStorage.setItem('midman-locale', locale);
     document.documentElement.lang = locale === 'bn' ? 'bn' : 'en';
     set({ locale });
   },

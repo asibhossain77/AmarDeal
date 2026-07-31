@@ -15,7 +15,7 @@ export async function GET() {
     const map: Record<string, string> = {
       payment_theme_color: '#84CC16',
       fee_percentage: '3',
-      platform_name: 'আমার ডিল',
+      platform_name: 'মিডম্যান',
     }
 
     for (const s of settings) {
@@ -29,7 +29,7 @@ export async function GET() {
     })
   } catch {
     return NextResponse.json(
-      { paymentThemeColor: '#84CC16', feePercentage: 3, platformName: 'আমার ডিল' },
+      { paymentThemeColor: '#84CC16', feePercentage: 3, platformName: 'মিডম্যান' },
       { status: 200 }
     )
   }

@@ -18,7 +18,7 @@ export async function GET() {
 
     return NextResponse.json({
       content: map['contract_content'] || '',
-      adminName: map['admin_display_name'] || 'আমার ডিল অ্যাডমিন',
+      adminName: map['admin_display_name'] || 'মিডম্যান অ্যাডমিন',
       adminImageUrl: map['admin_image_url'] || '',
     });
   } catch {

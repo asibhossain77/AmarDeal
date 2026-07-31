@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-const REFERRAL_COOKIE_NAME = 'amardeal_ref'
+const REFERRAL_COOKIE_NAME = 'midman_ref'
 const REFERRAL_COOKIE_DAYS = 30
 
 interface Props {

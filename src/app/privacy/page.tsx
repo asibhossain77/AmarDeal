@@ -2,20 +2,20 @@ import type { Metadata } from 'next';
 import { SeoPageLayout } from '@/components/seo-page-layout';
 import { PrivacySection } from '@/components/landing/privacy-section';
 
-const SITE_URL = 'https://xn--94b8cubil3ej.xn--54b7fta0cc';
+const SITE_URL = 'https://midman.bd';
 
 export const metadata: Metadata = {
   title: 'গোপনীয়তা নীতি',
-  description: 'AmarDeal (আমারডিল) এর গোপনীয়তা নীতি। আপনার ব্যক্তিগত তথ্য কিভাবে সংগ্রহ, ব্যবহার ও সুরক্ষিত হয় তা জানুন। Amar Deal আপনার তথ্য সম্পূর্ণ গোপন রাখে।',
-  keywords: ['amardeal privacy', 'আমারডিল গোপনীয়তা', 'amar deal privacy policy', 'ডেটা সুরক্ষা'],
+  description: 'Midman (মিডম্যান) এর গোপনীয়তা নীতি। আপনার ব্যক্তিগত তথ্য কিভাবে সংগ্রহ, ব্যবহার ও সুরক্ষিত হয় তা জানুন। Midman আপনার তথ্য সম্পূর্ণ গোপন রাখে।',
+  keywords: ['midman privacy', 'মিডম্যান গোপনীয়তা', 'midman privacy policy', 'ডেটা সুরক্ষা'],
   alternates: { canonical: `${SITE_URL}/privacy` },
   openGraph: {
-    title: 'গোপনীয়তা নীতি | AmarDeal আমারডিল',
-    description: 'আপনার তথ্য কিভাবে সুরক্ষিত আছে - AmarDeal (আমারডিল)',
+    title: 'গোপনীয়তা নীতি | Midman মিডম্যান',
+    description: 'আপনার তথ্য কিভাবে সুরক্ষিত আছে - Midman (মিডম্যান)',
     url: `${SITE_URL}/privacy`,
     type: 'website',
     locale: 'bn_BD',
-    siteName: 'AmarDeal আমারডিল',
+    siteName: 'Midman মিডম্যান',
   },
 };
 

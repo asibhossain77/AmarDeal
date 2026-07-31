@@ -5,7 +5,7 @@ import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
-const REFERRAL_COOKIE_NAME = 'amardeal_ref'
+const REFERRAL_COOKIE_NAME = 'midman_ref'
 
 interface GoogleTokenResponse {
   access_token: string

@@ -328,7 +328,7 @@ export const en: Record<TranslationKey, string> = {
   'access.denied': 'Access Denied',
   'access.deniedDesc': 'You do not have permission to view this deal. You can only view your own deals.',
   'access.backToDashboard': 'Back to Dashboard',
-  'access.branding': 'AmarDeal — Safe Online Transactions',
+  'access.branding': 'Midman — Safe Online Transactions',
 
   // ── Common ──
   'common.back': 'Go Back',
@@ -617,7 +617,7 @@ export const en: Record<TranslationKey, string> = {
   // ── Contract Section ──
   'contract.sectionLabel': 'Contract & Terms',
   'contract.sectionTitle': 'Our Terms & Conditions',
-  'contract.admin': 'AmarDeal Admin',
+  'contract.admin': 'Midman Admin',
   'contract.platformAdmin': 'Platform Administrator',
   'contract.termsTitle': 'Terms & Conditions',
   'contract.noTerms': 'No terms added yet.',

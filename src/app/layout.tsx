@@ -10,7 +10,7 @@ import { LocaleEffect } from "@/components/shared/locale-effect";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
-const SITE_URL = "https://xn--94b8cubil3ej.xn--54b7fta0cc";
+const SITE_URL = "https://midman.bd";
 
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
@@ -31,14 +31,13 @@ export const metadata: Metadata = {
     "Midman (মিডম্যান) বাংলাদেশের সবচেয়ে নিরাপদ এসক্রো সার্ভিস ও অনলাইন লেনদেন প্ল্যাটফর্ম। Midman দিয়ে ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য ১০০% সুরক্ষিত। বিকাশ, নগদ, রকেট দিয়ে পেমেন্ট করুন। মিডম্যানে প্রতারণার ঝুঁকি শূন্য。",
 
   keywords: [
-    "amardeal",
-    "amar deal",
-    "আমারডিল",
-    "আমার ডিল",
-    "amardeal Bangladesh",
-    "amar deal bd",
-    "amardeal.com",
-    "amardeal bd",
+    "midman",
+    "midman.bd",
+    "মিডম্যান",
+    "মিডম্যান বাংলাদেশ",
+    "midman Bangladesh",
+    "midman bd",
+    "midman.bd",
     "এসক্রো",
     "এসক্রো সার্ভিস বাংলাদেশ",
     "escrow service Bangladesh",
@@ -63,8 +62,8 @@ export const metadata: Metadata = {
     "মধ্যস্থতামূলক লেনদেন",
     "বাংলা লেনদেন প্ল্যাটফর্ম",
     "Bangladeshi escrow platform",
-    "amar deal escrow",
-    "amardeal escrow service",
+    "midman escrow",
+    "midman escrow service",
   ],
 
   authors: [{ name: "Midman মিডম্যান", url: SITE_URL }],
@@ -144,7 +143,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: "Midman মিডম্যান",
-      alternateName: ["আমারডিল", "আমার ডিল", "Amar Deal", "amardeal", "AmarDeal"],
+      alternateName: ["মিডম্যান", "Midman", "midman.bd"],
       description:
         "Midman (মিডম্যান) - বাংলাদেশের সবচেয়ে নিরাপদ অনলাইন লেনদেন ও এসক্রো সার্ভিস প্ল্যাটফর্ম। ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য ১০০% সুরক্ষিত।",
       inLanguage: ["bn-BD", "en"],
@@ -158,7 +157,7 @@ const jsonLd = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: "Midman মিডম্যান",
-      alternateName: ["আমারডিল", "আমার ডিল", "Amar Deal", "amardeal", "AmarDeal"],
+      alternateName: ["মিডম্যান", "Midman", "midman.bd"],
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",

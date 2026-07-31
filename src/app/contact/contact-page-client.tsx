@@ -147,7 +147,7 @@ export function ContactPageClient() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shadow-sm">
               <span className="text-xs font-bold leading-none text-primary-foreground">আ</span>
             </div>
-            <span className="text-sm font-bold text-foreground">আমার ডিল</span>
+            <span className="text-sm font-bold text-foreground">মিডম্যান</span>
           </Link>
         </div>
       </header>
@@ -189,7 +189,7 @@ export function ContactPageClient() {
                   </div>
                 )}
                 <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-                  {data.adminName || 'আমার ডিল'}
+                  {data.adminName || 'মিডম্যান'}
                 </h1>
               </motion.div>
             )}
@@ -275,7 +275,7 @@ export function ContactPageClient() {
             হোমপেজে ফিরুন
           </Link>
           <p className="mt-4 text-xs text-muted-foreground">
-            © {new Date().getFullYear()} আমার ডিল — নিরাপদ অনলাইন লেনদেন
+            © {new Date().getFullYear()} মিডম্যান — নিরাপদ অনলাইন লেনদেন
           </p>
         </motion.div>
       </main>

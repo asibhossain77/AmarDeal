@@ -326,7 +326,7 @@ export const bn = {
   'access.denied': 'অ্যাক্সেস অস্বীকৃত',
   'access.deniedDesc': 'আপনার এই ডিল দেখার অনুমতি নেই। আপনি শুধুমাত্র নিজের ডিলগুলো দেখতে পারবেন।',
   'access.backToDashboard': 'ড্যাশবোর্ডে ফিরুন',
-  'access.branding': 'আমার ডিল — নিরাপদ অনলাইন লেনদেন',
+  'access.branding': 'মিডম্যান — নিরাপদ অনলাইন লেনদেন',
 
   // ── Common ──
   'common.back': 'ফিরে যান',
@@ -615,7 +615,7 @@ export const bn = {
   // ── Contract Section ──
   'contract.sectionLabel': 'চুক্তি ও শর্তাবলী',
   'contract.sectionTitle': 'আমাদের শর্তাবলী',
-  'contract.admin': 'আমার ডিল অ্যাডমিন',
+  'contract.admin': 'মিডম্যান অ্যাডমিন',
   'contract.platformAdmin': 'প্ল্যাটফর্ম প্রশাসক',
   'contract.termsTitle': 'শর্তাবলী',
   'contract.noTerms': 'এখনো কোনো শর্তাবলী যোগ করা হয়নি।',
@@ -1219,7 +1219,7 @@ export const bn = {
   'admin.settings.footerDescription': 'ফুটার বিবরণ',
   'admin.settings.footerDescriptionPlaceholder': 'আপনার প্ল্যাটফর্মের সম্পর্কে একটি সংক্ষিপ্ত বিবরণ লিখুন...',
   'admin.settings.footerCopyrightLabel': 'ফুটার কপিরাইট লাইন',
-  'admin.settings.footerCopyrightPlaceholder': '© ২০২৬ আমার ডিল। সর্বস্বত্ব সংরক্ষিত।',
+  'admin.settings.footerCopyrightPlaceholder': '© ২০২৬ মিডম্যান। সর্বস্বত্ব সংরক্ষিত।',
   'admin.settings.footerMadeInLabel': 'ফুটার "তৈরি" টেক্সট',
   'admin.settings.footerMadeInPlaceholder': 'বাংলাদেশে তৈরি',
   'admin.settings.logoAlt': 'লোগো',

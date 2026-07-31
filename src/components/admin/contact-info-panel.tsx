@@ -194,7 +194,7 @@ export function ContactInfoPanel() {
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Facebook className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.fbPage')}</Label>
-            <Input placeholder="https://facebook.com/amardealpage" value={data.facebookPage || ''} onChange={e => updateField('facebookPage', e.target.value)} className="rounded-xl border-border/60" />
+            <Input placeholder="https://facebook.com/midmanpage" value={data.facebookPage || ''} onChange={e => updateField('facebookPage', e.target.value)} className="rounded-xl border-border/60" />
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.fbGroup')}</Label>

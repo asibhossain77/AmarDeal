@@ -73,8 +73,8 @@ const BREVO_FIELDS = [
 ];
 
 const TEMPLATE_FIELDS = [
-  { key: 'email_site_name', labelKey: 'admin.email.siteName' as const, placeholder: 'AmarDeal.bangla', description: 'Shows in email header and footer' },
-  { key: 'email_from_name', labelKey: 'admin.email.fromSenderName' as const, placeholder: 'AmarDeal.bangla', description: 'Email sender name (From Name)' },
+  { key: 'email_site_name', labelKey: 'admin.email.siteName' as const, placeholder: 'Midman', description: 'Shows in email header and footer' },
+  { key: 'email_from_name', labelKey: 'admin.email.fromSenderName' as const, placeholder: 'Midman', description: 'Email sender name (From Name)' },
   { key: 'email_site_url', labelKey: 'admin.email.siteUrl' as const, placeholder: 'https://example.com', description: 'Will be used in buttons and links' },
   { key: 'email_header_subtitle', labelKey: 'admin.email.headerSubtitle' as const, placeholder: 'Trusted platform for secure online transactions', description: 'Shows below name in header' },
   { key: 'email_footer_tagline', labelKey: 'admin.email.footerTagline' as const, placeholder: 'Buy safely, sell safely', description: 'Shows below brand name in footer' },

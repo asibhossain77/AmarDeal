@@ -5,10 +5,10 @@
       "has": [
         {
           "type": "host",
-          "value": "www.amardeal.bangla"
+          "value": "www.midman.bd"
         }
       ],
-      "destination": "https://amardeal.bangla/:path*",
+      "destination": "https://midman.bd/:path*",
       "permanent": true
     }
   ]
