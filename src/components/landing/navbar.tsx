@@ -135,6 +135,7 @@ function useDashboardNavItems() {
     { label: t('nav.myDeals'), icon: Handshake, panel: 'my-deals' },
     { label: t('nav.transactions'), icon: ArrowLeftRight, panel: 'payment' },
     { label: t('nav.profile'), icon: UserCircle, panel: 'profile' },
+    { label: t('nav.affiliate'), icon: Users, panel: 'affiliate' },
     { label: t('nav.settings'), icon: Settings, panel: 'settings' },
   ];
 }
