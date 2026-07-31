@@ -9,6 +9,7 @@ import {
   UserCircle,
   LogOut,
   Settings,
+  Users,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.myDeals', icon: Handshake, panel: 'my-deals' },
   { labelKey: 'nav.transactions', icon: ArrowLeftRight, panel: 'payment' },
   { labelKey: 'nav.profile', icon: UserCircle, panel: 'profile' },
+  { labelKey: 'nav.affiliate', icon: Users, panel: 'affiliate' },
   { labelKey: 'nav.settings', icon: Settings, panel: 'settings' },
 ];
 

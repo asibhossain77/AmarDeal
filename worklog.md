@@ -1606,3 +1606,33 @@ Stage Summary:
 - Commission = platformFee × (commissionPercent / 100)
 - Admin configurable: PlatformSetting key `affiliate_commission_percent` (default: 30)
 - Safe to retry: won't double-credit due to dealId unique constraint
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Step 5 - User affiliate panel (dashboard)
+
+Work Log:
+- Created `src/app/api/user/affiliate/route.ts` (POST, auth-protected)
+  - Returns: referralCode, referralLink, affiliateBalance, referredCount
+  - Returns: totalEarnings, pendingEarnings, paidEarnings, commissionPercent
+  - Returns: earnings array with deal info and referred user info (last 50)
+- Created `src/components/dashboard/affiliate-panel.tsx`
+  - 4 stat cards: Total Earnings, Available Balance, Pending Payout, Total Referrals
+  - Referral link section with code display + copy buttons
+  - Commission info text with % interpolation
+  - Earnings history table with status badges, scrollable (max-h-96)
+  - Empty state with helpful message
+  - Follows existing GlassCard pattern, motion animations, loading skeletons
+- Integrated into dashboard:
+  - `src/lib/store.ts`: Added 'affiliate' to DashboardPanel type
+  - `src/components/dashboard/dashboard-sidebar.tsx`: Added Users icon nav item
+  - `src/components/dashboard/dashboard-main.tsx`: Added panel switch + import
+  - `src/lib/url-sync.ts`: Added 'affiliate' to valid panels for URL routing
+- Added i18n keys for both bn and en locales (28 keys)
+
+Stage Summary:
+- New files: `src/app/api/user/affiliate/route.ts`, `src/components/dashboard/affiliate-panel.tsx`
+- Modified: store.ts, dashboard-sidebar.tsx, dashboard-main.tsx, url-sync.ts, bn.ts, en.ts
+- URL: `/dashboard/affiliate` works with browser back/forward
+- Nav: 'অ্যাফিলিয়েট' in sidebar between Profile and Settings

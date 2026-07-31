@@ -122,7 +122,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;

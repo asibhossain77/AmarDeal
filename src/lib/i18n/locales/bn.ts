@@ -4,6 +4,7 @@ export const bn = {
   'nav.myDeals': 'আমার ডিল',
   'nav.transactions': 'লেনদেন',
   'nav.profile': 'প্রোফাইল',
+  'nav.affiliate': 'অ্যাফিলিয়েট',
   'nav.settings': 'সেটিংস',
   'nav.logout': 'লগআউট',
   'nav.loginRegister': 'লগইন / নিবন্ধন',
@@ -1380,6 +1381,33 @@ export const bn = {
   // ── Language names ──
   'lang.bn': 'বাংলা',
   'lang.en': 'English',
+
+  // ── Affiliate Panel ──
+  'affiliate.title': 'অ্যাফিলিয়েট ড্যাশবোর্ড',
+  'affiliate.subtitle': 'আপনার রেফারেল লিংক শেয়ার করুন এবং আয় করুন',
+  'affiliate.totalEarnings': 'মোট আয়',
+  'affiliate.availableBalance': 'উপলব্ধ ব্যালেন্স',
+  'affiliate.pendingPayout': 'পেন্ডিং পেআউট',
+  'affiliate.totalReferrals': 'মোট রেফারেল',
+  'affiliate.referralLink': 'রেফারেল লিংক',
+  'affiliate.yourCode': 'আপনার কোড',
+  'affiliate.copyCode': 'কপি',
+  'affiliate.copyLink': 'লিংক কপি',
+  'affiliate.copied': 'কপি হয়েছে!',
+  'affiliate.copyFailed': 'কপি করতে সমস্যা',
+  'affiliate.commissionInfo': 'প্রতিটি সফল ডিলে প্ল্যাটফর্ম ফির {percent}% কমিশন পাবেন',
+  'affiliate.noCode': 'রেফারেল কোড এখনো তৈরি হয়নি',
+  'affiliate.earningsHistory': 'আয়ের ইতিহাস',
+  'affiliate.earningsHistoryDesc': 'আপনার রেফারেল থেকে প্রাপ্ত কমিশনের তালিকা',
+  'affiliate.userCol': 'ইউজার',
+  'affiliate.dealCol': 'ডিল',
+  'affiliate.amountCol': 'পরিমাণ',
+  'affiliate.statusCol': 'স্ট্যাটাস',
+  'affiliate.dateCol': 'তারিখ',
+  'affiliate.paid': 'পরিশোধিত',
+  'affiliate.pending': 'পেন্ডিং',
+  'affiliate.noEarnings': 'এখনো কোনো আয় নেই',
+  'affiliate.noEarningsDesc': 'রেফারেল লিংক শেয়ার করুন এবং কমিশন আয় করুন',
 } as const;
 
 export type TranslationKey = keyof typeof bn;
