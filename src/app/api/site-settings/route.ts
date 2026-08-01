@@ -16,7 +16,7 @@ export async function GET() {
       siteName: map.platform_name || 'মিডম্যান',
       siteNameEn: map.platform_name_en || 'Midman',
       siteTitle: map.site_title || '',
-      siteLogo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : ''
+      siteLogo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : '',
       footerDescription: map.footer_description || '',
       footerCopyrightText: map.footer_copyright_text || '',
       footerMadeIn: map.footer_made_in || '',
