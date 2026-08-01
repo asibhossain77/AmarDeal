@@ -293,6 +293,7 @@ export function Navbar() {
                   <a
                     href={item.href}
                     onClick={(e) => { e.preventDefault(); setView(item.viewKey); }}
+                    aria-label={item.label}
                     className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
                   >
                     <item.Icon className="h-[18px] w-[18px]" />
