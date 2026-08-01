@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 export async function GET() {
   try {
     const rows = await db.platformSetting.findMany({
-      where: { key: { in: ['platform_name', 'platform_name_en', 'site_logo', 'footer_description', 'footer_copyright_text', 'footer_made_in'] } },
+      where: { key: { in: ['platform_name', 'platform_name_en', 'site_title', 'site_logo', 'footer_description', 'footer_copyright_text', 'footer_made_in'] } },
     })
 
     const map: Record<string, string> = {}
@@ -15,7 +15,8 @@ export async function GET() {
     return NextResponse.json({
       siteName: map.platform_name || 'মিডম্যান',
       siteNameEn: map.platform_name_en || 'Midman',
-      siteLogo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : '',
+      siteTitle: map.site_title || '',
+      siteLogo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : ''
       footerDescription: map.footer_description || '',
       footerCopyrightText: map.footer_copyright_text || '',
       footerMadeIn: map.footer_made_in || '',
@@ -25,6 +26,7 @@ export async function GET() {
       {
         siteName: 'মিডম্যান',
         siteNameEn: 'Midman',
+        siteTitle: '',
         siteLogo: '',
         footerDescription: '',
         footerCopyrightText: '',

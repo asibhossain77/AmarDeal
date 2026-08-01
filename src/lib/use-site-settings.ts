@@ -6,6 +6,7 @@ import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-quer
 interface SiteSettings {
   siteName: string;
   siteNameEn: string;
+  siteTitle: string;
   siteLogo: string;
   footerDescription: string;
   footerCopyrightText: string;
@@ -15,6 +16,7 @@ interface SiteSettings {
 const FALLBACK: SiteSettings = {
   siteName: 'মিডম্যান',
   siteNameEn: 'Midman',
+  siteTitle: '',
   siteLogo: '',
   footerDescription: '',
   footerCopyrightText: '',

@@ -1230,6 +1230,9 @@ export const en: Record<TranslationKey, string> = {
   'admin.settings.uploadLogoFailed': 'Upload Logo failed',
   'admin.settings.websiteNameBn': 'Website Name (Bangla)',
   'admin.settings.websiteNameBnPlaceholder': 'Midman',
+  'admin.settings.siteTitle': 'Website Title (Browser Tab)',
+  'admin.settings.siteTitlePlaceholder': 'Midman | Best Escrow Service in Bangladesh',
+  'admin.settings.siteTitleHint': 'This appears in the browser tab',
 
   'admin.payouts.paymentComplete': 'Payment Complete',
   'admin.payouts.recipient': 'Recipient',

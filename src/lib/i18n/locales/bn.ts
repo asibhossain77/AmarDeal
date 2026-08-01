@@ -1228,6 +1228,9 @@ export const bn = {
   'admin.settings.uploadLogoFailed': 'Upload Logo ব্যর্থ হয়েছে',
   'admin.settings.websiteNameBn': 'Website Name (বাংলা)',
   'admin.settings.websiteNameBnPlaceholder': 'মিডম্যান',
+  'admin.settings.siteTitle': 'Website Title (ব্রাউজার ট্যাব)',
+  'admin.settings.siteTitlePlaceholder': 'মিডম্যান | বাংলাদেশের সেরা এসক্রো সার্ভিস',
+  'admin.settings.siteTitleHint': 'এটি ব্রাউজার ট্যাবে দেখাবে',
 
   'admin.payouts.paymentComplete': 'পেমেন্ট সম্পন্ন',
   'admin.payouts.recipient': 'প্রাপক',

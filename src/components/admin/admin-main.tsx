@@ -172,6 +172,7 @@ interface AdminStats {
 interface PlatformSettings {
   platform_name: string;
   platform_name_en: string;
+  site_title: string;
   site_logo: string;
   fee_percentage: string;
   min_deal_amount: string;
@@ -2134,6 +2135,7 @@ function SettingsPanel() {
   const [settings, setSettings] = useState<PlatformSettings>({
     platform_name: '',
     platform_name_en: '',
+    site_title: '',
     site_logo: '',
     fee_percentage: '',
     min_deal_amount: '',
@@ -2369,6 +2371,26 @@ function SettingsPanel() {
                 placeholder={t('admin.settings.websiteNameBnPlaceholder')}
                 className="max-w-sm"
               />
+            </div>
+
+            {/* Website Title (Browser Tab) */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
+              <Label htmlFor="site_title" className="text-sm font-medium text-foreground text-center sm:text-left">
+                {t('admin.settings.siteTitle')}
+              </Label>
+              <div className="space-y-1">
+                <Input
+                  id="site_title"
+                  type="text"
+                  value={settings.site_title}
+                  onChange={(e) =>
+                    setSettings({ ...settings, site_title: e.target.value })
+                  }
+                  placeholder={t('admin.settings.siteTitlePlaceholder')}
+                  className="max-w-sm"
+                />
+                <p className="text-[11px] text-muted-foreground">{t('admin.settings.siteTitleHint')}</p>
+              </div>
             </div>
           </div>
 
