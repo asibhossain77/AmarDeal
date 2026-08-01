@@ -102,7 +102,9 @@ export function AffiliatePanel() {
   });
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+    // Ensure referral link has full URL (fallback if API returns relative path)
+    const fullText = text.startsWith('http') ? text : `${window.location.origin}${text}`;
+    navigator.clipboard.writeText(fullText).then(() => {
       setCopied(true);
       toast.success(t('affiliate.copied'));
       setTimeout(() => setCopied(false), 2000);
@@ -272,7 +274,7 @@ export function AffiliatePanel() {
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground shrink-0">Link:</span>
                     <code className="flex-1 min-w-0 rounded-lg bg-muted/50 px-3 py-2 text-xs font-mono text-foreground truncate">
-                      {data.referralLink}
+                      {data.referralLink.startsWith('http') ? data.referralLink : `${typeof window !== 'undefined' ? window.location.origin : ''}${data.referralLink}`}
                     </code>
                     <Button
                       size="sm"

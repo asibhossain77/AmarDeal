@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
       }
     } catch { /* use default */ }
 
-    // Build referral link
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
+    // Build referral link — prefer env, fallback to request origin
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || req.nextUrl.origin
     const referralLink = `${baseUrl}/ref/${referralCode}`
 
     return NextResponse.json({
