@@ -34,7 +34,7 @@ export async function GET() {
       platform_name: map.platform_name || 'মিডম্যান',
       platform_name_en: map.platform_name_en || 'Midman',
       site_title: map.site_title || '',
-      site_logo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : ''
+      site_logo: (map.site_logo && map.site_logo !== '/logo.png') ? map.site_logo : '',
       fee_percentage: map.fee_percentage || '3',
       min_deal_amount: map.min_deal_amount || '100',
       max_deal_amount: map.max_deal_amount || '10000000',
