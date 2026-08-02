@@ -3,6 +3,7 @@ import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
+import { db } from "@/lib/db";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/lib/query-client";
@@ -19,13 +20,23 @@ const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+const DEFAULT_TITLE = "Midman মিডম্যান | বাংলাদেশের সেরা এসক্রো সার্ভিস - নিরাপদ অনলাইন লেনদেন";
 
-  title: {
-    default: "Midman মিডম্যান | বাংলাদেশের সেরা এসক্রো সার্ভিস - নিরাপদ অনলাইন লেনদেন",
-    template: "%s | Midman মিডম্যান",
-  },
+export async function generateMetadata(): Promise<Metadata> {
+  let siteTitle = "";
+  try {
+    const row = await db.platformSetting.findUnique({ where: { key: 'site_title' } });
+    siteTitle = row?.value || "";
+  } catch {}
+
+  const title = siteTitle || DEFAULT_TITLE;
+
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: title,
+      template: `%s | Midman মিডম্যান`,
+    },
 
   description:
     "Midman (মিডম্যান) বাংলাদেশের সবচেয়ে নিরাপদ এসক্রো সার্ভিস ও অনলাইন লেনদেন প্ল্যাটফর্ম। Midman দিয়ে ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য ১০০% সুরক্ষিত। বিকাশ, নগদ, রকেট দিয়ে পেমেন্ট করুন। মিডম্যানে প্রতারণার ঝুঁকি শূন্য。",
@@ -132,7 +143,8 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#16a34a",
     "theme-color": "#16a34a",
   },
-};
+  };
+}
 
 /* JSON-LD Structured Data for Google */
 const jsonLd = {
