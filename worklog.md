@@ -1716,3 +1716,23 @@ Stage Summary:
 - Reject refunds balance + reverts earnings to pending status
 - UI follows existing GlassCard + parrot-green design system
 - All routes are admin-protected via requireAdmin()
+---
+Task ID: 1
+Agent: Main
+Task: Fix "Cannot access 'eo' before initialization" error on admin email settings page
+
+Work Log:
+- Analyzed user's screenshot showing Application Error on https://midman.bd/admin/email-settings
+- VLM identified the error as "Uncaught ReferenceError: Cannot access 'eo' before initialization" (minified variable name)
+- Read email-settings-panel.tsx and found the root cause: Temporal Dead Zone (TDZ) error
+- Line 220-222: `hasChanged` referenced `disabledChanged` which was declared later on line 231
+- In JavaScript, `const`/`let` variables are in TDZ until their declaration is reached — accessing them before throws ReferenceError
+- This manifested only in Vercel production (webpack minification) because the variable was renamed to `eo`
+- Fixed by moving `const disabledChanged = ...` declaration BEFORE the `hasChanged` computation
+- Verified with dev server and agent-browser — no JS errors, clean HMR rebuild
+
+Stage Summary:
+- Root cause: TDZ error in email-settings-panel.tsx (line 220 used `disabledChanged` before line 231 declared it)
+- Fix: Reordered declarations — `disabledChanged` now comes before `hasChanged`
+- File changed: src/components/admin/email-settings-panel.tsx
+- Verified: No errors in browser console, clean compilation

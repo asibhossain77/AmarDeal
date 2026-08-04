@@ -216,6 +216,8 @@ export function EmailSettingsPanel() {
     }
   };
 
+  const disabledChanged = JSON.stringify(disabledTemplates) !== JSON.stringify(originalDisabled);
+
   const ALL_FIELDS = [...BREVO_FIELDS, ...TEMPLATE_FIELDS];
   const hasChanged = ALL_FIELDS.some(
     (f) => settings[f.key] !== originalSettings[f.key],
@@ -227,8 +229,6 @@ export function EmailSettingsPanel() {
       return updated;
     });
   };
-
-  const disabledChanged = JSON.stringify(disabledTemplates) !== JSON.stringify(originalDisabled);
 
   const handleSave = async () => {
     setSavingSettings(true);
