@@ -434,7 +434,7 @@ export function EmailSettingsPanel() {
           </div>
         ) : (
           <div className="space-y-1">
-            {EMAIL_TEMPLATES.map((template, i) => {
+            {EMAIL_TEMPLATES.map((template) => {
               const isOff = disabledTemplates[template.type] === true;
               return (
                 <div
