@@ -30,18 +30,42 @@ const TEMPLATE_DEFAULTS: Record<string, string> = {
   brevo_from_email:        '',
 };
 
+const TEMPLATE_TYPES = [
+  'welcome',
+  'email_verification_otp',
+  'password_reset_otp',
+  'deal_created',
+  'payment_submitted',
+  'payment_verified',
+  'delivery_started',
+  'deal_completed',
+  'deal_cancelled',
+  'dispute_raised',
+  'dispute_resolved',
+  'login_notification',
+  'payout_requested',
+  'payout_completed',
+];
+
 export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdmin(req);
     if (!guard.ok) return guard.response;
     const rows = await db.platformSetting.findMany({
-      where: { key: { in: [...ALL_KEYS] } },
+      where: { key: { in: [...ALL_KEYS, ...TEMPLATE_TYPES.map(t => `email_off_${t}`)] } },
     });
     const map: Record<string, string> = {};
     for (const r of rows) map[r.key] = r.value;
 
     const result: Record<string, string> = {};
     for (const k of ALL_KEYS) result[k] = map[k] || TEMPLATE_DEFAULTS[k] || '';
+
+    // Return disabled templates as a single object
+    const disabled: Record<string, boolean> = {};
+    for (const t of TEMPLATE_TYPES) {
+      disabled[t] = map[`email_off_${t}`] === '1';
+    }
+    result._disabledTemplates = JSON.stringify(disabled);
 
     return NextResponse.json(result);
   } catch {
@@ -68,9 +92,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Handle template toggle (email_off_xxx = '1' or delete if enabled)
+    if (body._disabledTemplates) {
+      try {
+        const disabledMap: Record<string, boolean> = JSON.parse(body._disabledTemplates);
+        for (const [type, isOff] of Object.entries(disabledMap)) {
+          const key = `email_off_${type}`;
+          if (isOff) {
+            await db.platformSetting.upsert({
+              where: { key },
+              create: { key, value: '1' },
+              update: { value: '1' },
+            });
+          } else {
+            // Delete the key to enable the template
+            await db.platformSetting.deleteMany({ where: { key } }).catch(() => {});
+          }
+        }
+      } catch {}
+    }
+
     // Clear in-memory cache so next email send picks up new values
-    const { clearEmailSettingsCache } = await import('@/lib/email');
+    const { clearEmailSettingsCache, clearDisabledTemplatesCache } = await import('@/lib/email');
     clearEmailSettingsCache();
+    clearDisabledTemplatesCache();
 
     return NextResponse.json({ success: true });
   } catch (err) {

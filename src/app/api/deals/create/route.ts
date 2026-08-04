@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       deal.amount,
       deal.creator?.name || 'একজন ইউজার',
       isCreatorBuyer ? 'buyer' : 'seller',
-    )).catch(() => {})
+    ), 'deal_created').catch(() => {})
 
     // Email notification to admin
     try {
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
           deal.creator?.name || 'একজন ইউজার',
           deal.buyer?.name || '-',
           deal.seller?.name || '-',
-        )).catch(() => {})
+        ), 'deal_created').catch(() => {})
       }
     } catch { /* silent */ }
 

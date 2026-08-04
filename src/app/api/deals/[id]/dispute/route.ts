@@ -73,7 +73,7 @@ export async function POST(
 
     // Email: dispute raised — notify seller
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, () => disputeRaisedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0)).catch(() => {})
+      sendEmail(deal.seller.email, () => disputeRaisedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0), 'dispute_raised').catch(() => {})
     }
 
     // Email: dispute raised — notify admin
@@ -89,7 +89,7 @@ export async function POST(
           `৳${(deal.amount || 0).toLocaleString('en')}`,
           deal.buyer?.name || 'ক্রেতা',
           deal.seller?.name || 'বিক্রেতা',
-        )).catch(() => {})
+        ), 'dispute_raised').catch(() => {})
       }
     } catch { /* silent */ }
 

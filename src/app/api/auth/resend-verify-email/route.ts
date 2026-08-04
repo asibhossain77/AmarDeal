@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       data: { resetToken: otp, resetTokenExpiry: otpExpiry },
     });
 
-    sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {
+    sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp), 'email_verification_otp').catch((err) => {
       console.error('[RESEND VERIFY EMAIL ERROR]', err);
     });
 

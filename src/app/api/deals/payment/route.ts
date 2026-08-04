@@ -81,10 +81,10 @@ export async function POST(req: NextRequest) {
 
     // Email: payment submitted notification
     if (deal.buyer?.email) {
-      sendEmail(deal.buyer.email, () => paymentSubmittedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0)).catch(() => {})
+      sendEmail(deal.buyer.email, () => paymentSubmittedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0), 'payment_submitted').catch(() => {})
     }
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, () => paymentSubmittedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0)).catch(() => {})
+      sendEmail(deal.seller.email, () => paymentSubmittedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0), 'payment_submitted').catch(() => {})
     }
 
     return NextResponse.json({

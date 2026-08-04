@@ -83,12 +83,12 @@ export async function POST(
     if (deal.buyer?.email) {
       sendEmail(deal.buyer.email, () => disputeResolvedEmail(
         deal.buyer.name || 'ক্রেতা', deal.title, action as 'complete' | 'refund_buyer'
-      )).catch(() => {})
+      ), 'dispute_resolved').catch(() => {})
     }
     if (deal.seller?.email) {
       sendEmail(deal.seller.email, () => disputeResolvedEmail(
         deal.seller.name || 'বিক্রেতা', deal.title, action as 'complete' | 'refund_buyer'
-      )).catch(() => {})
+      ), 'dispute_resolved').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

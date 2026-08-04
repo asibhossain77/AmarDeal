@@ -527,7 +527,49 @@ function resolvePayload(input: EmailInput): EmailPayload {
   return typeof input === 'function' ? input() : input;
 }
 
-export async function sendEmail(to: string, input: EmailInput): Promise<void> {
+/** Check if a template type is enabled (not disabled by admin) */
+let _disabledTemplates: Set<string> | null = null;
+let _disabledLoadedAt = 0;
+const DISABLED_TTL = 2 * 60 * 1000; // 2 min
+
+async function loadDisabledTemplates(): Promise<Set<string>> {
+  const now = Date.now();
+  if (_disabledTemplates && now - _disabledLoadedAt < DISABLED_TTL) return _disabledTemplates;
+  try {
+    const { db } = await import('@/lib/db');
+    const rows = await db.platformSetting.findMany({
+      where: { key: { startsWith: 'email_off_' } },
+    });
+    _disabledTemplates = new Set(rows.map((r) => r.key.replace('email_off_', '')));
+  } catch {
+    _disabledTemplates = new Set();
+  }
+  _disabledLoadedAt = now;
+  return _disabledTemplates;
+}
+
+/** Clear disabled templates cache */
+export function clearDisabledTemplatesCache() {
+  _disabledTemplates = null;
+  _disabledLoadedAt = 0;
+}
+
+/** Check if a template type is enabled */
+export async function isTemplateEnabled(type: string): Promise<boolean> {
+  const disabled = await loadDisabledTemplates();
+  return !disabled.has(type);
+}
+
+export async function sendEmail(to: string, input: EmailInput, templateType?: string): Promise<void> {
+  // Check if template is disabled
+  if (templateType) {
+    const enabled = await isTemplateEnabled(templateType);
+    if (!enabled) {
+      console.log(`[EMAIL SKIPPED] Template disabled: ${templateType}`);
+      return;
+    }
+  }
+
   const settings = await loadEmailSettings();
   const payload = resolvePayload(input);
   const transporter = getTransporter(settings);
@@ -542,9 +584,9 @@ export async function sendEmail(to: string, input: EmailInput): Promise<void> {
   console.log(`[EMAIL SENT] → ${to}: ${payload.subject}`);
 }
 
-export function fireEmails(emails: Array<{ to: string; payload: EmailInput }>) {
+export function fireEmails(emails: Array<{ to: string; payload: EmailInput; type?: string }>) {
   for (const e of emails) {
-    sendEmail(e.to, e.payload).catch((err) => {
+    sendEmail(e.to, e.payload, e.type).catch((err) => {
       console.error(`[EMAIL ERROR] → ${e.to}:`, err);
     });
   }

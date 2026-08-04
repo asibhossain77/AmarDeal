@@ -74,10 +74,10 @@ export async function POST(
 
     // Email notifications
     if (deal.buyer?.email) {
-      sendEmail(deal.buyer.email, () => paymentVerifiedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, 'buyer')).catch(() => {})
+      sendEmail(deal.buyer.email, () => paymentVerifiedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, 'buyer'), 'payment_verified').catch(() => {})
     }
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, () => paymentVerifiedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0, 'seller')).catch(() => {})
+      sendEmail(deal.seller.email, () => paymentVerifiedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0, 'seller'), 'payment_verified').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updatedDeal })

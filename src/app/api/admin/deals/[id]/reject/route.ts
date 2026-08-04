@@ -74,10 +74,10 @@ export async function POST(
 
     // Email: deal rejected (treat as cancellation notification)
     if (deal.buyer?.email) {
-      sendEmail(deal.buyer.email, () => dealCancelledEmail(deal.buyer.name || 'ক্রেতা', deal.title, 'অ্যাডমিন')).catch(() => {})
+      sendEmail(deal.buyer.email, () => dealCancelledEmail(deal.buyer.name || 'ক্রেতা', deal.title, 'অ্যাডমিন'), 'deal_cancelled').catch(() => {})
     }
     if (deal.seller?.email) {
-      sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, 'অ্যাডমিন')).catch(() => {})
+      sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, 'অ্যাডমিন'), 'deal_cancelled').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updatedDeal })

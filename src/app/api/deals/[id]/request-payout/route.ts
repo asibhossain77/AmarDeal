@@ -102,7 +102,7 @@ export async function POST(
         accountType,
         accountNumber,
         payoutType as 'seller_payout' | 'buyer_refund',
-      )).catch(() => {})
+      ), 'payout_requested').catch(() => {})
     }
 
     return NextResponse.json({

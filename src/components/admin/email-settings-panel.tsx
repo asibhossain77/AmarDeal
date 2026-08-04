@@ -23,7 +23,9 @@ import {
   EyeOff,
   Server,
   Palette,
+  Power,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
 
 /* ─── Solid Card (matches admin-main.tsx) ─── */
@@ -101,6 +103,8 @@ export function EmailSettingsPanel() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<Record<string, string>>({});
   const [showSmtpKey, setShowSmtpKey] = useState(false);
+  const [disabledTemplates, setDisabledTemplates] = useState<Record<string, boolean>>({});
+  const [originalDisabled, setOriginalDisabled] = useState<Record<string, boolean>>({});
 
   // Check email config on mount
   useEffect(() => {
@@ -130,6 +134,14 @@ export function EmailSettingsPanel() {
         if (!data.error) {
           setSettings(data);
           setOriginalSettings(data);
+          // Parse disabled templates
+          if (data._disabledTemplates) {
+            try {
+              const parsed = JSON.parse(data._disabledTemplates);
+              setDisabledTemplates(parsed);
+              setOriginalDisabled(parsed);
+            } catch {}
+          }
         }
       })
       .catch(() => {})
@@ -207,19 +219,30 @@ export function EmailSettingsPanel() {
   const ALL_FIELDS = [...BREVO_FIELDS, ...TEMPLATE_FIELDS];
   const hasChanged = ALL_FIELDS.some(
     (f) => settings[f.key] !== originalSettings[f.key],
-  );
+  ) || disabledChanged;
+
+  const toggleTemplate = (type: string) => {
+    setDisabledTemplates((prev) => {
+      const updated = { ...prev, [type]: !prev[type] };
+      return updated;
+    });
+  };
+
+  const disabledChanged = JSON.stringify(disabledTemplates) !== JSON.stringify(originalDisabled);
 
   const handleSave = async () => {
     setSavingSettings(true);
     try {
+      const payload = { ...settings, _disabledTemplates: JSON.stringify(disabledTemplates) };
       const res = await fetch('/api/admin/email-template-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
         setOriginalSettings({ ...settings });
+        setOriginalDisabled({ ...disabledTemplates });
         toast.success(t('admin.email.settingsSaved'));
       } else {
         toast.error(data.error || t('common.failed'));
@@ -386,6 +409,56 @@ export function EmailSettingsPanel() {
             {savingSettings ? t('common.saving') : t('common.save')}
           </Button>
         </div>
+      </SolidCard>
+
+      {/* ── Template Toggles ── */}
+      <SolidCard>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Power className="h-4 w-4 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">{t('admin.email.templateToggles') || 'ইমেইল টেমপ্লেট অন/অফ'}</p>
+            <p className="text-[11px] text-muted-foreground">{t('admin.email.templateTogglesDesc') || 'প্রতিটি টেমপ্লেট আলাদাভাবে চালু বা বন্ধ করুন'}</p>
+          </div>
+          {disabledChanged && (
+            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700 shrink-0">
+              {t('admin.email.hasChanges')}
+            </Badge>
+          )}
+        </div>
+
+        {loadingSettings ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {EMAIL_TEMPLATES.map((template, i) => {
+              const isOff = disabledTemplates[template.type] === true;
+              return (
+                <div
+                  key={template.type}
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+                    isOff
+                      ? 'bg-muted/40 opacity-60'
+                      : 'bg-muted/20 hover:bg-accent/30'
+                  }`}
+                >
+                  <span className="text-lg shrink-0">{template.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{template.label}</p>
+                    <p className="text-[11px] text-muted-foreground">{template.description}</p>
+                  </div>
+                  <Switch
+                    checked={!isOff}
+                    onCheckedChange={() => toggleTemplate(template.type)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </SolidCard>
 
       {/* ── Configuration & Verification ── */}

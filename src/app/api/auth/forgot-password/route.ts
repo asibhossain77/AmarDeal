@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send OTP email (fire-and-forget)
-    sendEmail(user.email, () => passwordResetOtpEmail(user.name, otp)).catch((err) => {
+    sendEmail(user.email, () => passwordResetOtpEmail(user.name, otp), 'password_reset_otp').catch((err) => {
       console.error('[FORGOT PASSWORD EMAIL ERROR]', err);
     });
 

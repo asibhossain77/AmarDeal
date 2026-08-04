@@ -68,7 +68,7 @@ export async function POST(
         payout.accountType || '',
         payout.accountNumber || '',
         payout.type as 'seller_payout' | 'buyer_refund',
-      )).catch(() => {})
+      ), 'payout_completed').catch(() => {})
     }
 
     return NextResponse.json({ payout, success: true })

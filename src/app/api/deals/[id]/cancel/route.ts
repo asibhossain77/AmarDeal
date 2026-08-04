@@ -75,10 +75,10 @@ export async function POST(
     // Email: deal cancelled
     const cancellerName = deal.buyerId === userId ? (deal.buyer?.name || 'ক্রেতা') : (deal.seller?.name || 'বিক্রেতা')
     if (deal.buyer?.email && deal.buyerId !== userId) {
-      sendEmail(deal.buyer.email, () => dealCancelledEmail(deal.buyer.name || 'ক্রেতা', deal.title, cancellerName)).catch(() => {})
+      sendEmail(deal.buyer.email, () => dealCancelledEmail(deal.buyer.name || 'ক্রেতা', deal.title, cancellerName), 'deal_cancelled').catch(() => {})
     }
     if (deal.seller?.email && deal.sellerId !== userId) {
-      sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, cancellerName)).catch(() => {})
+      sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, cancellerName), 'deal_cancelled').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })
