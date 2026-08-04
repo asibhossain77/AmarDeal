@@ -3,7 +3,6 @@ import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
-import { db } from "@/lib/db";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/lib/query-client";
@@ -25,6 +24,7 @@ const DEFAULT_TITLE = "Midman মিডম্যান | বাংলাদে�
 export async function generateMetadata(): Promise<Metadata> {
   let siteTitle = "";
   try {
+    const { db } = await import("@/lib/db");
     const row = await db.platformSetting.findUnique({ where: { key: 'site_title' } });
     siteTitle = row?.value || "";
   } catch {}
