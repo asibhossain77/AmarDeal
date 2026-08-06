@@ -33,6 +33,7 @@ import {
   ListChecks,
   CircleHelp,
   Mail,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -136,6 +137,7 @@ function useDashboardNavItems() {
     { label: t('nav.transactions'), icon: ArrowLeftRight, panel: 'payment' },
     { label: t('nav.profile'), icon: UserCircle, panel: 'profile' },
     { label: t('nav.affiliate'), icon: Users, panel: 'affiliate' },
+    { label: t('nav.review'), icon: MessageSquare, panel: 'review' },
     { label: t('nav.settings'), icon: Settings, panel: 'settings' },
   ];
 }
