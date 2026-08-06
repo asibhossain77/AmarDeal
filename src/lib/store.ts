@@ -100,7 +100,10 @@ export const useAppStore = create<AppState>((set) => ({
     if (safeUser.isSeller) return set({ user: safeUser, view: 'seller', sidebarOpen: false, sellerPanel: 'overview', _prevView: null })
     return set({ user: safeUser, view: 'dashboard', sidebarOpen: false, dashboardPanel: 'overview', _prevView: null })
   },
-  logout: () => set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null }),
+  logout: () => {
+    fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null });
+  },
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   setDashboardPanel: (dashboardPanel) => set((s) => ({
     _prevDashPanel: s.dashboardPanel !== dashboardPanel ? s.dashboardPanel : s._prevDashPanel,
