@@ -21,6 +21,7 @@ import { MyDealsPanel } from './my-deals-panel';
 import { ProfilePanel } from './profile-panel';
 import { SettingsPanel } from './settings-panel';
 import { AffiliatePanel } from './affiliate-panel';
+import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 
@@ -508,6 +509,7 @@ export function DashboardMain() {
       {dashboardPanel === 'payment' && <UserPaymentView />}
       {dashboardPanel === 'profile' && <ProfilePanel />}
       {dashboardPanel === 'affiliate' && <AffiliatePanel />}
+      {dashboardPanel === 'review' && <DashboardReviewPanel />}
       {dashboardPanel === 'settings' && <SettingsPanel />}
     </div>
   );

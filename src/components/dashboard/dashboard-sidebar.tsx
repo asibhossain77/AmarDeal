@@ -10,6 +10,7 @@ import {
   LogOut,
   Settings,
   Users,
+  MessageSquare,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.transactions', icon: ArrowLeftRight, panel: 'payment' },
   { labelKey: 'nav.profile', icon: UserCircle, panel: 'profile' },
   { labelKey: 'nav.affiliate', icon: Users, panel: 'affiliate' },
+  { labelKey: 'nav.review', icon: MessageSquare, panel: 'review' },
   { labelKey: 'nav.settings', icon: Settings, panel: 'settings' },
 ];
 

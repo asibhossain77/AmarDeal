@@ -1,5 +1,7 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+
+const SESSION_COOKIE = 'amdeal_session'
 
 // GET /api/reviews — public: approved reviews only
 export async function GET() {
@@ -15,14 +17,15 @@ export async function GET() {
   }
 }
 
-// POST /api/reviews — submit review with email/phone verification
-export async function POST(request: Request) {
+// POST /api/reviews — submit review
+// Supports both authenticated (session cookie) and unauthenticated (contact-based) submission
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { rating, comment, contact } = body
 
-    if (!rating || !comment || !contact) {
-      return NextResponse.json({ error: 'রেটিং, মন্তব্য ও ইমেইল/ফোন আবশ্যক' }, { status: 400 })
+    if (!rating || !comment) {
+      return NextResponse.json({ error: 'রেটিং ও মন্তব্য আবশ্যক' }, { status: 400 })
     }
 
     if (rating < 1 || rating > 5) {
@@ -33,22 +36,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'মন্তব্য ৫০০ অক্ষরের বেশি হতে পারবে না' }, { status: 400 })
     }
 
-    const trimmed = contact.trim()
+    // Try authenticated route first (logged-in user)
+    const sessionId = request.cookies.get(SESSION_COOKIE)?.value
+    let user: { id: string; name: string } | null = null
 
-    // Find user by email or phone (SQLite default is case-insensitive for ASCII)
-    const user = await db.user.findFirst({
-      where: {
-        OR: [
-          { email: trimmed },
-          { phone: trimmed },
-        ],
-      },
-      select: { id: true, name: true },
-    })
+    if (sessionId) {
+      const dbUser = await db.user.findUnique({
+        where: { id: sessionId },
+        select: { id: true, name: true },
+      })
+      if (dbUser) user = dbUser
+    }
+
+    // Fallback: unauthenticated — verify by contact (email/phone)
+    if (!user && contact) {
+      const trimmed = contact.trim()
+      user = await db.user.findFirst({
+        where: {
+          OR: [
+            { email: trimmed },
+            { phone: trimmed },
+          ],
+        },
+        select: { id: true, name: true },
+      })
+    }
 
     if (!user) {
       return NextResponse.json(
-        { error: 'এই ইমেইল/ফোন নম্বর দিয়ে কোনো একাউন্ট নেই', code: 'NO_ACCOUNT' },
+        { error: 'একাউন্ট পাওয়া যায়নি', code: 'NO_ACCOUNT' },
         { status: 404 }
       )
     }
@@ -59,7 +75,7 @@ export async function POST(request: Request) {
     })
     if (existing) {
       return NextResponse.json(
-        { error: 'এই একাউন্ট দিয়ে ইতিমধ্যে একটি রিভিউ দেওয়া হয়েছে', code: 'ALREADY_REVIEWED' },
+        { error: 'আপনি ইতিমধ্যে একটি রিভিউ দিয়েছেন', code: 'ALREADY_REVIEWED' },
         { status: 400 }
       )
     }

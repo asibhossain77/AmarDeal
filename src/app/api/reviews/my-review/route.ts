@@ -1,41 +1,55 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
-// GET /api/reviews/my-review — check if a contact (email/phone) has already reviewed
+const SESSION_COOKIE = 'amdeal_session'
+
+// GET /api/reviews/my-review — check if a user has already reviewed
+// Supports both authenticated (session) and unauthenticated (contact param) modes
 export async function GET(request: NextRequest) {
   try {
-    const contact = request.nextUrl.searchParams.get('contact')
-    if (!contact) {
-      return NextResponse.json({ error: 'contact প্যারামিটার দিন' }, { status: 400 })
+    let userId: string | null = null
+
+    // Try authenticated route first
+    const sessionId = request.cookies.get(SESSION_COOKIE)?.value
+    if (sessionId) {
+      const user = await db.user.findUnique({
+        where: { id: sessionId },
+        select: { id: true },
+      })
+      if (user) userId = user.id
     }
 
-    const trimmed = contact.trim()
+    // Fallback: look up by contact param
+    if (!userId) {
+      const contact = request.nextUrl.searchParams.get('contact')
+      if (contact) {
+        const trimmed = contact.trim()
+        const user = await db.user.findFirst({
+          where: {
+            OR: [
+              { email: trimmed },
+              { phone: trimmed },
+            ],
+          },
+          select: { id: true },
+        })
+        if (user) userId = user.id
+      }
+    }
 
-    // SQLite is case-insensitive for ASCII by default, so no mode needed
-    const user = await db.user.findFirst({
-      where: {
-        OR: [
-          { email: trimmed },
-          { phone: trimmed },
-        ],
-      },
-      select: { id: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ reviewed: false, hasAccount: false }, { status: 404 })
+    if (!userId) {
+      return NextResponse.json({ reviewed: false, hasAccount: false, review: null })
     }
 
     const review = await db.review.findFirst({
-      where: { userId: user.id },
-      select: { id: true },
+      where: { userId },
     })
 
     if (!review) {
-      return NextResponse.json({ reviewed: false, hasAccount: true })
+      return NextResponse.json({ reviewed: false, hasAccount: true, review: null })
     }
 
-    return NextResponse.json({ reviewed: true, hasAccount: true })
+    return NextResponse.json({ reviewed: true, hasAccount: true, review })
   } catch {
     return NextResponse.json({ error: 'চেক করতে সমস্যা' }, { status: 500 })
   }

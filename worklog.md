@@ -1736,3 +1736,25 @@ Stage Summary:
 - Fix: Reordered declarations — `disabledChanged` now comes before `hasChanged`
 - File changed: src/components/admin/email-settings-panel.tsx
 - Verified: No errors in browser console, clean compilation
+
+---
+Task ID: 2
+Agent: Main
+Task: Add review/feedback feature to dashboard (sidebar nav + completed deal button + panel)
+
+Work Log:
+- Added 'review' to DashboardPanel type in store.ts
+- Updated /api/reviews POST to support authenticated (session cookie) submission
+- Updated /api/reviews/my-review GET to support session-based check
+- Created dashboard-review-panel.tsx with star rating, comment form, and existing review display
+- Added 'review' nav item (MessageSquare icon) to dashboard-sidebar.tsx
+- Added DashboardReviewPanel route in dashboard-main.tsx
+- Added 'Leave Review' button on completed deals in my-deals-panel.tsx
+- Added 14 new i18n keys (bn + en) for dashboard review feature
+- Added 'nav.review' key to both locale files
+
+Stage Summary:
+- Files changed: store.ts, reviews/route.ts, reviews/my-review/route.ts, dashboard-review-panel.tsx (new), dashboard-sidebar.tsx, dashboard-main.tsx, my-deals-panel.tsx, bn.ts, en.ts
+- Users can now: leave reviews from dashboard sidebar nav, see 'Leave Review' button on completed deals, view their submitted review
+- API supports both authenticated (auto-detect session) and unauthenticated (contact-based) submission
+- Lint passes (no new errors), dev server runs clean

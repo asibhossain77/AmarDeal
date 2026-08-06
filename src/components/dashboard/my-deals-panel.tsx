@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Eye, Inbox, Copy, Check, Search, X } from 'lucide-react';
+import { Loader2, Eye, Inbox, Copy, Check, Search, X, MessageSquare } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
@@ -209,7 +209,7 @@ export function MyDealsPanel() {
                   <p className="text-base font-semibold text-foreground truncate">{deal.title}</p>
                   <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   {getStatusBadge(deal.status, t)}
                   <Button
                     size="sm"
@@ -219,6 +219,17 @@ export function MyDealsPanel() {
                     <Eye className="h-3.5 w-3.5" />
                     {t('deals.view')}
                   </Button>
+                  {deal.status === 'completed' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDashboardPanel('review')}
+                      className="h-8 gap-1.5 rounded-lg text-xs font-semibold"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      {t('review.leaveReview')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>
