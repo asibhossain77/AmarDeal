@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-const SESSION_COOKIE = 'amdeal_session'
+const SESSION_COOKIE = 'midman_session'
 
 /* ═══════════════════════════════════════════════════════════
    Auth Guard — get user ID from session cookie
@@ -13,7 +13,7 @@ export type AuthGuardResult =
   | { ok: false; response: NextResponse }
 
 /**
- * Reads the `amdeal_session` cookie and returns the authenticated user's ID.
+ * Reads the `midman_session` cookie and returns the authenticated user's ID.
  * Does NOT check admin status — use `requireAdmin` for admin routes.
  *
  * Returns:

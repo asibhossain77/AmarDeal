@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 // Verify admin via cookie
 async function verifyAdmin() {
   const cookieStore = await cookies()
-  const session = cookieStore.get('amdeal_session')?.value
+  const session = cookieStore.get('midman_session')?.value
   if (!session) return null
   return db.admin.findFirst({ where: { userId: session } })
 }

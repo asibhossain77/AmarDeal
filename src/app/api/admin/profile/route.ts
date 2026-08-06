@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function PUT(req: NextRequest) {
   try {
     const userId = req.headers.get('X-User-Id')
-    const cookie = req.cookies.get('amdeal_session')?.value
+    const cookie = req.cookies.get('midman_session')?.value
     const id = userId || cookie
 
     if (!id) {

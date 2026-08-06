@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
-const SESSION_COOKIE = 'amdeal_session'
+const SESSION_COOKIE = 'midman_session'
 
 export async function GET(req: NextRequest) {
   try {

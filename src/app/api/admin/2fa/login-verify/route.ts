@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       isSeller: user.isSeller,
     })
 
-    response.cookies.set('amdeal_session', user.id, {
+    response.cookies.set('midman_session', user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

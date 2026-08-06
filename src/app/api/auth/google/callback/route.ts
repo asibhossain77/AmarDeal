@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
     // 4. Set session cookie and redirect
     const response = NextResponse.redirect(`${APP_URL}/?google_login=success`)
 
-    response.cookies.set('amdeal_session', user.id, {
+    response.cookies.set('midman_session', user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

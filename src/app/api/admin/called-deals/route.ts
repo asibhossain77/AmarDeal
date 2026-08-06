@@ -6,7 +6,7 @@ export async function GET() {
   try {
     // Admin auth via cookie
     const cookieStore = await cookies()
-    const session = cookieStore.get('amdeal_session')?.value
+    const session = cookieStore.get('midman_session')?.value
     if (!session) {
       return NextResponse.json({ error: 'অনুমতি নেই' }, { status: 401 })
     }

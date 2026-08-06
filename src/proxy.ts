@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 
-const SESSION_COOKIE = 'amdeal_session'
+const SESSION_COOKIE = 'midman_session'
 
 /**
  * Next.js 16 Proxy (formerly "Middleware") — runs on the Edge before any route handler.
@@ -25,7 +25,7 @@ const SESSION_COOKIE = 'amdeal_session'
  *    - Pass nonce downstream via x-nonce header.
  *
  * 3. Admin auth gate:
- *    - Require the amdeal_session cookie on /api/admin/* routes
+ *    - Require the midman_session cookie on /api/admin/* routes
  *      (except 2FA login-verify which SETS the cookie).
  */
 

@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Set session cookie for server-side auth (used by deal-guard, chat, etc.)
-    response.cookies.set('amdeal_session', user.id, {
+    response.cookies.set('midman_session', user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

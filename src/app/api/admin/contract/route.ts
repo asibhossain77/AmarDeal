@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 
 async function getAdminUserId(): Promise<string | null> {
   const cookieStore = await cookies();
-  const session = cookieStore.get('amdeal_session');
+  const session = cookieStore.get('midman_session');
   if (session?.value) return session.value;
   return null;
 }

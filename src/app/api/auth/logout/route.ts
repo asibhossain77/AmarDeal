@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const SESSION_COOKIE = 'amdeal_session'
+const SESSION_COOKIE = 'midman_session'
 
 export async function POST() {
   const response = NextResponse.json({ success: true })

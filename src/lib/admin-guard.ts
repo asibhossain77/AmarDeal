@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-const SESSION_COOKIE = 'amdeal_session'
+const SESSION_COOKIE = 'midman_session'
 
 export interface AdminRecord {
   id: string
@@ -16,7 +16,7 @@ export type AdminGuardResult =
   | { ok: false; response: NextResponse }
 
 /**
- * Reads the `amdeal_session` cookie from the request and queries the
+ * Reads the `midman_session` cookie from the request and queries the
  * `admins` table to confirm the user is an administrator.
  *
  * Returns the admin record (joined with user) if valid, or null if:
