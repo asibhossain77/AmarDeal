@@ -1,23 +1,30 @@
-# AmarDeal
+# Midman মিডম্যান
 
-AmarDeal is a comprehensive e-commerce and service platform built with Next.js.
+Midman (মিডম্যান) is Bangladesh's leading escrow service and P2P transaction platform. Built with Next.js.
 
 ## Pages
 
-- [Home](/) - Landing page with features, pricing, and reviews
-- [Login](/) - User authentication
-- [Dashboard](/) - User dashboard after login
-- [FAQ](/) - Frequently asked questions
-- [Contact](/) - Contact information
-- [Terms & Conditions](/) - Terms of service
-- [Privacy Policy](/) - Privacy policy
+- [Home](https://midman.bd/) - Escrow service landing page with features, pricing, and reviews
+- [How It Works](https://midman.bd/how-it-works) - Step-by-step escrow process guide
+- [Fees](https://midman.bd/fees) - Escrow fee structure and pricing
+- [Security](https://midman.bd/security) - Security measures and data protection
+- [FAQ](https://midman.bd/faq) - Frequently asked questions about escrow and P2P transactions
+- [About](https://midman.bd/about) - About Midman escrow service
+- [Contact](https://midman.bd/contact) - Contact information
+- [Privacy Policy](https://midman.bd/privacy) - Privacy policy
+- [Terms & Conditions](https://midman.bd/terms) - Terms of service
+- [Blog](https://midman.bd/blog) - Blog and updates
 
 ## Features
 
-- Product and service listings
-- User registration and login
-- AI-powered customer support chat
-- Fee structure and pricing
+- Escrow service for safe online transactions in Bangladesh
+- P2P (peer-to-peer) transaction support
+- bKash, Nagad, Rocket payment support
+- Buyer and seller protection
+- Deal tracking and real-time updates
+- Admin dashboard for dispute resolution
+- Refund and payout management
+- AI-powered customer support
 - User reviews and feedback system
-- Admin dashboard for user management
+- Affiliate program
 - Responsive design with dark mode support
