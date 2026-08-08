@@ -584,6 +584,31 @@ export async function sendEmail(to: string, input: EmailInput, templateType?: st
   console.log(`[EMAIL SENT] → ${to}: ${payload.subject}`);
 }
 
+/**
+ * Fast-track email for OTP/critical emails — skips disabled-template DB check
+ * and uses env vars directly to avoid DB round-trip on cold start.
+ */
+export async function sendOtpEmail(to: string, input: EmailInput): Promise<void> {
+  // Use env vars directly — skip DB query for settings
+  const smtpKey = process.env.BREVO_SMTP_KEY;
+  if (!smtpKey) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
+
+  const payload = resolvePayload(input);
+  const transporter = getTransporter();
+  if (!transporter) throw new Error('BREVO_SMTP_KEY সেট করা নেই।');
+
+  const fromAddr = process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'noreply@midman.bd';
+  const fromName = _settingsCache?.email_from_name || DEFAULTS.email_from_name;
+
+  await transporter.sendMail({
+    from: `${fromName} <${fromAddr}>`,
+    to,
+    subject: payload.subject,
+    html: payload.html,
+  });
+  console.log(`[OTP EMAIL SENT] → ${to}: ${payload.subject}`);
+}
+
 export function fireEmails(emails: Array<{ to: string; payload: EmailInput; type?: string }>) {
   for (const e of emails) {
     sendEmail(e.to, e.payload, e.type).catch((err) => {

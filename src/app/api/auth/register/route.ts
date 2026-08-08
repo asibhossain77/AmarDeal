@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { sendEmail, emailVerificationOtpEmail } from '@/lib/email'
+import { sendOtpEmail, emailVerificationOtpEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
 
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send verification OTP email (fire-and-forget)
-    sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp), 'welcome').catch((err) => {
+    sendOtpEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {
       console.error('[REG VERIFY EMAIL ERROR]', err)
     })
 

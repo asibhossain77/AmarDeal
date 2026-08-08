@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, emailVerificationOtpEmail } from '@/lib/email';
+import { sendOtpEmail, emailVerificationOtpEmail } from '@/lib/email';
 
 // Rate limit: max 3 resends per 10 min per user
 const _resends = new Map<string, { count: number; windowStart: number }>();
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       data: { resetToken: otp, resetTokenExpiry: otpExpiry },
     });
 
-    sendEmail(user.email, () => emailVerificationOtpEmail(user.name, otp), 'email_verification_otp').catch((err) => {
+    sendOtpEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {
       console.error('[RESEND VERIFY EMAIL ERROR]', err);
     });
 

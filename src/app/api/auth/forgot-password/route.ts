@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, passwordResetOtpEmail } from '@/lib/email';
+import { sendOtpEmail, passwordResetOtpEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send OTP email (fire-and-forget)
-    sendEmail(user.email, () => passwordResetOtpEmail(user.name, otp), 'password_reset_otp').catch((err) => {
+    sendOtpEmail(user.email, () => passwordResetOtpEmail(user.name, otp)).catch((err) => {
       console.error('[FORGOT PASSWORD EMAIL ERROR]', err);
     });
 
