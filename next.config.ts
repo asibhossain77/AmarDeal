@@ -45,7 +45,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml).*)',
+        source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|ref/).*)',
         destination: '/',
       },
     ];

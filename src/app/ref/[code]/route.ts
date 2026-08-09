@@ -1,18 +1,20 @@
 import { db } from '@/lib/db'
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
-
-export const dynamic = 'force-dynamic'
+import { NextRequest, NextResponse } from 'next/server'
 
 const REFERRAL_COOKIE_NAME = 'midman_ref'
 const REFERRAL_COOKIE_DAYS = 30
 
-interface Props {
-  params: Promise<{ code: string }>
-}
+export const dynamic = 'force-dynamic'
 
-export default async function ReferralPage({ params }: Props) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ code: string }> }
+) {
   const { code } = await params
+
+  // Build redirect response with explicit control over cookies
+  const baseUrl = new URL(req.url).origin
+  const response = NextResponse.redirect(`${baseUrl}/`)
 
   try {
     // Look up the referral code
@@ -21,11 +23,9 @@ export default async function ReferralPage({ params }: Props) {
       select: { id: true, name: true },
     })
 
-    const cookieStore = await cookies()
-
     if (referrer) {
       // Valid referral code — set cookie for 30 days
-      cookieStore.set(REFERRAL_COOKIE_NAME, JSON.stringify({
+      response.cookies.set(REFERRAL_COOKIE_NAME, JSON.stringify({
         code,
         referrerId: referrer.id,
       }), {
@@ -35,14 +35,15 @@ export default async function ReferralPage({ params }: Props) {
         path: '/',
         maxAge: REFERRAL_COOKIE_DAYS * 24 * 60 * 60,
       })
+      console.log(`[REFERRAL] Cookie set for code=${code}, referrerId=${referrer.id}`)
     } else {
       // Invalid code — clear any existing referral cookie
-      cookieStore.delete(REFERRAL_COOKIE_NAME)
+      response.cookies.delete(REFERRAL_COOKIE_NAME)
+      console.log(`[REFERRAL] Invalid code=${code}, cookie cleared`)
     }
   } catch (err) {
     console.error('[REFERRAL ROUTE ERROR]', err)
   }
 
-  // Always redirect to homepage
-  redirect('/')
+  return response
 }

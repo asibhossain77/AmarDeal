@@ -1758,3 +1758,21 @@ Stage Summary:
 - Users can now: leave reviews from dashboard sidebar nav, see 'Leave Review' button on completed deals, view their submitted review
 - API supports both authenticated (auto-detect session) and unauthenticated (contact-based) submission
 - Lint passes (no new errors), dev server runs clean
+---
+Task ID: 1
+Agent: Main
+Task: Fix referredBy null for new accounts created via referral link
+
+Work Log:
+- Identified 2 root causes:
+  1. `/ref/[code]/page.tsx` used `cookies().set()` + `redirect()` in a Server Component — Next.js throws NEXT_REDIRECT error internally, causing the Set-Cookie header to be lost
+  2. `next.config.ts` had a catch-all rewrite rule that rewrites ALL non-API paths to `/` — this meant `/ref/[code]` never reached the route handler
+- Fix 1: Converted `/ref/[code]/page.tsx` to `/ref/[code]/route.ts` (Route Handler) using `NextResponse.redirect()` with explicit `response.cookies.set()`
+- Fix 2: Added `ref/` to the negative lookahead in the rewrite rule: `(?!api|_next|...|ref/)`
+- End-to-end tested: curl /ref/ASI-SYE7V → 307 redirect + Set-Cookie with referrerId → register with cookie → referredBy correctly set
+
+Stage Summary:
+- Files changed: `next.config.ts` (exclude /ref/ from rewrite), `src/app/ref/[code]/route.ts` (new, replaces page.tsx), `src/app/ref/[code]/page.tsx` (deleted)
+- Root cause: catch-all rewrite intercepted /ref/ paths + Server Component cookies lost on redirect
+- Verified: new user registered via referral link has correct referredBy value
+
