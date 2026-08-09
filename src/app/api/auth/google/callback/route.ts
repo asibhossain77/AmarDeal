@@ -104,15 +104,16 @@ export async function GET(req: NextRequest) {
           if (parsed?.referrerId) {
             const referrer = await db.user.findUnique({
               where: { id: parsed.referrerId },
-              select: { id: true, referralCode: true, isActive: true },
+              select: { id: true, isActive: true },
             })
-            if (referrer?.isActive && referrer.referralCode === parsed.code) {
+            if (referrer?.isActive) {
               referredBy = referrer.id
+              console.log(`[REFERRAL] Google user registered via referral. referrerId=${parsed.referrerId}`)
             }
           }
         }
-      } catch {
-        // Skip referral linking on error
+      } catch (err) {
+        console.error('[REFERRAL COOKIE ERROR]', err)
       }
 
       user = await db.user.create({

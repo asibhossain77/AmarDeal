@@ -56,15 +56,16 @@ export async function POST(req: NextRequest) {
           // Verify the referrer exists and is active
           const referrer = await db.user.findUnique({
             where: { id: parsed.referrerId },
-            select: { id: true, referralCode: true, isActive: true },
+            select: { id: true, isActive: true },
           })
-          if (referrer?.isActive && referrer.referralCode === parsed.code) {
+          if (referrer?.isActive) {
             referredBy = referrer.id
+            console.log(`[REFERRAL] User registered via referral. referrerId=${parsed.referrerId}`)
           }
         }
       }
-    } catch {
-      // If cookie parsing fails, just skip referral linking
+    } catch (err) {
+      console.error('[REFERRAL COOKIE ERROR]', err)
     }
 
     // Hash the password before storing
