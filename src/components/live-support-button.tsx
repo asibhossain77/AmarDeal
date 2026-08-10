@@ -1,8 +1,9 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate, useTransform, PanInfo } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 interface ContactInfo {
@@ -329,7 +330,7 @@ export function LiveSupportButton() {
                   aria-label="মেসেজ পাঠান"
                 >
                   {aiLoading ? (
-                    <Loader2 className="h-4 w-4 text-primary-foreground animate-spin" />
+                    <LoadingAnimation size="sm" />
                   ) : (
                     <Send className="h-4 w-4 text-primary-foreground" />
                   )}

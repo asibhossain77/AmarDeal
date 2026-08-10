@@ -1,10 +1,11 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, MessageSquare, CheckCircle2, Send } from 'lucide-react';
+import { Star, MessageSquare, CheckCircle2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 
@@ -134,7 +135,7 @@ export function DashboardReviewPanel() {
       <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 sm:p-6 border border-border/50">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
           </div>
         ) : existingReview ? (
           /* Already Reviewed */
@@ -208,7 +209,7 @@ export function DashboardReviewPanel() {
               className="h-11 w-full sm:w-auto gap-2 rounded-xl px-8 text-sm font-semibold shadow-md shadow-primary/20"
             >
               {submitting ? (
-                <><Loader2 className="h-4 w-4 animate-spin" />{t('review.submitting')}</>
+                <><LoadingAnimation size="sm" />{t('review.submitting')}</>
               ) : (
                 <><Send className="h-4 w-4" />{t('review.submit')}</>
               )}
@@ -231,7 +232,7 @@ export function DashboardReviewPanel() {
 
         {reviewsLoading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
           </div>
         ) : allReviews.length === 0 ? (
           <div className="text-center py-10">

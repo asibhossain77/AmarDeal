@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
@@ -13,7 +14,6 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Loader2,
   X,
   Save,
   RefreshCw,
@@ -125,7 +125,7 @@ function FeeRuleForm({
           disabled={loading}
           className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {loading ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
           {initial ? t('common.update') : t('common.add')}
         </Button>
         <Button
@@ -312,7 +312,7 @@ export function FeeRulesPanel() {
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <LoadingAnimation size="md" />
         </div>
       )}
 

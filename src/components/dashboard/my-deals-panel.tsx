@@ -1,11 +1,12 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Eye, Inbox, Copy, Check, Search, X, MessageSquare } from 'lucide-react';
+import { Eye, Inbox, Copy, Check, Search, X, MessageSquare } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
@@ -168,7 +169,7 @@ export function MyDealsPanel() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <LoadingAnimation size="lg" />
         </div>
       ) : filteredDeals.length === 0 ? (
         <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 text-center">

@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useSyncExternalStore } from 'react';
@@ -6,7 +7,7 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Mail, Phone, KeyRound, Eye, EyeOff, Loader2, Save, UserCircle } from 'lucide-react';
+import { Mail, Phone, KeyRound, Eye, EyeOff, Save, UserCircle } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
 
@@ -144,7 +145,7 @@ export function AdminProfilePanel() {
             onClick={handleSaveEmail}
             className="h-11 gap-1.5 rounded-xl text-xs font-semibold shrink-0 px-4"
           >
-            {saving === 'email' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving === 'email' ? <LoadingAnimation size="sm" /> : <Save className="h-3.5 w-3.5" />}
             {t('common.save')}
           </Button>
         </div>
@@ -171,7 +172,7 @@ export function AdminProfilePanel() {
             onClick={handleSavePhone}
             className="h-11 gap-1.5 rounded-xl text-xs font-semibold shrink-0 px-4"
           >
-            {saving === 'phone' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving === 'phone' ? <LoadingAnimation size="sm" /> : <Save className="h-3.5 w-3.5" />}
             {t('common.save')}
           </Button>
         </div>
@@ -224,7 +225,7 @@ export function AdminProfilePanel() {
             disabled={saving === 'password' || !currentPassword || !newPassword || newPassword.length < 4}
             onClick={handleSavePassword}
           >
-            {saving === 'password' ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+            {saving === 'password' ? <LoadingAnimation size="sm" /> : <KeyRound className="h-4 w-4" />}
             {t('admin.profile.changePasswordBtn')}
           </Button>
         </div>

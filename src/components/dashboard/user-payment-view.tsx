@@ -6,7 +6,6 @@ import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
-  Loader2,
   Inbox,
   ArrowUpRight,
   ArrowDownLeft,

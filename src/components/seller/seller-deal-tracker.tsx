@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
@@ -22,7 +23,6 @@ import {
   ScrollText,
   SendHorizonal,
   Shield,
-  Loader2,
   PackageCheck,
   AlertTriangle,
   XCircle,
@@ -389,7 +389,7 @@ export function SellerDealTracker() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }
@@ -521,7 +521,7 @@ export function SellerDealTracker() {
                     boxShadow: '0 6px 24px rgba(163,230,53,0.3)',
                   }}
                 >
-                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <PackageCheck className="h-5 w-5" />}
+                  {actionLoading ? <LoadingAnimation size="sm" /> : <PackageCheck className="h-5 w-5" />}
                   কাজ সম্পন্ন
                 </Button>
                 <Button
@@ -530,7 +530,7 @@ export function SellerDealTracker() {
                   variant="outline"
                   className="flex-1 h-12 rounded-xl text-base font-semibold gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                 >
-                  {actionLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <XCircle className="h-5 w-5" />}
+                  {actionLoading ? <LoadingAnimation size="sm" /> : <XCircle className="h-5 w-5" />}
                   ক্যান্সেল করুন
                 </Button>
               </div>

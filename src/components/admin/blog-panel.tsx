@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState } from 'react';
@@ -29,7 +30,6 @@ import {
   Save,
   ArrowLeft,
   BookOpen,
-  Loader2,
 } from 'lucide-react';
 
 interface BlogPost {
@@ -223,7 +223,7 @@ export function BlogPanel() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }

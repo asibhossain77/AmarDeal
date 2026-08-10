@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
@@ -16,7 +17,6 @@ import {
   Plus,
   Truck,
   Pencil,
-  Loader2,
   PackageCheck,
   Eye,
 } from 'lucide-react';
@@ -250,7 +250,7 @@ function ActiveDealsPanel() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <LoadingAnimation size="lg" />
         </div>
       ) : deals.length === 0 ? (
         <SolidCard className="text-center py-12">

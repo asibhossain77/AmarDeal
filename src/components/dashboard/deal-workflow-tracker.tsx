@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
@@ -32,7 +33,6 @@ import {
   SendHorizonal,
   Shield,
   Bot,
-  Loader2,
   PackageCheck,
   AlertTriangle,
   XCircle,
@@ -92,7 +92,7 @@ function PipraPayButton({ dealId }: { dealId?: string }) {
       disabled={loading}
       className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-semibold transition-all disabled:opacity-50 shadow-md"
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+      {loading ? <LoadingAnimation size="sm" /> : <Zap className="h-4 w-4" />}
       {loading ? 'পেমেন্ট হচ্ছে...' : 'PipraPay অটোমেশন'}
     </button>
   );
@@ -420,7 +420,7 @@ function PaymentDialog({
                     className={`h-11 rounded-xl pr-9 ${txnDuplicate ? 'border-red-500 focus-visible:ring-red-500/30' : ''}`}
                   />
                   {txnChecking && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+                    <LoadingAnimation size="sm" className="absolute right-3 top-1/2 -translate-y-1/2" />
                   )}
                 </div>
                 {txnDuplicate && (
@@ -468,7 +468,7 @@ function PaymentDialog({
                 disabled={submitting || !senderNumber.trim() || !transactionId.trim() || !!txnDuplicate}
               >
                 {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoadingAnimation size="sm" />
                 ) : (
                   <ArrowRight className="h-4 w-4" />
                 )}
@@ -780,7 +780,7 @@ function PayoutRefundDialog({
                   disabled={submitting || !accountNumber.trim() || !accountName.trim()}
                 >
                   {submitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoadingAnimation size="sm" />
                   ) : isPayout ? (
                     <Banknote className="h-4 w-4" />
                   ) : (
@@ -1379,7 +1379,7 @@ function ActionButton({
         boxShadow: PARROT_GREEN_GLOW,
       } : undefined}
     >
-      {loading ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : children}
+      {loading ? <LoadingAnimation size="sm" /> : children}
     </Button>
   );
 }
@@ -1934,7 +1934,7 @@ export function DealWorkflowTracker() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }
@@ -2543,7 +2543,7 @@ export function DealWorkflowTracker() {
               >
                 {chatLoading && (
                   <div className="flex justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    <LoadingAnimation size="sm" />
                   </div>
                 )}
 
@@ -2619,7 +2619,7 @@ export function DealWorkflowTracker() {
                     }}
                     aria-label="পাঠান"
                   >
-                    {sendingMsg ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizonal className="h-5 w-5" />}
+                    {sendingMsg ? <LoadingAnimation size="sm" /> : <SendHorizonal className="h-5 w-5" />}
                   </motion.button>
                 </div>
               </div>

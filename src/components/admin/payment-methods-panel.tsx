@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
@@ -16,7 +17,6 @@ import {
   Save,
   X,
   Palette,
-  Loader2,
   Eye,
   Wallet,
   ImageIcon,
@@ -271,7 +271,7 @@ export function PaymentMethodsPanel() {
   if (loading)
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingAnimation size="lg" />
       </div>
     );
 
@@ -375,7 +375,7 @@ export function PaymentMethodsPanel() {
                           <div className="flex items-center justify-center gap-2">
                             <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 gap-1.5 rounded-lg text-xs font-medium"><Pencil className="h-3.5 w-3.5" /> {t("common.edit")}</Button>
                             <Button size="sm" variant="outline" disabled={deletingId === m.id} onClick={() => handleDelete(m.id)} className="h-8 gap-1.5 rounded-lg text-xs font-medium border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10">
-                              {deletingId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {t("common.delete")}
+                              {deletingId === m.id ? <LoadingAnimation size="sm" /> : <Trash2 className="h-3.5 w-3.5" />} {t("common.delete")}
                             </Button>
                           </div>
                         </td>
@@ -419,7 +419,7 @@ export function PaymentMethodsPanel() {
                       <div className="flex gap-1.5">
                         <Button size="sm" variant="outline" onClick={() => openEdit(m)} className="h-8 px-2.5 rounded-lg text-[11px] font-medium"><Pencil className="h-3 w-3" /> {t("common.edit")}</Button>
                         <Button size="sm" variant="outline" disabled={deletingId === m.id} onClick={() => handleDelete(m.id)} className="h-8 px-2.5 rounded-lg text-[11px] font-medium border-red-200 text-red-600 dark:border-red-800/50 dark:text-red-400">
-                          {deletingId === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                          {deletingId === m.id ? <LoadingAnimation size="sm" /> : <Trash2 className="h-3 w-3" />}
                         </Button>
                       </div>
                     </div>
@@ -728,7 +728,7 @@ export function PaymentMethodsPanel() {
                     className="h-10 gap-2 rounded-xl px-5 text-sm font-semibold shadow-md shadow-primary/20"
                   >
                     {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <LoadingAnimation size="sm" />
                     ) : (
                       <Save className="h-4 w-4" />
                     )}

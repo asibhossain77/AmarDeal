@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useSyncExternalStore, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -13,7 +14,6 @@ import {
   ArrowLeft,
   Eye,
   EyeOff,
-  Loader2,
   LogIn,
   UserPlus,
   ArrowRight,
@@ -253,7 +253,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
               <div className="relative">
                 <Input type="email" placeholder={t('auth.emailPlaceholder')} value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()} className={`${inputClass} pl-10 pr-10`} />
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                {emailStatus === 'checking' && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                {emailStatus === 'checking' && <LoadingAnimation size="sm" className="absolute right-3 top-1/2 -translate-y-1/2" />}
                 {emailStatus === 'found' && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />}
                 {emailStatus === 'not-found' && <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />}
                 {emailStatus === 'unverified' && <MailCheck className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />}
@@ -313,7 +313,7 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
           <ArrowLeft className="h-4 w-4" />{step === 1 ? t('auth.back') : t('auth.previous')}
         </Button>
         <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
+          {loading ? <LoadingAnimation size="sm" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
           {step === 1 ? t('auth.sendCode') : step === 2 ? t('auth.verifyCode') : t('auth.resetPassword')}
         </Button>
       </div>
@@ -423,7 +423,7 @@ function EmailVerifyForm({
           <ArrowLeft className="h-4 w-4" />{t('auth.back')}
         </Button>
         <Button onClick={handleVerify} disabled={loading || otp.length !== 6} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+          {loading ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-5 w-5" />}
           {t('auth.verifyCode')}
         </Button>
       </div>
@@ -604,14 +604,14 @@ function LoginForm({
               disabled={totpCode.length !== 6 || totpLoading}
               className="flex-1 h-11 gap-2"
             >
-              {totpLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+              {totpLoading ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-4 w-4" />}
               {t('auth.verifyCode')}
             </Button>
           </div>
         </motion.div>
       ) : (
         <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
+          {loading ? <LoadingAnimation size="sm" /> : <LogIn className="h-5 w-5" />}
           {t('auth.loginButton')}
         </Button>
       )}
@@ -708,7 +708,7 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
         )}
       </AnimatePresence>
       <Button onClick={handleRegister} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <UserPlus className="h-5 w-5" />}
+        {loading ? <LoadingAnimation size="sm" /> : <UserPlus className="h-5 w-5" />}
         {t('auth.createAccount')}
       </Button>
     </div>

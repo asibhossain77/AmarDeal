@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, FileText, PlusCircle, Receipt } from 'lucide-react';
+import { FileText, PlusCircle, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 
@@ -279,7 +280,7 @@ export function NewDealForm() {
             className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 dark:glow-lime gap-2.5"
           >
             {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <LoadingAnimation size="sm" />
             ) : (
               <FileText className="h-5 w-5" />
             )}

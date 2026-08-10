@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,6 @@ import { toast } from 'sonner';
 import {
   ShieldAlert,
   ShieldCheck,
-  Loader2,
   Copy,
   Check,
   QrCode,
@@ -220,7 +220,7 @@ export function TwoFactorPanel() {
               </span>
             )
           ) : (
-            <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="sm" />
           )
         }
       />
@@ -312,7 +312,7 @@ export function TwoFactorPanel() {
                   disabled={verifyCode.length !== 6 || enabling}
                   className="gap-2"
                 >
-                  {enabling ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  {enabling ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-4 w-4" />}
                   {enabling ? t('admin.twoFactor.verifying') : t('admin.twoFactor.activateBtn')}
                 </Button>
               </div>
@@ -381,7 +381,7 @@ export function TwoFactorPanel() {
                         disabled={disableCode.length !== 6 || disabling}
                         className="gap-2 shrink-0"
                       >
-                        {disabling ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        {disabling ? <LoadingAnimation size="sm" /> : null}
                         {t('common.confirm')}
                       </Button>
                     </div>

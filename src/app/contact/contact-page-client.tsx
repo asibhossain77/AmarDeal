@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -9,7 +10,6 @@ import {
   Mail,
   ArrowLeft,
   ExternalLink,
-  Loader2,
   User,
   Facebook,
   Users,
@@ -108,7 +108,7 @@ export function ContactPageClient() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }

@@ -1,9 +1,10 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, BookOpen, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useT } from '@/lib/i18n';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -186,7 +187,7 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }
@@ -274,7 +275,7 @@ export function BlogView() {
     if (loadingPost) {
       return (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <LoadingAnimation size="lg" />
         </div>
       );
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useSyncExternalStore, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -7,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Mail, Phone, Shield, Crown, Store, Camera, Loader2, Check, X } from 'lucide-react';
+import { User, Mail, Phone, Shield, Crown, Store, Camera, Check, X } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { toast } from 'sonner';
 
@@ -184,7 +185,7 @@ export function ProfilePanel() {
                 onClick={handleSaveImage}
                 disabled={saving || !imageLink.trim() || imageLink.trim() === (user?.imageLink || '')}
               >
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                {saving ? <LoadingAnimation size="sm" /> : <Check className="h-3.5 w-3.5" />}
                 <span className="hidden sm:inline">সেভ</span>
               </Button>
             )}

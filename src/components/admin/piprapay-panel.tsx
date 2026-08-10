@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,6 @@ import { toast } from 'sonner';
 import {
   CreditCard,
   Save,
-  Loader2,
   Eye,
   EyeOff,
   CheckCircle2,
@@ -115,7 +115,7 @@ export function PipraPayPanel() {
       <SolidCard>
         <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/30 p-3">
           {loading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+            <LoadingAnimation size="sm" className="shrink-0" />
           ) : isEnabled && isConfigured ? (
             <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
           ) : (
@@ -210,7 +210,7 @@ export function PipraPayPanel() {
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
             <span className="ml-2 text-sm text-muted-foreground">লোড হচ্ছে...</span>
           </div>
         ) : (
@@ -281,7 +281,7 @@ export function PipraPayPanel() {
             disabled={saving || !hasChanged || loading}
             className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
             {saving ? 'সেভ হচ্ছে...' : 'সেভ করুন'}
           </Button>
         </div>

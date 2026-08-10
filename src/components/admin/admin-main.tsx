@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useRef, useSyncExternalStore, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -50,7 +51,6 @@ import {
   Users,
   Settings,
   CheckCircle,
-  Loader2,
   Search,
   ChevronDown,
   XCircle,
@@ -807,7 +807,7 @@ function PaymentVerifyPanel() {
                   className="h-11 gap-1.5 px-3 shrink-0 rounded-lg"
                 >
                   {isUpdatingAmount ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoadingAnimation size="sm" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
@@ -845,7 +845,7 @@ function PaymentVerifyPanel() {
                 className="w-full h-13 gap-2 rounded-xl text-base font-bold shadow-lg shadow-primary/25"
               >
                 {isActing ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <LoadingAnimation size="sm" />
                 ) : (
                   <ShieldCheck className="h-5 w-5" />
                 )}
@@ -916,7 +916,7 @@ function PaymentVerifyPanel() {
                     disabled={isActing}
                     className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
                   >
-                    {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    {isActing ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-4 w-4" />}
                     Yes, Verify
                   </Button>
                 </AlertDialogFooter>
@@ -953,7 +953,7 @@ function PaymentVerifyPanel() {
                     disabled={isActing}
                     className="gap-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
                   >
-                    {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+                    {isActing ? <LoadingAnimation size="sm" /> : <AlertTriangle className="h-4 w-4" />}
                     Yes, Wrong Info
                   </Button>
                 </AlertDialogFooter>
@@ -990,7 +990,7 @@ function PaymentVerifyPanel() {
                     disabled={isActing}
                     className="gap-2 bg-red-500 hover:bg-red-600 text-white rounded-xl"
                   >
-                    {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldX className="h-4 w-4" />}
+                    {isActing ? <LoadingAnimation size="sm" /> : <ShieldX className="h-4 w-4" />}
                     Yes, Cancel
                   </Button>
                 </AlertDialogFooter>
@@ -1305,7 +1305,7 @@ function AllDealsPanel() {
                 size="sm"
                 className="h-10 rounded-xl px-4 gap-2"
               >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
+                {sending ? <LoadingAnimation size="sm" /> : <SendHorizonal className="h-4 w-4" />}
                 <span className="hidden sm:inline">Send</span>
               </Button>
             </div>
@@ -1702,7 +1702,7 @@ function UsersPanel() {
                   onClick={() => handleAction(u.id, 'change_password', newPassword)}
                   className="h-10 gap-1.5 rounded-lg text-xs font-semibold shrink-0"
                 >
-                  {isActing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  {isActing ? <LoadingAnimation size="sm" /> : <Save className="h-3.5 w-3.5" />}
                   {t('common.save')}
                 </Button>
               </div>
@@ -1736,7 +1736,7 @@ function UsersPanel() {
                   }`}
                 >
                   {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoadingAnimation size="sm" />
                   ) : u.isActive ? (
                     <UserX className="h-4 w-4" />
                   ) : (
@@ -1852,7 +1852,7 @@ function UsersPanel() {
               <div className="max-h-80 overflow-y-auto">
                 {dealsLoading ? (
                   <div className="flex items-center justify-center py-10">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <LoadingAnimation size="md" />
                   </div>
                 ) : userDeals.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 text-center px-4">
@@ -2115,7 +2115,7 @@ function UsersPanel() {
                 disabled={permSaving}
                 className="gap-2"
               >
-                {permSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {permSaving ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
                 Save
               </Button>
             </AlertDialogFooter>
@@ -2327,7 +2327,7 @@ function SettingsPanel() {
                     />
                     <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
                       {logoUploading ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <LoadingAnimation size="sm" />
                       ) : (
                         <Upload className="h-3.5 w-3.5" />
                       )}
@@ -2401,7 +2401,7 @@ function SettingsPanel() {
               className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
             >
               {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingAnimation size="sm" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -2445,7 +2445,7 @@ function SettingsPanel() {
               className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
             >
               {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingAnimation size="sm" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -2512,7 +2512,7 @@ function SettingsPanel() {
               className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
             >
               {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingAnimation size="sm" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -2742,7 +2742,7 @@ function PayoutsPanel() {
                   className="w-full h-12 gap-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/25 bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   {isActing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LoadingAnimation size="sm" />
                   ) : (
                     <CheckCircle className="h-4 w-4" />
                   )}
@@ -2781,7 +2781,7 @@ function PayoutsPanel() {
                         disabled={isActing}
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                       >
-                        {isActing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                        {isActing ? <LoadingAnimation size="sm" /> : <CheckCircle className="h-4 w-4" />}
                         {t('admin.payouts.confirmMarkPaidBtn')}
                       </Button>
                     </AlertDialogFooter>
@@ -3132,7 +3132,7 @@ function DisputesPanel() {
                 disabled={!!resolving}
                 className="w-full h-11 gap-2 rounded-xl text-sm font-bold shadow-md shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                {resolving === 'complete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                {resolving === 'complete' ? <LoadingAnimation size="sm" /> : <CheckCircle className="h-4 w-4" />}
                 {t('admin.disputes.paySeller')}
               </Button>
             </AlertDialogTrigger>
@@ -3159,7 +3159,7 @@ function DisputesPanel() {
                 variant="outline"
                 className="w-full h-11 gap-2 rounded-xl text-sm font-bold border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
               >
-                {resolving === 'refund_buyer' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                {resolving === 'refund_buyer' ? <LoadingAnimation size="sm" /> : <XCircle className="h-4 w-4" />}
                 {t('admin.disputes.refundBuyer')}
               </Button>
             </AlertDialogTrigger>
@@ -3209,7 +3209,7 @@ function DisputesPanel() {
                 size="sm"
                 className="h-10 rounded-xl px-4 gap-2"
               >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
+                {sending ? <LoadingAnimation size="sm" /> : <SendHorizonal className="h-4 w-4" />}
                 <span className="hidden sm:inline">{t('admin.chat.send')}</span>
               </Button>
             </div>
@@ -3231,7 +3231,7 @@ function DisputesPanel() {
           <p className="text-sm text-muted-foreground">{t('admin.disputes.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDeals} className="gap-2 rounded-xl">
-          <Loader2 className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : 'hidden'}`} />
+          { loading ? <LoadingAnimation size="sm" /> : null }
           {t('common.refresh')}
         </Button>
       </div>
@@ -3479,7 +3479,7 @@ function AdminCallsPanel() {
             disabled={endingCall}
             className="gap-1.5 rounded-xl text-xs font-medium border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
           >
-            {endingCall ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+            {endingCall ? <LoadingAnimation size="sm" /> : <XCircle className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{t('admin.liveChat.endChat')}</span>
           </Button>
         </div>
@@ -3513,7 +3513,7 @@ function AdminCallsPanel() {
                 size="sm"
                 className="h-10 rounded-xl px-4 gap-2"
               >
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizonal className="h-4 w-4" />}
+                {sending ? <LoadingAnimation size="sm" /> : <SendHorizonal className="h-4 w-4" />}
                 <span className="hidden sm:inline">{t('admin.chat.send')}</span>
               </Button>
             </div>
@@ -3532,7 +3532,7 @@ function AdminCallsPanel() {
           <p className="text-sm text-muted-foreground">{t('admin.liveChat.subtitle')}</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchDeals} className="gap-2 rounded-xl">
-          <Loader2 className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : 'hidden'}`} />
+          { loading ? <LoadingAnimation size="sm" /> : null }
           {t('common.refresh')}
         </Button>
       </div>

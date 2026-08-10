@@ -1,7 +1,8 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore } from 'react';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
@@ -30,7 +31,7 @@ export function ContractSection() {
     return (
       <section id="terms" className="py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoadingAnimation size="lg" />
         </div>
       </section>
     );

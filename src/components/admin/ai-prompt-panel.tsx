@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useRef } from 'react';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Loader2, Save, Bot, Sparkles, RotateCcw, Send, MessageSquare, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { Save, Bot, Sparkles, RotateCcw, Send, MessageSquare, Info, CheckCircle, AlertCircle } from 'lucide-react';
 
 const DEFAULT_PROMPT = `তুমি "মিডম্যান" (Midman) এর AI সাপোর্ট অ্যাসিস্ট্যান্ট। তোমার কাজ ইউজারদের প্রশ্নের সঠিক উত্তর দেওয়া।
 
@@ -173,7 +174,7 @@ export function AiPromptPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }
@@ -249,7 +250,7 @@ export function AiPromptPanel() {
               className="rounded-xl px-6 gap-2"
             >
               {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoadingAnimation size="sm" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
@@ -368,7 +369,7 @@ export function AiPromptPanel() {
                 className="rounded-xl px-4 gap-2"
               >
                 {testLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoadingAnimation size="sm" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}

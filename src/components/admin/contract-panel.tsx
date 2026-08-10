@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect, useSyncExternalStore } from 'react';
@@ -11,7 +12,6 @@ import {
   User,
   ImageIcon,
   Save,
-  Loader2,
   Eye,
   EyeOff,
 } from 'lucide-react';
@@ -106,7 +106,7 @@ export function ContractPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingAnimation size="lg" />
       </div>
     );
   }
@@ -209,7 +209,7 @@ export function ContractPanel() {
             onClick={handleSaveAdminInfo}
           >
             {saving === 'admin' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoadingAnimation size="sm" />
             ) : (
               <Save className="h-4 w-4" />
             )}
@@ -249,7 +249,7 @@ export function ContractPanel() {
             onClick={handleSaveContent}
           >
             {saving === 'content' ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoadingAnimation size="sm" />
             ) : (
               <Save className="h-4 w-4" />
             )}

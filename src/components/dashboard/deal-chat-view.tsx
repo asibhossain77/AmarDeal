@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -12,7 +13,6 @@ import {
   Send,
   Bot,
   ShieldCheck,
-  Loader2,
   MessageSquare,
   Image as ImageIcon,
   Paperclip,
@@ -456,7 +456,7 @@ export function DealChatView() {
       >
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
           </div>
         ) : messages.length === 0 ? (
           <EmptyState t={t} />
@@ -546,7 +546,7 @@ export function DealChatView() {
             aria-label={t('chat.send')}
           >
             {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoadingAnimation size="sm" />
             ) : (
               <Send className="h-4 w-4" />
             )}

@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon, Send } from 'lucide-react';
+import { Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon, Send } from 'lucide-react';
 import { invalidateSiteSettingsCache } from '@/lib/use-site-settings';
 
 interface ContactData {
@@ -93,7 +94,7 @@ export function ContactInfoPanel() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex items-center justify-center py-20"><LoadingAnimation size="lg" /></div>;
   }
 
   return (
@@ -209,7 +210,7 @@ export function ContactInfoPanel() {
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} className="gap-2 rounded-xl h-11 font-medium shadow-md shadow-primary/20 px-6">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
           {t('common.save')}
         </Button>
       </div>

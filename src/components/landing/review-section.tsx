@@ -1,9 +1,10 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Send, MessageSquarePlus, Loader2, Mail, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Star, Send, MessageSquarePlus, Mail, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -274,7 +275,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
           )}
           {checkingStatus && (
             <div className="mt-1.5 flex items-center gap-1.5">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <LoadingAnimation size="sm" />
               <span className="text-xs text-muted-foreground">{t('review.verifying')}</span>
             </div>
           )}
@@ -312,7 +313,7 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
           className="w-full gap-2"
         >
           {mutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <LoadingAnimation size="sm" />
           ) : (
             <Send className="h-4 w-4" />
           )}
@@ -397,7 +398,7 @@ export function ReviewSection() {
           <div>
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <LoadingAnimation size="lg" />
               </div>
             ) : !reviews?.length ? (
               <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-border/60">

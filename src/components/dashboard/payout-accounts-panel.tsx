@@ -1,9 +1,10 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Banknote, Clock, Check, XCircle, ArrowLeft, Loader2, Inbox } from 'lucide-react';
+import { Banknote, Clock, Check, XCircle, ArrowLeft, Inbox } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
@@ -111,7 +112,7 @@ export function PayoutAccountsPanel() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <LoadingAnimation size="lg" />
         </div>
       ) : payouts.length === 0 ? (
         <motion.div

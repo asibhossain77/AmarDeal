@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useCallback } from 'react';
 import { useT } from '@/lib/i18n';
 import { toast } from 'sonner';
@@ -19,7 +20,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Users, Wallet, Clock, TrendingUp, Save, Loader2, Copy,
+  Users, Wallet, Clock, TrendingUp, Save, Copy,
   CheckCircle, XCircle, Banknote, Inbox, AlertTriangle, ShieldCheck, CircleCheck,
 } from 'lucide-react';
 
@@ -267,7 +268,7 @@ export function AdminAffiliatePanel() {
             <Input type="number" min={1} max={100} value={commissionPercent} onChange={() => {}} className="h-10" disabled={savingPercent} />
           </div>
           <Button onClick={handleSavePercent} disabled={savingPercent} className="h-10 gap-1.5" style={{ backgroundColor: PARROT_GREEN }}>
-            {savingPercent ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {savingPercent ? <LoadingAnimation size="sm" /> : <Save className="h-3.5 w-3.5" />}
             {t('adminAff.save')}
           </Button>
         </div>
@@ -287,7 +288,7 @@ export function AdminAffiliatePanel() {
           </div>
           {withdrawTab === 'pending' && pendingWdCount > 0 && (
             <Button size="sm" className="h-8 gap-1.5 text-xs font-semibold text-white rounded-lg" style={{ backgroundColor: PARROT_GREEN }} onClick={handleBatchApprove} disabled={actionLoading === 'batch'}>
-              {actionLoading === 'batch' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />}
+              {actionLoading === 'batch' ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-3 w-3" />}
               {t('adminAff.batchApprove')}
             </Button>
           )}
@@ -363,18 +364,18 @@ export function AdminAffiliatePanel() {
                     {w.status === 'pending' && (
                       <>
                         <Button size="sm" variant="outline" className="h-9 gap-1.5 text-xs font-semibold text-red-600 border-red-200 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10 rounded-lg" onClick={() => setRejectDialog({ open: true, id: w.id, name: w.user?.name || '' })} disabled={actionLoading === w.id}>
-                          {actionLoading === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                          {actionLoading === w.id ? <LoadingAnimation size="sm" /> : <XCircle className="h-3.5 w-3.5" />}
                           {t('adminAff.reject')}
                         </Button>
                         <Button size="sm" className="h-9 gap-1.5 text-xs font-semibold text-white rounded-lg" style={{ backgroundColor: PARROT_GREEN }} onClick={() => handleApprove(w.id)} disabled={actionLoading === w.id}>
-                          {actionLoading === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                          {actionLoading === w.id ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                           {t('adminAff.approve')}
                         </Button>
                       </>
                     )}
                     {w.status === 'approved' && (
                       <Button size="sm" className="h-9 gap-1.5 text-xs font-semibold text-white rounded-lg" style={{ backgroundColor: PARROT_GREEN }} onClick={() => handleComplete(w.id)} disabled={actionLoading === w.id}>
-                        {actionLoading === w.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CircleCheck className="h-3.5 w-3.5" />}
+                        {actionLoading === w.id ? <LoadingAnimation size="sm" /> : <CircleCheck className="h-3.5 w-3.5" />}
                         {t('adminAff.markPaid')}
                       </Button>
                     )}
@@ -493,7 +494,7 @@ export function AdminAffiliatePanel() {
               {t('affiliate.cancel')}
             </Button>
             <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={!!actionLoading}>
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              {actionLoading ? <LoadingAnimation size="sm" /> : <XCircle className="h-4 w-4" />}
               {t('adminAff.reject')}
             </Button>
           </DialogFooter>

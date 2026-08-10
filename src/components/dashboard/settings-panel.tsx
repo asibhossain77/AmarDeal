@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
@@ -8,7 +9,7 @@ import { useTranslation, type Locale } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Loader2, Globe } from 'lucide-react';
+import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 const emptySubscribe = () => () => {};
@@ -147,7 +148,7 @@ export function SettingsPanel() {
               disabled={saving || !currentPassword || !newPassword || newPassword.length < 4}
               onClick={handleChangePassword}
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+              {saving ? <LoadingAnimation size="sm" /> : <KeyRound className="h-4 w-4" />}
               {t('settings.changePassword')}
             </Button>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -16,7 +17,6 @@ import {
   Link2,
   ArrowDownToLine,
   X,
-  Loader2,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
@@ -450,7 +450,7 @@ export function AffiliatePanel() {
                       disabled={isSubmitting}
                       className="flex-1 h-11 gap-2 font-semibold"
                     >
-                      {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {isSubmitting && <LoadingAnimation size="sm" />}
                       {t('affiliate.submitWithdraw')}
                     </Button>
                     <Button

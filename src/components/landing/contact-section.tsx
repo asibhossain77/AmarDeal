@@ -1,8 +1,9 @@
 'use client';
 
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MessageCircle, MapPin, Facebook, Users, Loader2, User, Send } from 'lucide-react';
+import { Phone, Mail, MessageCircle, MapPin, Facebook, Users, User, Send } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
@@ -58,7 +59,7 @@ export function ContactSection() {
     return (
       <section id="contact" className="py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <LoadingAnimation size="lg" />
         </div>
       </section>
     );

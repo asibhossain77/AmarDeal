@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useSyncExternalStore } from 'react';
@@ -10,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
   Wallet,
-  Loader2,
   CheckCircle,
   Clock,
   Banknote,
@@ -549,7 +549,7 @@ export function AdminPayoutsPanel() {
                       }}
                     >
                       {completingId === payout.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <LoadingAnimation size="sm" />
                       ) : (
                         <CheckCircle className="h-4 w-4" />
                       )}

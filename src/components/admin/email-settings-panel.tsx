@@ -1,4 +1,5 @@
 'use client';
+import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,6 @@ import {
   Send,
   CheckCircle2,
   XCircle,
-  Loader2,
   AlertTriangle,
   Key,
   TestTube,
@@ -286,7 +286,7 @@ export function EmailSettingsPanel() {
 
         {loadingSettings ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
             <span className="ml-2 text-sm text-muted-foreground">{t('common.loading')}</span>
           </div>
         ) : (
@@ -363,7 +363,7 @@ export function EmailSettingsPanel() {
 
         {loadingSettings ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
           </div>
         ) : (
           <div className="space-y-4">
@@ -402,7 +402,7 @@ export function EmailSettingsPanel() {
             className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
           >
             {savingSettings ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <LoadingAnimation size="sm" />
             ) : (
               <Save className="h-4 w-4" />
             )}
@@ -430,7 +430,7 @@ export function EmailSettingsPanel() {
 
         {loadingSettings ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingAnimation size="md" />
           </div>
         ) : (
           <div className="space-y-1">
@@ -477,7 +477,7 @@ export function EmailSettingsPanel() {
           {/* Status indicator */}
           <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/30 p-3">
             {configStatus === 'loading' ? (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+              <LoadingAnimation size="sm" className="shrink-0" />
             ) : configStatus === 'configured' ? (
               <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
             ) : (
@@ -526,7 +526,7 @@ export function EmailSettingsPanel() {
                 className="gap-2 rounded-xl shrink-0"
               >
                 {verifying ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LoadingAnimation size="sm" />
                 ) : verifyResult === 'success' ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : verifyResult === 'error' ? (
@@ -585,7 +585,7 @@ export function EmailSettingsPanel() {
               className="rounded-xl"
             >
               {sendingAll ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('admin.email.sending')}</>
+                <><LoadingAnimation size="sm" className="mr-2" />{t('admin.email.sending')}</>
               ) : (
                 <><Send className="h-4 w-4 mr-2" />{t('admin.email.sendAllTests')}</>
               )}
@@ -611,7 +611,7 @@ export function EmailSettingsPanel() {
                     <span className="text-lg">{template.icon}</span>
                     {result?.status === 'success' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
                     {result?.status === 'error' && <XCircle className="h-4 w-4 text-red-500" />}
-                    {result?.status === 'loading' && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                    {result?.status === 'loading' && <LoadingAnimation size="sm" />}
                   </div>
                   <p className="text-sm font-medium text-foreground">{template.label}</p>
                   <p className="text-xs text-muted-foreground">{template.description}</p>
@@ -628,7 +628,7 @@ export function EmailSettingsPanel() {
                     onClick={() => sendTestEmail(template.type, template.label)}
                   >
                     {result?.status === 'loading' ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      <LoadingAnimation size="sm" className="mr-1.5" />
                     ) : (
                       <Send className="h-3.5 w-3.5 mr-1.5" />
                     )}
