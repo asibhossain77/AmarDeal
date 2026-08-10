@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils'
 /*
  * LoadingAnimation — branded loading spinner for Midman.
  *
- * Uses the site's parrot-green (#84CC16 / oklch 0.768 0.189 131) as the
- * accent colour so it feels native on every page.
+ * Modern spinning gradient arc with glow effect.
+ * Uses the site's parrot-green (#84CC16) as the accent colour.
  *
  * Sizes:
  *   sm  → inline / button-level (24×24)
@@ -16,10 +16,10 @@ import { cn } from '@/lib/utils'
 
 export type LoadingSize = 'sm' | 'md' | 'lg'
 
-const sizeMap: Record<LoadingSize, { box: string; text: string; bar: string; barH: number; radius: number }> = {
-  sm: { box: 'h-6 w-6', text: 'text-[3px]', bar: 'h-[1.5px]', barH: 1.5, radius: 7 },
-  md: { box: 'h-12 w-12', text: 'text-[5px]', bar: 'h-[2.5px]', barH: 2.5, radius: 14 },
-  lg: { box: 'h-20 w-20', text: 'text-[8px]', bar: 'h-[4px]', barH: 4, radius: 24 },
+const sizeMap: Record<LoadingSize, { box: string; r: number; stroke: number; glow: number }> = {
+  sm: { box: 'h-6 w-6', r: 10, stroke: 2.2, glow: 1.5 },
+  md: { box: 'h-12 w-12', r: 20, stroke: 3.5, glow: 2.5 },
+  lg: { box: 'h-20 w-20', r: 34, stroke: 4.5, glow: 3.5 },
 }
 
 export function LoadingAnimation({
@@ -29,130 +29,101 @@ export function LoadingAnimation({
 }: {
   size?: LoadingSize
   className?: string
-  /** Optional text shown below the animation */
   label?: string
 }) {
-  const s = sizeMap[size]
-  const r = s.radius
-  const barH = s.barH
-  const pad = size === 'sm' ? 1.5 : size === 'md' ? 3 : 5
-  const innerW = 2 * r - 2 * pad
-
-  /* Keyframe-style values for the sliding indicator */
-  const barW = innerW * 0.55
-  const travel = innerW - barW
-  const sx = pad
+  const { box, r, stroke, glow } = sizeMap[size]
+  const d = r * 2 + glow * 4 // viewBox with room for glow
+  const c = d / 2 // center
 
   return (
     <div className={cn('flex flex-col items-center justify-center gap-2', className)}>
       <svg
-        viewBox={`0 0 ${2 * r} ${2 * r}`}
-        className={cn(s.box, 'shrink-0')}
+        viewBox={`0 0 ${d} ${d}`}
+        className={cn(box, 'shrink-0')}
         aria-hidden="true"
       >
         <defs>
-          {/* Gradient for the sliding bar — uses CSS currentColor so Tailwind can control it */}
-          <linearGradient id={`lg-fill-${size}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--color-primary, #84CC16)" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="var(--color-primary, #84CC16)" stopOpacity="1" />
+          {/* Gradient for the spinning arc */}
+          <linearGradient id={`la-grad-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--color-primary, #84CC16)" />
+            <stop offset="100%" stopColor="#a3e635" />
           </linearGradient>
 
-          {/* Clip-path for the bar track */}
-          <clipPath id={`lg-track-${size}`}>
-            <rect
-              x={pad}
-              y={r - barH / 2}
-              width={innerW}
-              height={barH}
-              rx={barH / 2}
-            />
-          </clipPath>
+          {/* Soft glow filter */}
+          <filter id={`la-glow-${size}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation={glow} result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
-        {/* Outer circle — subtle ring */}
+        {/* Track ring — subtle background circle */}
         <circle
-          cx={r}
-          cy={r}
-          r={r - 0.5}
+          cx={c} cy={c} r={r}
           fill="none"
           stroke="currentColor"
-          strokeWidth={0.6}
-          className="text-muted-foreground/20"
+          strokeWidth={stroke * 0.35}
+          className="text-muted-foreground/15"
         />
 
-        {/* "LOADING" text — only visible at md and lg */}
-        {(size === 'md' || size === 'lg') && (
-          <text
-            x={r}
-            y={r - barH - 1}
-            textAnchor="middle"
-            className={cn(s.text, 'font-bold fill-foreground/70 select-none')}
-            fontFamily="ui-sans-serif, system-ui, sans-serif"
-          >
-            LOADING
-          </text>
-        )}
-
-        {/* Track background */}
-        <rect
-          x={pad}
-          y={r - barH / 2}
-          width={innerW}
-          height={barH}
-          rx={barH / 2}
-          className="fill-muted"
-        />
-
-        {/* Sliding indicator */}
-        <g clipPath={`url(#lg-track-${size})`}>
-          <rect
-            x={sx}
-            y={r - barH / 2}
-            width={barW}
-            height={barH}
-            rx={barH / 2}
-            fill={`url(#lg-fill-${size})`}
-          >
-            <animate
-              attributeName="x"
-              values={`${sx};${sx + travel * 0.8};${sx}`}
-              dur="1.6s"
-              repeatCount="indefinite"
-              keyTimes="0;0.5;1"
-              keySplines="0.45 0 0.15 1;0.45 0 0.15 1"
-              calcMode="spline"
-            />
-            <animate
-              attributeName="width"
-              values={`${barW};${barW * 0.5};${barW}`}
-              dur="1.6s"
-              repeatCount="indefinite"
-              keyTimes="0;0.5;1"
-              keySplines="0.45 0 0.15 1;0.45 0 0.15 1"
-              calcMode="spline"
-            />
-          </rect>
-        </g>
-
-        {/* Small pulse dots at track ends */}
-        <circle cx={pad} cy={r} r={barH * 0.8} className="fill-primary/30">
-          <animate
-            attributeName="opacity"
-            values="0.3;0.8;0.3"
-            dur="1.6s"
+        {/* Spinning arc — the main animated element */}
+        <circle
+          cx={c} cy={c} r={r}
+          fill="none"
+          stroke={`url(#la-grad-${size})`}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${r * 1.4} ${r * 4.8}`}
+          filter={`url(#la-glow-${size})`}
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from={`0 ${c} ${c}`}
+            to={`360 ${c} ${c}`}
+            dur="1s"
             repeatCount="indefinite"
           />
         </circle>
+
+        {/* Second arc — thinner, counter-rotating for depth */}
         <circle
-          cx={pad + innerW}
-          cy={r}
-          r={barH * 0.8}
-          className="fill-primary/30"
+          cx={c} cy={c} r={r * 0.65}
+          fill="none"
+          stroke="var(--color-primary, #84CC16)"
+          strokeWidth={stroke * 0.4}
+          strokeLinecap="round"
+          strokeDasharray={`${r * 0.6} ${r * 3.4}`}
+          opacity="0.3"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from={`360 ${c} ${c}`}
+            to={`0 ${c} ${c}`}
+            dur="1.8s"
+            repeatCount="indefinite"
+          />
+        </circle>
+
+        {/* Center pulse dot */}
+        <circle
+          cx={c} cy={c} r={stroke * 0.7}
+          fill="var(--color-primary, #84CC16)"
+          opacity="0.6"
         >
           <animate
+            attributeName="r"
+            values={`${stroke * 0.5};${stroke * 0.9};${stroke * 0.5}`}
+            dur="1.2s"
+            repeatCount="indefinite"
+          />
+          <animate
             attributeName="opacity"
-            values="0.8;0.3;0.8"
-            dur="1.6s"
+            values="0.4;0.8;0.4"
+            dur="1.2s"
             repeatCount="indefinite"
           />
         </circle>
