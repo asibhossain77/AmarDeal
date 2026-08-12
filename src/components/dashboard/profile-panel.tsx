@@ -154,7 +154,7 @@ export function ProfilePanel() {
             </div>
             <Label className="text-sm font-semibold text-foreground">প্রোফাইল ছবি</Label>
           </div>
-          <p className="text-xs text-muted-foreground pl-9">ছবির লিংক দিন, আপনার প্রোফাইল ও ডিলে ছবি দেখাবে</p>
+          <p className="text-xs text-muted-foreground pl-9">অনলাইনে থাকা আপনার ছবির ইমেজ লিংক এখানে দিন, আপনার প্রোফাইল ও ডিলে ছবি দেখাবে</p>
 
           {/* Preview */}
           {previewUrl && (
