@@ -1559,6 +1559,7 @@ export function DealWorkflowTracker() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastMsgCountRef = useRef(0);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
 
   /* ── Payout status state ── */
   const [payoutSubmitted, setPayoutSubmitted] = useState(false);
@@ -1675,12 +1676,14 @@ export function DealWorkflowTracker() {
 
   /* No auto-scroll on incoming messages — only on user send */
 
-  /* Focus input when switching to chat tab */
+  /* Mark messages as seen when user opens chat tab */
   useEffect(() => {
     if (activeTab === 'chat') {
+      setHasUnreadChat(false);
+      lastMsgCountRef.current = messages.length;
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [activeTab]);
+  }, [activeTab, messages.length]);
 
   /* ── Auth headers for API calls ── */
   const authHeaders = useCallback(() => ({
@@ -1697,7 +1700,11 @@ export function DealWorkflowTracker() {
       });
       if (res.ok) {
         const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await res.json();
-        setMessages(data.map(dbToChatMsg));
+        const mapped = data.map(dbToChatMsg);
+        setMessages(mapped);
+        // Initial load — mark all as seen
+        lastMsgCountRef.current = mapped.length;
+        setHasUnreadChat(false);
       }
     } catch {
       // silent
@@ -1721,7 +1728,22 @@ export function DealWorkflowTracker() {
         });
         if (res.ok) {
           const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await res.json();
-          setMessages(data.map(dbToChatMsg));
+          const mapped = data.map(dbToChatMsg);
+          setMessages(mapped);
+
+          // Detect unread: new messages from others while on info tab
+          const prevCount = lastMsgCountRef.current;
+          if (mapped.length > prevCount && activeTab === 'info') {
+            const newMsgs = mapped.slice(prevCount);
+            const hasOtherMsg = newMsgs.some((m) => m.senderId !== user?.id);
+            if (hasOtherMsg) setHasUnreadChat(true);
+          }
+          // Keep ref in sync
+          if (activeTab === 'chat') {
+            lastMsgCountRef.current = mapped.length;
+          } else if (prevCount === 0) {
+            lastMsgCountRef.current = mapped.length;
+          }
         }
       } catch {
         // silent - will retry on next interval
@@ -2049,11 +2071,13 @@ export function DealWorkflowTracker() {
             >
               <MessageCircle className="h-4 w-4" />
               ডিল চ্যাট
-              {/* Unread dot indicator */}
-              <span
-                className="flex h-2 w-2 rounded-full animate-pulse"
-                style={{ backgroundColor: activeTab === 'chat' ? '#fff' : PARROT_GREEN }}
-              />
+              {/* Unread dot — only when new messages from others */}
+              {hasUnreadChat && (
+                <span
+                  className="flex h-2 w-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: PARROT_GREEN }}
+                />
+              )}
             </button>
           </div>
         </div>
