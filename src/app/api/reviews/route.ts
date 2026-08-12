@@ -69,17 +69,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already reviewed (one review per user)
-    const existing = await db.review.findFirst({
-      where: { userId: user.id },
-    })
-    if (existing) {
-      return NextResponse.json(
-        { error: 'আপনি ইতিমধ্যে একটি রিভিউ দিয়েছেন', code: 'ALREADY_REVIEWED' },
-        { status: 400 }
-      )
-    }
-
     const review = await db.review.create({
       data: {
         name: user.name,

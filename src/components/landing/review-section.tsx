@@ -260,11 +260,6 @@ function ReviewForm({ onSuccess }: { onSuccess: () => void }) {
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                   {t('review.noAccount')}
                 </p>
-              ) : reviewStatus.reviewed ? (
-                <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                  {t('review.alreadyReviewed')}
-                </p>
               ) : (
                 <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />

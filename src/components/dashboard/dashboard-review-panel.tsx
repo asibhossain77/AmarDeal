@@ -5,7 +5,7 @@ import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Star, MessageSquare, CheckCircle2, Send } from 'lucide-react';
+import { Star, MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 
@@ -63,22 +63,12 @@ export function DashboardReviewPanel() {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [existingReview, setExistingReview] = useState<ReviewData | null>(null);
   const [allReviews, setAllReviews] = useState<ReviewData[]>([]);
 
-  // Load user's own review
+  // Mark loading as done
   useEffect(() => {
-    if (!user?.id) return;
-    fetch('/api/reviews/my-review')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.reviewed && data.review) {
-          setExistingReview(data.review);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user?.id]);
+    setLoading(false);
+  }, []);
 
   // Load all public reviews
   useEffect(() => {
@@ -102,15 +92,14 @@ export function DashboardReviewPanel() {
       });
       const data = await res.json();
       if (data.success) {
-        setExistingReview(data.review);
+        // Reset form after success
+        setRating(0);
+        setComment('');
         // Refresh all reviews
         const revRes = await fetch('/api/reviews');
         const revData = await revRes.json();
         if (Array.isArray(revData)) setAllReviews(revData);
         toast.success(t('review.submitted'));
-      } else if (data.code === 'ALREADY_REVIEWED') {
-        setExistingReview({ id: '', name: user?.name || '', rating, comment, createdAt: new Date().toISOString() });
-        toast.info(t('review.alreadyReviewed'));
       } else {
         toast.error(data.error || t('common.failed'));
       }
@@ -136,30 +125,6 @@ export function DashboardReviewPanel() {
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <LoadingAnimation size="md" />
-          </div>
-        ) : existingReview ? (
-          /* Already Reviewed */
-          <div className="space-y-5">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-base font-semibold text-foreground">{t('review.thankYou')}</p>
-                <p className="text-xs text-muted-foreground">{t('review.yourReviewDesc')}</p>
-              </div>
-            </div>
-            <div className="rounded-xl bg-muted/30 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">{t('review.yourFeedback')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('review.givenOn')} {new Date(existingReview.createdAt).toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
-              </div>
-              <StarDisplay rating={existingReview.rating} size="md" />
-              <p className="text-sm text-foreground/80 leading-relaxed">{existingReview.comment}</p>
-            </div>
-            <p className="text-xs text-muted-foreground text-center">{t('review.editNotAllowed')}</p>
           </div>
         ) : (
           /* Review Form */
