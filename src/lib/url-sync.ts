@@ -180,8 +180,9 @@ function applyUrlToStore() {
   const state = store.getState();
   const updates: Record<string, unknown> = {};
 
-  // Guard: if user is logged in, prevent navigating to auth/landing via browser back
-  if (state.user && (parsed.view === 'auth' || parsed.view === 'landing')) {
+  // Guard: if user is logged in, prevent navigating to auth via browser back
+  // But allow landing page access for logged-in users
+  if (state.user && parsed.view === 'auth') {
     // Replace the history entry with the correct URL for current view
     const correctUrl = buildUrl(state);
     if (correctUrl !== window.location.pathname) {
@@ -206,12 +207,9 @@ function applyUrlToStore() {
 /** Can be called after login to re-apply the URL without re-subscribing */
 export function reapplyUrlAfterLogin() {
   if (typeof window === 'undefined') return;
-  const store = useAppStore;
-  const state = store.getState();
-  const correctUrl = buildUrl(state);
-  // Use replaceState to remove /login from history, preventing back-to-login
-  window.history.replaceState(null, '', correctUrl);
-  _lastUrl = correctUrl;
+  // After login, stay on landing page (/) — user clicks "শুরু করুন" to enter dashboard
+  window.history.replaceState(null, '', '/');
+  _lastUrl = '/';
 }
 
 /* ── One-time init: subscribe + popstate ── */
@@ -229,8 +227,13 @@ export function initUrlSync() {
   const state = store.getState();
 
   if (state.user) {
-    // Logged in — apply full URL
-    applyUrlToStore();
+    // Logged in — allow landing page, but apply dashboard/seller/admin URLs
+    if (parsed.view === 'landing' || parsed.view === null) {
+      // Stay on landing page
+      _lastUrl = window.location.pathname;
+    } else {
+      applyUrlToStore();
+    }
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     // Not logged in but on a public page
     store.setState({ view: parsed.view });

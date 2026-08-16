@@ -67,6 +67,8 @@ interface AppState {
   setLocale: (locale: Locale) => void
   /** Go back to previous page/panel */
   goBack: () => void
+  /** Navigate to the user's main view (dashboard, seller, or admin) */
+  navigateToDashboard: () => void
 }
 
 /* Persist locale in localStorage */
@@ -96,9 +98,8 @@ export const useAppStore = create<AppState>((set) => ({
     if (!user) return set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null })
     // Ensure permissions always has a valid default
     const safeUser = { ...user, permissions: user.permissions ?? [] };
-    if (safeUser.isAdmin) return set({ user: safeUser, view: 'admin', sidebarOpen: false, adminPanel: 'dashboard', _prevView: null })
-    if (safeUser.isSeller) return set({ user: safeUser, view: 'seller', sidebarOpen: false, sellerPanel: 'overview', _prevView: null })
-    return set({ user: safeUser, view: 'dashboard', sidebarOpen: false, dashboardPanel: 'overview', _prevView: null })
+    // Always go to landing page after login; user clicks "শুরু করুন" to enter dashboard
+    return set({ user: safeUser, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', _prevView: null })
   },
   logout: () => {
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -145,17 +146,15 @@ export const useAppStore = create<AppState>((set) => ({
       return { sellerPanel: target, _prevSellerPanel: null };
     }
     if (s._prevView) {
-      // Guard: logged-in user should never go back to landing/auth
-      if (s.user && (s._prevView === 'landing' || s._prevView === 'auth')) {
-        return { dashboardPanel: 'overview', _prevDashPanel: null, _prevView: null };
-      }
       const target = s._prevView;
       return { view: target, _prevView: null, sidebarOpen: false };
     }
-    // Fallback: go to dashboard overview if logged in, else landing
-    if (s.user) {
-      return { dashboardPanel: 'overview', _prevDashPanel: null };
-    }
     return { view: 'landing', sidebarOpen: false };
+  }),
+  navigateToDashboard: () => set((s) => {
+    if (!s.user) return { view: 'auth' };
+    if (s.user.isAdmin) return { view: 'admin', adminPanel: 'dashboard', sidebarOpen: false, _prevView: 'landing' };
+    if (s.user.isSeller) return { view: 'seller', sellerPanel: 'overview', sidebarOpen: false, _prevView: 'landing' };
+    return { view: 'dashboard', dashboardPanel: 'overview', sidebarOpen: false, _prevView: 'landing' };
   }),
 }))

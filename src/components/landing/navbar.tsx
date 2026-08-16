@@ -163,7 +163,7 @@ function useAdminNavItems() {
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
-  const { view, user, logout, setView, setDashboardPanel, setAdminPanel, dashboardPanel, adminPanel, activeDeal } = useAppStore();
+  const { view, user, logout, setView, setDashboardPanel, setAdminPanel, dashboardPanel, adminPanel, activeDeal, navigateToDashboard } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useNavText();
 
@@ -314,10 +314,17 @@ export function Navbar() {
           <div className="hidden shrink-0 items-center gap-2 md:flex">
             <LanguageSwitcher />
             <ThemeToggle />
-            <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
-              <LogIn className="h-4 w-4" />
-              {t('nav.loginRegister')}
-            </Button>
+            {user ? (
+              <Button size="sm" onClick={navigateToDashboard} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+                <LayoutDashboard className="h-4 w-4" />
+                {t('hero.startNow')}
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+                <LogIn className="h-4 w-4" />
+                {t('nav.loginRegister')}
+              </Button>
+            )}
           </div>
         )}
 
@@ -480,9 +487,32 @@ export function Navbar() {
                         <Mail className="h-[18px] w-[18px] shrink-0" /> {t('nav.contact')}
                       </a>
                       <div className="mt-4 border-t border-border pt-4">
-                        <Button onClick={() => { setOpen(false); setView('auth'); }} className="w-full gap-2 rounded-lg font-medium">
-                          <LogIn className="h-4 w-4" /> {t('nav.loginRegister')}
-                        </Button>
+                        {user ? (
+                          <>
+                            <div className="flex items-center gap-3 rounded-xl px-4 py-2.5 mb-2">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+                                {user?.name?.charAt(0) || 'U'}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('nav.user')}</p>
+                                <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
+                              </div>
+                            </div>
+                            <Button onClick={() => { setOpen(false); navigateToDashboard(); }} className="w-full gap-2 rounded-lg font-medium">
+                              <LayoutDashboard className="h-4 w-4" /> {t('hero.startNow')}
+                            </Button>
+                            <button
+                              onClick={() => { setOpen(false); handleLogout(); }}
+                              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-destructive transition-all hover:bg-destructive/10"
+                            >
+                              <LogOut className="h-4 w-4" /> {t('nav.logout')}
+                            </button>
+                          </>
+                        ) : (
+                          <Button onClick={() => { setOpen(false); setView('auth'); }} className="w-full gap-2 rounded-lg font-medium">
+                            <LogIn className="h-4 w-4" /> {t('nav.loginRegister')}
+                          </Button>
+                        )}
                       </div>
                     </>
                   )}

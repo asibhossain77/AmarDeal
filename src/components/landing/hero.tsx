@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, LayoutDashboard } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
@@ -102,6 +102,8 @@ export function Hero() {
   const { siteName, siteNameEn } = useSiteSettings();
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
+  const user = useAppStore((s) => s.user);
+  const navigateToDashboard = useAppStore((s) => s.navigateToDashboard);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   return (
@@ -154,21 +156,40 @@ export function Hero() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:items-start md:justify-start">
-                <Button
-                  size="lg"
-                  onClick={() => useAppStore.getState().setView('auth')}
-                  className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
-                >
-                  {t('hero.startNow')}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-                <button
-                  onClick={() => useAppStore.getState().setView('page-how-it-works')}
-                  className="inline-flex items-center gap-1.5 rounded-xl px-7 py-3 text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {t('hero.learnMore')}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                {user ? (
+                  <>
+                    <Button
+                      size="lg"
+                      onClick={navigateToDashboard}
+                      className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
+                    >
+                      <LayoutDashboard className="h-5 w-5" />
+                      {t('hero.startNow')}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      {locale === 'en' ? `Welcome back, ${user.name}!` : `স্বাগতম, ${user.name}!`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      size="lg"
+                      onClick={() => useAppStore.getState().setView('auth')}
+                      className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
+                    >
+                      {t('hero.startNow')}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                    <button
+                      onClick={() => useAppStore.getState().setView('page-how-it-works')}
+                      className="inline-flex items-center gap-1.5 rounded-xl px-7 py-3 text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {t('hero.learnMore')}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
 

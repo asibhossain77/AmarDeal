@@ -52,3 +52,31 @@ Stage Summary:
 - 20 files fixed with 26 individual LoadingAnimation size corrections
 - Section-level loaders now use size="md" (py-8–15) or size="lg" (py-16+)
 - Inline/button loaders keep size="sm" (71 remaining, all verified correct)
+---
+Task ID: 1
+Agent: Main
+Task: Implement post-login landing page behavior with শুরু করুন button
+
+Work Log:
+- Explored the entire auth system, routing (url-sync.ts), state management (store.ts), and app-shell session restore
+- Discovered the project uses fully custom auth (not NextAuth) with Zustand state and client-side SPA routing
+- Modified `src/lib/store.ts`:
+  - Changed `setUser()` to always route to `landing` view instead of auto-routing to dashboard/seller/admin
+  - Added `navigateToDashboard()` action that navigates to the correct view based on user role (admin/seller/dashboard)
+  - Updated `goBack()` to allow logged-in users to go back to landing page
+- Modified `src/lib/url-sync.ts`:
+  - Removed the guard that prevented logged-in users from accessing landing page via browser back
+  - Updated `initUrlSync()` to keep logged-in users on landing page when visiting `/`
+  - Updated `reapplyUrlAfterLogin()` to always redirect to `/` after login
+- Modified `src/components/landing/hero.tsx`:
+  - Added conditional rendering: when user is logged in, shows "শুরু করুন" button with LayoutDashboard icon + welcome message
+  - When not logged in, shows original login + learn more buttons
+- Modified `src/components/landing/navbar.tsx`:
+  - Desktop: shows "শুরু করুন" button when logged in, "লগইন / নিবন্ধন" when not
+  - Mobile: shows user info + "শুরু করুন" button + logout when logged in
+
+Stage Summary:
+- Users now always see the landing page first when visiting the site, even if logged in
+- Logged-in users see a "শুরু করুন" (Start Now) button in hero and navbar to enter their dashboard
+- Session restore from cookies no longer auto-redirects to dashboard
+- All lint checks pass (only pre-existing errors remain)
