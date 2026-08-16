@@ -23,6 +23,10 @@ import {
   MailCheck,
   XCircle,
   ShieldAlert,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Phone,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -92,6 +96,12 @@ function OtpStep({
           className="text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {resendTimer > 0 ? t('auth.resendWithTimer', { timer: String(resendTimer) }) : t('auth.resend')}
+        </button>
+      </div>
+      <div className="text-center">
+        <button type="button" onClick={onVerify} disabled={loading || otp.length !== 6} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex items-center justify-center">
+          {loading ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-5 w-5" />}
+          {t('auth.verifyCode')}
         </button>
       </div>
     </div>
@@ -312,10 +322,12 @@ function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
         <Button variant="outline" onClick={step === 1 ? onBack : () => { setStep((s) => (s - 1) as 1 | 2); setError(''); }} className="h-12 rounded-xl text-sm font-medium gap-2">
           <ArrowLeft className="h-4 w-4" />{step === 1 ? t('auth.back') : t('auth.previous')}
         </Button>
-        <Button onClick={step === 1 || step === 2 ? (step === 1 ? handleSendOtp : handleVerifyOtp) : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
-          {loading ? <LoadingAnimation size="sm" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
-          {step === 1 ? t('auth.sendCode') : step === 2 ? t('auth.verifyCode') : t('auth.resetPassword')}
-        </Button>
+        {step !== 2 && (
+          <Button onClick={step === 1 ? handleSendOtp : handleReset} disabled={loading || (step === 2 && otp.length !== 6) || (step === 1 && (emailStatus === 'not-found' || emailStatus === 'unverified'))} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+            {loading ? <LoadingAnimation size="sm" /> : step === 3 ? <ShieldCheck className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
+            {step === 1 ? t('auth.sendCode') : step === 2 ? t('auth.verifyCode') : t('auth.resetPassword')}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -432,9 +444,9 @@ function EmailVerifyForm({
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Login Form
+   Manual Login Form (email + password)
    ═══════════════════════════════════════════════════════════════ */
-function LoginForm({
+function ManualLoginForm({
   onForgotPassword,
   onNeedsVerification,
 }: {
@@ -448,20 +460,12 @@ function LoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const setUser = useAppStore((s) => s.setUser);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
 
   // 2FA state
   const [pending2FA, setPending2FA] = useState<{ userId: string; name: string; email: string } | null>(null);
   const [totpCode, setTotpCode] = useState('');
   const [totpLoading, setTotpLoading] = useState(false);
   const [totpError, setTotpError] = useState('');
-
-  useEffect(() => {
-    fetch('/api/auth/google-status')
-      .then((r) => r.json())
-      .then((d) => setGoogleEnabled(!!d.enabled))
-      .catch(() => {});
-  }, []);
 
   const handleLogin = useCallback(async () => {
     setError('');
@@ -524,7 +528,7 @@ function LoginForm({
   }, [pending2FA, totpCode, setUser, t]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="space-y-2 text-center">
         <Label htmlFor="login-id" className="text-foreground text-sm">{t('auth.emailOrPhone')}</Label>
         <Input id="login-id" type="text" placeholder={t('auth.emailOrPhonePlaceholder')} value={identifier} onChange={(e) => setIdentifier(e.target.value)} className={inputClass} />
@@ -547,8 +551,7 @@ function LoginForm({
         )}
       </AnimatePresence>
 
-      {/* 2FA Verification Step */}
-      {pending2FA ? (
+      {pending2FA && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -560,27 +563,18 @@ function LoginForm({
                 <ShieldAlert className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <h3 className="text-base font-bold text-foreground">
-              {t('auth.twoFactor')}
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              {pending2FA.name} ({pending2FA.email})
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t('auth.twoFactorDesc')}
-            </p>
+            <h3 className="text-base font-bold text-foreground">{t('auth.twoFactor')}</h3>
+            <p className="text-xs text-muted-foreground">{pending2FA.name} ({pending2FA.email})</p>
+            <p className="text-xs text-muted-foreground">{t('auth.twoFactorDesc')}</p>
           </div>
 
           <Input
-            type="text"
-            inputMode="numeric"
-            placeholder="0 0 0 0 0 0"
+            type="text" inputMode="numeric" placeholder="0 0 0 0 0 0"
             value={totpCode}
             onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             onKeyDown={(e) => e.key === 'Enter' && handle2FAVerify()}
             className="text-center font-mono text-2xl tracking-[0.5em] h-14"
-            maxLength={6}
-            autoFocus
+            maxLength={6} autoFocus
           />
 
           <AnimatePresence>
@@ -592,56 +586,30 @@ function LoginForm({
           </AnimatePresence>
 
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => { setPending2FA(null); setTotpCode(''); setTotpError(''); }}
-              className="flex-1 h-11"
-            >
+            <Button variant="outline" onClick={() => { setPending2FA(null); setTotpCode(''); setTotpError(''); }} className="flex-1 h-11">
               {t('auth.goBack')}
             </Button>
-            <Button
-              onClick={handle2FAVerify}
-              disabled={totpCode.length !== 6 || totpLoading}
-              className="flex-1 h-11 gap-2"
-            >
+            <Button onClick={handle2FAVerify} disabled={totpCode.length !== 6 || totpLoading} className="flex-1 h-11 gap-2">
               {totpLoading ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-4 w-4" />}
               {t('auth.verifyCode')}
             </Button>
           </div>
         </motion.div>
-      ) : (
+      )}
+      {!pending2FA && (
         <Button onClick={handleLogin} disabled={loading} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
           {loading ? <LoadingAnimation size="sm" /> : <LogIn className="h-5 w-5" />}
           {t('auth.loginButton')}
         </Button>
-      )}
-
-      {googleEnabled && (
-      <>
-      {/* Google Login Divider + Button */}
-      <div className='relative flex items-center gap-3 py-1'>
-        <div className='h-px flex-1 bg-border' />
-        <span className='text-xs text-muted-foreground font-medium'>অথবা</span>
-        <div className='h-px flex-1 bg-border' />
-      </div>
-      <button
-        type='button'
-        onClick={() => { window.location.href = '/api/auth/google'; }}
-        className='flex w-full items-center justify-center gap-2.5 h-11 rounded-xl border border-border bg-white dark:bg-zinc-900 text-sm font-medium text-foreground hover:bg-accent transition-colors'
-      >
-        <svg className='h-4 w-4' viewBox='0 0 24 24'><path d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='#4285F4'/><path d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='#34A853'/><path d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='#FBBC05'/><path d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='#EA4335'/></svg>
-        Google দিয়ে লগইন
-      </button>
-      </>
       )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Registration Form (2-step: fill form → verify email)
+   Manual Registration Form
    ═══════════════════════════════════════════════════════════════ */
-function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: string, email: string, userName: string) => void }) {
+function ManualRegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: string, email: string, userName: string) => void }) {
   const t = useT();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -716,17 +684,229 @@ function RegisterForm({ onNeedsVerification }: { onNeedsVerification: (userId: s
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Email Magic Link Step
+   ═══════════════════════════════════════════════════════════════ */
+function EmailMagicLinkStep({ onBack }: { onBack: () => void }) {
+  const t = useT();
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSend = useCallback(async () => {
+    setError('');
+    if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+      setError(t('auth.validEmail'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t('auth.serverProblem'));
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError(t('auth.serverProblem'));
+    } finally {
+      setLoading(false);
+    }
+  }, [email, t]);
+
+  if (sent) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-5 text-center">
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5, delay: 0.1 }}>
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/15">
+            <MailCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
+          </div>
+        </motion.div>
+        <div>
+          <h3 className="text-lg font-bold text-foreground">{t('auth.loginLinkSent')}</h3>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t('auth.loginLinkSentDesc')}</p>
+          <p className="mt-2 text-xs text-muted-foreground"><span className="font-medium">{email}</span></p>
+        </div>
+        <Button variant="outline" onClick={onBack} className="h-11 rounded-xl text-sm gap-2">
+          <ArrowLeft className="h-4 w-4" />{t('auth.back')}
+        </Button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="text-center space-y-1.5">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-2">
+          <Mail className="h-6 w-6 text-primary" />
+        </div>
+        <h3 className="text-base font-bold text-foreground">{t('auth.emailLoginTitle')}</h3>
+        <p className="text-xs text-muted-foreground">{t('auth.emailLoginDesc')}</p>
+      </div>
+      <div className="space-y-2 text-center">
+        <div className="relative">
+          <Input
+            type="email"
+            placeholder={t('auth.emailPlaceholder')}
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(''); }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            className={`${inputClass} pl-10`}
+            autoFocus
+          />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+      {error && (
+        <p className="text-center text-sm text-destructive animate-in fade-in slide-in-from-top-1">{error}</p>
+      )}
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={onBack} className="h-12 rounded-xl text-sm font-medium gap-2">
+          <ArrowLeft className="h-4 w-4" />{t('auth.back')}
+        </Button>
+        <Button onClick={handleSend} disabled={loading || !email.trim()} className="flex-1 h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+          {loading ? <LoadingAnimation size="sm" /> : <Mail className="h-5 w-5" />}
+          {t('auth.sendLoginLink')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Complete Profile Form (after magic link for new users)
+   ═══════════════════════════════════════════════════════════════ */
+function CompleteProfileForm({ userId, onSuccess }: { userId: string; onSuccess: (user: any) => void }) {
+  const t = useT();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = useCallback(async () => {
+    setError('');
+    if (!name.trim() || !phone.trim()) {
+      setError(t('auth.fillAllFields'));
+      return;
+    }
+    if (phone.trim().length < 11) {
+      setError('সঠিক ফোন নম্বর দিন (কমপক্ষে ১১ ডিজিট)');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/complete-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, name: name.trim(), phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || t('auth.serverProblem'));
+        return;
+      }
+      toast.success(t('auth.loginSuccess'));
+      onSuccess(data.user);
+    } catch {
+      setError(t('auth.serverProblem'));
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, name, phone, onSuccess, t]);
+
+  return (
+    <div className="space-y-5">
+      <div className="text-center space-y-1.5">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-2">
+          <User className="h-6 w-6 text-primary" />
+        </div>
+        <h3 className="text-base font-bold text-foreground">{t('auth.completeProfile')}</h3>
+        <p className="text-xs text-muted-foreground">{t('auth.completeProfileDesc')}</p>
+      </div>
+      <div className="space-y-3 text-center">
+        <div className="space-y-2">
+          <Label htmlFor="cp-name" className="text-foreground text-sm">{t('auth.fullName')}</Label>
+          <div className="relative">
+            <Input
+              id="cp-name"
+              type="text"
+              placeholder={t('auth.fullNamePlaceholder')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={`${inputClass} pl-10`}
+              autoFocus
+            />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cp-phone" className="text-foreground text-sm">{t('auth.phone')}</Label>
+          <div className="relative">
+            <Input
+              id="cp-phone"
+              type="tel"
+              placeholder={t('auth.phonePlaceholder')}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              className={`${inputClass} pl-10`}
+            />
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      </div>
+      {error && (
+        <p className="text-center text-sm text-destructive animate-in fade-in slide-in-from-top-1">{error}</p>
+      )}
+      <Button onClick={handleSubmit} disabled={loading || !name.trim() || !phone.trim()} className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 gap-2.5">
+        {loading ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-5 w-5" />}
+        {t('auth.completeAndLogin')}
+      </Button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Auth View (exported)
    ═══════════════════════════════════════════════════════════════ */
-type AuthMode = 'auth' | 'forgot' | 'verify';
+type AuthMode = 'auth' | 'email-login' | 'manual' | 'forgot' | 'verify' | 'complete-profile';
 
 export function AuthView() {
   const setView = useAppStore((s) => s.setView);
+  const setUser = useAppStore((s) => s.setUser);
   const { siteName, siteLogo } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
   const [mode, setMode] = useState<AuthMode>('auth');
   const [verifyInfo, setVerifyInfo] = useState({ userId: '', email: '', userName: '' });
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [magicUserId, setMagicUserId] = useState<string | null>(null);
+
+  // Check Google OAuth status
+  useEffect(() => {
+    fetch('/api/auth/google-status')
+      .then((r) => r.json())
+      .then((d) => setGoogleEnabled(!!d.enabled))
+      .catch(() => {});
+  }, []);
+
+  // Handle magic link callback from sessionStorage (set by app-shell)
+  useEffect(() => {
+    const magicUid = sessionStorage.getItem('magic_uid');
+    if (magicUid) {
+      sessionStorage.removeItem('magic_uid');
+      setTimeout(() => {
+        setMagicUserId(magicUid);
+        setMode('complete-profile');
+      }, 0);
+    }
+  }, []);
 
   if (!mounted) return null;
 
@@ -738,25 +918,36 @@ export function AuthView() {
   const getHeaderTitle = () => {
     if (mode === 'forgot') return t('auth.passwordResetTitle');
     if (mode === 'verify') return t('auth.emailVerificationTitle');
+    if (mode === 'email-login') return t('auth.loginWithEmail');
+    if (mode === 'complete-profile') return t('auth.completeProfile');
     return siteName;
   };
 
   const getHeaderDesc = () => {
     if (mode === 'forgot') return t('auth.passwordResetDesc');
     if (mode === 'verify') return t('auth.verifyYourEmail');
+    if (mode === 'email-login') return t('auth.emailLoginDesc');
+    if (mode === 'complete-profile') return t('auth.completeProfileDesc');
     return t('auth.startSafeTransaction');
   };
 
   const getBackLabel = () => {
     if (mode === 'forgot') return t('auth.backToLogin');
     if (mode === 'verify') return t('auth.back');
+    if (mode === 'email-login') return t('auth.back');
+    if (mode === 'manual') return t('auth.back');
+    if (mode === 'complete-profile') return t('auth.back');
     return t('auth.backToHomepage');
   };
 
   const handleBack = () => {
-    if (mode === 'verify') setMode('auth');
-    else if (mode === 'forgot') setMode('auth');
+    if (mode === 'verify' || mode === 'email-login' || mode === 'manual' || mode === 'forgot') setMode('auth');
+    else if (mode === 'complete-profile') setView('landing');
     else setView('landing');
+  };
+
+  const handleCompleteProfile = (user: any) => {
+    setUser(user);
   };
 
   return (
@@ -777,6 +968,7 @@ export function AuthView() {
 
         <div className="relative">
           <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-8">
+            {/* ── Header ── */}
             <div className="mb-6 flex flex-col items-center gap-3 text-center">
               {siteLogo ? (
                 <img src={siteLogo} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
@@ -792,11 +984,15 @@ export function AuthView() {
             </div>
 
             <AnimatePresence mode="wait">
-              {mode === 'forgot' ? (
+              {/* ── Forgot Password ── */}
+              {mode === 'forgot' && (
                 <motion.div key="forgot" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                   <ForgotPasswordForm onBack={() => setMode('auth')} />
                 </motion.div>
-              ) : mode === 'verify' ? (
+              )}
+
+              {/* ── Email Verification ── */}
+              {mode === 'verify' && (
                 <motion.div key="verify" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                   <EmailVerifyForm
                     userId={verifyInfo.userId}
@@ -806,20 +1002,106 @@ export function AuthView() {
                     onBack={() => setMode('auth')}
                   />
                 </motion.div>
-              ) : (
-                <motion.div key="auth" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+              )}
+
+              {/* ── Email Magic Link ── */}
+              {mode === 'email-login' && (
+                <motion.div key="email-login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                  <EmailMagicLinkStep onBack={() => setMode('auth')} />
+                </motion.div>
+              )}
+
+              {/* ── Manual Login/Register ── */}
+              {mode === 'manual' && (
+                <motion.div key="manual" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
                   <Tabs defaultValue="login" className="w-full">
                     <TabsList className="mx-auto grid w-full grid-cols-2 bg-muted/60 dark:bg-zinc-800/60 !h-11 rounded-xl p-1">
                       <TabsTrigger value="login" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.login')}</TabsTrigger>
                       <TabsTrigger value="register" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.register')}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="login" className="mt-6">
-                      <LoginForm onForgotPassword={() => setMode('forgot')} onNeedsVerification={goVerify} />
+                      <ManualLoginForm onForgotPassword={() => setMode('forgot')} onNeedsVerification={goVerify} />
                     </TabsContent>
                     <TabsContent value="register" className="mt-6">
-                      <RegisterForm onNeedsVerification={goVerify} />
+                      <ManualRegisterForm onNeedsVerification={goVerify} />
                     </TabsContent>
                   </Tabs>
+                </motion.div>
+              )}
+
+              {/* ── Complete Profile (after magic link) ── */}
+              {mode === 'complete-profile' && magicUserId && (
+                <motion.div key="complete-profile" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
+                  <CompleteProfileForm userId={magicUserId} onSuccess={handleCompleteProfile} />
+                </motion.div>
+              )}
+
+              {/* ── Main Auth View (default) ── */}
+              {mode === 'auth' && (
+                <motion.div key="auth" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-3">
+                  {/* Google Login Button */}
+                  {googleEnabled && (
+                    <button
+                      type='button'
+                      onClick={() => { window.location.href = '/api/auth/google'; }}
+                      className='flex w-full items-center justify-center gap-2.5 h-12 rounded-xl border border-border bg-white dark:bg-zinc-900 text-sm font-medium text-foreground hover:bg-accent transition-colors'
+                    >
+                      <svg className='h-4.5 w-4.5' viewBox='0 0 24 24'><path d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='#4285F4'/><path d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='#34A853'/><path d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='#FBBC05'/><path d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='#EA4335'/></svg>
+                      {t('auth.loginWithGoogle')}
+                    </button>
+                  )}
+
+                  {/* Email Magic Link Button */}
+                  <button
+                    type='button'
+                    onClick={() => setMode('email-login')}
+                    className='flex w-full items-center justify-center gap-2.5 h-12 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20'
+                  >
+                    <Mail className='h-4.5 w-4.5' />
+                    {t('auth.loginWithEmail')}
+                  </button>
+
+                  {/* Divider */}
+                  <div className='relative flex items-center gap-3 py-2'>
+                    <div className='h-px flex-1 bg-border' />
+                    <span className='text-xs text-muted-foreground font-medium'>{t('auth.orLoginManually')}</span>
+                    <div className='h-px flex-1 bg-border' />
+                  </div>
+
+                  {/* Manual Login/Register Toggle */}
+                  <button
+                    type='button'
+                    onClick={() => setShowManual(!showManual)}
+                    className='flex w-full items-center justify-between gap-2 h-12 rounded-xl border border-border bg-white dark:bg-zinc-900 text-sm font-medium text-foreground hover:bg-accent transition-colors px-4'
+                  >
+                    <span>{t('nav.loginRegister')}</span>
+                    {showManual ? <ChevronUp className='h-4 w-4 text-muted-foreground' /> : <ChevronDown className='h-4 w-4 text-muted-foreground' />}
+                  </button>
+
+                  {/* Expanded Manual Login/Register */}
+                  <AnimatePresence>
+                    {showManual && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                        animate={{ opacity: 1, height: 'auto', overflow: 'visible' }}
+                        exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
+                        className='space-y-6'
+                      >
+                        <Tabs defaultValue="login" className="w-full">
+                          <TabsList className="mx-auto grid w-full grid-cols-2 bg-muted/60 dark:bg-zinc-800/60 !h-11 rounded-xl p-1">
+                            <TabsTrigger value="login" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.login')}</TabsTrigger>
+                            <TabsTrigger value="register" className="rounded-lg text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all">{t('auth.register')}</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="login" className="mt-4">
+                            <ManualLoginForm onForgotPassword={() => setMode('forgot')} onNeedsVerification={goVerify} />
+                          </TabsContent>
+                          <TabsContent value="register" className="mt-4">
+                            <ManualRegisterForm onNeedsVerification={goVerify} />
+                          </TabsContent>
+                        </Tabs>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>

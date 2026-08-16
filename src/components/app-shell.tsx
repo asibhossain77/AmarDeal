@@ -198,22 +198,56 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   // Restore session from cookie on page load / refresh
   // Also handles Google OAuth callback (?google_login=success)
   // Also handles PipraPay callback (?piprapay=success&pp_id=xxx)
+  // Also handles Magic Link callback (?magic=success&uid=xxx&complete=true/false)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const googleLogin = params.get('google_login');
     const piprapay = params.get('piprapay');
     const ppId = params.get('pp_id');
+    const magic = params.get('magic');
+    const magicUid = params.get('uid');
+    const magicComplete = params.get('complete');
 
     const cleanup = () => {
-      // Remove query params from URL without full reload
       const url = new URL(window.location.href);
       url.searchParams.delete('google_login');
       url.searchParams.delete('msg');
       url.searchParams.delete('piprapay');
       url.searchParams.delete('pp_id');
+      url.searchParams.delete('magic');
+      url.searchParams.delete('uid');
+      url.searchParams.delete('complete');
       window.history.replaceState({}, '', url.pathname);
     };
 
+    // Magic link with incomplete profile — go to auth view (AuthView handles it)
+    if (magic === 'success' && magicComplete === 'false' && magicUid) {
+      cleanup();
+      // Store magic link data in sessionStorage for AuthView to pick up
+      sessionStorage.setItem('magic_uid', magicUid);
+      setView('auth');
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setChecking(false), 0);
+      return;
+    }
+
+    // Magic link with complete profile — session cookie already set, normal flow
+    if (magic === 'success' && magicComplete === 'true') {
+      // fall through to normal /api/auth/me check
+    }
+
+    if (magic === 'expired') {
+      toast.error('লগইন লিংকের মেয়াদ উত্তীর্ণ হয়েছে');
+      cleanup();
+      setTimeout(() => setChecking(false), 0);
+      return;
+    }
+    if (magic === 'invalid' || magic === 'error') {
+      toast.error('লগইন লিংকে সমস্যা হয়েছে');
+      cleanup();
+      setTimeout(() => setChecking(false), 0);
+      return;
+    }
     fetch('/api/auth/me')
       .then((res) => {
         if (!res.ok) throw new Error('no session');

@@ -515,6 +515,27 @@ export function emailVerificationOtpEmail(toName: string, otp: string) {
   };
 }
 
+export function magicLinkEmail(toName: string, link: string, siteName: string, isNew: boolean) {
+  const title = isNew ? 'অ্যাকাউন্ট তৈরি ও লগইন লিংক' : 'লগইন লিংক'
+  const desc = isNew
+    ? `আপনার <strong>${siteName}</strong> অ্যাকাউন্ট তৈরি হয়েছে। লগইন করতে নিচের বাটনে ক্লিক করুন। লগইনের পর আপনার নাম ও ফোন নম্বর দিতে হবে।`
+    : `আপনার <strong>${siteName}</strong> অ্যাকাউন্টে লগইন করতে নিচের বাটনে ক্লিক করুন।`
+  return {
+    subject: `${title} — ${siteName}`,
+    html: wrap(`
+      <h2>${title}</h2>
+      <p class="greeting">প্রিয় ${toName},</p>
+      <p>${desc}</p>
+      <div class="otp-section">
+        <a href="${link}" target="_blank" style="display:inline-block;padding:12px 32px;background:${primary};color:#fff;border-radius:8px;font-size:16px;font-weight:600;text-decoration:none;">লগইন করুন</a>
+      </div>
+      <p class="otp-hint">লিংকটি ১০ মিনিটের জন্য বৈধ</p>
+      <div class="alert alert-warn">এই লিংক <strong>কাউকে শেয়ার করবেন না</strong>।</div>
+      <p>আপনি এই অনুরোধ করেননি? তাহলে এই ইমেইল উপেক্ষা করুন।</p>
+    `),
+  };
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SEND HELPERS
    ═══════════════════════════════════════════════════════════════ */
