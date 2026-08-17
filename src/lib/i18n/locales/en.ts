@@ -1457,6 +1457,7 @@ export const en: Record<TranslationKey, string> = {
   'affiliate.accountNamePlaceholder': 'Your name',
   'affiliate.submitWithdraw': 'Submit Withdrawal Request',
   'affiliate.cancel': 'Cancel',
+  'affiliate.noPaymentMethods': 'No payment methods available',
   'affiliate.fillAllFields': 'Please fill all fields (minimum ৳100)',
   'affiliate.insufficientBalance': 'Insufficient balance',
   'affiliate.withdrawSuccess': 'Withdrawal request submitted successfully!',

@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -43,6 +43,13 @@ interface AffiliateData {
   earnings: AffiliateEarning[];
 }
 
+interface PaymentMethodOption {
+  id: string;
+  name: string;
+  color: string;
+  image: string | null;
+}
+
 interface AffiliateEarning {
   id: string;
   amount: number;
@@ -82,7 +89,30 @@ export function AffiliatePanel() {
   const t = useT();
   const [copied, setCopied] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
-  const [withdrawForm, setWithdrawForm] = useState({ amount: '', accountType: 'bkash', accountNumber: '', accountName: '' });
+  const [withdrawForm, setWithdrawForm] = useState({ amount: '', accountType: '', accountNumber: '', accountName: '' });
+
+  // Fetch active payment methods from admin settings
+  const { data: paymentMethods = [] } = useQuery<PaymentMethodOption[]>({
+    queryKey: ['active-payment-methods'],
+    queryFn: async () => {
+      const res = await fetch('/api/payment-methods');
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.map((m: { id: string; name: string; color: string; image: string | null }) => ({
+        id: m.id,
+        name: m.name,
+        color: m.color,
+        image: m.image,
+      }));
+    },
+  });
+
+  // Auto-select first payment method if none selected
+  useEffect(() => {
+    if (paymentMethods.length > 0 && !withdrawForm.accountType) {
+      setWithdrawForm((p) => ({ ...p, accountType: paymentMethods[0].id }));
+    }
+  }, [paymentMethods, withdrawForm.accountType]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const userId = user?.id;
@@ -115,7 +145,7 @@ export function AffiliatePanel() {
 
   const handleWithdraw = async () => {
     const numAmount = Number(withdrawForm.amount);
-    if (!numAmount || numAmount < 100 || !withdrawForm.accountNumber || !withdrawForm.accountName) {
+    if (!numAmount || numAmount < 100 || !withdrawForm.accountType || !withdrawForm.accountNumber || !withdrawForm.accountName) {
       toast.error(t('affiliate.fillAllFields'));
       return;
     }
@@ -123,18 +153,23 @@ export function AffiliatePanel() {
       toast.error(t('affiliate.insufficientBalance'));
       return;
     }
+    // Resolve payment method name from id
+    const selectedMethod = paymentMethods.find((m) => m.id === withdrawForm.accountType);
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/user/affiliate/withdraw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(withdrawForm),
+        body: JSON.stringify({
+          ...withdrawForm,
+          accountType: selectedMethod?.name || withdrawForm.accountType,
+        }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed');
       toast.success(result.message || t('affiliate.withdrawSuccess'));
       setShowWithdraw(false);
-      setWithdrawForm({ amount: '', accountType: 'bkash', accountNumber: '', accountName: '' });
+      setWithdrawForm({ amount: '', accountType: '', accountNumber: '', accountName: '' });
       queryClient.invalidateQueries({ queryKey: ['user-affiliate', userId] });
     } catch (err: any) {
       toast.error(err.message || t('affiliate.withdrawFailed'));
@@ -418,10 +453,13 @@ export function AffiliatePanel() {
                         onChange={(e) => setWithdrawForm((p) => ({ ...p, accountType: e.target.value }))}
                         className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="bkash">bKash</option>
-                        <option value="nagad">Nagad</option>
-                        <option value="rocket">Rocket</option>
-                        <option value="bank">Bank</option>
+                        {paymentMethods.length > 0 ? (
+                          paymentMethods.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                          ))
+                        ) : (
+                          <option value="">{t('affiliate.noPaymentMethods')}</option>
+                        )}
                       </select>
                     </div>
                     <div className="space-y-1.5">

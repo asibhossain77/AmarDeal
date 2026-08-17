@@ -1455,6 +1455,7 @@ export const bn = {
   'affiliate.accountNamePlaceholder': 'আপনার নাম',
   'affiliate.submitWithdraw': 'উত্তোলনের অনুরোধ জমা দিন',
   'affiliate.cancel': 'বাতিল',
+  'affiliate.noPaymentMethods': 'কোনো পেমেন্ট মেথড পাওয়া যায়নি',
   'affiliate.fillAllFields': 'সকল তথ্য পূরণ করুন (সর্বনিম্ন ৳100)',
   'affiliate.insufficientBalance': 'পর্যাপ্ত ব্যালেন্স নেই',
   'affiliate.withdrawSuccess': 'উত্তোলনের অনুরোধ সফলভাবে জমা হয়েছে!',
