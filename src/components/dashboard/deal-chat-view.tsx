@@ -20,6 +20,7 @@ import {
   Phone,
   Hash,
   CircleCheck,
+  PhoneCall,
 } from 'lucide-react';
 import { AccessDenied } from '@/components/shared/access-denied';
 import { useT } from '@/lib/i18n';
@@ -286,6 +287,7 @@ export function DealChatView() {
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [sending, setSending] = useState(false);
+  const [callingAdmin, setCallingAdmin] = useState(false);
   const [inputText, setInputText] = useState('');
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -376,6 +378,28 @@ export function DealChatView() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  /* ── Call Admin ── */
+  const handleCallAdmin = async () => {
+    if (!activeDeal?.id || callingAdmin) return;
+    setCallingAdmin(true);
+    try {
+      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/call-admin`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        toast.success(t('chat.adminCalled'));
+        // Re-fetch messages to show the new system message
+        fetchMessages();
+      } else {
+        toast.error(t('chat.adminCallFailed'));
+      }
+    } catch {
+      toast.error(t('chat.adminCallFailed'));
+    } finally {
+      setCallingAdmin(false);
     }
   };
 
@@ -506,6 +530,21 @@ export function DealChatView() {
           ═══════════════════════════════════════ */}
       <div className="shrink-0 border-t border-border/60 bg-background/90 backdrop-blur-xl px-4 py-3 sm:px-5">
         <div className="flex items-end gap-2.5 max-w-3xl mx-auto">
+          {/* Call Admin button — red, bottom-left */}
+          <button
+            onClick={handleCallAdmin}
+            disabled={callingAdmin}
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-3 shadow-lg shadow-red-600/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={t('chat.callAdmin')}
+          >
+            {callingAdmin ? (
+              <LoadingAnimation size="sm" />
+            ) : (
+              <PhoneCall className="h-4 w-4" />
+            )}
+            <span className="text-xs font-semibold hidden sm:inline">{t('chat.callAdmin')}</span>
+          </button>
+
           {/* Attachment button (visual placeholder) */}
           <button
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"

@@ -322,6 +322,9 @@ export const bn = {
   'chat.user': 'ব্যবহারকারী',
   'chat.today': 'আজ',
   'chat.yesterday': 'গতকাল',
+  'chat.callAdmin': 'অ্যাডমিন ডাকুন',
+  'chat.adminCalled': 'অ্যাডমিনকে ডাকা হয়েছে!',
+  'chat.adminCallFailed': 'অ্যাডমিন ডাকতে সমস্যা হয়েছে',
 
   // ── Payout ──
   'payout.history': 'পেআউট ইতিহাস',

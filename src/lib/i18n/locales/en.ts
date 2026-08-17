@@ -324,6 +324,9 @@ export const en: Record<TranslationKey, string> = {
   'chat.user': 'User',
   'chat.today': 'Today',
   'chat.yesterday': 'Yesterday',
+  'chat.callAdmin': 'Call Admin',
+  'chat.adminCalled': 'Admin has been called!',
+  'chat.adminCallFailed': 'Failed to call admin',
 
   // ── Payout ──
   'payout.history': 'Payout History',

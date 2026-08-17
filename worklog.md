@@ -80,3 +80,22 @@ Stage Summary:
 - Logged-in users see a "শুরু করুন" (Start Now) button in hero and navbar to enter their dashboard
 - Session restore from cookies no longer auto-redirects to dashboard
 - All lint checks pass (only pre-existing errors remain)
+---
+Task ID: 3
+Agent: Main
+Task: Add red "Call Admin" button in deal chat input bar
+
+Work Log:
+- Added i18n keys `chat.callAdmin`, `chat.adminCalled`, `chat.adminCallFailed` in both bn.ts and en.ts
+- Added red "অ্যাডমিন ডাকুন" button with PhoneCall icon in the chat input bar (bottom-left, before attachment button)
+- Button is red (bg-red-600) with shadow, hover/active scale animations, and loading state
+- On mobile: shows only the phone icon; on desktop: shows icon + "অ্যাডমিন ডাকুন" text
+- Added `handleCallAdmin` function that POSTs to `/api/deals/[id]/call-admin`, shows toast, and re-fetches messages
+- Updated call-admin API route to broadcast the system message via WebSocket for real-time delivery
+- Backend already had: auto system message on first chat, and call-admin endpoint — both working
+
+Stage Summary:
+- Red "অ্যাডমিন ডাকুন" button now appears in the deal chat input bar (bottom-left)
+- Clicking it calls the admin, inserts a system message in chat, and shows success toast
+- System message is broadcast via WebSocket for real-time delivery to both parties
+- Existing auto system message on first chat message ("অ্যাডমিনকে ডাকা হয়েছে...") remains functional
