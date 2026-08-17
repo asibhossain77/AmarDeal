@@ -122,3 +122,24 @@ Stage Summary:
 - Users only see active methods in the withdraw dropdown
 - All APIs created and working, lint passes (no new errors)
 
+---
+Task ID: 2
+Agent: Main
+Task: Fix page refresh redirecting to landing page instead of staying on same page
+
+Work Log:
+- Identified 3 compounding root causes:
+  1. setUser() always reset view to "landing" even on session restore
+  2. reapplyUrlAfterLogin() always forced URL to "/" 
+  3. initUrlSync() ran before auth check, saw user=null, redirected protected URLs to /login
+- Fixed store.ts: Added opts parameter { isLogin?: boolean } to setUser(). Fresh login (isLogin=true) resets to landing. Session restore (default) preserves current view.
+- Fixed url-sync.ts: initUrlSync() no longer redirects protected URLs when user is null (auth check still in progress). Added new applyUrlAfterAuth() function that parses URL and restores the correct view/panel after session restore.
+- Fixed app-shell.tsx: Distinguished between fresh login callbacks (Google OAuth, PipraPay) and normal page refresh. Fresh login uses setUser(user, {isLogin:true}) + reapplyUrlAfterLogin(). Session restore uses setUser(user) + applyUrlAfterAuth(). Added redirect to /login when auth fails on protected URLs.
+- Updated auth-view.tsx: All 3 setUser() calls now pass { isLogin: true } (login form, 2FA verify, complete profile).
+
+Stage Summary:
+- Refresh (F5) on /dashboard/affiliate → stays on /dashboard/affiliate ✓
+- Fresh login → goes to landing page as before ✓
+- No session on protected URL → redirects to login ✓
+- Browser close + reopen → goes to landing page (navigates to /) ✓
+

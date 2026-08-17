@@ -204,12 +204,38 @@ function applyUrlToStore() {
   _lastUrl = window.location.pathname;
 }
 
-/** Can be called after login to re-apply the URL without re-subscribing */
+/** Can be called after fresh login to go to landing page */
 export function reapplyUrlAfterLogin() {
   if (typeof window === 'undefined') return;
-  // After login, stay on landing page (/) — user clicks "শুরু করুন" to enter dashboard
+  // After fresh login, stay on landing page (/) — user clicks "শুরু করুন" to enter dashboard
   window.history.replaceState(null, '', '/');
   _lastUrl = '/';
+}
+
+/** Called after session restore (page refresh) — apply URL to store without redirecting */
+export function applyUrlAfterAuth() {
+  if (typeof window === 'undefined') return;
+  const parsed = parseUrl(window.location.pathname);
+  const store = useAppStore;
+  const state = store.getState();
+  const updates: Record<string, unknown> = {};
+
+  // If URL is a protected view, apply it to store
+  if (parsed.view && PROTECTED_VIEWS.has(parsed.view) && parsed.view !== 'auth') {
+    updates.view = parsed.view;
+    if (parsed.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
+    if (parsed.sellerPanel) updates.sellerPanel = parsed.sellerPanel;
+    if (parsed.adminPanel) updates.adminPanel = parsed.adminPanel;
+    if (parsed.dealId) updates.activeDeal = { id: parsed.dealId };
+  } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
+    updates.view = parsed.view;
+  }
+  // If URL is '/' or 'landing', view stays 'landing' (default) — do nothing
+
+  if (Object.keys(updates).length > 0) {
+    store.setState(updates);
+  }
+  _lastUrl = window.location.pathname;
 }
 
 /* ── One-time init: subscribe + popstate ── */
@@ -239,10 +265,10 @@ export function initUrlSync() {
     store.setState({ view: parsed.view });
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {
-    // Not logged in but on a protected URL → redirect to auth (login)
-    store.setState({ view: 'auth' });
-    window.history.replaceState(null, '', '/login');
-    _lastUrl = '/login';
+    // Not logged in yet but on a protected URL — this might be a page refresh.
+    // Auth check is still in progress; don't redirect. Just note the URL.
+    // app-shell.tsx will call applyUrlAfterAuth() if session exists.
+    _lastUrl = window.location.pathname;
   } else {
     _lastUrl = window.location.pathname;
   }

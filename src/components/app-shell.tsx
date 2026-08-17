@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
-import { initUrlSync, reapplyUrlAfterLogin } from '@/lib/url-sync';
+import { initUrlSync, reapplyUrlAfterLogin, applyUrlAfterAuth, parseUrl } from '@/lib/url-sync';
 import { toast } from 'sonner';
 import { DeferredStyles } from '@/components/shared/deferred-styles';
 
@@ -248,14 +248,24 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       setTimeout(() => setChecking(false), 0);
       return;
     }
+    // Determine if this is a fresh login callback (Google/OAuth) or a normal page refresh
+    const isLoginCallback = googleLogin === 'success' || googleLogin === 'error' || piprapay;
+
     fetch('/api/auth/me')
       .then((res) => {
         if (!res.ok) throw new Error('no session');
         return res.json() as Promise<UserInfo>;
       })
       .then((user) => {
-        setUser(user);
-        setTimeout(() => reapplyUrlAfterLogin(), 0);
+        if (isLoginCallback) {
+          // Fresh login (Google OAuth, PipraPay) → go to landing page
+          setUser(user, { isLogin: true });
+          setTimeout(() => reapplyUrlAfterLogin(), 0);
+        } else {
+          // Session restore (page refresh) → restore the view from URL
+          setUser(user);
+          setTimeout(() => applyUrlAfterAuth(), 0);
+        }
         if (googleLogin === 'success') {
           toast.success('Google দিয়ে লগইন সফল!');
         }
@@ -280,6 +290,12 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
         }
         if (piprapay === 'success') {
           toast.error('পেমেন্ট ভেরিফিকেশনে সমস্যা — লগইন করুন');
+        }
+        // No session: if URL was protected, redirect to login
+        const parsed = parseUrl(window.location.pathname);
+        if (parsed.view && ['dashboard', 'seller', 'admin'].includes(parsed.view)) {
+          setView('auth');
+          window.history.replaceState(null, '', '/login');
         }
       })
       .finally(() => {

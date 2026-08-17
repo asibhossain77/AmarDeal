@@ -57,7 +57,7 @@ interface AppState {
   _prevDashPanel: DashboardPanel | null
   _prevSellerPanel: SellerPanel | null
   setView: (view: AppView) => void
-  setUser: (user: UserInfo | null) => void
+  setUser: (user: UserInfo | null, opts?: { isLogin?: boolean }) => void
   logout: () => void
   setSidebarOpen: (open: boolean) => void
   setDashboardPanel: (panel: DashboardPanel) => void
@@ -94,12 +94,16 @@ export const useAppStore = create<AppState>((set) => ({
     view,
     sidebarOpen: false,
   })),
-  setUser: (user) => {
+  setUser: (user, opts) => {
     if (!user) return set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null })
     // Ensure permissions always has a valid default
     const safeUser = { ...user, permissions: user.permissions ?? [] };
-    // Always go to landing page after login; user clicks "শুরু করুন" to enter dashboard
-    return set({ user: safeUser, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', _prevView: null })
+    // Fresh login (isLogin=true): go to landing page; user clicks "শুরু করুন" to enter dashboard
+    // Session restore (isLogin=false/undefined): do NOT reset view — app-shell will apply URL
+    if (opts?.isLogin) {
+      return set({ user: safeUser, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', _prevView: null })
+    }
+    return set({ user: safeUser })
   },
   logout: () => {
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});

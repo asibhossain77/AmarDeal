@@ -491,7 +491,7 @@ function ManualLoginForm({
         return;
       }
       toast.success(t('auth.loginSuccess'));
-      setUser(data);
+      setUser(data, { isLogin: true });
     } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
   }, [identifier, password, setUser, onNeedsVerification, t]);
@@ -517,7 +517,7 @@ function ManualLoginForm({
         return;
       }
       toast.success(t('auth.loginSuccess'));
-      setUser(data);
+      setUser(data, { isLogin: true });
       setPending2FA(null);
       setTotpCode('');
     } catch {
@@ -947,7 +947,7 @@ export function AuthView() {
   };
 
   const handleCompleteProfile = (user: any) => {
-    setUser(user);
+    setUser(user, { isLogin: true });
   };
 
   return (
