@@ -82,7 +82,7 @@ export async function POST(
     })
 
     // Auto-insert system message on first user chat (once per deal)
-    const systemText = 'অ্যাডমিনকে ডাকা হয়েছে, খুব দ্রুতই অ্যাডমিন আপনাদের সাথে যোগাযোগ করবে।'
+    const systemText = 'অ্যাডমিন ডাকতে নিচের 🔴 লাল বাটনে ক্লিক করুন — "অ্যাডমিন ডাকুন"।'
     const existingSystemMsg = await db.chatMessage.findFirst({
       where: { dealId: id, role: 'system', text: systemText },
     })
