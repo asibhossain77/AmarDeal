@@ -99,3 +99,26 @@ Stage Summary:
 - Clicking it calls the admin, inserts a system message in chat, and shows success toast
 - System message is broadcast via WebSocket for real-time delivery to both parties
 - Existing auto system message on first chat message ("অ্যাডমিনকে ডাকা হয়েছে...") remains functional
+---
+Task ID: 1
+Agent: Main
+Task: Affiliate withdraw payment methods - manual list managed from admin
+
+Work Log:
+- Explored existing codebase: Prisma schema, admin panel, user affiliate panel, APIs
+- Found AffiliateWithdrawal model already exists in Prisma
+- Added new AffiliatePaymentMethod model to Prisma schema (id, name, isActive, sortOrder)
+- Pushed schema to database with db:push
+- Created admin API at /api/admin/affiliate/payment-methods (GET list, POST create)
+- Created admin API at /api/admin/affiliate/payment-methods/[id] (PATCH toggle/edit, DELETE)
+- Created public API at /api/affiliate-payment-methods (GET active methods only)
+- Updated admin affiliate-panel.tsx with full payment method management UI (add, edit name, toggle active/inactive, delete)
+- Updated user affiliate-panel.tsx to fetch from /api/affiliate-payment-methods instead of /api/payment-methods (gateway methods)
+- Added 15 new i18n translations in both bn.ts and en.ts
+
+Stage Summary:
+- Affiliate withdraw payment methods are now separate from deal payment gateways
+- Admin can add/edit/delete/activate/deactivate methods from admin affiliate page
+- Users only see active methods in the withdraw dropdown
+- All APIs created and working, lint passes (no new errors)
+

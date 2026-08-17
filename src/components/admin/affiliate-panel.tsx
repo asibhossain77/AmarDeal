@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useT } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ import {
 import {
   Users, Wallet, Clock, TrendingUp, Save, Copy,
   CheckCircle, XCircle, Banknote, Inbox, AlertTriangle, ShieldCheck, CircleCheck,
+  Plus, Trash2, GripVertical, CreditCard,
 } from 'lucide-react';
 
 /* ═══ Constants ═══ */
@@ -104,6 +105,95 @@ export function AdminAffiliatePanel() {
   const withdrawals = wdData?.withdrawals ?? [];
   const wdStats = wdData?.stats;
   const [savingPercent, setSavingPercent] = useState(false);
+
+  /* ── Affiliate Payment Methods ── */
+  const [newMethodName, setNewMethodName] = useState('');
+  const [addingMethod, setAddingMethod] = useState(false);
+  const [deletingMethod, setDeletingMethod] = useState<string | null>(null);
+  const [editingMethodId, setEditingMethodId] = useState<string | null>(null);
+  const [editingMethodName, setEditingMethodName] = useState('');
+  const [togglingMethodId, setTogglingMethodId] = useState<string | null>(null);
+
+  const { data: affPayMethods = [], isLoading: affPayMethodsLoading } = useQuery({
+    queryKey: ['admin-affiliate-payment-methods'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/affiliate/payment-methods');
+      if (!res.ok) throw new Error();
+      return res.json();
+    },
+    staleTime: 10_000,
+  });
+
+  const handleAddMethod = useCallback(async () => {
+    if (!newMethodName.trim()) return;
+    setAddingMethod(true);
+    try {
+      const res = await fetch('/api/admin/affiliate/payment-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newMethodName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(t('adminAff.methodAdded'));
+      setNewMethodName('');
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-payment-methods'] });
+    } catch (err) {
+      toast.error((err as Error).message || t('adminAff.actionFailed'));
+    } finally {
+      setAddingMethod(false);
+    }
+  }, [newMethodName, t, queryClient]);
+
+  const handleToggleMethod = useCallback(async (id: string, isActive: boolean) => {
+    setTogglingMethodId(id);
+    try {
+      const res = await fetch(`/api/admin/affiliate/payment-methods/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !isActive }),
+      });
+      if (!res.ok) throw new Error();
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-payment-methods'] });
+    } catch {
+      toast.error(t('adminAff.actionFailed'));
+    } finally {
+      setTogglingMethodId(null);
+    }
+  }, [t, queryClient]);
+
+  const handleDeleteMethod = useCallback(async (id: string) => {
+    if (!confirm(t('adminAff.confirmDeleteMethod'))) return;
+    setDeletingMethod(id);
+    try {
+      const res = await fetch(`/api/admin/affiliate/payment-methods/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success(t('adminAff.methodDeleted'));
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-payment-methods'] });
+    } catch {
+      toast.error(t('adminAff.actionFailed'));
+    } finally {
+      setDeletingMethod(null);
+    }
+  }, [t, queryClient]);
+
+  const handleSaveMethodName = useCallback(async (id: string) => {
+    if (!editingMethodName.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/affiliate/payment-methods/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingMethodName.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(t('adminAff.methodUpdated'));
+      setEditingMethodId(null);
+      setEditingMethodName('');
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-payment-methods'] });
+    } catch {
+      toast.error(t('adminAff.actionFailed'));
+    }
+  }, [editingMethodName, t, queryClient]);
 
   /* ── Actions ── */
   const handleApprove = useCallback(async (id: string) => {
@@ -274,6 +364,147 @@ export function AdminAffiliatePanel() {
         </div>
       </div>
 
+      {/* ═══════ Affiliate Payment Methods ═══════ */}
+      <div className={GLASS_CARD}>
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ backgroundColor: 'rgba(101, 163, 13, 0.12)' }}>
+            <CreditCard className="h-4 w-4" style={{ color: PARROT_GREEN }} />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-foreground">{t('adminAff.paymentMethodsTitle')}</h3>
+            <p className="text-xs text-muted-foreground">{t('adminAff.paymentMethodsDesc')}</p>
+          </div>
+        </div>
+
+        {/* Add new method */}
+        <div className="flex items-center gap-2 mb-4">
+          <Input
+            value={newMethodName}
+            onChange={(e) => setNewMethodName(e.target.value)}
+            placeholder={t('adminAff.methodPlaceholder')}
+            className="h-10 flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleAddMethod()}
+          />
+          <Button
+            onClick={handleAddMethod}
+            disabled={addingMethod || !newMethodName.trim()}
+            className="h-10 gap-1.5 shrink-0"
+            style={{ backgroundColor: PARROT_GREEN }}
+          >
+            {addingMethod ? <LoadingAnimation size="sm" /> : <Plus className="h-3.5 w-3.5" />}
+            {t('adminAff.addMethod')}
+          </Button>
+        </div>
+
+        {/* Methods list */}
+        {affPayMethodsLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
+        ) : affPayMethods.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <CreditCard className="h-10 w-10 text-muted-foreground/25 mb-2" />
+            <p className="text-sm text-muted-foreground">{t('adminAff.noPaymentMethods')}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <AnimatePresence mode="popLayout">
+              {affPayMethods.map((m: any) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/60 px-3.5 py-2.5 transition-colors hover:bg-accent/30"
+                >
+                  <GripVertical className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+
+                  {editingMethodId === m.id ? (
+                    <Input
+                      value={editingMethodName}
+                      onChange={(e) => setEditingMethodName(e.target.value)}
+                      className="h-8 flex-1 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveMethodName(m.id);
+                        if (e.key === 'Escape') { setEditingMethodId(null); setEditingMethodName(''); }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="flex-1 text-sm font-medium text-foreground truncate">{m.name}</span>
+                  )}
+
+                  <Badge
+                    className={m.isActive
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 text-[11px] font-medium'
+                      : 'bg-muted text-muted-foreground border-0 text-[11px] font-medium'
+                    }
+                  >
+                    {m.isActive ? t('adminAff.active') : t('adminAff.inactive')}
+                  </Badge>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {editingMethodId === m.id ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => handleSaveMethodName(m.id)}
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => { setEditingMethodId(null); setEditingMethodName(''); }}
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+                          disabled={togglingMethodId === m.id}
+                          onClick={() => handleToggleMethod(m.id, m.isActive)}
+                          title={m.isActive ? t('adminAff.deactivate') : t('adminAff.activate')}
+                        >
+                          <CheckCircle className={`h-3.5 w-3.5 ${m.isActive ? 'text-emerald-500' : ''}`} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+                          onClick={() => { setEditingMethodId(m.id); setEditingMethodName(m.name); }}
+                          title={t('adminAff.editMethod')}
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                          disabled={deletingMethod === m.id}
+                          onClick={() => handleDeleteMethod(m.id)}
+                          title={t('adminAff.deleteMethod')}
+                        >
+                          {deletingMethod === m.id ? <LoadingAnimation size="sm" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
       {/* ═══════ WITHDRAWAL MANAGEMENT ═══════ */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">

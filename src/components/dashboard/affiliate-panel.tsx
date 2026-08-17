@@ -46,8 +46,6 @@ interface AffiliateData {
 interface PaymentMethodOption {
   id: string;
   name: string;
-  color: string;
-  image: string | null;
 }
 
 interface AffiliateEarning {
@@ -91,19 +89,13 @@ export function AffiliatePanel() {
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState({ amount: '', accountType: '', accountNumber: '', accountName: '' });
 
-  // Fetch active payment methods from admin settings
+  // Fetch active affiliate payment methods from admin
   const { data: paymentMethods = [] } = useQuery<PaymentMethodOption[]>({
-    queryKey: ['active-payment-methods'],
+    queryKey: ['active-affiliate-payment-methods'],
     queryFn: async () => {
-      const res = await fetch('/api/payment-methods');
+      const res = await fetch('/api/affiliate-payment-methods');
       if (!res.ok) return [];
-      const data = await res.json();
-      return data.map((m: { id: string; name: string; color: string; image: string | null }) => ({
-        id: m.id,
-        name: m.name,
-        color: m.color,
-        image: m.image,
-      }));
+      return res.json();
     },
   });
 
@@ -155,6 +147,10 @@ export function AffiliatePanel() {
     }
     // Resolve payment method name from id
     const selectedMethod = paymentMethods.find((m) => m.id === withdrawForm.accountType);
+    if (!selectedMethod) {
+      toast.error(t('affiliate.noPaymentMethods'));
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/user/affiliate/withdraw', {
