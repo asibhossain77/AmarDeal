@@ -58,6 +58,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { label: 'পেমেন্ট মেথড', icon: CreditCard, panel: 'payment-methods' },
       { label: 'ফি কাঠামো', icon: Receipt, panel: 'fee-rules' },
       { label: 'অ্যাফিলিয়েট', icon: Link2, panel: 'affiliate' },
+      { label: 'অ্যাফিলিয়েট পেআউট', icon: Banknote, panel: 'affiliate-payouts' },
     ],
   },
   {
@@ -109,6 +110,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
         { label: t('adminNav.paymentMethods'), icon: CreditCard, panel: 'payment-methods' },
         { label: t('adminNav.feeRules'), icon: Receipt, panel: 'fee-rules' },
         { label: t('adminNav.affiliate'), icon: Link2, panel: 'affiliate' },
+        { label: t('adminNav.affiliatePayouts'), icon: Banknote, panel: 'affiliate-payouts' },
       ],
     },
     {
