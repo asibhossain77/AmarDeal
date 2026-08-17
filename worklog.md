@@ -143,3 +143,23 @@ Stage Summary:
 - No session on protected URL → redirects to login ✓
 - Browser close + reopen → goes to landing page (navigates to /) ✓
 
+---
+Task ID: 1
+Agent: main
+Task: Separate loading state per deal action button
+
+Work Log:
+- Investigated deal-workflow-tracker.tsx and seller-deal-tracker.tsx
+- Found shared `actionLoading` state causing both buttons to show loading
+- Replaced single `actionLoading` with individual states: `deliverLoading`, `cancelLoading`, `acceptLoading`, `disputeLoading`
+- Updated all 4 handler functions to use their respective loading state
+- Updated all 4 button usages to pass the correct loading prop
+- Fixed indentation in seller-deal-tracker.tsx
+- Verified no remaining references to old `actionLoading`
+- Ran lint — only pre-existing errors, no new issues
+- Verified page loads correctly via agent-browser
+
+Stage Summary:
+- Deal action buttons now show loading animation independently — only the clicked button shows loading
+- Files modified: src/components/dashboard/deal-workflow-tracker.tsx, src/components/seller/seller-deal-tracker.tsx
+

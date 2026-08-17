@@ -1547,7 +1547,10 @@ export function DealWorkflowTracker() {
   /* ── Deal data from DB ── */
   const [dealData, setDealData] = useState<DealData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [deliverLoading, setDeliverLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [acceptLoading, setAcceptLoading] = useState(false);
+  const [disputeLoading, setDisputeLoading] = useState(false);
 
   /* ── Chat state ── */
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1794,7 +1797,7 @@ export function DealWorkflowTracker() {
   /* ── Action handlers ── */
   const handleDeliver = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setDeliverLoading(true);
     try {
       const res = await fetch('/api/deals/deliver', {
         method: 'POST',
@@ -1811,13 +1814,13 @@ export function DealWorkflowTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setDeliverLoading(false);
     }
   };
 
   const handleCancel = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setCancelLoading(true);
     try {
       const res = await fetch('/api/deals/cancel', {
         method: 'POST',
@@ -1834,13 +1837,13 @@ export function DealWorkflowTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setCancelLoading(false);
     }
   };
 
   const handleAccept = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setAcceptLoading(true);
     try {
       const res = await fetch('/api/deals/complete', {
         method: 'POST',
@@ -1857,13 +1860,13 @@ export function DealWorkflowTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setAcceptLoading(false);
     }
   };
 
   const handleDispute = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setDisputeLoading(true);
     try {
       const res = await fetch('/api/deals/dispute', {
         method: 'POST',
@@ -1880,7 +1883,7 @@ export function DealWorkflowTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setDisputeLoading(false);
     }
   };
 
@@ -2232,11 +2235,11 @@ export function DealWorkflowTracker() {
                       </p>
                     </div>
                     <div className="flex gap-2 md:gap-3">
-                      <ActionButton onClick={handleDeliver} loading={actionLoading} variant="primary">
+                      <ActionButton onClick={handleDeliver} loading={deliverLoading} variant="primary">
                         <PackageCheck className="h-5 w-5" />
                         কাজ সম্পন্ন
                       </ActionButton>
-                      <ActionButton onClick={handleCancel} loading={actionLoading} variant="danger">
+                      <ActionButton onClick={handleCancel} loading={cancelLoading} variant="danger">
                         <XCircle className="h-5 w-5" />
                         ক্যান্সেল করুন
                       </ActionButton>
@@ -2251,11 +2254,11 @@ export function DealWorkflowTracker() {
                       বিক্রেতা ডেলিভারি করেছেন। নিশ্চিত করুন।
                     </p>
                     <div className="flex gap-2 md:gap-3">
-                      <ActionButton onClick={handleAccept} loading={actionLoading} variant="primary">
+                      <ActionButton onClick={handleAccept} loading={acceptLoading} variant="primary">
                         <ThumbsUp className="h-5 w-5" />
                         পণ্য/সার্ভিস পেয়েছি
                       </ActionButton>
-                      <ActionButton onClick={handleDispute} loading={actionLoading} variant="danger">
+                      <ActionButton onClick={handleDispute} loading={disputeLoading} variant="danger">
                         <AlertTriangle className="h-5 w-5" />
                         বিরোধ
                       </ActionButton>

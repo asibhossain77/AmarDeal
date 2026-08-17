@@ -279,7 +279,8 @@ export function SellerDealTracker() {
 
   const [dealData, setDealData] = useState<DealData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [deliverLoading, setDeliverLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const fetchDeal = useCallback(async () => {
     if (!activeDeal?.id) {
@@ -341,7 +342,7 @@ export function SellerDealTracker() {
   /* ── Action Handlers ── */
   const handleDeliver = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setDeliverLoading(true);
     try {
       const res = await fetch('/api/deals/deliver', {
         method: 'POST',
@@ -358,13 +359,13 @@ export function SellerDealTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setDeliverLoading(false);
     }
   };
 
   const handleCancel = async () => {
     if (!dealData) return;
-    setActionLoading(true);
+    setCancelLoading(true);
     try {
       const res = await fetch('/api/deals/cancel', {
         method: 'POST',
@@ -381,7 +382,7 @@ export function SellerDealTracker() {
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
     } finally {
-      setActionLoading(false);
+      setCancelLoading(false);
     }
   };
 
@@ -513,7 +514,7 @@ export function SellerDealTracker() {
               <div className="flex gap-3">
                 <Button
                   onClick={handleDeliver}
-                  disabled={actionLoading}
+                  disabled={deliverLoading}
                   className="flex-1 h-12 rounded-xl text-base font-bold gap-2.5 transition-transform hover:scale-[1.01] active:scale-[0.99]"
                   style={{
                     backgroundColor: '#84CC16',
@@ -521,16 +522,16 @@ export function SellerDealTracker() {
                     boxShadow: '0 6px 24px rgba(163,230,53,0.3)',
                   }}
                 >
-                  {actionLoading ? <LoadingAnimation size="sm" /> : <PackageCheck className="h-5 w-5" />}
+                  {deliverLoading ? <LoadingAnimation size="sm" /> : <PackageCheck className="h-5 w-5" />}
                   কাজ সম্পন্ন
                 </Button>
                 <Button
                   onClick={handleCancel}
-                  disabled={actionLoading}
+                  disabled={cancelLoading}
                   variant="outline"
                   className="flex-1 h-12 rounded-xl text-base font-semibold gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                 >
-                  {actionLoading ? <LoadingAnimation size="sm" /> : <XCircle className="h-5 w-5" />}
+                  {cancelLoading ? <LoadingAnimation size="sm" /> : <XCircle className="h-5 w-5" />}
                   ক্যান্সেল করুন
                 </Button>
               </div>
