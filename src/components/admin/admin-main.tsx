@@ -726,7 +726,20 @@ function PaymentVerifyPanel() {
               </Badge>
             </div>
             <p className="text-base font-bold text-foreground">{userName}</p>
-            <p className="text-2xl font-extrabold text-foreground mt-1">৳{deal.amount.toLocaleString('en')}</p>
+            <div className="mt-1 space-y-1">
+              <p className="text-2xl font-extrabold text-foreground">৳{deal.amount.toLocaleString('en')}</p>
+              {deal.platformFee != null && deal.platformFee > 0 && (
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">
+                    ফি: <span className="font-semibold text-orange-600 dark:text-orange-400">৳{deal.platformFee.toLocaleString('en')}</span>
+                  </span>
+                  <span className="text-border">|</span>
+                  <span className="text-muted-foreground">
+                    মোট প্রেরণ: <span className="font-bold text-foreground">৳{(deal.amount + deal.platformFee).toLocaleString('en')}</span>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Payment Proof Details */}
@@ -1025,7 +1038,7 @@ function PaymentVerifyPanel() {
       {/* Desktop Table */}
       <SolidCard className="!p-0 overflow-hidden hidden lg:block">
         {loading ? (
-          <SkeletonTable cols={5} rows={4} />
+          <SkeletonTable cols={6} rows={4} />
         ) : pendingDeals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle className="mb-3 h-10 w-10 text-primary" />
@@ -1048,6 +1061,9 @@ function PaymentVerifyPanel() {
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
                   Amount (৳)
+                </th>
+                <th className="px-5 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                  Sent (৳)
                 </th>
                 <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">
                   Status
@@ -1077,6 +1093,9 @@ function PaymentVerifyPanel() {
                     </td>
                     <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
                       ৳{deal.amount.toLocaleString('en')}
+                    </td>
+                    <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">
+                      ৳{(deal.platformFee != null && deal.platformFee > 0 ? deal.amount + deal.platformFee : deal.amount).toLocaleString('en')}
                     </td>
                     <td className="px-5 py-4 text-center whitespace-nowrap">
                       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium">
@@ -1121,6 +1140,11 @@ function PaymentVerifyPanel() {
                       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 text-[10px]">{t('status.pending')}</Badge>
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
+                    {deal.platformFee != null && deal.platformFee > 0 && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        ফি ৳{deal.platformFee.toLocaleString('en')} · মোট ৳{(deal.amount + deal.platformFee).toLocaleString('en')}
+                      </p>
+                    )}
                   </div>
                   <p className="text-lg font-bold text-foreground ml-3">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
