@@ -1,13 +1,14 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminUser } from '@/lib/auth-admin';
+import { requireAdmin } from '@/lib/admin-guard';
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await getAdminUser();
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { id } = await params;
     const body = await req.json();
 
@@ -31,11 +32,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await getAdminUser();
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { id } = await params;
 
     const method = await db.affiliatePaymentMethod.findUnique({ where: { id } });

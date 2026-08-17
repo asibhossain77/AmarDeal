@@ -1,10 +1,11 @@
 import { db } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminUser } from '@/lib/auth-admin';
+import { requireAdmin } from '@/lib/admin-guard';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await getAdminUser();
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const methods = await db.affiliatePaymentMethod.findMany({
       orderBy: { sortOrder: 'asc' },
     });
@@ -17,7 +18,8 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await getAdminUser();
+    const guard = await requireAdmin(req);
+    if (!guard.ok) return guard.response;
     const { name } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
 
