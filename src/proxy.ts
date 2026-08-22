@@ -3,10 +3,41 @@ import { checkRateLimit } from '@/lib/rate-limit'
 
 const SESSION_COOKIE = 'midman_session'
 
+/* ═══════════════════════════════════════════════════════════════
+   Subdomain Routing (production only)
+   midman.bd  → Landing page + static info pages only
+   my.midman.bd  → Full app (all routes)
+   ═══════════════════════════════════════════════════════════════ */
+
+const LANDING_DOMAINS = new Set([
+  'midman.bd',
+  'www.midman.bd',
+])
+
+const ALLOWED_PATHS = new Set([
+  '/', '/about', '/how-it-works', '/fees',
+  '/faq', '/security', '/privacy', '/terms', '/contact', '/blog',
+])
+
+const ALLOWED_API_PREFIXES = [
+  '/api/health', '/api/site-settings', '/api/fee-structure',
+  '/api/reviews', '/api/payment-methods', '/api/affiliate-payment-methods',
+  '/api/contact-info', '/api/popup',
+]
+
+const ALWAYS_ALLOW_PREFIXES = [
+  '/_next/', '/images/', '/favicon', '/robots.txt', '/sitemap',
+]
+
 /**
  * Next.js 16 Proxy (formerly "Middleware") — runs on the Edge before any route handler.
  *
  * Responsibilities:
+ *
+ * 0. Subdomain Routing (production):
+ *    - On midman.bd / www.midman.bd: only allow landing page + info pages.
+ *    - Protected routes redirect to my.midman.bd.
+ *    - Skipped in development (localhost).
  *
  * 1. Rate Limiting (per-request):
  *    - In-memory fixed-window rate limiter with per-IP + per-category buckets.
@@ -71,6 +102,36 @@ export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname
   const method = req.method
   const ip = getClientIp(req)
+
+  // --- 0. Subdomain routing (production only) ---
+  const hostname = req.headers.get('host')?.split(':')[0] || ''
+  if (LANDING_DOMAINS.has(hostname)) {
+    // Allow static/internal paths
+    if (ALWAYS_ALLOW_PREFIXES.some(p => pathname.startsWith(p))) {
+      // fall through to normal proxy
+    } else if (pathname.startsWith('/api/')) {
+      if (!ALLOWED_API_PREFIXES.some(p => pathname.startsWith(p))) {
+        const url = req.nextUrl.clone()
+        url.protocol = 'https:'
+        url.host = 'my.midman.bd'
+        return NextResponse.redirect(url)
+      }
+      // fall through for allowed APIs
+    } else {
+      const cleanPath = pathname.replace(/\/+$/, '') || '/'
+      const isAllowed =
+        ALLOWED_PATHS.has(cleanPath) ||
+        pathname.startsWith('/blog') ||
+        pathname.startsWith('/ref/')
+      if (!isAllowed) {
+        const url = req.nextUrl.clone()
+        url.protocol = 'https:'
+        url.host = 'my.midman.bd'
+        return NextResponse.redirect(url)
+      }
+      // fall through for allowed pages
+    }
+  }
 
   // --- 1. Rate limiting ---
   const rateResult = checkRateLimit(pathname, method, ip)

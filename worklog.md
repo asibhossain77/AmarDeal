@@ -163,3 +163,26 @@ Stage Summary:
 - Deal action buttons now show loading animation independently — only the clicked button shows loading
 - Files modified: src/components/dashboard/deal-workflow-tracker.tsx, src/components/seller/seller-deal-tracker.tsx
 
+---
+Task ID: subdomain-routing
+Agent: main
+Task: Implement subdomain routing (midman.bd = landing, my.midman.bd = app)
+
+Work Log:
+- Discovered Next.js 16 uses proxy.ts (not middleware.ts) - there was already a proxy.ts with rate limiting, CSP, and admin auth gate
+- Created src/lib/domain.ts utility: isLandingDomain(), getAppUrl(), getAppNavigationUrl()
+- Added subdomain routing logic to proxy.ts (before rate limiting, only activates on midman.bd/www.midman.bd)
+- Updated navbar.tsx: login and start buttons redirect to my.midman.bd when on landing domain
+- Updated hero.tsx: both CTA buttons (logged in and not logged in) redirect to my.midman.bd
+- Updated fee-structure.tsx: CTA button redirects to my.midman.bd/login
+- Fixed dev server crash caused by creating middleware.ts alongside proxy.ts
+- Verified: lint clean (only pre-existing errors), dev server starts and serves 200
+
+Stage Summary:
+- Files created: src/lib/domain.ts
+- Files modified: src/proxy.ts, src/components/landing/navbar.tsx, src/components/landing/hero.tsx, src/components/landing/fee-structure.tsx
+- Files deleted: src/middleware.ts (incompatible with proxy.ts in Next.js 16)
+- On localhost: no behavior change (all domain checks are skipped)
+- On midman.bd: landing page + info pages work, all other paths redirect to my.midman.bd
+- CTA buttons on landing domain use window.location.href to navigate to my.midman.bd
+

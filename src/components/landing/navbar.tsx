@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { isLandingDomain, getAppUrl } from '@/lib/domain';
 import {
   Menu,
   Sun,
@@ -315,12 +316,20 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <Button size="sm" onClick={navigateToDashboard} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => {
+                const url = getAppUrl('/dashboard');
+                if (isLandingDomain()) { window.location.href = url; return; }
+                navigateToDashboard();
+              }} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                 <LayoutDashboard className="h-4 w-4" />
                 {t('hero.startNow')}
               </Button>
             ) : (
-              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => {
+                const url = getAppUrl('/login');
+                if (isLandingDomain()) { window.location.href = url; return; }
+                setView('auth');
+              }} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                 <LogIn className="h-4 w-4" />
                 {t('nav.loginRegister')}
               </Button>
@@ -498,7 +507,11 @@ export function Navbar() {
                                 <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
                               </div>
                             </div>
-                            <Button onClick={() => { setOpen(false); navigateToDashboard(); }} className="w-full gap-2 rounded-lg font-medium">
+                            <Button onClick={() => {
+                              const url = getAppUrl('/dashboard');
+                              if (isLandingDomain()) { setOpen(false); window.location.href = url; return; }
+                              setOpen(false); navigateToDashboard();
+                            }} className="w-full gap-2 rounded-lg font-medium">
                               <LayoutDashboard className="h-4 w-4" /> {t('hero.startNow')}
                             </Button>
                             <button
@@ -509,7 +522,11 @@ export function Navbar() {
                             </button>
                           </>
                         ) : (
-                          <Button onClick={() => { setOpen(false); setView('auth'); }} className="w-full gap-2 rounded-lg font-medium">
+                          <Button onClick={() => {
+                            const url = getAppUrl('/login');
+                            if (isLandingDomain()) { setOpen(false); window.location.href = url; return; }
+                            setOpen(false); setView('auth');
+                          }} className="w-full gap-2 rounded-lg font-medium">
                             <LogIn className="h-4 w-4" /> {t('nav.loginRegister')}
                           </Button>
                         )}
