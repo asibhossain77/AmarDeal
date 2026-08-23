@@ -8,7 +8,7 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { isLandingDomain, getAppUrl } from '@/lib/domain';
+import { isLandingDomain, getAppUrl, isAppDomain } from '@/lib/domain';
 import {
   Menu,
   Sun,
@@ -168,10 +168,11 @@ export function Navbar() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useNavText();
 
+  const isSeller = view === 'seller';
   const isAdmin = view === 'admin';
   const isAuth = view === 'auth' || view === 'dashboard';
   const isDashboard = view === 'dashboard' && user;
-  const isSidebarView = isDashboard || isAdmin;
+  const isSidebarView = isDashboard || isAdmin || isSeller || view === 'auth';
 
   const isInfoPage = view === 'blog' || view.startsWith('page-');
 
@@ -181,6 +182,7 @@ export function Navbar() {
   const handleLogoClick = () => {
     if (isDashboard) setDashboardPanel('overview');
     else if (isAdmin) setAdminPanel('dashboard');
+    else if (isAppDomain()) navigateToDashboard();
     else setView('landing');
   };
 
@@ -280,7 +282,7 @@ export function Navbar() {
         </div>
 
         {/* ── Center: Landing Desktop Nav Links (icons only + tooltip on hover) ── */}
-        {!isAuth && !isAdmin && (
+        {!isSidebarView && (
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
             {[
               { href: '/security', viewKey: 'page-security', label: t('nav.features'), Icon: Sparkles },
@@ -311,7 +313,7 @@ export function Navbar() {
         )}
 
         {/* ── Right: Landing Desktop Buttons (direct child of nav) ── */}
-        {!isAuth && !isAdmin && (
+        {!isSidebarView && (
           <div className="hidden shrink-0 items-center gap-2 md:flex">
             <LanguageSwitcher />
             <ThemeToggle />
@@ -470,7 +472,7 @@ export function Navbar() {
                   )}
 
                   {/* ── Landing Mobile Nav ── */}
-                  {!isAuth && !isAdmin && (
+                  {!isSidebarView && (
                     <>
                       <MobileBrandHeader />
 

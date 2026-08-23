@@ -12,11 +12,19 @@ export const APP_DOMAIN = 'https://my.midman.bd';
 
 /**
  * Domains that serve ONLY the landing page.
- * Anything else (localhost, my.midman.bd, vercel.app) is the app domain.
  */
 const LANDING_DOMAINS = new Set([
   'midman.bd',
   'www.midman.bd',
+]);
+
+/**
+ * The explicit app subdomain.
+ * Only this domain is treated as the app domain.
+ * localhost, vercel.app, etc. behave as neutral (landing page visible).
+ */
+const APP_DOMAINS = new Set([
+  'my.midman.bd',
 ]);
 
 /**
@@ -27,6 +35,20 @@ export function isLandingDomain(): boolean {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname;
   return LANDING_DOMAINS.has(host);
+}
+
+/**
+ * Client-side: check if the current browser is on the app subdomain.
+ * Returns true ONLY for my.midman.bd.
+ * Returns false for midman.bd, www.midman.bd, localhost, vercel.app, etc.
+ *
+ * This ensures:
+ * - Production: my.midman.bd → app (never landing), midman.bd → landing only
+ * - Development: localhost → neutral (landing page visible for testing)
+ */
+export function isAppDomain(): boolean {
+  if (typeof window === 'undefined') return false;
+  return APP_DOMAINS.has(window.location.hostname);
 }
 
 /**

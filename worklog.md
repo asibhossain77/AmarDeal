@@ -186,3 +186,25 @@ Stage Summary:
 - On midman.bd: landing page + info pages work, all other paths redirect to my.midman.bd
 - CTA buttons on landing domain use window.location.href to navigate to my.midman.bd
 
+---
+Task ID: subdomain-fix
+Agent: main
+Task: Fix my.midman.bd showing landing page instead of app after login redirect
+
+Work Log:
+- Identified root cause: store default view is 'landing', no domain-aware logic existed
+- On my.midman.bd, after redirect from midman.bd login, the SPA loaded with default 'landing' view
+- Added isAppDomain() to domain.ts (returns true only for my.midman.bd, false for localhost/vercel.app)
+- Fixed store.ts: setUser(isLogin) on app domain goes to dashboard/seller/admin directly; logout goes to auth
+- Fixed app-shell.tsx: added domain guard effect that prevents 'landing' view on app domain
+- Fixed url-sync.ts: reapplyUrlAfterLogin() syncs URL to store on app domain; initUrlSync() handles auth URL
+- Fixed navbar.tsx: isSidebarView includes auth+seller; handleLogoClick uses navigateToDashboard on app domain
+- Fixed auth check catch block to also handle /login URL (show auth view, not landing)
+
+Stage Summary:
+- On midman.bd: ONLY landing page + info pages (unchanged)
+- On my.midman.bd: NEVER shows landing page — always auth/dashboard/seller/admin
+- On localhost: no behavior change — landing page visible for development
+- Login flow: midman.bd → click login → my.midman.bd/login → auth view → after login → dashboard
+- Files modified: domain.ts, store.ts, app-shell.tsx, url-sync.ts, navbar.tsx
+

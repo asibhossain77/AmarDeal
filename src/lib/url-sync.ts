@@ -5,6 +5,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { useAppStore, type AppView, type DashboardPanel, type SellerPanel, type AdminPanel } from './store';
+import { isAppDomain } from './domain';
 
 /* ── View → URL segment maps ── */
 
@@ -204,12 +205,21 @@ function applyUrlToStore() {
   _lastUrl = window.location.pathname;
 }
 
-/** Can be called after fresh login to go to landing page */
+/** Can be called after fresh login to set correct URL */
 export function reapplyUrlAfterLogin() {
   if (typeof window === 'undefined') return;
-  // After fresh login, stay on landing page (/) — user clicks "শুরু করুন" to enter dashboard
-  window.history.replaceState(null, '', '/');
-  _lastUrl = '/';
+  if (isAppDomain()) {
+    // On app domain, after login the store already has the correct view (dashboard/seller/admin).
+    // Sync the URL to match.
+    const state = useAppStore.getState();
+    const url = buildUrl(state);
+    window.history.replaceState(null, '', url);
+    _lastUrl = url;
+  } else {
+    // On landing domain, stay on landing page (/)
+    window.history.replaceState(null, '', '/');
+    _lastUrl = '/';
+  }
 }
 
 /** Called after session restore (page refresh) — apply URL to store without redirecting */
@@ -252,7 +262,16 @@ export function initUrlSync() {
   const parsed = parseUrl(window.location.pathname);
   const state = store.getState();
 
-  if (state.user) {
+  // On app domain, / should be treated as auth (not landing)
+  if (isAppDomain() && (parsed.view === 'landing' || parsed.view === null)) {
+    // Don't set view yet — auth check is still running.
+    // The domain guard in app-shell.tsx will handle this after auth check completes.
+    _lastUrl = window.location.pathname;
+  } else if (parsed.view === 'auth' && !state.user) {
+    // Not logged in, URL is /login — show auth view immediately
+    store.setState({ view: 'auth' });
+    _lastUrl = window.location.pathname;
+  } else if (state.user) {
     // Logged in — allow landing page, but apply dashboard/seller/admin URLs
     if (parsed.view === 'landing' || parsed.view === null) {
       // Stay on landing page
