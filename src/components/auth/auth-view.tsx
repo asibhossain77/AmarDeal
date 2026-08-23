@@ -4,6 +4,7 @@ import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useSyncExternalStore, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
+import { isAppDomain } from '@/lib/domain';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -942,8 +943,14 @@ export function AuthView() {
 
   const handleBack = () => {
     if (mode === 'verify' || mode === 'email-login' || mode === 'manual' || mode === 'forgot') setMode('auth');
-    else if (mode === 'complete-profile') setView('landing');
-    else setView('landing');
+    else if (mode === 'complete-profile') {
+      if (isAppDomain()) setView('auth');
+      else setView('landing');
+    }
+    else {
+      if (isAppDomain()) return; // already on auth, do nothing
+      setView('landing');
+    }
   };
 
   const handleCompleteProfile = (user: any) => {

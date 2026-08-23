@@ -1,11 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import { useT } from '@/lib/i18n';
+import { isAppDomain } from '@/lib/domain';
 import { Home } from 'lucide-react';
 
 export default function NotFound() {
   const t = useT();
+
+  const handleGoHome = () => {
+    // On app domain, go to /login (SPA will show auth view)
+    // On landing domain, go to / (landing page)
+    window.location.href = isAppDomain() ? '/login' : '/';
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center !bg-[#F2F4F7] px-4 dark:!bg-[#09090b]">
@@ -30,13 +36,13 @@ export default function NotFound() {
 
         {/* Actions */}
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/"
+          <button
+            onClick={handleGoHome}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-[15px] font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
           >
             <Home className="h-4 w-4" />
             {t('notFound.backHome')}
-          </Link>
+          </button>
         </div>
 
       </div>

@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Home } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { isAppDomain } from '@/lib/domain';
 import { useTranslation } from '@/lib/i18n';
 import { Footer } from './footer';
 
@@ -28,7 +29,7 @@ export function PageWrapper({ children, title, subtitle }: PageWrapperProps) {
       <div className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <a
           href="/"
-          onClick={(e) => { e.preventDefault(); setView('landing'); }}
+          onClick={(e) => { e.preventDefault(); if (isAppDomain()) { const { navigateToDashboard } = useAppStore.getState(); navigateToDashboard(); } else setView('landing'); }}
           className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
         >
           <Home className="h-4 w-4" />
