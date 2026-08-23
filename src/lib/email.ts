@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 const DEFAULTS = {
   email_site_name:         'মিডম্যান',
   email_from_name:         'মিডম্যান',
-  email_site_url:          'https://midman.bd',
+  email_site_url:          'https://my.midman.bd',
   email_header_subtitle:   'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত প্ল্যাটফর্ম',
   email_footer_tagline:    'নিরাপদে কিনুন, নিরাপদে বিক্রি করুন',
   email_footer_year:       '',  // empty = auto (current year)
