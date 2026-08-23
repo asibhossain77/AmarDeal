@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
-import { isAppDomain, isLandingDomain } from '@/lib/domain';
 import { initUrlSync, reapplyUrlAfterLogin, applyUrlAfterAuth, parseUrl } from '@/lib/url-sync';
 import { toast } from 'sonner';
 import { DeferredStyles } from '@/components/shared/deferred-styles';
@@ -177,7 +176,6 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   const user = useAppStore((s) => s.user);
   const setView = useAppStore((s) => s.setView);
   const setUser = useAppStore((s) => s.setUser);
-  const navigateToDashboard = useAppStore((s) => s.navigateToDashboard);
   const [checking, setChecking] = useState(true);
   const [minReady, setMinReady] = useState(false);
 
@@ -310,25 +308,8 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       });
   }, [setUser]);
 
-  // ── Domain guard: on app domain, NEVER show landing page ──
-  const domainGuardDone = useRef(false);
-  useEffect(() => {
-    if (checking || domainGuardDone.current) return;
-    if (!isAppDomain() || view !== 'landing') return;
-    domainGuardDone.current = true;
-    if (user) {
-      navigateToDashboard();
-    } else {
-      setView('auth');
-    }
-  }, [checking, view, user]);
 
   if (!minReady || checking) {
-    return <SiteLoader />;
-  }
-
-  // Double-check: if still landing on app domain, show auth or loader
-  if (isAppDomain() && view === 'landing') {
     return <SiteLoader />;
   }
 

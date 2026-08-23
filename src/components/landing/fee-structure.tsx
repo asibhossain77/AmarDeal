@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-import { isLandingDomain, getAppUrl } from '@/lib/domain';
+
 
 const emptySubscribe = () => () => {};
 
@@ -172,10 +172,7 @@ export function FeeStructure() {
         {/* CTA Button */}
         <div className="mt-10 text-center">
           <Button
-            onClick={() => {
-              if (isLandingDomain()) { window.location.href = getAppUrl('/login'); return; }
-              setView('auth');
-            }}
+            onClick={() => setView('auth')}
             size="lg"
             className="gap-2 rounded-xl font-bold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 px-8"
           >

@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
-import { isAppDomain, isLandingDomain } from '@/lib/domain'
 
 export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact'
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review'
@@ -97,33 +96,20 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   setUser: (user, opts) => {
     if (!user) {
-      // On app domain, logout goes to auth; on landing domain, stay on landing
-      const resetView = isAppDomain() ? 'auth' as const : 'landing' as const;
-      return set({ user: null, view: resetView, sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null })
+      return set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null })
     }
     // Ensure permissions always has a valid default
     const safeUser = { ...user, permissions: user.permissions ?? [] };
-    // Fresh login (isLogin=true):
-    //   - On landing domain: go to landing page; user clicks "শুরু করুন" to enter dashboard
-    //   - On app domain: go directly to dashboard/seller/admin
+    // Fresh login (isLogin=true): go to landing page; user clicks "শুরু করুন" to enter dashboard
     // Session restore (isLogin=false/undefined): do NOT reset view — app-shell will apply URL
     if (opts?.isLogin) {
-      if (isAppDomain()) {
-        // On app domain, go directly to the user's main view
-        let targetView: AppView = 'dashboard';
-        if (safeUser.isAdmin) targetView = 'admin';
-        else if (safeUser.isSeller) targetView = 'seller';
-        return set({ user: safeUser, view: targetView, sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', _prevView: null })
-      }
       return set({ user: safeUser, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', _prevView: null })
     }
     return set({ user: safeUser })
   },
   logout: () => {
     fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    // On app domain, go to auth page; on landing domain, stay on landing
-    const resetView = isAppDomain() ? 'auth' as const : 'landing' as const;
-    set({ user: null, view: resetView, sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null });
+    set({ user: null, view: 'landing', sidebarOpen: false, dashboardPanel: 'overview', sellerPanel: 'overview', adminPanel: 'dashboard', activeDeal: null });
   },
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   setDashboardPanel: (dashboardPanel) => set((s) => ({
@@ -169,9 +155,7 @@ export const useAppStore = create<AppState>((set) => ({
       const target = s._prevView;
       return { view: target, _prevView: null, sidebarOpen: false };
     }
-    // On app domain, goBack from root goes to auth; on landing, stay on landing
-    const fallback = isAppDomain() ? 'auth' as const : 'landing' as const;
-    return { view: fallback, sidebarOpen: false };
+    return { view: 'landing', sidebarOpen: false };
   }),
   navigateToDashboard: () => set((s) => {
     if (!s.user) return { view: 'auth' };

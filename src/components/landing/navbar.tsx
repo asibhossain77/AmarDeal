@@ -8,7 +8,6 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { isLandingDomain, getAppUrl, isAppDomain } from '@/lib/domain';
 import {
   Menu,
   Sun,
@@ -168,11 +167,10 @@ export function Navbar() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useNavText();
 
-  const isSeller = view === 'seller';
   const isAdmin = view === 'admin';
   const isAuth = view === 'auth' || view === 'dashboard';
   const isDashboard = view === 'dashboard' && user;
-  const isSidebarView = isDashboard || isAdmin || isSeller || view === 'auth';
+  const isSidebarView = isDashboard || isAdmin;
 
   const isInfoPage = view === 'blog' || view.startsWith('page-');
 
@@ -182,7 +180,6 @@ export function Navbar() {
   const handleLogoClick = () => {
     if (isDashboard) setDashboardPanel('overview');
     else if (isAdmin) setAdminPanel('dashboard');
-    else if (isAppDomain()) navigateToDashboard();
     else setView('landing');
   };
 
@@ -318,20 +315,12 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <Button size="sm" onClick={() => {
-                const url = getAppUrl('/dashboard');
-                if (isLandingDomain()) { window.location.href = url; return; }
-                navigateToDashboard();
-              }} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => navigateToDashboard()} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                 <LayoutDashboard className="h-4 w-4" />
                 {t('hero.startNow')}
               </Button>
             ) : (
-              <Button size="sm" onClick={() => {
-                const url = getAppUrl('/login');
-                if (isLandingDomain()) { window.location.href = url; return; }
-                setView('auth');
-              }} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                 <LogIn className="h-4 w-4" />
                 {t('nav.loginRegister')}
               </Button>
@@ -510,8 +499,6 @@ export function Navbar() {
                               </div>
                             </div>
                             <Button onClick={() => {
-                              const url = getAppUrl('/dashboard');
-                              if (isLandingDomain()) { setOpen(false); window.location.href = url; return; }
                               setOpen(false); navigateToDashboard();
                             }} className="w-full gap-2 rounded-lg font-medium">
                               <LayoutDashboard className="h-4 w-4" /> {t('hero.startNow')}
@@ -525,8 +512,6 @@ export function Navbar() {
                           </>
                         ) : (
                           <Button onClick={() => {
-                            const url = getAppUrl('/login');
-                            if (isLandingDomain()) { setOpen(false); window.location.href = url; return; }
                             setOpen(false); setView('auth');
                           }} className="w-full gap-2 rounded-lg font-medium">
                             <LogIn className="h-4 w-4" /> {t('nav.loginRegister')}

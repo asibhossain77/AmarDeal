@@ -7,7 +7,7 @@ import { ArrowRight, LayoutDashboard } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
-import { isLandingDomain, getAppUrl } from '@/lib/domain';
+
 
 const emptySubscribe = () => () => {};
 
@@ -161,10 +161,7 @@ export function Hero() {
                   <>
                     <Button
                       size="lg"
-                      onClick={() => {
-                        if (isLandingDomain()) { window.location.href = getAppUrl('/dashboard'); return; }
-                        navigateToDashboard();
-                      }}
+                      onClick={() => navigateToDashboard()}
                       className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
                     >
                       <LayoutDashboard className="h-5 w-5" />
@@ -179,10 +176,7 @@ export function Hero() {
                   <>
                     <Button
                       size="lg"
-                      onClick={() => {
-                        if (isLandingDomain()) { window.location.href = getAppUrl('/login'); return; }
-                        useAppStore.getState().setView('auth');
-                      }}
+                      onClick={() => useAppStore.getState().setView('auth')}
                       className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
                     >
                       {t('hero.startNow')}

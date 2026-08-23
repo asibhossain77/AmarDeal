@@ -2,7 +2,6 @@
 
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useAppStore, type AppView } from '@/lib/store';
-import { isAppDomain } from '@/lib/domain';
 import { useTranslation } from '@/lib/i18n';
 import { Separator } from '@/components/ui/separator';
 
@@ -44,7 +43,7 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <a href="/" onClick={(e) => { e.preventDefault(); if (isAppDomain()) { const { navigateToDashboard } = useAppStore.getState(); navigateToDashboard(); } else setView('landing'); }} className="mb-4 flex items-center gap-2.5">
+            <a href="/" onClick={(e) => { e.preventDefault(); setView('landing'); }} className="mb-4 flex items-center gap-2.5">
               {siteLogo ? (
                 <img
                   src={siteLogo}
