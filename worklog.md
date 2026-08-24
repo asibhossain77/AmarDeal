@@ -224,3 +224,31 @@ Stage Summary:
 - Logo SVG now shows in both the navbar LogoButton and footer brand link
 - Both are clickable links that navigate to the landing page
 - Files modified: public/logo.svg (new), src/lib/use-site-settings.ts, src/app/api/site-settings/route.ts
+
+---
+Task ID: 1
+Agent: main
+Task: Implement Web Push Notification system
+
+Work Log:
+- Installed web-push package, generated VAPID keys, added to .env
+- Added PushSubscription model to Prisma schema with User relation, pushed to DB
+- Created service worker at public/sw.js (handles push events, notification click → navigate)
+- Created src/lib/push.ts utility (sendPushToUser, sendPushToUsers, sendPushToAll, auto-cleanup invalid subs)
+- Created API routes: /api/push/subscribe, /api/push/unsubscribe, /api/push/send, /api/push/status
+- Created /api/admin/push/stats for admin panel
+- Added push notification toggle UI in settings-panel.tsx (enable/disable/test button)
+- Added admin push broadcast panel (push-panel.tsx) with subscriber count and broadcast form
+- Integrated push into 5 deal events: create, chat, delivery, call-admin, payment
+- Added 'push' to AdminPanel type, admin nav config, url-sync, navbar mobile nav
+- Added 13 Bengali + 13 English i18n translations
+- Fixed missing Bell import in navbar.tsx
+- Verified: landing page loads without errors, lint clean (no new issues)
+
+Stage Summary:
+- Complete push notification system: subscribe, send, auto-cleanup, admin broadcast
+- Users can toggle push in Settings, test with one click
+- Admins can broadcast to all subscribers from admin panel
+- Deal events auto-trigger push: new deal, chat, delivery, admin call, payment
+- Service worker handles background notification display and click navigation
+- All API routes are auth-protected; send route enforces admin-only for broadcast

@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useAppStore } from '@/lib/store';
@@ -9,10 +9,21 @@ import { useTranslation, type Locale } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe } from 'lucide-react';
+import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe, Bell, BellOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const emptySubscribe = () => () => {};
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export function SettingsPanel() {
   const user = useAppStore((s) => s.user);
@@ -27,6 +38,104 @@ export function SettingsPanel() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(true);
+  const [pushAction, setPushAction] = useState(false);
+
+  // Push notification functions
+  const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
+
+  const checkPushStatus = async () => {
+    if (!isPushSupported) { setPushLoading(false); return; }
+    try {
+      const res = await fetch('/api/push/status');
+      const data = await res.json();
+      setPushEnabled(data.enabled);
+    } catch { /* ignore */ }
+    setPushLoading(false);
+  };
+
+  useEffect(() => { void checkPushStatus(); }, []);
+
+  const togglePush = async () => {
+    if (!isPushSupported) {
+      toast.error(t('settings.pushNotSupported'));
+      return;
+    }
+    setPushAction(true);
+    try {
+      if (pushEnabled) {
+        // Disable
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          });
+        }
+        setPushEnabled(false);
+        toast.success(t('settings.pushOffSuccess'));
+      } else {
+        // Enable
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.error(t('settings.pushDenied'));
+          setPushAction(false);
+          return;
+        }
+        const statusRes = await fetch('/api/push/status');
+        const statusData = await statusRes.json();
+        if (!statusData.vapidKey) {
+          toast.error(t('settings.serverError'));
+          setPushAction(false);
+          return;
+        }
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(statusData.vapidKey),
+        });
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            keys: sub.toJSON().keys,
+          }),
+        });
+        setPushEnabled(true);
+        toast.success(t('settings.pushSuccess'));
+      }
+    } catch (err) {
+      console.error('[Push Toggle]', err);
+      toast.error(t('settings.serverError'));
+    }
+    setPushAction(false);
+  };
+
+  const sendTestPush = async () => {
+    if (!user) return;
+    setPushAction(true);
+    try {
+      await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          title: locale === 'bn' ? '🔔 টেস্ট নোটিফিকেশন' : '🔔 Test Notification',
+          message: locale === 'bn' ? 'পুশ নোটিফিকেশন সফলভাবে কাজ করছে!' : 'Push notifications are working!',
+          url: '/',
+        }),
+      });
+      toast.success(t('settings.pushTestSent'));
+    } catch {
+      toast.error(t('settings.serverError'));
+    }
+    setPushAction(false);
+  };
 
   if (!mounted) return null;
 
@@ -99,6 +208,61 @@ export function SettingsPanel() {
             </div>
             <LanguageSwitcher />
           </div>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-1">{t('settings.pushNotifications')}</h3>
+          <p className="text-xs text-muted-foreground mb-4">{t('settings.pushDesc')}</p>
+          {pushLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>...</span>
+            </div>
+          ) : !isPushSupported ? (
+            <p className="text-xs text-muted-foreground">{t('settings.pushNotSupported')}</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {pushEnabled ? (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
+                      <Bell className="h-4 w-4" />
+                    </div>
+                  ) : (
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <BellOff className="h-4 w-4" />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium">
+                    {pushEnabled ? t('settings.pushEnabled') : t('settings.pushDisabled')}
+                  </span>
+                </div>
+                <Button
+                  onClick={togglePush}
+                  variant={pushEnabled ? 'outline' : 'default'}
+                  size="sm"
+                  className="rounded-xl text-xs font-semibold gap-1.5"
+                  disabled={pushAction}
+                >
+                  {pushAction && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {pushEnabled ? t('settings.pushDisable') : t('settings.pushEnable')}
+                </Button>
+              </div>
+              {pushEnabled && (
+                <Button
+                  onClick={sendTestPush}
+                  variant="outline"
+                  size="sm"
+                  className="w-full rounded-xl text-xs font-medium gap-1.5"
+                  disabled={pushAction}
+                >
+                  {pushAction ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" />}
+                  {t('settings.pushTest')}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Password Change */}

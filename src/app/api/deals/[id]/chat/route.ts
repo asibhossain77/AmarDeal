@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess, requireAuth } from '@/lib/deal-guard'
+import { sendPushToUser } from '@/lib/push'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -104,6 +105,19 @@ export async function POST(
         senderName: sysMsg.senderName,
         text: sysMsg.text,
         createdAt: sysMsg.createdAt.toISOString(),
+      })
+    }
+
+    // Push notification to the other person in the deal
+    const recipientId = deal.buyerId === guard.userId ? deal.sellerId : deal.buyerId
+    if (recipientId) {
+      const previewText = message.text.length > 50 ? message.text.slice(0, 50) + '...' : message.text
+      void sendPushToUser({
+        userId: recipientId,
+        title: '💬 নতুন মেসেজ',
+        body: `${senderName}: ${previewText}`,
+        url: '/',
+        tag: `deal-chat-${id}`,
       })
     }
 

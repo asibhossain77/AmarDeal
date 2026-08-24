@@ -34,6 +34,7 @@ import {
   CircleHelp,
   Mail,
   MessageSquare,
+  Bell,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -158,6 +159,7 @@ function useAdminNavItems() {
     { label: t('adminNav.websiteSettings'), icon: Settings, panel: 'settings' },
     { label: t('adminNav.contract'), icon: FileText, panel: 'contract' },
     { label: t('adminNav.blog'), icon: BookOpen, panel: 'blog' },
+    { label: t('adminNav.push'), icon: Bell, panel: 'push' },
   ];
 }
 

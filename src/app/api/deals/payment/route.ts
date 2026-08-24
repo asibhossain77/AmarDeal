@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { sendPushToUser } from '@/lib/push'
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,6 +79,16 @@ export async function POST(req: NextRequest) {
         seller: { select: { name: true, email: true } },
       },
     })
+
+    // Push notification to seller
+    if (deal.sellerId) {
+      void sendPushToUser({
+        userId: deal.sellerId,
+        title: '💰 পেমেন্ট',
+        body: 'ডিলের পেমেন্ট সফলভাবে যাচাই হয়েছে',
+        url: '/',
+      })
+    }
 
     // Email: payment submitted notification
     if (deal.buyer?.email) {
