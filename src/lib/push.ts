@@ -7,6 +7,9 @@ const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@midman.bd';
 
 if (vapidPublicKey && vapidPrivateKey) {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+  console.log('[Push] VAPID keys loaded');
+} else {
+  console.warn('[Push] VAPID keys NOT configured — push notifications will not work. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env');
 }
 
 export function getVapidPublicKey(): string {
@@ -63,7 +66,10 @@ async function sendToSubscriptions(subscriptions: { id: string; endpoint: string
 
 /** Send a push notification to all subscriptions of a user */
 export async function sendPushToUser({ userId, title, body, url = '/', tag }: SendPushParams): Promise<number> {
-  if (!vapidPublicKey || !vapidPrivateKey) return 0;
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.warn('[Push] Cannot send — VAPID keys not configured');
+    return 0;
+  }
 
   const subscriptions = await db.pushSubscription.findMany({ where: { userId } });
   if (subscriptions.length === 0) return 0;
@@ -85,7 +91,10 @@ export async function sendPushToUsers(userIds: string[], title: string, body: st
 
 /** Send push to all subscribers (admin broadcast) */
 export async function sendPushToAll(title: string, body: string, url?: string): Promise<number> {
-  if (!vapidPublicKey || !vapidPrivateKey) return 0;
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.warn('[Push] Cannot broadcast — VAPID keys not configured');
+    return 0;
+  }
 
   const subscriptions = await db.pushSubscription.findMany();
   if (subscriptions.length === 0) return 0;

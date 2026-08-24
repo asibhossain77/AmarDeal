@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
+import { getVapidPublicKey } from '@/lib/push';
 
 export async function GET() {
   try {
@@ -19,7 +20,7 @@ export async function GET() {
       where: { user: { isActive: true } },
     });
 
-    return NextResponse.json({ count });
+    return NextResponse.json({ count, vapidConfigured: !!getVapidPublicKey() });
   } catch (err) {
     console.error('[Admin Push Stats]', err);
     return NextResponse.json({ count: 0 });

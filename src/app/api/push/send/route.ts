@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendPushToUser, sendPushToUsers, sendPushToAll } from '@/lib/push';
+import { sendPushToUser, sendPushToUsers, sendPushToAll, getVapidPublicKey } from '@/lib/push';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 
@@ -29,6 +29,10 @@ export async function POST(req: NextRequest) {
     }
 
     let sent = 0;
+
+    if (!getVapidPublicKey()) {
+      return NextResponse.json({ error: 'VAPID keys not configured on server', sent: 0 }, { status: 500 });
+    }
 
     if (broadcast && user.admin) {
       // Admin broadcast to all

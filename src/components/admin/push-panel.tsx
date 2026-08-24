@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useQuery } from '@tanstack/react-query';
-import { Bell, Send, Loader2, Users } from 'lucide-react';
+import { Bell, Send, Loader2, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function PushPanel() {
@@ -32,10 +32,12 @@ export function PushPanel() {
         body: JSON.stringify({ broadcast: true, title, message }),
       });
       const data = await res.json();
-      if (res.ok) {
-        toast.success(t('admin.push.sentCount').replace('{count}', String(data.sent || 0)));
+      if (res.ok && data.sent > 0) {
+        toast.success(t('admin.push.sentCount').replace('{count}', String(data.sent)));
         setTitle('');
         setMessage('');
+      } else if (res.ok && data.sent === 0) {
+        toast.error(data.error || 'No subscribers to send to');
       } else {
         toast.error(data.error || 'Failed');
       }
@@ -65,6 +67,15 @@ export function PushPanel() {
         </div>
         {(stats?.count === 0) && (
           <p className="mt-3 text-xs text-muted-foreground">{t('admin.push.noSubscribers')}</p>
+        )}
+        {stats && !stats.vapidConfigured && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-4 py-3 border border-amber-200 dark:border-amber-500/20">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400">VAPID Keys Not Configured</p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in your environment variables.</p>
+            </div>
+          </div>
         )}
       </div>
 

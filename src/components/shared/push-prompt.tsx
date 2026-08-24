@@ -90,7 +90,7 @@ export function PushPrompt() {
         applicationServerKey: urlBase64ToUint8Array(statusData.vapidKey),
       });
 
-      await fetch('/api/push/subscribe', {
+      const subRes = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,11 +99,20 @@ export function PushPrompt() {
         }),
       });
 
+      if (!subRes.ok) {
+        const subData = await subRes.json().catch(() => ({}));
+        console.error('[PushPrompt] Subscribe failed:', subRes.status, subData);
+        toast.error(subData.error || t('settings.serverError'));
+        setLoading(false);
+        return;
+      }
+
+      console.log('[PushPrompt] Subscribed successfully');
       toast.success(t('pushPrompt.enabled'));
       setVisible(false);
       localStorage.setItem(DISMISSED_KEY, '1');
     } catch (err) {
-      console.error('[PushPrompt]', err);
+      console.error('[PushPrompt] Error:', err);
       toast.error(t('settings.serverError'));
     }
     setLoading(false);

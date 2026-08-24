@@ -105,6 +105,11 @@ export function SettingsPanel() {
             endpoint: sub.endpoint,
             keys: sub.toJSON().keys,
           }),
+        }).then(async (r) => {
+          if (!r.ok) {
+            const d = await r.json().catch(() => ({}));
+            throw new Error(d.error || 'Subscribe failed');
+          }
         });
         setPushEnabled(true);
         toast.success(t('settings.pushSuccess'));
