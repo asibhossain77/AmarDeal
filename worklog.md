@@ -208,3 +208,19 @@ Stage Summary:
 - Login flow: midman.bd → click login → my.midman.bd/login → auth view → after login → dashboard
 - Files modified: domain.ts, store.ts, app-shell.tsx, url-sync.ts, navbar.tsx
 
+---
+Task ID: 1
+Agent: main
+Task: Add uploaded SVG logo to 2 link locations (navbar + footer)
+
+Work Log:
+- User uploaded 'kiki panel (3).svg' logo file
+- Copied SVG to /public/logo.svg
+- Updated fallback siteLogo in use-site-settings.ts from '' to '/logo.svg'
+- Updated site-settings API route: normal response and catch block both return '/logo.svg'
+- Verified with browser + VLM: green logo appears in both navbar (top-left) and footer (bottom-left)
+
+Stage Summary:
+- Logo SVG now shows in both the navbar LogoButton and footer brand link
+- Both are clickable links that navigate to the landing page
+- Files modified: public/logo.svg (new), src/lib/use-site-settings.ts, src/app/api/site-settings/route.ts

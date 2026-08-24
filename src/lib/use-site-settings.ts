@@ -17,7 +17,7 @@ const FALLBACK: SiteSettings = {
   siteName: 'মিডম্যান',
   siteNameEn: 'Midman',
   siteTitle: '',
-  siteLogo: '',
+  siteLogo: '/logo.svg',
   footerDescription: '',
   footerCopyrightText: '',
   footerMadeIn: '',
