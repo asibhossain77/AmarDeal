@@ -5,23 +5,41 @@ import { getVapidPublicKey } from '@/lib/push';
 
 export async function GET() {
   try {
+    const vapidKey = getVapidPublicKey();
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('midman_session')?.value;
 
     if (!sessionId) {
-      return NextResponse.json({ enabled: false, vapidKey: '' });
+      return NextResponse.json({ enabled: false, vapidKey, diagnostics: { session: false } });
     }
 
-    const subCount = await db.pushSubscription.count({
-      where: { userId: sessionId },
-    });
+    let subCount = 0;
+    let totalSubs = 0;
+    try {
+      subCount = await db.pushSubscription.count({ where: { userId: sessionId } });
+      totalSubs = await db.pushSubscription.count();
+    } catch (dbErr) {
+      console.error('[Push Status] DB error:', dbErr);
+    }
 
     return NextResponse.json({
       enabled: subCount > 0,
       subscriptionCount: subCount,
-      vapidKey: getVapidPublicKey(),
+      vapidKey,
+      diagnostics: {
+        session: true,
+        vapidConfigured: !!vapidKey,
+        dbWorking: true,
+        userSubCount: subCount,
+        totalSubscriptions: totalSubs,
+      },
     });
-  } catch {
-    return NextResponse.json({ enabled: false, vapidKey: getVapidPublicKey() });
+  } catch (err) {
+    console.error('[Push Status] Error:', err);
+    return NextResponse.json({
+      enabled: false,
+      vapidKey: getVapidPublicKey(),
+      diagnostics: { error: true, vapidConfigured: !!getVapidPublicKey() },
+    });
   }
 }

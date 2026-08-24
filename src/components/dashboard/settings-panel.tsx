@@ -41,6 +41,7 @@ export function SettingsPanel() {
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(true);
   const [pushAction, setPushAction] = useState(false);
+  const [pushDiag, setPushDiag] = useState<Record<string, unknown> | null>(null);
 
   // Push notification functions
   const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
@@ -51,6 +52,8 @@ export function SettingsPanel() {
       const res = await fetch('/api/push/status');
       const data = await res.json();
       setPushEnabled(data.enabled);
+      setPushDiag(data.diagnostics || null);
+      console.log('[Settings] Push diagnostics:', data);
     } catch { /* ignore */ }
     setPushLoading(false);
   };
@@ -265,6 +268,17 @@ export function SettingsPanel() {
                   {pushAction ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" />}
                   {t('settings.pushTest')}
                 </Button>
+              )}
+              {/* Diagnostics */}
+              {pushDiag && (
+                <div className="mt-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-2.5 text-[11px] text-muted-foreground font-mono space-y-0.5">
+                  <div className="flex justify-between"><span>Browser:</span><span className={isPushSupported ? 'text-emerald-500' : 'text-red-500'}>{isPushSupported ? 'Supported' : 'Not supported'}</span></div>
+                  <div className="flex justify-between"><span>Permission:</span><span>{typeof window !== 'undefined' ? Notification.permission : 'N/A'}</span></div>
+                  <div className="flex justify-between"><span>VAPID:</span><span className={pushDiag.vapidConfigured ? 'text-emerald-500' : 'text-red-500'}>{pushDiag.vapidConfigured ? 'OK' : 'NOT SET'}</span></div>
+                  <div className="flex justify-between"><span>DB:</span><span className={pushDiag.dbWorking !== false ? 'text-emerald-500' : 'text-red-500'}>{pushDiag.dbWorking !== false ? 'Connected' : 'Error'}</span></div>
+                  <div className="flex justify-between"><span>Your subs:</span><span>{String(pushDiag.userSubCount ?? '-')}</span></div>
+                  <div className="flex justify-between"><span>Total subs:</span><span>{String(pushDiag.totalSubscriptions ?? '-')}</span></div>
+                </div>
               )}
             </div>
           )}
