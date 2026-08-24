@@ -105,16 +105,15 @@ export function SettingsPanel() {
           setPushAction(false);
           return;
         }
-        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!vapidKey) {
-          toast.error(t('settings.serverError'));
+        const app = getFirebaseApp();
+        const messaging = getMessaging(app);
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        const token = await getToken(messaging, { serviceWorkerRegistration: registration });
+        if (!token) {
+          toast.error(t('settings.pushDenied'));
           setPushAction(false);
           return;
         }
-        const app = getFirebaseApp();
-        const messaging = getMessaging(app);
-        await navigator.serviceWorker.register('/sw.js');
-        const token = await getToken(messaging, { vapidKey });
         currentFcmToken = token;
         console.log('[Settings] FCM token:', token.substring(0, 40) + '...');
         await fetch('/api/push/subscribe', {

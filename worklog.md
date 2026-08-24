@@ -327,3 +327,23 @@ Stage Summary:
 - .env contains TURSO_AUTH_TOKEN (gitignored, not in repo)
 - All 16 tables confirmed in Turso: User, Admin, Deal, PaymentMethod, PlatformSetting, FeeRule, Notification, ContactInfo, Payout, ChatMessage, BlogPost, AffiliateEarning, Review, AffiliateWithdrawal, AffiliatePaymentMethod, PushSubscription
 - Git push successful: ea7a781..d1c8c44 main -> main
+---
+Task ID: 1
+Agent: Main
+Task: Fix push notification popup stuck loading — remove VAPID dependency from FCM flow
+
+Work Log:
+- Identified root cause: push-prompt.tsx and settings-panel.tsx both checked for NEXT_PUBLIC_VAPID_PUBLIC_KEY env var and blocked with error if missing
+- Also incorrectly passed vapidKey to Firebase getToken() which is not needed for FCM
+- Removed vapidKey check from push-prompt.tsx (lines 85-90)
+- Changed getToken() call to use serviceWorkerRegistration option instead of vapidKey
+- Added null token check after getToken() in push-prompt.tsx
+- Same fix applied to settings-panel.tsx (lines 108-117)
+- Verified page compiles and renders without errors
+
+Stage Summary:
+- Fixed files: src/components/shared/push-prompt.tsx, src/components/dashboard/settings-panel.tsx
+- The FCM flow now works without any VAPID key dependency
+- FCM manages its own push subscription internally via Firebase servers
+- Backend (fcm.ts, firebase-admin.ts, API routes) was already correctly configured
+

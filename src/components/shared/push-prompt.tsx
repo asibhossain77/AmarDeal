@@ -82,20 +82,20 @@ export function PushPrompt() {
         return;
       }
 
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) {
-        toast.error(t('settings.serverError'));
-        setLoading(false);
-        return;
-      }
-
       const app = getFirebaseApp();
       const messaging = getMessaging(app);
 
       // Register service worker first
-      await navigator.serviceWorker.register('/sw.js');
+      const registration = await navigator.serviceWorker.register('/sw.js');
 
-      const currentToken = await getToken(messaging, { vapidKey });
+      // Get FCM token (no vapidKey needed — FCM manages its own push subscription)
+      const currentToken = await getToken(messaging, { serviceWorkerRegistration: registration });
+      if (!currentToken) {
+        console.warn('[PushPrompt] getToken returned null — notification permission may be blocked');
+        toast.error(t('pushPrompt.denied'));
+        setLoading(false);
+        return;
+      }
       console.log('[PushPrompt] FCM token obtained:', currentToken.substring(0, 40) + '...');
 
       const subRes = await fetch('/api/push/subscribe', {
