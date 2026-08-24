@@ -252,3 +252,22 @@ Stage Summary:
 - Deal events auto-trigger push: new deal, chat, delivery, admin call, payment
 - Service worker handles background notification display and click navigation
 - All API routes are auth-protected; send route enforces admin-only for broadcast
+
+---
+Task ID: 1
+Agent: main
+Task: Configure Turso (libsql) database and git push
+
+Work Log:
+- Updated .env with Turso connection URL and auth token
+- Verified @libsql/client and @prisma/adapter-libsql packages already installed
+- db.ts already had Turso adapter support (detects libsql:// URL)
+- Generated schema SQL via local temp SQLite, then pushed to Turso via libsql client
+- Verified all 16 tables exist in Turso with correct columns (78 existing users)
+- Pushed 2 pending commits to origin/main
+
+Stage Summary:
+- Database now connected to Turso (libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io)
+- .env contains TURSO_AUTH_TOKEN (gitignored, not in repo)
+- All 16 tables confirmed in Turso: User, Admin, Deal, PaymentMethod, PlatformSetting, FeeRule, Notification, ContactInfo, Payout, ChatMessage, BlogPost, AffiliateEarning, Review, AffiliateWithdrawal, AffiliatePaymentMethod, PushSubscription
+- Git push successful: ea7a781..d1c8c44 main -> main
