@@ -88,8 +88,12 @@ export function PushPrompt() {
       // Register service worker first
       const registration = await navigator.serviceWorker.register('/sw.js');
 
-      // Get FCM token (no vapidKey needed — FCM manages its own push subscription)
-      const currentToken = await getToken(messaging, { serviceWorkerRegistration: registration });
+      // Get FCM token using Firebase's Web Push VAPID key
+      const fcmVapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY;
+      const currentToken = await getToken(messaging, {
+        serviceWorkerRegistration: registration,
+        ...(fcmVapidKey ? { vapidKey: fcmVapidKey } : {}),
+      });
       if (!currentToken) {
         console.warn('[PushPrompt] getToken returned null — notification permission may be blocked');
         toast.error(t('pushPrompt.denied'));

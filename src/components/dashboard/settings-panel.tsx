@@ -108,7 +108,11 @@ export function SettingsPanel() {
         const app = getFirebaseApp();
         const messaging = getMessaging(app);
         const registration = await navigator.serviceWorker.register('/sw.js');
-        const token = await getToken(messaging, { serviceWorkerRegistration: registration });
+        const fcmVapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY;
+        const token = await getToken(messaging, {
+          serviceWorkerRegistration: registration,
+          ...(fcmVapidKey ? { vapidKey: fcmVapidKey } : {}),
+        });
         if (!token) {
           toast.error(t('settings.pushDenied'));
           setPushAction(false);
