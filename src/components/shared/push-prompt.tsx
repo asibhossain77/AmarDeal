@@ -7,19 +7,29 @@ import { toast } from 'sonner';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken } from 'firebase/messaging';
 
 const DISMISSED_KEY = 'push_prompt_dismissed';
-const DELAY_MS = 4000; // show after 4s
+const DELAY_MS = 4000;
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+};
+
+// Standalone Firebase app to avoid conflicts
+let firebaseApp: ReturnType<typeof initializeApp> | null = null;
+function getFirebaseApp() {
+  if (!firebaseApp) {
+    firebaseApp = initializeApp(firebaseConfig, 'push-prompt');
   }
-  return outputArray;
+  return firebaseApp;
 }
 
 export function PushPrompt() {
@@ -35,7 +45,6 @@ export function PushPrompt() {
     if (!user || !isPushSupported) return false;
     if (localStorage.getItem(DISMISSED_KEY)) return false;
     if (Notification.permission === 'granted') {
-      // Already granted — check if subscribed on server
       return true; // we'll check server-side and hide if already subscribed
     }
     if (Notification.permission === 'denied') return false;
@@ -45,19 +54,16 @@ export function PushPrompt() {
   useEffect(() => {
     if (!shouldShow()) return;
 
-    // Check if already subscribed on server
     const timer = setTimeout(async () => {
       try {
         const res = await fetch('/api/push/status');
         const data = await res.json();
         if (data.enabled) {
-          // Already subscribed, no need to show prompt
           localStorage.setItem(DISMISSED_KEY, '1');
           return;
         }
         setVisible(true);
       } catch {
-        // If check fails, still show the prompt
         setVisible(true);
       }
     }, DELAY_MS);
@@ -76,27 +82,26 @@ export function PushPrompt() {
         return;
       }
 
-      const statusRes = await fetch('/api/push/status');
-      const statusData = await statusRes.json();
-      if (!statusData.vapidKey) {
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
         toast.error(t('settings.serverError'));
         setLoading(false);
         return;
       }
 
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(statusData.vapidKey),
-      });
+      const app = getFirebaseApp();
+      const messaging = getMessaging(app);
+
+      // Register service worker first
+      await navigator.serviceWorker.register('/sw.js');
+
+      const currentToken = await getToken(messaging, { vapidKey });
+      console.log('[PushPrompt] FCM token obtained:', currentToken.substring(0, 40) + '...');
 
       const subRes = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: sub.endpoint,
-          keys: sub.toJSON().keys,
-        }),
+        body: JSON.stringify({ token: currentToken }),
       });
 
       if (!subRes.ok) {

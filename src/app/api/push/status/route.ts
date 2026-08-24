@@ -1,45 +1,49 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { getVapidPublicKey } from '@/lib/push';
+import { isFcmConfigured } from '@/lib/fcm';
 
 export async function GET() {
   try {
-    const vapidKey = getVapidPublicKey();
+    const fcmConfigured = isFcmConfigured();
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('midman_session')?.value;
 
     if (!sessionId) {
-      return NextResponse.json({ enabled: false, vapidKey, diagnostics: { session: false } });
+      return NextResponse.json({ enabled: false, fcmConfigured, vapidKey, subscriptionCount: 0, diagnostics: { session: false } });
     }
 
     let subCount = 0;
     let totalSubs = 0;
     try {
-      subCount = await db.pushSubscription.count({ where: { userId: sessionId } });
-      totalSubs = await db.pushSubscription.count();
+      subCount = await db.fcmToken.count({ where: { userId: sessionId } });
+      totalSubs = await db.fcmToken.count();
     } catch (dbErr) {
-      console.error('[Push Status] DB error:', dbErr);
+      console.error('[FCM Status] DB error:', dbErr);
     }
 
     return NextResponse.json({
       enabled: subCount > 0,
-      subscriptionCount: subCount,
+      fcmConfigured,
       vapidKey,
+      subscriptionCount: subCount,
       diagnostics: {
         session: true,
-        vapidConfigured: !!vapidKey,
+        fcmConfigured,
         dbWorking: true,
-        userSubCount: subCount,
-        totalSubscriptions: totalSubs,
+        userTokenCount: subCount,
+        totalTokens: totalSubs,
       },
     });
   } catch (err) {
-    console.error('[Push Status] Error:', err);
+    console.error('[FCM Status] Error:', err);
     return NextResponse.json({
       enabled: false,
-      vapidKey: getVapidPublicKey(),
-      diagnostics: { error: true, vapidConfigured: !!getVapidPublicKey() },
+      fcmConfigured: isFcmConfigured(),
+      vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
+      subscriptionCount: 0,
+      diagnostics: { error: true, fcmConfigured: isFcmConfigured() },
     });
   }
 }

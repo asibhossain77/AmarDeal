@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
-import { getVapidPublicKey } from '@/lib/push';
+import { isFcmConfigured } from '@/lib/fcm';
 
 export async function GET() {
   try {
@@ -16,11 +16,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const count = await db.pushSubscription.count({
+    const count = await db.fcmToken.count({
       where: { user: { isActive: true } },
     });
 
-    return NextResponse.json({ count, vapidConfigured: !!getVapidPublicKey() });
+    return NextResponse.json({ count, fcmConfigured: isFcmConfigured() });
   } catch (err) {
     console.error('[Admin Push Stats]', err);
     return NextResponse.json({ count: 0 });

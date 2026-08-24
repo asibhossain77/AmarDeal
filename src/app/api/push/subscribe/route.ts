@@ -7,51 +7,48 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('midman_session')?.value;
     if (!sessionId) {
-      console.log('[Push Subscribe] No session cookie');
+      console.log('[FCM Subscribe] No session cookie');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = await db.user.findUnique({ where: { id: sessionId } });
     if (!user || !user.isActive) {
-      console.log('[Push Subscribe] User not found or inactive:', sessionId);
+      console.log('[FCM Subscribe] User not found or inactive:', sessionId);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { endpoint, keys, userAgent } = body;
+    const { token, userAgent } = body;
 
-    if (!endpoint || !keys?.p256dh || !keys?.auth) {
-      console.log('[Push Subscribe] Invalid data - endpoint:', !!endpoint, 'p256dh:', !!keys?.p256dh, 'auth:', !!keys?.auth);
-      return NextResponse.json({ error: 'Invalid subscription data' }, { status: 400 });
+    if (!token) {
+      console.log('[FCM Subscribe] Invalid data - token:', !!token);
+      return NextResponse.json({ error: 'Invalid token data' }, { status: 400 });
     }
 
-    console.log('[Push Subscribe] Saving for user:', user.id, 'endpoint:', endpoint.substring(0, 80) + '...');
+    console.log('[FCM Subscribe] Saving for user:', user.id, 'token:', token.substring(0, 40) + '...');
 
-    // Upsert: replace if same endpoint exists
-    await db.pushSubscription.upsert({
-      where: { endpoint },
+    // Upsert: replace if same token exists
+    await db.fcmToken.upsert({
+      where: { token },
       update: {
         userId: user.id,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        userAgent: userAgent || req.headers.get('user-agent') || null,
+        userAgent: userAgent || req.headers.get('user-agent') || undefined,
       },
       create: {
         userId: user.id,
-        endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        userAgent: userAgent || req.headers.get('user-agent') || null,
+        token,
+        platform: 'web',
+        userAgent: userAgent || req.headers.get('user-agent') || undefined,
       },
     });
 
     // Verify it was saved
-    const count = await db.pushSubscription.count({ where: { userId: user.id } });
-    console.log('[Push Subscribe] Saved! User', user.id, 'now has', count, 'subscription(s)');
+    const count = await db.fcmToken.count({ where: { userId: user.id } });
+    console.log('[FCM Subscribe] Saved! User', user.id, 'now has', count, 'token(s)');
 
     return NextResponse.json({ success: true, count });
   } catch (err) {
-    console.error('[Push Subscribe] ERROR:', err);
+    console.error('[FCM Subscribe] ERROR:', err);
     return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 });
   }
 }

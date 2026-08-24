@@ -1,72 +1,44 @@
-const CACHE_NAME = 'midman-v1';
+importScripts('https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/12.18.0/firebase-messaging-compat.js');
 
-// Install event - skip waiting to activate immediately
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
+firebase.initializeApp({
+  apiKey: 'AIzaSyCUo5oAxIuhZFzAz7ruzHgCcGeJUBKPsKQ',
+  authDomain: 'midman-20168.firebaseapp.com',
+  projectId: 'midman-20168',
+  storageBucket: 'midman-20168.firebasestorage.app',
+  messagingSenderId: '152219785198',
+  appId: '1:152219785198:web:f85d53e749fffa6172a0ff',
+  measurementId: 'G-MSK0JBQJER'
 });
 
-// Activate event - claim all clients
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    self.clients.claim()
-  );
-});
+const messaging = firebase.messaging();
 
-// Push notification event
-self.addEventListener('push', (event) => {
-  let data = {
-    title: 'মিডম্যান',
-    body: 'আপনার একটি নতুন নোটিফিকেশন এসেছে',
-    icon: '/logo.svg',
-    badge: '/logo.svg',
-    url: '/',
-    tag: 'default',
-  };
-
-  if (event.data) {
-    try {
-      data = { ...data, ...event.data.json() };
-    } catch (e) {
-      data.body = event.data.text();
-    }
-  }
-
-  const options = {
-    body: data.body,
+messaging.onBackgroundMessage((payload) => {
+  const data = payload.data || {};
+  self.registration.showNotification(data.title || 'মিডম্যান', {
+    body: data.body || 'নতুন নোটিফিকেশন',
     icon: data.icon || '/logo.svg',
     badge: data.badge || '/logo.svg',
-    data: {
-      url: data.url || '/',
-      tag: data.tag || 'default',
-    },
+    data: { url: data.url || '/' },
     vibrate: [100, 50, 100],
     tag: data.tag || 'default',
     renotify: true,
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  });
 });
 
-// Notification click event - open URL
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/';
-
+  const url = event.notification.data?.url || '/';
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If already open, focus and navigate
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(urlToOpen);
+          client.navigate(url);
           return client.focus();
         }
       }
-      // Otherwise open new window
       if (self.clients.openWindow) {
-        return self.clients.openWindow(urlToOpen);
+        return self.clients.openWindow(url);
       }
     })
   );

@@ -1,4 +1,60 @@
 ---
+Task ID: fcm-migration
+Agent: Main
+Task: Migrate from Web Push (VAPID) to Firebase Cloud Messaging (FCM)
+
+Work Log:
+- Created src/lib/firebase-admin.ts with lazy Firebase Admin SDK initialization (only inits on first getAdminMessaging() call)
+- Added FcmToken model to Prisma schema (id, userId, token, platform, userAgent, timestamps) with User relation
+- Pushed FcmToken table to Turso via local temp SQLite → CREATE TABLE IF NOT EXISTS on remote
+- Created src/lib/fcm.ts as replacement for push.ts: isFcmConfigured(), sendFcmToUser(), sendFcmToUsers(), sendFcmToAll()
+  - Uses sendEachForMulticast with 500-token batches
+  - Auto-deletes invalid tokens (NotRegistered error)
+  - Each message includes both notification and data fields
+- Replaced public/sw.js with Firebase messaging compat service worker (onBackgroundMessage + notificationclick)
+- Updated /api/push/subscribe to accept { token } and upsert into FcmToken table
+- Updated /api/push/unsubscribe to accept { token } and delete from FcmToken
+- Updated /api/push/status to return fcmConfigured, FcmToken counts, diagnostics
+- Updated /api/push/send to import from @/lib/fcm instead of @/lib/push (removed VAPID check)
+- Updated /api/admin/push/stats to count FcmToken and return fcmConfigured
+- Rewrote push-prompt.tsx for FCM: uses firebase/app + firebase/messaging getToken with VAPID key
+- Rewrote settings-panel.tsx togglePush for FCM: getToken/deleteToken with firebase client SDK
+- Updated admin push-panel.tsx warning from 'vapidConfigured' to 'fcmConfigured'
+- Updated 5 deal routes to import from @/lib/fcm (create, chat, deliver, call-admin, payment)
+- Fixed onTokenRefresh not existing in Firebase v12 modular SDK (removed, handled by service worker compat)
+- All lint checks pass, dev server returns 200
+
+Files created (2):
+1. src/lib/firebase-admin.ts — Lazy Firebase Admin SDK init with getAdminMessaging()
+2. src/lib/fcm.ts — Server-side FCM utilities (sendFcmToUser, sendFcmToUsers, sendFcmToAll)
+
+Files modified (14):
+3. prisma/schema.prisma — Added FcmToken model + User.fcmTokens relation
+4. public/sw.js — Replaced with Firebase messaging compat service worker
+5. src/app/api/push/subscribe/route.ts — FCM token upsert
+6. src/app/api/push/unsubscribe/route.ts — FCM token delete
+7. src/app/api/push/status/route.ts — FCM diagnostics response
+8. src/app/api/push/send/route.ts — Imports from fcm.ts, no VAPID check
+9. src/app/api/admin/push/stats/route.ts — Counts FcmToken, returns fcmConfigured
+10. src/components/shared/push-prompt.tsx — FCM getToken subscription flow
+11. src/components/dashboard/settings-panel.tsx — FCM togglePush with getToken/deleteToken
+12. src/components/admin/push-panel.tsx — Firebase warning instead of VAPID
+13. src/app/api/deals/create/route.ts — sendFcmToUser
+14. src/app/api/deals/payment/route.ts — sendFcmToUser
+15. src/app/api/deals/[id]/chat/route.ts — sendFcmToUser
+16. src/app/api/deals/[id]/deliver/route.ts — sendFcmToUser
+17. src/app/api/deals/[id]/call-admin/route.ts — sendFcmToUsers
+
+Note: src/lib/push.ts (old web-push) is no longer imported anywhere but kept for reference.
+
+Stage Summary:
+- Complete migration from Web Push (VAPID/web-push package) to Firebase Cloud Messaging (FCM)
+- Server: Firebase Admin SDK lazy init, FCM multicast with auto-cleanup of invalid tokens
+- Client: Firebase client SDK getToken with VAPID key for web push, compat service worker for background messages
+- All 5 deal event notifications migrated to FCM
+- All API routes updated, admin panel updated, diagnostics show FCM status
+- Turso DB has FcmToken table with proper index
+---
 Task ID: 2b
 Agent: Size Fix Agent
 Task: Fix LoadingAnimation sizes - section loaders should be md/lg not sm

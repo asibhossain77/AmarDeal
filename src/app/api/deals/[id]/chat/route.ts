@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess, requireAuth } from '@/lib/deal-guard'
-import { sendPushToUser } from '@/lib/push'
+import { sendFcmToUser } from '@/lib/fcm'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -112,13 +112,7 @@ export async function POST(
     const recipientId = deal.buyerId === guard.userId ? deal.sellerId : deal.buyerId
     if (recipientId) {
       const previewText = message.text.length > 50 ? message.text.slice(0, 50) + '...' : message.text
-      void sendPushToUser({
-        userId: recipientId,
-        title: '💬 নতুন মেসেজ',
-        body: `${senderName}: ${previewText}`,
-        url: '/',
-        tag: `deal-chat-${id}`,
-      })
+      void sendFcmToUser(recipientId, '💬 নতুন মেসেজ', `${senderName}: ${previewText}`, '/', `deal-chat-${id}`)
     }
 
     return NextResponse.json(message, { status: 201 })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendPushToUser, sendPushToUsers, sendPushToAll, getVapidPublicKey } from '@/lib/push';
+import { sendFcmToUser, sendFcmToUsers, sendFcmToAll } from '@/lib/fcm';
 import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 
@@ -30,29 +30,25 @@ export async function POST(req: NextRequest) {
 
     let sent = 0;
 
-    if (!getVapidPublicKey()) {
-      return NextResponse.json({ error: 'VAPID keys not configured on server', sent: 0 }, { status: 500 });
-    }
-
     if (broadcast && user.admin) {
       // Admin broadcast to all
-      sent = await sendPushToAll(title, message, url);
+      sent = await sendFcmToAll(title, message, url);
     } else if (userIds && Array.isArray(userIds) && user.admin) {
       // Admin send to specific users
-      sent = await sendPushToUsers(userIds, title, message, url, tag);
+      sent = await sendFcmToUsers(userIds, title, message, url, tag);
     } else if (userId) {
       // User can only send to themselves (test)
       if (userId !== user.id && !user.admin) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
-      sent = await sendPushToUser({ userId, title, body: message, url, tag });
+      sent = await sendFcmToUser(userId, title, message, url, tag);
     } else {
       return NextResponse.json({ error: 'Specify userId, userIds, or broadcast' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, sent });
   } catch (err) {
-    console.error('[Push Send]', err);
+    console.error('[FCM Send]', err);
     return NextResponse.json({ error: 'Failed to send' }, { status: 500 });
   }
 }

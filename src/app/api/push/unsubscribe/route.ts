@@ -11,20 +11,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { endpoint } = body;
+    const { token } = body;
 
-    if (!endpoint) {
-      return NextResponse.json({ error: 'Endpoint required' }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: 'Token required' }, { status: 400 });
     }
 
-    // Only allow user to delete their own subscriptions
-    await db.pushSubscription.deleteMany({
-      where: { endpoint, userId: sessionId },
+    // Only allow user to delete their own tokens
+    await db.fcmToken.deleteMany({
+      where: { token, userId: sessionId },
     });
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('[Push Unsubscribe]', err);
+    console.error('[FCM Unsubscribe]', err);
     return NextResponse.json({ error: 'Failed to unsubscribe' }, { status: 500 });
   }
 }

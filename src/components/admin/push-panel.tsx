@@ -68,12 +68,12 @@ export function PushPanel() {
         {(stats?.count === 0) && (
           <p className="mt-3 text-xs text-muted-foreground">{t('admin.push.noSubscribers')}</p>
         )}
-        {stats && !stats.vapidConfigured && (
+        {stats && !stats.fcmConfigured && (
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 px-4 py-3 border border-amber-200 dark:border-amber-500/20">
             <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-medium text-amber-700 dark:text-amber-400">VAPID Keys Not Configured</p>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in your environment variables.</p>
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Firebase Not Configured</p>
+              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">Set FIREBASE_SERVICE_ACCOUNT in your environment variables.</p>
             </div>
           </div>
         )}

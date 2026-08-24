@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendPushToUsers } from '@/lib/push'
+import { sendFcmToUsers } from '@/lib/fcm'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -68,7 +68,7 @@ export async function POST(
       select: { id: true },
     })
     if (admins.length > 0) {
-      void sendPushToUsers(
+      void sendFcmToUsers(
         admins.map(a => a.id),
         '📞 অ্যাডমিন কল',
         'একটি ডিলে অ্যাডমিন ডাকা হয়েছে',

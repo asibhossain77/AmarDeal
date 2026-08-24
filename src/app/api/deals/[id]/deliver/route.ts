@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, deliveryStartedEmail } from '@/lib/email'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendPushToUser } from '@/lib/push'
+import { sendFcmToUser } from '@/lib/fcm'
 
 export async function POST(
   req: NextRequest,
@@ -71,12 +71,7 @@ export async function POST(
     } catch { /* silent */ }
 
     // Push notification to buyer
-    void sendPushToUser({
-      userId: deal.buyerId,
-      title: '📦 ডেলিভারি',
-      body: 'বিক্রেতা ডেলিভারি কনফার্ম করেছেন',
-      url: '/',
-    })
+    void sendFcmToUser(deal.buyerId, '📦 ডেলিভারি', 'বিক্রেতা ডেলিভারি কনফার্ম করেছেন', '/')
 
     // Email: delivery started
     if (deal.buyer?.email) {

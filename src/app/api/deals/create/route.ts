@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
 import { requireAuth } from '@/lib/deal-guard'
-import { sendPushToUser } from '@/lib/push'
+import { sendFcmToUser } from '@/lib/fcm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -123,12 +123,7 @@ export async function POST(req: NextRequest) {
 
     // Push notification to seller
     if (deal.sellerId) {
-      void sendPushToUser({
-        userId: deal.sellerId,
-        title: '🤝 নতুন ডিল',
-        body: `আপনার কাছে একটি নতুন ডিল এসেছে: ${deal.title}`,
-        url: '/',
-      })
+      void sendFcmToUser(deal.sellerId, '🤝 নতুন ডিল', `আপনার কাছে একটি নতুন ডিল এসেছে: ${deal.title}`, '/')
     }
 
     // Email notification to admin
