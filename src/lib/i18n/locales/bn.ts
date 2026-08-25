@@ -446,6 +446,7 @@ export const bn = {
   'adminNav.payoutManagement': 'পেআউট ম্যানেজমেন্ট',
   'adminNav.disputeManagement': 'বিরোধ ম্যানেজমেন্ট',
   'adminNav.emailSettings': 'ইমেইল সেটিংস',
+  'adminNav.whatsappSettings': 'হোয়াটসঅ্যাপ সেটিংস',
   'adminNav.aiSupport': 'AI সাপোর্ট',
   'adminNav.twoFactor': 'টু-ফ্যাক্টর অথেনটিকেশন',
   'adminNav.affiliate': 'অ্যাফিলিয়েট',

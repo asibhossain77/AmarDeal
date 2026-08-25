@@ -448,6 +448,7 @@ export const en: Record<TranslationKey, string> = {
   'adminNav.payoutManagement': 'Payout Management',
   'adminNav.disputeManagement': 'Dispute Management',
   'adminNav.emailSettings': 'Email Settings',
+  'adminNav.whatsappSettings': 'WhatsApp Settings',
   'adminNav.aiSupport': 'AI Support',
   'adminNav.twoFactor': 'Two-Factor Authentication',
   'adminNav.affiliate': 'Affiliate',

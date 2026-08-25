@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { sendEmail, payoutCompletedEmail } from '@/lib/email'
+import { sendWhatsApp, payoutCompletedWa } from '@/lib/whatsapp'
 
 export async function POST(
   req: NextRequest,
@@ -58,7 +59,7 @@ export async function POST(
     })
     const recipient = await db.user.findUnique({
       where: { id: payout.recipientId },
-      select: { email: true, name: true },
+      select: { email: true, name: true, phone: true },
     })
     if (recipient?.email && deal) {
       sendEmail(recipient.email, () => payoutCompletedEmail(
@@ -69,6 +70,18 @@ export async function POST(
         payout.accountNumber || '',
         payout.type as 'seller_payout' | 'buyer_refund',
       ), 'payout_completed').catch(() => {})
+    }
+
+    // WhatsApp: payout completed
+    if (recipient?.phone && deal) {
+      sendWhatsApp(recipient.phone, () => ({ body: payoutCompletedWa(
+        recipient.name || 'ইউজার',
+        deal.title,
+        payout.amount,
+        payout.accountType || '',
+        payout.accountNumber || '',
+        payout.type as 'seller_payout' | 'buyer_refund',
+      ) }), 'payout_completed').catch(() => {})
     }
 
     return NextResponse.json({ payout, success: true })

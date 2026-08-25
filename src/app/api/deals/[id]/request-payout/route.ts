@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, payoutRequestedEmail } from '@/lib/email'
+import { sendWhatsApp, payoutRequestedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function POST(
@@ -79,7 +80,7 @@ export async function POST(
     const amount = deal.paymentAmount || deal.amount
 
     // Get user email for notification
-    const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
+    const user = await db.user.findUnique({ where: { id: userId }, select: { email: true, name: true, phone: true } })
 
     const payout = await db.payout.create({
       data: {
@@ -103,6 +104,18 @@ export async function POST(
         accountNumber,
         payoutType as 'seller_payout' | 'buyer_refund',
       ), 'payout_requested').catch(() => {})
+    }
+
+    // WhatsApp: payout/refund requested
+    if (user?.phone) {
+      sendWhatsApp(user.phone, () => ({ body: payoutRequestedWa(
+        user.name || 'ইউজার',
+        deal.title,
+        amount,
+        accountType,
+        accountNumber,
+        payoutType as 'seller_payout' | 'buyer_refund',
+      ) }), 'payout_requested').catch(() => {})
     }
 
     return NextResponse.json({

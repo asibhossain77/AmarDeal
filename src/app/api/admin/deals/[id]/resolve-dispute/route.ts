@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, disputeResolvedEmail } from '@/lib/email'
+import { sendWhatsApp, disputeResolvedWa } from '@/lib/whatsapp'
 import { requireAdmin } from '@/lib/admin-guard'
 
 /**
@@ -24,8 +25,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -89,6 +90,14 @@ export async function POST(
       sendEmail(deal.seller.email, () => disputeResolvedEmail(
         deal.seller.name || 'বিক্রেতা', deal.title, action as 'complete' | 'refund_buyer'
       ), 'dispute_resolved').catch(() => {})
+    }
+
+    // WhatsApp: dispute resolved to both parties
+    if (deal.buyer?.phone) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: disputeResolvedWa(deal.buyer.name || 'ক্রেতা', deal.title, action as 'complete' | 'refund_buyer') }), 'dispute_resolved').catch(() => {})
+    }
+    if (deal.seller?.phone) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: disputeResolvedWa(deal.seller.name || 'বিক্রেতা', deal.title, action as 'complete' | 'refund_buyer') }), 'dispute_resolved').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

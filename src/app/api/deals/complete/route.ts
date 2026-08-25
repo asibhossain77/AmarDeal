@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCompletedEmail } from '@/lib/email'
+import { sendWhatsApp, dealCompletedWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
 import { processAffiliateCommission } from '@/lib/affiliate-commission'
 
@@ -31,8 +32,8 @@ export async function POST(req: NextRequest) {
       where: { id: dealId },
       data: { status: 'completed' },
       include: {
-        buyer: { select: { name: true, email: true } },
-        seller: { select: { name: true, email: true } },
+        buyer: { select: { name: true, email: true, phone: true } },
+        seller: { select: { name: true, email: true, phone: true } },
       },
     })
 
@@ -42,6 +43,14 @@ export async function POST(req: NextRequest) {
     }
     if (updated.seller?.email) {
       sendEmail(updated.seller.email, () => dealCompletedEmail(updated.seller.name || 'বিক্রেতা', deal.title, updated.amount || 0, 'seller'), 'deal_completed').catch(() => {})
+    }
+
+    // WhatsApp: deal completed
+    if (updated.buyer?.phone) {
+      sendWhatsApp(updated.buyer.phone, () => ({ body: dealCompletedWa(updated.buyer.name || 'ক্রেতা', deal.title, updated.amount || 0, 'buyer') }), 'deal_completed').catch(() => {})
+    }
+    if (updated.seller?.phone) {
+      sendWhatsApp(updated.seller.phone, () => ({ body: dealCompletedWa(updated.seller.name || 'বিক্রেতা', deal.title, updated.amount || 0, 'seller') }), 'deal_completed').catch(() => {})
     }
 
     // Process affiliate commission (fire-and-forget)

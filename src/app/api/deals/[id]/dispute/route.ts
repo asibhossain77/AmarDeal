@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, disputeRaisedEmail, adminDisputeEmail } from '@/lib/email'
+import { sendWhatsApp, disputeRaisedWa, adminDisputeWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function POST(
@@ -16,8 +17,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -76,11 +77,16 @@ export async function POST(
       sendEmail(deal.seller.email, () => disputeRaisedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0), 'dispute_raised').catch(() => {})
     }
 
+    // WhatsApp: dispute raised — notify seller
+    if (deal.seller?.phone) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: disputeRaisedWa(deal.seller.name || 'বিক্রেতা', deal.title, deal.buyer?.name || 'ক্রেতা', deal.amount || 0) }), 'dispute_raised').catch(() => {})
+    }
+
     // Email: dispute raised — notify admin
     try {
       const adminUser = await db.user.findFirst({
         where: { admin: { isNot: null } },
-        select: { name: true, email: true },
+        select: { name: true, email: true, phone: true },
       })
       if (adminUser?.email) {
         sendEmail(adminUser.email, () => adminDisputeEmail(
@@ -90,6 +96,18 @@ export async function POST(
           deal.buyer?.name || 'ক্রেতা',
           deal.seller?.name || 'বিক্রেতা',
         ), 'dispute_raised').catch(() => {})
+      }
+      // WhatsApp: dispute raised — notify admin
+      if (adminUser?.phone) {
+        sendWhatsApp(adminUser.phone, () => ({
+          body: adminDisputeWa(
+            adminUser.name || 'অ্যাডমিন',
+            deal.title,
+            `৳${(deal.amount || 0).toLocaleString('en')}`,
+            deal.buyer?.name || 'ক্রেতা',
+            deal.seller?.name || 'বিক্রেতা',
+          ),
+        }), 'dispute_raised').catch(() => {})
       }
     } catch { /* silent */ }
 

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
+import { sendWhatsApp, paymentSubmittedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 import { sendFcmToUser } from '@/lib/fcm'
 
@@ -75,8 +76,8 @@ export async function POST(req: NextRequest) {
         platformFee,
       },
       include: {
-        buyer: { select: { name: true, email: true } },
-        seller: { select: { name: true, email: true } },
+        buyer: { select: { name: true, email: true, phone: true } },
+        seller: { select: { name: true, email: true, phone: true } },
       },
     })
 
@@ -91,6 +92,14 @@ export async function POST(req: NextRequest) {
     }
     if (deal.seller?.email) {
       sendEmail(deal.seller.email, () => paymentSubmittedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0), 'payment_submitted').catch(() => {})
+    }
+
+    // WhatsApp: payment submitted notification
+    if (deal.buyer?.phone) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: paymentSubmittedWa(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0) }), 'payment_submitted').catch(() => {})
+    }
+    if (deal.seller?.phone) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: paymentSubmittedWa(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0) }), 'payment_submitted').catch(() => {})
     }
 
     return NextResponse.json({

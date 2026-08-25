@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
+import { sendWhatsApp, dealCreatedWa, adminNewDealWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
 import { sendFcmToUser } from '@/lib/fcm'
 
@@ -121,6 +122,17 @@ export async function POST(req: NextRequest) {
       isCreatorBuyer ? 'buyer' : 'seller',
     ), 'deal_created').catch(() => {})
 
+    // WhatsApp notification to counterparty
+    sendWhatsApp(counterparty.phone, () => ({
+      body: dealCreatedWa(
+        counterparty.name || 'ইউজার',
+        deal.title,
+        deal.amount,
+        deal.creator?.name || 'একজন ইউজার',
+        isCreatorBuyer ? 'buyer' : 'seller',
+      ),
+    }), 'deal_created').catch(() => {})
+
     // Push notification to seller
     if (deal.sellerId) {
       void sendFcmToUser(deal.sellerId, '🤝 নতুন ডিল', `আপনার কাছে একটি নতুন ডিল এসেছে: ${deal.title}`, '/')
@@ -130,7 +142,7 @@ export async function POST(req: NextRequest) {
     try {
       const adminUser = await db.user.findFirst({
         where: { admin: { isNot: null } },
-        select: { name: true, email: true },
+        select: { name: true, email: true, phone: true },
       })
       if (adminUser?.email) {
         sendEmail(adminUser.email, () => adminNewDealEmail(
@@ -141,6 +153,19 @@ export async function POST(req: NextRequest) {
           deal.buyer?.name || '-',
           deal.seller?.name || '-',
         ), 'deal_created').catch(() => {})
+      }
+      // WhatsApp notification to admin
+      if (adminUser?.phone) {
+        sendWhatsApp(adminUser.phone, () => ({
+          body: adminNewDealWa(
+            adminUser.name || 'অ্যাডমিন',
+            deal.title,
+            `৳${deal.amount.toLocaleString('en')}`,
+            deal.creator?.name || 'একজন ইউজার',
+            deal.buyer?.name || '-',
+            deal.seller?.name || '-',
+          ),
+        }), 'deal_created').catch(() => {})
       }
     } catch { /* silent */ }
 

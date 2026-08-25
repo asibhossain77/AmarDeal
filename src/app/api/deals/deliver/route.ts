@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, deliveryStartedEmail } from '@/lib/email'
+import { sendWhatsApp, deliveryStartedWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
 
 export async function POST(req: NextRequest) {
@@ -36,8 +37,8 @@ export async function POST(req: NextRequest) {
       where: { id: dealId },
       data: { status: 'in_delivery' },
       include: {
-        buyer: { select: { name: true, email: true } },
-        seller: { select: { name: true, email: true } },
+        buyer: { select: { name: true, email: true, phone: true } },
+        seller: { select: { name: true, email: true, phone: true } },
       },
     })
 
@@ -49,6 +50,16 @@ export async function POST(req: NextRequest) {
         updated.amount || 0,
         deal.seller?.name || 'বিক্রেতা',
       )).catch(() => {})
+    }
+
+    // WhatsApp: delivery started — notify buyer
+    if (updated.buyer?.phone) {
+      sendWhatsApp(updated.buyer.phone, () => ({ body: deliveryStartedWa(
+        updated.buyer.name || 'ক্রেতা',
+        deal.title,
+        updated.amount || 0,
+        deal.seller?.name || 'বিক্রেতা',
+      ) })).catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

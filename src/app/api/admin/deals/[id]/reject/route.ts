@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCancelledEmail } from '@/lib/email'
+import { sendWhatsApp, dealRejectedWa } from '@/lib/whatsapp'
 import { requireAdmin } from '@/lib/admin-guard'
 
 export async function POST(
@@ -14,8 +15,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -78,6 +79,14 @@ export async function POST(
     }
     if (deal.seller?.email) {
       sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, 'অ্যাডমিন'), 'deal_cancelled').catch(() => {})
+    }
+
+    // WhatsApp: deal rejected
+    if (deal.buyer?.phone) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: dealRejectedWa(deal.buyer.name || 'ক্রেতা', deal.title) }), 'deal_cancelled').catch(() => {})
+    }
+    if (deal.seller?.phone) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: dealRejectedWa(deal.seller.name || 'বিক্রেতা', deal.title) }), 'deal_cancelled').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updatedDeal })

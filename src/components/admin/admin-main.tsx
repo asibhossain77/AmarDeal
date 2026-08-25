@@ -36,6 +36,7 @@ const AdminProfilePanel = dynamic(() => import('./admin-profile-panel').then(m =
 const ContractPanel = dynamic(() => import('./contract-panel').then(m => ({ default: m.ContractPanel })), { loading: () => <PanelLoader /> });
 const BlogPanel = dynamic(() => import('./blog-panel').then(m => ({ default: m.BlogPanel })), { loading: () => <PanelLoader /> });
 const EmailSettingsPanel = dynamic(() => import('./email-settings-panel').then(m => ({ default: m.EmailSettingsPanel })), { loading: () => <PanelLoader /> });
+const WhatsAppSettingsPanel = dynamic(() => import('./whatsapp-settings-panel').then(m => ({ default: m.WhatsAppSettingsPanel })), { loading: () => <PanelLoader /> });
 const TwoFactorPanel = dynamic(() => import('./two-factor-panel').then(m => ({ default: m.TwoFactorPanel })), { loading: () => <PanelLoader /> });
 const AiPromptPanel = dynamic(() => import('./ai-prompt-panel').then(m => ({ default: m.AiPromptPanel })), { loading: () => <PanelLoader /> });
 const PopupPanel = dynamic(() => import('./popup-panel').then(m => ({ default: m.PopupPanel })), { loading: () => <PanelLoader /> });
@@ -1510,6 +1511,7 @@ function UsersPanel() {
     { value: 'contract', label: t('adminNav.contract'), desc: 'Edit contract template' },
     { value: 'blog', label: t('adminNav.blog'), desc: 'Write and manage blog posts' },
     { value: 'email-settings', label: t('adminNav.emailSettings'), desc: 'Email configuration' },
+    { value: 'whatsapp-settings', label: t('adminNav.whatsappSettings'), desc: 'WhatsApp configuration & broadcast' },
   ];
   type RoleFilter = 'all' | 'super_admin' | 'support' | 'staff' | 'user';
 
@@ -3686,6 +3688,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <DisputesPanel />;
     case 'email-settings':
       return <EmailSettingsPanel />;
+    case 'whatsapp-settings':
+      return <WhatsAppSettingsPanel />;
     case 'two-factor':
       return <TwoFactorPanel />;
     case 'ai-prompt':

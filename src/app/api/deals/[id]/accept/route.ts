@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCompletedEmail } from '@/lib/email'
+import { sendWhatsApp, dealCompletedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 
 export async function POST(
@@ -16,8 +17,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -77,6 +78,14 @@ export async function POST(
     }
     if (deal.seller?.email) {
       sendEmail(deal.seller.email, () => dealCompletedEmail(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0, 'seller'), 'deal_created').catch(() => {})
+    }
+
+    // WhatsApp: deal completed
+    if (deal.buyer?.phone) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: dealCompletedWa(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, 'buyer') }), 'deal_completed').catch(() => {})
+    }
+    if (deal.seller?.phone) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: dealCompletedWa(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0, 'seller') }), 'deal_completed').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, deliveryStartedEmail } from '@/lib/email'
+import { sendWhatsApp, deliveryStartedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 import { sendFcmToUser } from '@/lib/fcm'
 
@@ -17,8 +18,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -76,6 +77,11 @@ export async function POST(
     // Email: delivery started
     if (deal.buyer?.email) {
       sendEmail(deal.buyer.email, () => deliveryStartedEmail(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, deal.seller?.name || 'বিক্রেতা'), 'delivery_started').catch(() => {})
+    }
+
+    // WhatsApp: delivery started
+    if (deal.buyer?.phone) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: deliveryStartedWa(deal.buyer.name || 'ক্রেতা', deal.title, deal.amount || 0, deal.seller?.name || 'বিক্রেতা') }), 'delivery_started').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })

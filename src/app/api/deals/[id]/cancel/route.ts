@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCancelledEmail } from '@/lib/email'
+import { sendWhatsApp, dealCancelledWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 
 const CANCELLABLE_STATUSES = ['created', 'payment_verified']
@@ -18,8 +19,8 @@ export async function POST(
     const deal = await db.deal.findUnique({
       where: { id },
       include: {
-        buyer: { select: { id: true, name: true, email: true } },
-        seller: { select: { id: true, name: true, email: true } },
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
       },
     })
 
@@ -79,6 +80,14 @@ export async function POST(
     }
     if (deal.seller?.email && deal.sellerId !== userId) {
       sendEmail(deal.seller.email, () => dealCancelledEmail(deal.seller.name || 'বিক্রেতা', deal.title, cancellerName), 'deal_cancelled').catch(() => {})
+    }
+
+    // WhatsApp: deal cancelled
+    if (deal.buyer?.phone && deal.buyerId !== userId) {
+      sendWhatsApp(deal.buyer.phone, () => ({ body: dealCancelledWa(deal.buyer.name || 'ক্রেতা', deal.title, cancellerName) }), 'deal_cancelled').catch(() => {})
+    }
+    if (deal.seller?.phone && deal.sellerId !== userId) {
+      sendWhatsApp(deal.seller.phone, () => ({ body: dealCancelledWa(deal.seller.name || 'বিক্রেতা', deal.title, cancellerName) }), 'deal_cancelled').catch(() => {})
     }
 
     return NextResponse.json({ success: true, deal: updated })
