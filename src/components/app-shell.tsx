@@ -29,7 +29,6 @@ const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m =
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
 const SitePopup = dynamic(() => import('@/components/shared/site-popup').then(m => ({ default: m.SitePopup })), { ssr: false });
-const PushPrompt = dynamic(() => import('@/components/shared/push-prompt').then(m => ({ default: m.PushPrompt })), { ssr: false });
 
 /* ── Skeletons for dynamic imports ── */
 import { AuthSkeleton } from '@/components/shared/skeletons/auth-skeleton';
@@ -335,7 +334,6 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       <DynamicFavicon />
       <LiveSupportButton />
       <SitePopup />
-      <PushPrompt />
     </div>
   );
 }

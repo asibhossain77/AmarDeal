@@ -1,40 +1,18 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useAppStore } from '@/lib/store';
-import { useTranslation, type Locale } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe, Bell, BellOff, Loader2 } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, deleteToken } from 'firebase/messaging';
+import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
 const emptySubscribe = () => () => {};
-
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-};
-
-let firebaseApp: ReturnType<typeof initializeApp> | null = null;
-let currentFcmToken: string | null = null;
-
-function getFirebaseApp() {
-  if (!firebaseApp) {
-    firebaseApp = initializeApp(firebaseConfig, 'settings-push');
-  }
-  return firebaseApp;
-}
 
 export function SettingsPanel() {
   const user = useAppStore((s) => s.user);
@@ -49,117 +27,6 @@ export function SettingsPanel() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushLoading, setPushLoading] = useState(true);
-  const [pushAction, setPushAction] = useState(false);
-  const [pushDiag, setPushDiag] = useState<Record<string, unknown> | null>(null);
-
-  // Push notification functions (FCM)
-  const isPushSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
-
-  const checkPushStatus = async () => {
-    if (!isPushSupported) { setPushLoading(false); return; }
-    try {
-      const res = await fetch('/api/push/status');
-      const data = await res.json();
-      setPushEnabled(data.enabled);
-      setPushDiag(data.diagnostics || null);
-      console.log('[Settings] FCM diagnostics:', data);
-    } catch { /* ignore */ }
-    setPushLoading(false);
-  };
-
-  useEffect(() => { void checkPushStatus(); }, []);
-
-  const togglePush = async () => {
-    if (!isPushSupported) {
-      toast.error(t('settings.pushNotSupported'));
-      return;
-    }
-    setPushAction(true);
-    try {
-      if (pushEnabled) {
-        // Disable - delete FCM token
-        const app = getFirebaseApp();
-        const messaging = getMessaging(app);
-        try {
-          if (currentFcmToken) {
-            await fetch('/api/push/unsubscribe', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: currentFcmToken }),
-            });
-            await deleteToken(messaging);
-            currentFcmToken = null;
-          }
-        } catch (delErr) {
-          console.warn('[Settings] Token delete warning:', delErr);
-        }
-        setPushEnabled(false);
-        toast.success(t('settings.pushOffSuccess'));
-      } else {
-        // Enable - get FCM token
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          toast.error(t('settings.pushDenied'));
-          setPushAction(false);
-          return;
-        }
-        const app = getFirebaseApp();
-        const messaging = getMessaging(app);
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        const fcmVapidKey = process.env.NEXT_PUBLIC_FCM_VAPID_KEY;
-        const token = await getToken(messaging, {
-          serviceWorkerRegistration: registration,
-          ...(fcmVapidKey ? { vapidKey: fcmVapidKey } : {}),
-        });
-        if (!token) {
-          toast.error(t('settings.pushDenied'));
-          setPushAction(false);
-          return;
-        }
-        currentFcmToken = token;
-        console.log('[Settings] FCM token:', token.substring(0, 40) + '...');
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token }),
-        }).then(async (r) => {
-          if (!r.ok) {
-            const d = await r.json().catch(() => ({}));
-            throw new Error(d.error || 'Subscribe failed');
-          }
-        });
-        setPushEnabled(true);
-        toast.success(t('settings.pushSuccess'));
-      }
-    } catch (err) {
-      console.error('[FCM Toggle]', err);
-      toast.error(t('settings.serverError'));
-    }
-    setPushAction(false);
-  };
-
-  const sendTestPush = async () => {
-    if (!user) return;
-    setPushAction(true);
-    try {
-      await fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          title: locale === 'bn' ? '🔔 টেস্ট নোটিফিকেশন' : '🔔 Test Notification',
-          message: locale === 'bn' ? 'পুশ নোটিফিকেশন সফলভাবে কাজ করছে!' : 'Push notifications are working!',
-          url: '/',
-        }),
-      });
-      toast.success(t('settings.pushTestSent'));
-    } catch {
-      toast.error(t('settings.serverError'));
-    }
-    setPushAction(false);
-  };
 
   if (!mounted) return null;
 
@@ -232,72 +99,6 @@ export function SettingsPanel() {
             </div>
             <LanguageSwitcher />
           </div>
-        </div>
-
-        {/* Push Notifications */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-1">{t('settings.pushNotifications')}</h3>
-          <p className="text-xs text-muted-foreground mb-4">{t('settings.pushDesc')}</p>
-          {pushLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>...</span>
-            </div>
-          ) : !isPushSupported ? (
-            <p className="text-xs text-muted-foreground">{t('settings.pushNotSupported')}</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {pushEnabled ? (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-primary">
-                      <Bell className="h-4 w-4" />
-                    </div>
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                      <BellOff className="h-4 w-4" />
-                    </div>
-                  )}
-                  <span className="text-sm font-medium">
-                    {pushEnabled ? t('settings.pushEnabled') : t('settings.pushDisabled')}
-                  </span>
-                </div>
-                <Button
-                  onClick={togglePush}
-                  variant={pushEnabled ? 'outline' : 'default'}
-                  size="sm"
-                  className="rounded-xl text-xs font-semibold gap-1.5"
-                  disabled={pushAction}
-                >
-                  {pushAction && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {pushEnabled ? t('settings.pushDisable') : t('settings.pushEnable')}
-                </Button>
-              </div>
-              {pushEnabled && (
-                <Button
-                  onClick={sendTestPush}
-                  variant="outline"
-                  size="sm"
-                  className="w-full rounded-xl text-xs font-medium gap-1.5"
-                  disabled={pushAction}
-                >
-                  {pushAction ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" />}
-                  {t('settings.pushTest')}
-                </Button>
-              )}
-              {/* Diagnostics */}
-              {pushDiag && (
-                <div className="mt-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 p-2.5 text-[11px] text-muted-foreground font-mono space-y-0.5">
-                  <div className="flex justify-between"><span>Browser:</span><span className={isPushSupported ? 'text-emerald-500' : 'text-red-500'}>{isPushSupported ? 'Supported' : 'Not supported'}</span></div>
-                  <div className="flex justify-between"><span>Permission:</span><span>{typeof window !== 'undefined' ? Notification.permission : 'N/A'}</span></div>
-                  <div className="flex justify-between"><span>FCM:</span><span className={pushDiag.fcmConfigured ? 'text-emerald-500' : 'text-red-500'}>{pushDiag.fcmConfigured ? 'OK' : 'NOT SET'}</span></div>
-                  <div className="flex justify-between"><span>DB:</span><span className={pushDiag.dbWorking !== false ? 'text-emerald-500' : 'text-red-500'}>{pushDiag.dbWorking !== false ? 'Connected' : 'Error'}</span></div>
-                  <div className="flex justify-between"><span>Your tokens:</span><span>{String(pushDiag.userTokenCount ?? '-')}</span></div>
-                  <div className="flex justify-between"><span>Total tokens:</span><span>{String(pushDiag.totalTokens ?? '-')}</span></div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Password Change */}
