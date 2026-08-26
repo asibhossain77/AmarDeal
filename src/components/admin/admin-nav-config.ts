@@ -7,6 +7,7 @@ import {
   CreditCard,
   Receipt,
   MessageCircle,
+  MessageSquare,
   UserCircle,
   FileText,
   Banknote,
@@ -66,6 +67,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'ওয়েবসাইট সেটিংস', icon: Settings, panel: 'settings' },
       { label: 'ইমেইল সেটিংস', icon: Mail, panel: 'email-settings' },
+      { label: 'হোয়াটসঅ্যাপ সেটিংস', icon: MessageSquare, panel: 'whatsapp-settings' },
       { label: 'AI সাপোর্ট', icon: Bot, panel: 'ai-prompt' },
       { label: 'চুক্তি পেজ', icon: FileText, panel: 'contract' },
       { label: 'ব্লগ', icon: BookOpen, panel: 'blog' },
@@ -118,6 +120,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
       items: [
         { label: t('adminNav.websiteSettings'), icon: Settings, panel: 'settings' },
         { label: t('adminNav.emailSettings'), icon: Mail, panel: 'email-settings' },
+        { label: t('adminNav.whatsappSettings'), icon: MessageSquare, panel: 'whatsapp-settings' },
         { label: t('adminNav.aiSupport'), icon: Bot, panel: 'ai-prompt' },
         { label: t('adminNav.contract'), icon: FileText, panel: 'contract' },
         { label: t('adminNav.blog'), icon: BookOpen, panel: 'blog' },
