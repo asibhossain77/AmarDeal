@@ -1,6 +1,6 @@
 {
-  "name": "Midman মিডম্যান",
-  "short_name": "Midman",
+  "name": "AmarDeal - এসক্রো সার্ভিস",
+  "short_name": "AmarDeal",
   "description": "বাংলাদেশের সবচেয়ে নিরাপদ এসক্রো সার্ভিস ও অনলাইন লেনদেন প্ল্যাটফর্ম।",
   "start_url": "/",
   "display": "standalone",
@@ -13,9 +13,21 @@
   "icons": [
     {
       "src": "/uploads/site-logo.png",
-      "sizes": "any",
+      "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/uploads/site-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/uploads/site-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
