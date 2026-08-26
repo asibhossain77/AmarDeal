@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
 import { sendWhatsApp, paymentSubmittedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendFcmToUser } from '@/lib/fcm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -80,11 +79,6 @@ export async function POST(req: NextRequest) {
         seller: { select: { name: true, email: true, phone: true } },
       },
     })
-
-    // Push notification to seller
-    if (deal.sellerId) {
-      void sendFcmToUser(deal.sellerId, '💰 পেমেন্ট', 'ডিলের পেমেন্ট সফলভাবে যাচাই হয়েছে', '/')
-    }
 
     // Email: payment submitted notification
     if (deal.buyer?.email) {

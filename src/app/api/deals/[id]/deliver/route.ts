@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, deliveryStartedEmail } from '@/lib/email'
 import { sendWhatsApp, deliveryStartedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendFcmToUser } from '@/lib/fcm'
 
 export async function POST(
   req: NextRequest,
@@ -70,9 +69,6 @@ export async function POST(
         }),
       })
     } catch { /* silent */ }
-
-    // Push notification to buyer
-    void sendFcmToUser(deal.buyerId, '📦 ডেলিভারি', 'বিক্রেতা ডেলিভারি কনফার্ম করেছেন', '/')
 
     // Email: delivery started
     if (deal.buyer?.email) {

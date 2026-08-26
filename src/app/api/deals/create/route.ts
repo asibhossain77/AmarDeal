@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
 import { sendWhatsApp, dealCreatedWa, adminNewDealWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
-import { sendFcmToUser } from '@/lib/fcm'
 
 export async function POST(req: NextRequest) {
   try {
@@ -132,11 +131,6 @@ export async function POST(req: NextRequest) {
         isCreatorBuyer ? 'buyer' : 'seller',
       ),
     }), 'deal_created').catch(() => {})
-
-    // Push notification to seller
-    if (deal.sellerId) {
-      void sendFcmToUser(deal.sellerId, '🤝 নতুন ডিল', `আপনার কাছে একটি নতুন ডিল এসেছে: ${deal.title}`, '/')
-    }
 
     // Email notification to admin
     try {

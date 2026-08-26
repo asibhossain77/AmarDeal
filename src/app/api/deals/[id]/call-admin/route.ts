@@ -1,7 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendFcmToUsers } from '@/lib/fcm'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -61,20 +60,6 @@ export async function POST(
       text: sysMsg.text,
       createdAt: sysMsg.createdAt.toISOString(),
     })
-
-    // Push notification to all admins
-    const admins = await db.user.findMany({
-      where: { admin: { isNot: null } },
-      select: { id: true },
-    })
-    if (admins.length > 0) {
-      void sendFcmToUsers(
-        admins.map(a => a.id),
-        '📞 অ্যাডমিন কল',
-        'একটি ডিলে অ্যাডমিন ডাকা হয়েছে',
-        '/',
-      )
-    }
 
     return NextResponse.json({ success: true })
   } catch {
