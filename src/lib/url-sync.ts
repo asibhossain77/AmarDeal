@@ -122,7 +122,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;
@@ -148,8 +148,9 @@ export function parseUrl(pathname: string): ParsedUrl {
       'dashboard', 'payment-verify', 'payouts', 'all-deals', 'users',
       'settings', 'payment-methods', 'fee-rules', 'contact-info',
       'profile', 'contract', 'admin-calls', 'disputes', 'blog', 'email-settings',
+      'whatsapp-settings',
       'two-factor', 'ai-prompt', 'popup', 'google-oauth', 'piprapay', 'affiliate',
-      'affiliate-payouts', 'push',
+      'affiliate-payouts',
     ];
     result.adminPanel = valid.includes(seg2 as AdminPanel) ? seg2 as AdminPanel : 'dashboard';
     return result;
@@ -184,7 +185,6 @@ function applyUrlToStore() {
   // Guard: if user is logged in, prevent navigating to auth via browser back
   // But allow landing page access for logged-in users
   if (state.user && parsed.view === 'auth') {
-    // Replace the history entry with the correct URL for current view
     const correctUrl = buildUrl(state);
     if (correctUrl !== window.location.pathname) {
       window.history.replaceState(null, '', correctUrl);
@@ -212,10 +212,22 @@ export function reapplyUrlAfterLogin() {
   _lastUrl = '/';
 }
 
+/* ── Auth restoration flag ── */
+/**
+ * When true, the store→URL subscriber is blocked so that
+ * setUser() (which resets view to 'landing') doesn't overwrite
+ * the real URL the user was on before the refresh.
+ */
+let _authRestoring = false;
+
 /** Called after session restore (page refresh) — apply URL to store without redirecting */
 export function applyUrlAfterAuth() {
   if (typeof window === 'undefined') return;
-  const parsed = parseUrl(window.location.pathname);
+
+  // Use the saved URL (from initUrlSync) instead of window.location.pathname
+  // because the subscriber may have already pushed '/' during setUser().
+  const savedPath = _preAuthUrl || window.location.pathname;
+  const parsed = parseUrl(savedPath);
   const store = useAppStore;
   const state = store.getState();
   const updates: Record<string, unknown> = {};
@@ -230,17 +242,25 @@ export function applyUrlAfterAuth() {
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     updates.view = parsed.view;
   }
-  // If URL is '/' or 'landing', view stays 'landing' (default) — do nothing
 
   if (Object.keys(updates).length > 0) {
     store.setState(updates);
   }
-  _lastUrl = window.location.pathname;
+
+  // Restore the correct URL if the subscriber overwrote it
+  if (savedPath !== window.location.pathname) {
+    window.history.replaceState(null, '', savedPath);
+  }
+
+  _lastUrl = savedPath;
+  _preAuthUrl = '';
+  _authRestoring = false;
 }
 
 /* ── One-time init: subscribe + popstate ── */
 
 let _initDone = false;
+let _preAuthUrl = '';
 
 export function initUrlSync() {
   if (_initDone || typeof window === 'undefined') return;
@@ -253,25 +273,23 @@ export function initUrlSync() {
   const state = store.getState();
 
   if (parsed.view === 'auth' && !state.user) {
-    // Not logged in, URL is /login — show auth view immediately
     store.setState({ view: 'auth' });
     _lastUrl = window.location.pathname;
   } else if (state.user) {
-    // Logged in — allow landing page, but apply dashboard/seller/admin URLs
     if (parsed.view === 'landing' || parsed.view === null) {
-      // Stay on landing page
       _lastUrl = window.location.pathname;
     } else {
       applyUrlToStore();
     }
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
-    // Not logged in but on a public page
     store.setState({ view: parsed.view });
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {
-    // Not logged in yet but on a protected URL — this might be a page refresh.
-    // Auth check is still in progress; don't redirect. Just note the URL.
-    // app-shell.tsx will call applyUrlAfterAuth() if session exists.
+    // Not logged in yet but on a protected URL — page refresh scenario.
+    // Save the URL so applyUrlAfterAuth() can use it even if the
+    // store subscriber overwrites window.location before auth completes.
+    _preAuthUrl = window.location.pathname;
+    _authRestoring = true;
     _lastUrl = window.location.pathname;
   } else {
     _lastUrl = window.location.pathname;
@@ -279,6 +297,9 @@ export function initUrlSync() {
 
   // 2. Subscribe to store changes → update URL
   store.subscribe((s) => {
+    // Block URL pushes during auth restoration to prevent
+    // setUser() from pushing '/' while the real URL is /admin/...
+    if (_authRestoring) return;
     pushUrl(buildUrl(s));
   });
 
