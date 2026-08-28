@@ -384,3 +384,22 @@ Stage Summary:
 - All other providers removed: Groq, Cerebras, Together AI, OpenRouter, z-ai local
 - Code significantly simplified — no fallback chain complexity
 - Files modified: src/app/api/ai-support/route.ts, src/app/api/admin/ai-test/route.ts
+
+---
+Task ID: 1
+Agent: Main
+Task: Build premium hero section for Midman.bd matching existing design system
+
+Work Log:
+- Analyzed existing Midman design system: primary color oklch(0.768 0.189 131) = #84CC16, bg #F2F4F7, font Hind Siliguri, Tailwind v4 + shadcn/ui
+- Analyzed reference image for layout/composition inspiration
+- Updated i18n translations (bn.ts and en.ts) with 20+ new hero keys
+- Added 6 new CSS animations for floating cards (float-card-1 to 4, main-card-float, progress-pulse) to globals.css
+- Rewrote hero.tsx with new premium design: left content column + right escrow dashboard card + 4 floating mini cards
+- Fixed SWC parser issue caused by Unicode box-drawing characters in JSX comments (replaced with ASCII)
+
+Stage Summary:
+- New hero section with 2-column layout, escrow dashboard, floating mini cards, animations
+- Light/dark mode support confirmed
+- Mobile responsive (vertical stack, no horizontal overflow)
+- Both CTA buttons functional (login redirect, how-it-works navigation)
