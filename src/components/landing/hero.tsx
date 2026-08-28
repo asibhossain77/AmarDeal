@@ -3,13 +3,23 @@
 import { useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, LayoutDashboard } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, Wallet, ShieldCheck, CircleCheck } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
 
 
 const emptySubscribe = () => () => {};
+
+/* ═══ Stagger children helper ═══ */
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15, delayChildren: 0.3 } },
+};
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } },
+};
 
 function EscrowStatusCard() {
   const locale = useAppStore((s) => s.locale);
@@ -18,19 +28,19 @@ function EscrowStatusCard() {
   const steps = [
     {
       num: locale === 'bn' ? '১' : '1',
-      color: 'bg-primary',
+      icon: Wallet,
       title: t('hero.step1.title'),
       subtitle: t('hero.step1.sub'),
     },
     {
       num: locale === 'bn' ? '২' : '2',
-      color: 'bg-teal-600 dark:bg-teal-500',
+      icon: ShieldCheck,
       title: t('hero.step2.title'),
       subtitle: t('hero.step2.sub'),
     },
     {
       num: locale === 'bn' ? '৩' : '3',
-      color: 'bg-lime-600 dark:bg-lime-500',
+      icon: CircleCheck,
       title: t('hero.step3.title'),
       subtitle: t('hero.step3.sub'),
     },
@@ -43,130 +53,117 @@ function EscrowStatusCard() {
       transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
       className="order-2 md:order-1"
     >
-      <style>{`
-        @property --border-angle {
-          syntax: '<angle>';
-          initial-value: 0deg;
-          inherits: false;
-        }
-        @keyframes rotate-border {
-          to { --border-angle: 360deg; }
-        }
-        @keyframes shimmer-pass {
-          0% { transform: translateX(-150%); }
-          100% { transform: translateX(250%); }
-        }
-        @keyframes active-pulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
-          50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
-        }
-        .premium-border-anim {
-          animation: rotate-border 5s linear infinite;
-        }
-        .shimmer-overlay::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          background: linear-gradient(
-            105deg,
-            transparent 35%,
-            rgba(255,255,255,0.3) 50%,
-            transparent 65%
-          );
-          animation: shimmer-pass 3.5s ease-in-out infinite;
-        }
-        .step-circle-pulse {
-          animation: active-pulse 2.2s ease-in-out infinite;
-        }
-      `}</style>
-
       <div className="relative mx-auto w-full max-w-sm md:mx-0 md:max-w-none">
-        {/* ── Animated gradient border ── */}
+        {/* Animated gradient border wrapper */}
         <div
-          className="premium-border-anim rounded-2xl p-[1.5px]"
+          className="rounded-2xl p-[1.5px] animate-[rotate-border_6s_linear_infinite]"
           style={{
-            background:
-              'conic-gradient(from var(--border-angle, 0deg), #059669, #0d9488, #10b981, #34d399, #14b8a6, #047857, #059669)',
+            background: 'conic-gradient(from var(--border-angle, 0deg), #84cc16, #a3e635, #65a30d, #bef264, #4d7c0f, #84cc16)',
           }}
         >
-          {/* ── Glass card body ── */}
-          <div className="relative overflow-hidden rounded-[14.5px] bg-white/75 p-6 backdrop-blur-xl shadow-2xl shadow-black/[0.06] dark:bg-zinc-900/75 dark:shadow-black/30 sm:p-7">
-            {/* Inner top-left glow */}
-            <div className="pointer-events-none absolute -inset-px rounded-[14.5px] bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.06]" />
+          {/* Glass card body */}
+          <div className="card-body-glass relative overflow-hidden rounded-[14.5px] bg-white/80 p-6 backdrop-blur-xl shadow-2xl shadow-primary/[0.08] dark:bg-zinc-900/80 dark:shadow-primary/[0.04] sm:p-7">
 
-            {/* ── Card Header ── */}
-            <div className="relative mb-7 flex items-center justify-between">
-              <p className="text-sm font-semibold tracking-wide text-foreground/90">
-                {t('hero.escrowStatus')}
-              </p>
-              <span className="shimmer-overlay relative overflow-hidden rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            {/* Floating decorative blobs */}
+            <div className="blob-float-1 pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-primary/[0.08] blur-2xl dark:bg-primary/[0.05]" />
+            <div className="blob-float-2 pointer-events-none absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-primary/[0.06] blur-2xl dark:bg-primary/[0.04]" />
+
+            {/* Inner top-left light reflection */}
+            <div className="pointer-events-none absolute -inset-px rounded-[14.5px] bg-gradient-to-br from-white/60 via-transparent to-transparent dark:from-white/[0.04]" />
+
+            {/* Card Header */}
+            <div className="relative mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15">
+                  <ShieldCheck className="h-4 w-4 text-primary" />
+                </div>
+                <p className="text-sm font-bold tracking-wide text-foreground">
+                  {t('hero.escrowStatus')}
+                </p>
+              </div>
+              <span className="badge-shimmer relative overflow-hidden rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold text-primary">
                 {t('hero.secured')}
               </span>
             </div>
 
-            {/* ── Timeline Steps ── */}
-            <div className="relative">
+            {/* Escrow Flow Steps */}
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="visible"
+              className="relative"
+            >
               {/* Vertical gradient connector line */}
-              <div className="absolute left-4 top-4 bottom-[44px] w-px bg-gradient-to-b from-emerald-400 via-teal-400/60 to-zinc-300/80 dark:from-emerald-500/70 dark:via-teal-500/40 dark:to-zinc-700/50" />
+              <div className="absolute left-[15px] top-[14px] bottom-[44px] w-px bg-gradient-to-b from-primary/70 via-primary/25 to-transparent" />
 
-              {steps.map((step, i) => (
-                <div key={step.num} className="relative">
-                  <div className="flex items-start gap-4">
-                    {/* Glowing step circle */}
-                    <div
-                      className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm ${step.color} ${i === 0 ? 'step-circle-pulse' : ''}`}
-                    >
-                      {step.num}
+              {steps.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <motion.div
+                    key={step.num}
+                    variants={fadeUp}
+                    className="relative"
+                  >
+                    <div className="flex items-start gap-3.5">
+                      {/* Step circle with icon */}
+                      <div
+                        className={`relative z-10 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full text-primary-foreground shadow-md ${
+                          i === 0
+                            ? 'bg-primary animate-[soft-pulse_2.5s_ease-in-out_infinite]'
+                            : i === 1
+                              ? 'bg-primary/80'
+                              : 'bg-primary/60'
+                        }`}
+                      >
+                        <Icon className="h-[15px] w-[15px]" strokeWidth={2.5} />
+                        {/* Step number badge */}
+                        <span
+                          className="absolute -right-1 -bottom-1 flex items-center justify-center rounded-full bg-white text-[9px] font-black text-primary shadow-sm ring-1 ring-primary/20 dark:bg-zinc-800 dark:ring-primary/30"
+                          style={{ width: 18, height: 18, fontSize: 9 }}
+                        >
+                          {step.num}
+                        </span>
+                      </div>
+
+                      {/* Step text */}
+                      <div className="min-w-0 pb-5 pt-0.5">
+                        <p className="text-[13px] font-bold text-foreground">
+                          {step.title}
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                          {step.subtitle}
+                        </p>
+                      </div>
                     </div>
-                    {/* Step text */}
-                    <div className="min-w-0 pb-5 pt-1">
-                      <p className="text-[13px] font-semibold text-foreground">
-                        {step.title}
-                      </p>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                        {step.subtitle}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
 
-            {/* Divider */}
-            <div className="border-t border-border/30" />
+            {/* Divider with glow */}
+            <div className="my-1 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
 
-            {/* ── Amount ── */}
-            <div className="py-4 text-center">
-              <div className="inline-flex items-baseline rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 px-5 py-2.5 backdrop-blur-sm ring-1 ring-inset ring-emerald-500/10 dark:ring-emerald-500/5">
-                <span
-                  className="text-2xl font-bold tracking-tight sm:text-3xl"
-                  style={{
-                    background: 'linear-gradient(135deg, #059669, #0d9488, #10b981)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
+            {/* Amount Display */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="py-4 text-center"
+            >
+              <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-6 py-3 ring-1 ring-primary/10">
+                {/* Subtle glow behind amount */}
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/[0.05] blur-xl" />
+                <span className="relative text-2xl font-extrabold tracking-tight text-primary sm:text-3xl">
                   ৳৫০,০০০
                 </span>
-                <span
-                  className="text-lg font-semibold"
-                  style={{
-                    background: 'linear-gradient(135deg, #059669, #0d9488, #10b981)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    opacity: 0.7,
-                  }}
-                >
+                <span className="relative text-lg font-bold text-primary/50">
                   .০০
                 </span>
               </div>
-              <p className="mt-2.5 text-[11px] text-muted-foreground">
+              <p className="mt-2.5 text-[11px] font-medium text-muted-foreground/80">
                 {t('hero.exampleAmount')}
               </p>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
