@@ -118,7 +118,7 @@ async function callGroq(messages: { role: string; content: string }[]): Promise<
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 512,
       temperature: 0.7,
@@ -160,7 +160,7 @@ async function callGemini(userMessage: string, history: { role: string; content:
   contents.push({ role: 'user', parts: [{ text: userMessage }] })
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -249,16 +249,36 @@ export async function POST(req: NextRequest) {
 
     let aiResponse: string
 
-    // Provider priority: Groq > Gemini > z-ai (local)
-    if (process.env.GROQ_API_KEY) {
-      // Groq uses standard OpenAI format with 'system' role
-      history.push({ role: 'user', content: message })
-      aiResponse = await callGroq(history)
-    } else if (process.env.GEMINI_API_KEY) {
-      aiResponse = await callGemini(message, history, systemPrompt)
-    } else {
-      history.push({ role: 'user', content: message })
-      aiResponse = await callZAI(history)
+    // Provider priority: Groq > Gemini > z-ai (local), with fallback
+    try {
+      if (process.env.GROQ_API_KEY) {
+        history.push({ role: 'user', content: message })
+        try {
+          aiResponse = await callGroq(history)
+        } catch (groqErr: any) {
+          console.error('[ai-support] Groq failed:', groqErr?.message)
+          // Remove the pushed user message if Groq failed
+          history.pop()
+          if (process.env.GEMINI_API_KEY) {
+            console.log('[ai-support] Falling back to Gemini')
+            aiResponse = await callGemini(message, history, systemPrompt)
+          } else {
+            throw groqErr
+          }
+        }
+      } else if (process.env.GEMINI_API_KEY) {
+        aiResponse = await callGemini(message, history, systemPrompt)
+      } else {
+        history.push({ role: 'user', content: message })
+        aiResponse = await callZAI(history)
+      }
+    } catch (err: any) {
+      const msg = err?.message || ''
+      console.error('[ai-support] All providers failed:', msg)
+      return NextResponse.json(
+        { error: `AI সার্ভার সমস্যা: ${msg.includes('API key') ? 'API Key সেট করা নেই' : msg.slice(0, 120)}` },
+        { status: 500 }
+      )
     }
 
     // Save to conversation history
@@ -272,7 +292,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ response: aiResponse })
   } catch (err: any) {
-    console.error('[ai-support] Error:', err?.message || err)
+    console.error('[ai-support] Unexpected error:', err?.message || err)
     return NextResponse.json(
       { error: 'সার্ভারে সমস্যা হয়েছে' },
       { status: 500 }
