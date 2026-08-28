@@ -118,7 +118,7 @@ async function callGroq(messages: { role: string; content: string }[]): Promise<
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 512,
       temperature: 0.7,

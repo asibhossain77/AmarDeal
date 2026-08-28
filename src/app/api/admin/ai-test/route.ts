@@ -11,7 +11,7 @@ interface ProviderTest {
 async function testGroq(): Promise<ProviderTest> {
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    return { name: 'Groq', model: 'llama-3.3-70b-versatile', status: 'not_configured' }
+    return { name: 'Groq', model: 'llama-3.1-8b-instant', status: 'not_configured' }
   }
 
   const start = Date.now()
@@ -23,7 +23,7 @@ async function testGroq(): Promise<ProviderTest> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: 'say ok' }],
       max_tokens: 5,
       }),
@@ -35,7 +35,7 @@ async function testGroq(): Promise<ProviderTest> {
       const errBody = await res.text()
       return {
         name: 'Groq',
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         status: 'error',
         responseTime,
         error: `${res.status}: ${errBody.slice(0, 200)}`,
@@ -44,14 +44,14 @@ async function testGroq(): Promise<ProviderTest> {
 
     return {
       name: 'Groq',
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       status: 'ok',
       responseTime,
     }
   } catch (err: any) {
     return {
       name: 'Groq',
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       status: 'error',
       responseTime: Date.now() - start,
       error: err?.message || 'Connection failed',
