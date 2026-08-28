@@ -147,7 +147,7 @@ interface ProviderDef {
 }
 
 const PROVIDERS: ProviderDef[] = [
-  { id: 'groq',     name: 'Groq',       model: 'llama-3.1-8b-instant',                    envKey: 'GROQ_API_KEY',       type: 'openai' },
+  { id: 'groq',     name: 'Groq',       model: 'auto (7 models)',                     envKey: 'GROQ_API_KEY',       type: 'openai' },
   { id: 'cerebras', name: 'Cerebras',    model: 'llama3.1-8b',                            envKey: 'CEREBRAS_API_KEY',    type: 'openai' },
   { id: 'together', name: 'Together AI', model: 'meta-llama/Llama-3.2-3B-Instruct-Turbo',  envKey: 'TOGETHER_API_KEY',    type: 'openai' },
   { id: 'openrouter', name: 'OpenRouter', model: 'meta-llama/llama-3.1-8b-instruct:free', envKey: 'OPENROUTER_API_KEY',  type: 'openai' },
@@ -161,6 +161,17 @@ const OPENAI_BASE_URLS: Record<string, string> = {
   together: 'https://api.together.xyz/v1',
   openrouter: 'https://openrouter.ai/api/v1',
 }
+
+/** Groq tries multiple models automatically */
+const GROQ_MODELS = [
+  'llama-4-scout-17b-16e-instruct',
+  'llama-4-maverick-17b-128e-instruct',
+  'llama3-8b-8192',
+  'llama3-70b-8192',
+  'gemma2-9b-it',
+  'llama-3.1-8b-instant',
+  'llama-3.3-70b-versatile',
+]
 
 // --- Per-provider callers ---
 
@@ -209,6 +220,26 @@ async function callProvider(
   const apiKey = process.env[provider.envKey]
   if (!apiKey) throw new Error(`${provider.envKey} not set`)
   const baseUrl = OPENAI_BASE_URLS[provider.id]
+
+  // Groq: try multiple models automatically
+  if (provider.id === 'groq') {
+    const errors: string[] = []
+    for (const model of GROQ_MODELS) {
+      try {
+        console.log(`[ai-support] Groq trying model: ${model}`)
+        const result = await callOpenAICompatible(baseUrl, apiKey, model, messages)
+        if (result) {
+          console.log(`[ai-support] Groq success with: ${model}`)
+          return result
+        }
+      } catch (err: any) {
+        console.log(`[ai-support] Groq ${model} failed:`, err?.message?.slice(0, 80))
+        errors.push(`${model}: ${err?.message?.slice(0, 60) || 'unknown'}`)
+      }
+    }
+    throw new Error(`All Groq models failed: ${errors.join('; ')}`)
+  }
+
   return callOpenAICompatible(baseUrl, apiKey, provider.model, messages)
 }
 
