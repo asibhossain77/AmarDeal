@@ -22,6 +22,7 @@ import {
   Power,
   Radio,
   Users,
+  Search,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { motion } from 'framer-motion';
@@ -80,6 +81,10 @@ export function WhatsAppSettingsPanel() {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSending, setBroadcastSending] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState<{ total: number; sent: number; failed: number } | null>(null);
+
+  /* ── Auto detect state ── */
+  const [detecting, setDetecting] = useState(false);
+  const [detectResult, setDetectResult] = useState<{ phone: string; name: string } | null>(null);
 
   /* ── Active section ── */
   const [activeSection, setActiveSection] = useState<'config' | 'templates' | 'broadcast'>('config');
@@ -281,6 +286,52 @@ export function WhatsAppSettingsPanel() {
                   <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Auto Detect Phone Number ID */}
+            <div className="mt-4 p-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+              <div className="flex items-start gap-2">
+                <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Phone Number ID না পেলে?</p>
+                  <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                    Access Token দিয়ে অটো ডিটেক্ট করুন। Meta Business Account থেকে নম্বর খুঁজে বের করবে।
+                  </p>
+                  {detectResult && (
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                      ✅ পাওয়া গেছে: {detectResult.phone} {detectResult.name ? `(${detectResult.name})` : ''}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    setDetecting(true);
+                    setDetectResult(null);
+                    try {
+                      const res = await fetch('/api/admin/whatsapp-detect');
+                      const data = await res.json();
+                      if (data.success) {
+                        setDetectResult({ phone: data.displayPhone, name: data.name });
+                        toast.success('Phone Number ID সেট হয়েছে: ' + data.phoneNumberId);
+                        fetchSettings(); // reload settings
+                      } else {
+                        toast.error(data.error || 'ডিটেক্ট করতে সমস্যা');
+                      }
+                    } catch {
+                      toast.error('ডিটেক্ট করতে সমস্যা');
+                    } finally {
+                      setDetecting(false);
+                    }
+                  }}
+                  disabled={detecting || !settings.wa_access_token}
+                  className="ml-auto flex-shrink-0 text-xs gap-1.5"
+                >
+                  {detecting ? <LoadingAnimation size="sm" /> : <Search className="w-3.5 h-3.5" />}
+                  অটো ডিটেক্ট
+                </Button>
+              </div>
             </div>
 
             {/* Save button */}
