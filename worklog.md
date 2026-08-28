@@ -363,3 +363,24 @@ Stage Summary:
 - Fixed: AI support should now work with both Gemini and Groq APIs
 - File modified: `src/app/api/ai-support/route.ts` (2 model name changes)
 - User needs to redeploy to Vercel for the fix to take effect on production
+
+---
+Task ID: 1
+Agent: Main
+Task: Remove all AI providers, keep only Gemini
+
+Work Log:
+- Rewrote /api/ai-support/route.ts: removed Groq, Cerebras, Together, OpenRouter, z-ai local providers
+- Only Gemini (gemini-3.6-flash) remains as the sole AI provider
+- Simplified POST handler: direct Gemini call, no fallback loop
+- Simplified GET handler: returns only Gemini status
+- Removed callOpenAICompatible(), ProviderDef interface, PROVIDERS array, GROQ_MODELS, getConfiguredProviders(), OPENAI_BASE_URLS
+- Rewrote /api/admin/ai-test/route.ts: tests only Gemini
+- Admin panel component (ai-prompt-panel.tsx) unchanged — dynamically renders from API response
+- No new lint errors from changes
+
+Stage Summary:
+- AI support now uses ONLY Gemini (gemini-3.6-flash)
+- All other providers removed: Groq, Cerebras, Together AI, OpenRouter, z-ai local
+- Code significantly simplified — no fallback chain complexity
+- Files modified: src/app/api/ai-support/route.ts, src/app/api/admin/ai-test/route.ts

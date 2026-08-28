@@ -100,163 +100,52 @@ function checkRateLimit(sessionId: string): boolean {
 }
 
 // ============================================================
-// AI PROVIDERS — Each returns text or throws
+// Gemini-only AI Provider
 // ============================================================
+
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 type Msg = { role: string; content: string }
 
-/** Generic OpenAI-compatible chat completion caller */
-async function callOpenAICompatible(
-  baseUrl: string,
-  apiKey: string,
-  model: string,
+async function callGemini(
   messages: Msg[],
-  extraHeaders?: Record<string, string>,
+  systemPrompt: string,
 ): Promise<string> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      ...extraHeaders,
-    },
-    body: JSON.stringify({
-      model,
-      messages: messages.map(m => ({ role: m.role, content: m.content })),
-      max_tokens: 512,
-      temperature: 0.7,
-    }),
-  })
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set')
+
+  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
+  for (const msg of messages) {
+    if (msg.role === 'system') continue
+    contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] })
+  }
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
+        generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
+      }),
+    }
+  )
   if (!res.ok) {
     const errBody = await res.text()
     throw new Error(`${res.status}: ${errBody.slice(0, 200)}`)
   }
   const data = await res.json()
-  return data?.choices?.[0]?.message?.content || ''
-}
-
-// --- Provider definitions ---
-// Order matters: first available & working provider wins
-
-interface ProviderDef {
-  id: string
-  name: string
-  model: string
-  envKey: string
-  type: 'openai' | 'gemini' | 'local'
-}
-
-const PROVIDERS: ProviderDef[] = [
-  { id: 'gemini',   name: 'Gemini',      model: 'gemini-3.6-flash',                       envKey: 'GEMINI_API_KEY',       type: 'gemini' },
-  { id: 'cerebras', name: 'Cerebras',    model: 'llama-3.3-70b',                            envKey: 'CEREBRAS_API_KEY',    type: 'openai' },
-  { id: 'together', name: 'Together AI', model: 'meta-llama/Llama-3.2-3B-Instruct-Turbo',  envKey: 'TOGETHER_API_KEY',    type: 'openai' },
-  { id: 'openrouter', name: 'OpenRouter', model: 'meta-llama/llama-3.1-8b-instruct:free', envKey: 'OPENROUTER_API_KEY',  type: 'openai' },
-  { id: 'groq',     name: 'Groq',       model: 'auto (7 models)',                     envKey: 'GROQ_API_KEY',       type: 'openai' },
-  { id: 'zai',      name: 'z-ai (local)', model: 'local',                                  envKey: '',                     type: 'local' },
-]
-
-const OPENAI_BASE_URLS: Record<string, string> = {
-  groq: 'https://api.groq.com/openai/v1',
-  cerebras: 'https://api.cerebras.ai/v1',
-  together: 'https://api.together.xyz/v1',
-  openrouter: 'https://openrouter.ai/api/v1',
-}
-
-/** Groq tries multiple models automatically */
-const GROQ_MODELS = [
-  'llama-4-scout-17b-16e-instruct',
-  'llama-4-maverick-17b-128e-instruct',
-  'llama3-8b-8192',
-  'llama3-70b-8192',
-  'gemma2-9b-it',
-  'llama-3.1-8b-instant',
-  'llama-3.3-70b-versatile',
-]
-
-// --- Per-provider callers ---
-
-async function callProvider(
-  provider: ProviderDef,
-  messages: Msg[],
-  userMessage: string,
-  systemPrompt: string,
-): Promise<string> {
-  if (provider.type === 'local') {
-    const ZAI = (await import('z-ai-web-dev-sdk')).default
-    const zai = await ZAI.create()
-    const completion = await zai.chat.completions.create({ messages: messages as any, thinking: { type: 'disabled' } })
-    return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
-  }
-
-  if (provider.type === 'gemini') {
-    const apiKey = process.env[provider.envKey]
-    if (!apiKey) throw new Error(`${provider.envKey} not set`)
-    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
-    for (const msg of messages) {
-      if (msg.role === 'system') continue
-      contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] })
-    }
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents,
-          generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
-        }),
-      }
-    )
-    if (!res.ok) {
-      const errBody = await res.text()
-      throw new Error(`${res.status}: ${errBody.slice(0, 200)}`)
-    }
-    const data = await res.json()
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  }
-
-  // OpenAI-compatible
-  const apiKey = process.env[provider.envKey]
-  if (!apiKey) throw new Error(`${provider.envKey} not set`)
-  const baseUrl = OPENAI_BASE_URLS[provider.id]
-
-  // Groq: try multiple models automatically
-  if (provider.id === 'groq') {
-    const errors: string[] = []
-    for (const model of GROQ_MODELS) {
-      try {
-        console.log(`[ai-support] Groq trying model: ${model}`)
-        const result = await callOpenAICompatible(baseUrl, apiKey, model, messages)
-        if (result) {
-          console.log(`[ai-support] Groq success with: ${model}`)
-          return result
-        }
-      } catch (err: any) {
-        console.log(`[ai-support] Groq ${model} failed:`, err?.message?.slice(0, 80))
-        errors.push(`${model}: ${err?.message?.slice(0, 60) || 'unknown'}`)
-      }
-    }
-    throw new Error(`All Groq models failed: ${errors.join('; ')}`)
-  }
-
-  return callOpenAICompatible(baseUrl, apiKey, provider.model, messages)
-}
-
-/** Get list of configured providers (have API keys set) */
-export function getConfiguredProviders(): ProviderDef[] {
-  return PROVIDERS.filter(p => {
-    if (p.type === 'local') return true // always available in dev
-    return !!process.env[p.envKey]
-  })
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
 }
 
 export async function GET() {
-  const configured = getConfiguredProviders()
+  const configured = !!process.env.GEMINI_API_KEY
   return NextResponse.json({
-    status: 'ok',
-    configured: configured.map(p => ({ id: p.id, name: p.name, model: p.model })),
-    activeProvider: configured[0]?.id || 'none',
+    status: configured ? 'ok' : 'no_key',
+    provider: configured ? 'gemini' : 'none',
+    model: GEMINI_MODEL,
   })
 }
 
@@ -285,60 +174,25 @@ export async function POST(req: NextRequest) {
       conversations.set(sessionId, history)
     }
 
-    const configured = getConfiguredProviders()
-    let aiResponse: string | null = null
-    let usedProvider: string | null = null
-    let lastError = ''
+    history.push({ role: 'user', content: message })
 
-    for (const provider of configured) {
-      try {
-        console.log(`[ai-support] Trying ${provider.name} (${provider.model})...`)
-
-        if (provider.type === 'gemini') {
-          aiResponse = await callProvider(provider, history, message, systemPrompt)
-        } else {
-          history.push({ role: 'user', content: message })
-          aiResponse = await callProvider(provider, history, message, systemPrompt)
-          if (!aiResponse) {
-            history.pop()
-            throw new Error('Empty response')
-          }
-        }
-
-        usedProvider = provider.id
-        console.log(`[ai-support] Success with ${provider.name}`)
-        break
-      } catch (err: any) {
-        lastError = err?.message || 'Unknown error'
-        console.error(`[ai-support] ${provider.name} failed:`, lastError)
-        // Remove user message if we pushed it (non-gemini)
-        if (provider.type !== 'gemini' && history[history.length - 1]?.content === message) {
-          history.pop()
-        }
-        continue
-      }
-    }
+    const aiResponse = await callGemini(history, systemPrompt)
 
     if (!aiResponse) {
-      return NextResponse.json(
-        { error: `AI সার্ভার সমস্যা: সব provider ফেইল হয়েছে। ${lastError.slice(0, 100)}` },
-        { status: 500 }
-      )
+      history.pop()
+      return NextResponse.json({ error: 'AI থেকে উত্তর আসেনি, আবার চেষ্টা করুন' }, { status: 500 })
     }
 
-    // Save to conversation history
-    if (usedProvider !== 'gemini') {
-      // user message already pushed above
-    } else {
-      history.push({ role: 'user', content: message })
-    }
     history.push({ role: 'assistant', content: aiResponse })
     conversations.set(sessionId, history)
 
-    return NextResponse.json({ response: aiResponse, provider: usedProvider })
+    return NextResponse.json({ response: aiResponse, provider: 'gemini' })
   } catch (err: any) {
-    console.error('[ai-support] Unexpected error:', err?.message || err)
-    return NextResponse.json({ error: 'সার্ভারে সমস্যা হয়েছে' }, { status: 500 })
+    console.error('[ai-support] Error:', err?.message || err)
+    return NextResponse.json(
+      { error: `AI সার্ভার সমস্যা: ${err?.message?.slice(0, 100) || 'Unknown'}` },
+      { status: 500 }
+    )
   }
 }
 
