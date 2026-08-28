@@ -32,36 +32,67 @@ const fadeIn = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-// Floating Mini Card
+// Floating Mini Card - supports 'highlight' (primary bg) and 'light' (white bg) variants
 function FloatingMiniCard({
   icon: Icon,
   title,
   value,
   floatClass,
   delay,
-  position,
+  variant = 'light',
 }: {
   icon: React.ElementType;
   title: string;
   value: string;
   floatClass: string;
   delay: number;
-  position: string;
+  variant?: 'highlight' | 'light';
 }) {
+  const isHighlight = variant === 'highlight';
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`pointer-events-none absolute z-20 ${floatClass} ${position}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`pointer-events-none absolute z-20 ${floatClass}`}
     >
-      <div className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-white/80 px-3.5 py-2.5 shadow-lg shadow-black/[0.04] backdrop-blur-md dark:border-border/40 dark:bg-zinc-900/70 dark:shadow-black/[0.2]">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15">
-          <Icon className="h-4 w-4 text-primary" strokeWidth={2} />
+      <div
+        className={
+          isHighlight
+            ? 'flex items-center gap-2 rounded-2xl bg-primary px-3.5 py-2.5 shadow-lg shadow-primary/25 sm:gap-2.5 sm:px-4 sm:py-3'
+            : 'flex items-center gap-2 rounded-2xl border border-border/50 bg-white/90 px-3.5 py-2.5 shadow-md shadow-black/[0.04] backdrop-blur-md dark:border-border/30 dark:bg-zinc-900/70 dark:shadow-black/[0.15] sm:gap-2.5 sm:px-4 sm:py-3'
+        }
+      >
+        <div
+          className={
+            isHighlight
+            ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 sm:h-8 sm:w-8'
+            : 'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/12 sm:h-8 sm:w-8'
+          }
+        >
+          <Icon
+            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
+              isHighlight ? 'text-primary-foreground' : 'text-primary'
+            }`}
+            strokeWidth={2}
+          />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-muted-foreground leading-tight">{title}</p>
-          <p className="text-sm font-bold text-foreground leading-tight">{value}</p>
+          <p
+            className={`text-[10px] font-medium leading-tight sm:text-[11px] ${
+              isHighlight ? 'text-primary-foreground/80' : 'text-muted-foreground'
+            }`}
+          >
+            {title}
+          </p>
+          <p
+            className={`text-xs font-bold leading-tight sm:text-sm ${
+              isHighlight ? 'text-primary-foreground' : 'text-foreground'
+            }`}
+          >
+            {value}
+          </p>
         </div>
       </div>
     </motion.div>
@@ -85,7 +116,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
   return (
     <motion.div variants={fadeIn} className="relative">
       {/* Subtle green glow behind card */}
-      <div className="pointer-events-none absolute -inset-8 rounded-3xl bg-primary/[0.06] blur-3xl dark:bg-primary/[0.08]" />
+      <div className="pointer-events-none absolute -inset-10 rounded-3xl bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
 
       <div className="main-card-float relative">
         {/* Glass card body */}
@@ -228,38 +259,42 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         </div>
       </div>
 
-      {/* 4 Floating Mini Cards */}
+      {/* 4 Floating Mini Cards - positioned OUTSIDE the main card perimeter */}
+      {/* Card 1: Payment Secured - upper-left, outside edge */}
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
         value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
-        floatClass="float-card-1"
+        floatClass="float-card-1 top-2 -left-4 sm:top-3 sm:-left-6 md:-left-8 lg:top-4 lg:-left-12"
         delay={0.8}
-        position="-top-4 -left-4 sm:-top-6 sm:-left-8"
+        variant="light"
       />
+      {/* Card 2: Verified User - upper-right, outside edge */}
       <FloatingMiniCard
         icon={UserCheck}
         title={t('hero.float.verifiedUser')}
         value={t('hero.float.trusted')}
-        floatClass="float-card-2"
+        floatClass="float-card-2 top-0 -right-2 sm:top-1 sm:-right-5 md:-right-7 lg:top-2 lg:-right-14"
         delay={1.0}
-        position="-top-3 -right-3 sm:-top-4 sm:-right-10"
+        variant="light"
       />
+      {/* Card 3: Deal Completed - lower-left, HIGHLIGHT card (primary bg) */}
       <FloatingMiniCard
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
         value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
-        floatClass="float-card-3"
+        floatClass="float-card-3 -bottom-2 -left-3 sm:-bottom-3 sm:-left-5 md:-left-8 lg:-bottom-4 lg:-left-14"
         delay={1.2}
-        position="-bottom-4 -left-6 sm:-bottom-8 sm:-left-10"
+        variant="highlight"
       />
+      {/* Card 4: Deal Protected - lower-right, outside edge */}
       <FloatingMiniCard
         icon={ShieldCheck}
         title={t('hero.float.dealProtected')}
         value={t('hero.float.hundredSecure')}
-        floatClass="float-card-4"
+        floatClass="float-card-4 -bottom-1 -right-2 sm:-bottom-2 sm:-right-4 md:-right-6 lg:-bottom-3 lg:-right-10"
         delay={1.4}
-        position="-bottom-3 -right-4 sm:-bottom-6 sm:-right-8"
+        variant="light"
       />
     </motion.div>
   );
@@ -294,8 +329,8 @@ export function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-[calc(100vh-4rem)] items-center py-12 sm:py-16 lg:py-20">
-          <div className="grid w-full items-center gap-10 lg:grid-cols-2 lg:gap-14 xl:gap-20">
+        <div className="flex min-h-[calc(100vh-4rem)] items-center py-10 sm:py-14 lg:py-20">
+          <div className="grid w-full items-center gap-8 lg:grid-cols-2 lg:gap-14 xl:gap-20">
             {/* Left Side: Text Content */}
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -308,7 +343,7 @@ export function Hero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1, duration: 0.4 }}
-                className="mb-6 inline-flex items-center justify-center gap-2 self-center lg:self-auto rounded-full border border-primary/20 bg-primary/[0.08] px-4 py-1.5"
+                className="mb-5 inline-flex items-center justify-center gap-2 self-center lg:self-auto rounded-full border border-primary/20 bg-primary/[0.08] px-4 py-1.5"
               >
                 <ShieldCheck className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
                 <span className="text-xs font-semibold tracking-wide text-primary">
@@ -317,14 +352,14 @@ export function Hero() {
               </motion.div>
 
               {/* Main Heading */}
-              <h1 className="mb-5 text-center text-3xl font-bold leading-[1.25] tracking-tight sm:text-4xl lg:text-left lg:text-[2.75rem] xl:text-5xl">
+              <h1 className="mb-4 text-center text-3xl font-bold leading-[1.25] tracking-tight sm:text-4xl lg:text-left lg:text-[2.75rem] xl:text-5xl">
                 {t('hero.heading.line1')}
                 <br />
                 <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
               </h1>
 
               {/* Subtitle */}
-              <p className="mx-auto mb-8 max-w-lg text-center text-base leading-relaxed text-muted-foreground lg:mx-0 lg:text-left lg:text-[17px]">
+              <p className="mx-auto mb-7 max-w-lg text-center text-base leading-relaxed text-muted-foreground lg:mx-0 lg:text-left lg:text-[17px]">
                 {t('hero.subtitle')}
               </p>
 
@@ -380,7 +415,7 @@ export function Hero() {
               transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
               className="order-2 lg:order-2"
             >
-              <div className="relative mx-auto w-full max-w-sm lg:mx-0 lg:max-w-md xl:max-w-lg">
+              <div className="relative mx-auto w-full max-w-[280px] sm:max-w-xs lg:mx-0 lg:max-w-sm xl:max-w-md">
                 <EscrowDashboard locale={locale} t={t} />
               </div>
             </motion.div>

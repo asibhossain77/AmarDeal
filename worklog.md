@@ -403,3 +403,24 @@ Stage Summary:
 - Light/dark mode support confirmed
 - Mobile responsive (vertical stack, no horizontal overflow)
 - Both CTA buttons functional (login redirect, how-it-works navigation)
+
+---
+Task ID: 2
+Agent: Main
+Task: Refine hero section floating cards - color, positioning, mobile, animation
+
+Work Log:
+- Refined floating card color strategy: 1 primary-colored highlight card (Deal Completed) + 3 white/light cards
+- Added variant prop to FloatingMiniCard: highlight (primary bg, white text) and light (white bg, dark text)
+- Repositioned all 4 floating cards to orbit OUTSIDE main card perimeter at 4 corners
+- Added responsive breakpoints: base (mobile), sm, md, lg with progressive offset increases
+- Refined CSS animations: reduced motion to 2-6px range, longer durations (8-12s), differentiated per card
+- Added md: breakpoint for tablet floating card positioning to prevent edge clipping
+- Reduced dashboard max-width on mobile to max-w-[280px] for breathing space
+- Verified: no horizontal overflow at 375px, 768px, 1280px (scrollWidth === clientWidth)
+
+Stage Summary:
+- All 5 visual verification checks PASS on desktop
+- Mobile: breathing space on all 4 sides, cards orbit dashboard, no content overlap
+- Dark mode: cards visible, highlight card stands out, dashboard readable
+- Tablet: tighter md: breakpoint prevents edge clipping while maintaining layout
