@@ -90,213 +90,224 @@ const MAX_MESSAGES_PER_MINUTE = 10
 function checkRateLimit(sessionId: string): boolean {
   const now = Date.now()
   const entry = rateLimits.get(sessionId)
-
   if (!entry || now > entry.resetAt) {
     rateLimits.set(sessionId, { count: 1, resetAt: now + 60_000 })
     return true
   }
-
-  if (entry.count >= MAX_MESSAGES_PER_MINUTE) {
-    return false
-  }
-
+  if (entry.count >= MAX_MESSAGES_PER_MINUTE) return false
   entry.count++
   return true
 }
 
-// --- Provider: Groq (works everywhere, free, fast) ---
-async function callGroq(messages: { role: string; content: string }[]): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) {
-    throw new Error('GROQ_API_KEY not set')
-  }
+// ============================================================
+// AI PROVIDERS — Each returns text or throws
+// ============================================================
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+type Msg = { role: string; content: string }
+
+/** Generic OpenAI-compatible chat completion caller */
+async function callOpenAICompatible(
+  baseUrl: string,
+  apiKey: string,
+  model: string,
+  messages: Msg[],
+  extraHeaders?: Record<string, string>,
+): Promise<string> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
+      ...extraHeaders,
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model,
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 512,
       temperature: 0.7,
     }),
   })
-
   if (!res.ok) {
     const errBody = await res.text()
-    throw new Error(`Groq API ${res.status}: ${errBody.slice(0, 200)}`)
+    throw new Error(`${res.status}: ${errBody.slice(0, 200)}`)
   }
-
   const data = await res.json()
-  const text = data?.choices?.[0]?.message?.content
-
-  if (!text) {
-    throw new Error('Groq returned empty response')
-  }
-
-  return text
+  return data?.choices?.[0]?.message?.content || ''
 }
 
-// --- Provider: Google Gemini REST API (fallback) ---
-async function callGemini(userMessage: string, history: { role: string; content: string }[], systemPrompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY not set')
+// --- Provider definitions ---
+// Order matters: first available & working provider wins
+
+interface ProviderDef {
+  id: string
+  name: string
+  model: string
+  envKey: string
+  type: 'openai' | 'gemini' | 'local'
+}
+
+const PROVIDERS: ProviderDef[] = [
+  { id: 'groq',     name: 'Groq',       model: 'llama-3.1-8b-instant',                    envKey: 'GROQ_API_KEY',       type: 'openai' },
+  { id: 'cerebras', name: 'Cerebras',    model: 'llama3.1-8b',                            envKey: 'CEREBRAS_API_KEY',    type: 'openai' },
+  { id: 'together', name: 'Together AI', model: 'meta-llama/Llama-3.2-3B-Instruct-Turbo',  envKey: 'TOGETHER_API_KEY',    type: 'openai' },
+  { id: 'openrouter', name: 'OpenRouter', model: 'meta-llama/llama-3.1-8b-instruct:free', envKey: 'OPENROUTER_API_KEY',  type: 'openai' },
+  { id: 'gemini',   name: 'Gemini',      model: 'gemini-3.6-flash',                       envKey: 'GEMINI_API_KEY',       type: 'gemini' },
+  { id: 'zai',      name: 'z-ai (local)', model: 'local',                                  envKey: '',                     type: 'local' },
+]
+
+const OPENAI_BASE_URLS: Record<string, string> = {
+  groq: 'https://api.groq.com/openai/v1',
+  cerebras: 'https://api.cerebras.ai/v1',
+  together: 'https://api.together.xyz/v1',
+  openrouter: 'https://openrouter.ai/api/v1',
+}
+
+// --- Per-provider callers ---
+
+async function callProvider(
+  provider: ProviderDef,
+  messages: Msg[],
+  userMessage: string,
+  systemPrompt: string,
+): Promise<string> {
+  if (provider.type === 'local') {
+    const ZAI = (await import('z-ai-web-dev-sdk')).default
+    const zai = await ZAI.create()
+    const completion = await zai.chat.completions.create({ messages: messages as any, thinking: { type: 'disabled' } })
+    return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
   }
 
-  const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
-
-  for (const msg of history) {
-    if (msg.content === systemPrompt) continue
-    contents.push({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }],
-    })
-  }
-
-  contents.push({ role: 'user', parts: [{ text: userMessage }] })
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
-      }),
+  if (provider.type === 'gemini') {
+    const apiKey = process.env[provider.envKey]
+    if (!apiKey) throw new Error(`${provider.envKey} not set`)
+    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = []
+    for (const msg of messages) {
+      if (msg.role === 'system') continue
+      contents.push({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.content }] })
     }
-  )
-
-  if (!res.ok) {
-    const errBody = await res.text()
-    throw new Error(`Gemini API ${res.status}: ${errBody.slice(0, 200)}`)
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${provider.model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
+        }),
+      }
+    )
+    if (!res.ok) {
+      const errBody = await res.text()
+      throw new Error(`${res.status}: ${errBody.slice(0, 200)}`)
+    }
+    const data = await res.json()
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
   }
 
-  const data = await res.json()
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-
-  if (!text) {
-    throw new Error('Gemini returned empty response')
-  }
-
-  return text
+  // OpenAI-compatible
+  const apiKey = process.env[provider.envKey]
+  if (!apiKey) throw new Error(`${provider.envKey} not set`)
+  const baseUrl = OPENAI_BASE_URLS[provider.id]
+  return callOpenAICompatible(baseUrl, apiKey, provider.model, messages)
 }
 
-// --- Provider: z-ai-web-dev-sdk (local dev only) ---
-async function callZAI(history: { role: string; content: string }[]): Promise<string> {
-  const ZAI = (await import('z-ai-web-dev-sdk')).default
-  const zai = await ZAI.create()
-
-  const completion = await zai.chat.completions.create({
-    messages: history as any,
-    thinking: { type: 'disabled' },
+/** Get list of configured providers (have API keys set) */
+export function getConfiguredProviders(): ProviderDef[] {
+  return PROVIDERS.filter(p => {
+    if (p.type === 'local') return true // always available in dev
+    return !!process.env[p.envKey]
   })
-
-  return completion.choices?.[0]?.message?.content || 'দুঃখিত, উত্তর দিতে সমস্যা হচ্ছে।'
 }
 
 export async function GET() {
-  const hasGroq = !!process.env.GROQ_API_KEY
-  const hasGemini = !!process.env.GEMINI_API_KEY
-
+  const configured = getConfiguredProviders()
   return NextResponse.json({
     status: 'ok',
-    provider: hasGroq ? 'groq' : hasGemini ? 'gemini' : 'z-ai-web-dev-sdk (local only)',
-    groqKey: hasGroq ? `${process.env.GROQ_API_KEY!.slice(0, 8)}...` : 'not set',
-    geminiKey: hasGemini ? `${process.env.GEMINI_API_KEY!.slice(0, 6)}...` : 'not set',
+    configured: configured.map(p => ({ id: p.id, name: p.name, model: p.model })),
+    activeProvider: configured[0]?.id || 'none',
   })
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { message, sessionId } = await req.json()
-
     if (!message || !sessionId) {
       return NextResponse.json({ error: 'প্রশ্ন দিন' }, { status: 400 })
     }
-
     if (message.length > 500) {
       return NextResponse.json({ error: 'প্রশ্ন খুব বড়' }, { status: 400 })
     }
-
     if (!checkRateLimit(sessionId)) {
-      return NextResponse.json(
-        { error: 'একটু পর আবার চেষ্টা করুন' },
-        { status: 429 }
-      )
+      return NextResponse.json({ error: 'একটু পর আবার চেষ্টা করুন' }, { status: 429 })
     }
 
-    // Resolve system prompt (from DB or default)
     const systemPrompt = await getSystemPrompt()
 
-    // Get or create conversation history
     let history = conversations.get(sessionId)
     if (!history) {
       history = [{ role: 'system', content: systemPrompt }]
       conversations.set(sessionId, history)
     }
-
-    // Trim old messages (keep system + last 10 turns)
     if (history.length > 22) {
       history = [history[0], ...history.slice(-20)]
       conversations.set(sessionId, history)
     }
 
-    let aiResponse: string
+    const configured = getConfiguredProviders()
+    let aiResponse: string | null = null
+    let usedProvider: string | null = null
+    let lastError = ''
 
-    // Provider priority: Groq > Gemini > z-ai (local), with fallback
-    try {
-      if (process.env.GROQ_API_KEY) {
-        history.push({ role: 'user', content: message })
-        try {
-          aiResponse = await callGroq(history)
-        } catch (groqErr: any) {
-          console.error('[ai-support] Groq failed:', groqErr?.message)
-          // Remove the pushed user message if Groq failed
-          history.pop()
-          if (process.env.GEMINI_API_KEY) {
-            console.log('[ai-support] Falling back to Gemini')
-            aiResponse = await callGemini(message, history, systemPrompt)
-          } else {
-            throw groqErr
+    for (const provider of configured) {
+      try {
+        console.log(`[ai-support] Trying ${provider.name} (${provider.model})...`)
+
+        if (provider.type === 'gemini') {
+          aiResponse = await callProvider(provider, history, message, systemPrompt)
+        } else {
+          history.push({ role: 'user', content: message })
+          aiResponse = await callProvider(provider, history, message, systemPrompt)
+          if (!aiResponse) {
+            history.pop()
+            throw new Error('Empty response')
           }
         }
-      } else if (process.env.GEMINI_API_KEY) {
-        aiResponse = await callGemini(message, history, systemPrompt)
-      } else {
-        history.push({ role: 'user', content: message })
-        aiResponse = await callZAI(history)
+
+        usedProvider = provider.id
+        console.log(`[ai-support] Success with ${provider.name}`)
+        break
+      } catch (err: any) {
+        lastError = err?.message || 'Unknown error'
+        console.error(`[ai-support] ${provider.name} failed:`, lastError)
+        // Remove user message if we pushed it (non-gemini)
+        if (provider.type !== 'gemini' && history[history.length - 1]?.content === message) {
+          history.pop()
+        }
+        continue
       }
-    } catch (err: any) {
-      const msg = err?.message || ''
-      console.error('[ai-support] All providers failed:', msg)
+    }
+
+    if (!aiResponse) {
       return NextResponse.json(
-        { error: `AI সার্ভার সমস্যা: ${msg.includes('API key') ? 'API Key সেট করা নেই' : msg.slice(0, 120)}` },
+        { error: `AI সার্ভার সমস্যা: সব provider ফেইল হয়েছে। ${lastError.slice(0, 100)}` },
         { status: 500 }
       )
     }
 
     // Save to conversation history
-    if (!process.env.GEMINI_API_KEY) {
-      // For Groq and z-ai, user message was already pushed
+    if (usedProvider !== 'gemini') {
+      // user message already pushed above
     } else {
       history.push({ role: 'user', content: message })
     }
     history.push({ role: 'assistant', content: aiResponse })
     conversations.set(sessionId, history)
 
-    return NextResponse.json({ response: aiResponse })
+    return NextResponse.json({ response: aiResponse, provider: usedProvider })
   } catch (err: any) {
     console.error('[ai-support] Unexpected error:', err?.message || err)
-    return NextResponse.json(
-      { error: 'সার্ভারে সমস্যা হয়েছে' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'সার্ভারে সমস্যা হয়েছে' }, { status: 500 })
   }
 }
 
@@ -304,9 +315,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const sessionId = searchParams.get('sessionId')
-    if (sessionId) {
-      conversations.delete(sessionId)
-    }
+    if (sessionId) conversations.delete(sessionId)
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ ok: true })

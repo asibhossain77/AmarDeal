@@ -83,7 +83,8 @@ export function AiPromptPanel() {
   const [isCustom, setIsCustom] = useState(false);
 
   // Connection test state
-  const [connStatus, setConnStatus] = useState<{ groq: ProviderStatus; gemini: ProviderStatus; activeProvider: string } | null>(null);
+  const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [activeProvider, setActiveProvider] = useState<string>('none');
   const [connLoading, setConnLoading] = useState(false);
 
   // Test AI chat state
@@ -186,7 +187,8 @@ export function AiPromptPanel() {
     try {
       const res = await fetch('/api/admin/ai-test');
       const data = await res.json();
-      setConnStatus(data);
+      setProviders(data.providers || []);
+      setActiveProvider(data.activeProvider || 'none');
     } catch {
       toast.error('Connection test failed');
     } finally {
@@ -317,21 +319,20 @@ export function AiPromptPanel() {
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          {connLoading && !connStatus ? (
+          {connLoading && providers.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <LoadingAnimation size="sm" />
             </div>
-          ) : connStatus ? (
+          ) : providers.length > 0 ? (
             <div className="space-y-3">
-              {connStatus.activeProvider !== 'none' && (
+              {activeProvider !== 'none' ? (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
                   <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                    Active: {connStatus.activeProvider === 'groq' ? 'Groq' : 'Gemini'}
+                    Active: {activeProvider}
                   </span>
                 </div>
-              )}
-              {connStatus.activeProvider === 'none' && (
+              ) : (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
                   <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                   <span className="text-xs font-medium text-red-700 dark:text-red-300">
@@ -339,80 +340,43 @@ export function AiPromptPanel() {
                   </span>
                 </div>
               )}
-
-              {/* Groq Status */}
-              <div className="rounded-xl border border-border/60 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">Groq</span>
-                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{connStatus.groq.model}</span>
+              {providers.map((p) => (
+                <div key={p.name} className="rounded-xl border border-border/60 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-semibold">{p.name}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{p.model}</span>
+                    </div>
+                    {p.status === 'ok' && (
+                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-medium">Connected</span>
+                        {p.responseTime && (
+                          <span className="text-[10px] text-muted-foreground">({p.responseTime}ms)</span>
+                        )}
+                      </div>
+                    )}
+                    {p.status === 'error' && (
+                      <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-medium">Error</span>
+                      </div>
+                    )}
+                    {p.status === 'not_configured' && (
+                      <span className="text-[11px] text-muted-foreground">Key set kora nai</span>
+                    )}
                   </div>
-                  {connStatus.groq.status === 'ok' && (
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-medium">Connected</span>
-                      {connStatus.groq.responseTime && (
-                        <span className="text-[10px] text-muted-foreground">({connStatus.groq.responseTime}ms)</span>
-                      )}
+                  {p.status === 'error' && p.error && (
+                    <div className="rounded-lg bg-red-50 dark:bg-red-500/10 p-3">
+                      <p className="text-[11px] font-medium text-red-600 dark:text-red-400 mb-1">Error Details:</p>
+                      <pre className="text-[11px] text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap break-all leading-relaxed">
+                        {p.error}
+                      </pre>
                     </div>
-                  )}
-                  {connStatus.groq.status === 'error' && (
-                    <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-medium">Error</span>
-                    </div>
-                  )}
-                  {connStatus.groq.status === 'not_configured' && (
-                    <span className="text-[11px] text-muted-foreground">Key set kora nai</span>
                   )}
                 </div>
-                {connStatus.groq.status === 'error' && connStatus.groq.error && (
-                  <div className="rounded-lg bg-red-50 dark:bg-red-500/10 p-3">
-                    <p className="text-[11px] font-medium text-red-600 dark:text-red-400 mb-1">Error Details:</p>
-                    <pre className="text-[11px] text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap break-all leading-relaxed">
-                      {connStatus.groq.error}
-                    </pre>
-                  </div>
-                )}
-              </div>
-
-              {/* Gemini Status */}
-              <div className="rounded-xl border border-border/60 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold">Gemini</span>
-                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{connStatus.gemini.model}</span>
-                  </div>
-                  {connStatus.gemini.status === 'ok' && (
-                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-medium">Connected</span>
-                      {connStatus.gemini.responseTime && (
-                        <span className="text-[10px] text-muted-foreground">({connStatus.gemini.responseTime}ms)</span>
-                      )}
-                    </div>
-                  )}
-                  {connStatus.gemini.status === 'error' && (
-                    <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-medium">Error</span>
-                    </div>
-                  )}
-                  {connStatus.gemini.status === 'not_configured' && (
-                    <span className="text-[11px] text-muted-foreground">Key set kora nai</span>
-                  )}
-                </div>
-                {connStatus.gemini.status === 'error' && connStatus.gemini.error && (
-                  <div className="rounded-lg bg-red-50 dark:bg-red-500/10 p-3">
-                    <p className="text-[11px] font-medium text-red-600 dark:text-red-400 mb-1">Error Details:</p>
-                    <pre className="text-[11px] text-red-700 dark:text-red-300 font-mono whitespace-pre-wrap break-all leading-relaxed">
-                      {connStatus.gemini.error}
-                    </pre>
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
           ) : null}
         </CardContent>
