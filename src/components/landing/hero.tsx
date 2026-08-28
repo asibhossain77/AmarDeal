@@ -43,55 +43,130 @@ function EscrowStatusCard() {
       transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
       className="order-2 md:order-1"
     >
-      <div className="relative mx-auto w-full max-w-sm md:mx-0 md:max-w-none">
-        <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-7">
-          {/* Card Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <p className="text-sm font-semibold tracking-wide text-foreground">
-              {t('hero.escrowStatus')}
-            </p>
-            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-              {t('hero.secured')}
-            </span>
-          </div>
+      <style>{`
+        @property --border-angle {
+          syntax: '<angle>';
+          initial-value: 0deg;
+          inherits: false;
+        }
+        @keyframes rotate-border {
+          to { --border-angle: 360deg; }
+        }
+        @keyframes shimmer-pass {
+          0% { transform: translateX(-150%); }
+          100% { transform: translateX(250%); }
+        }
+        @keyframes active-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+          50% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+        }
+        .premium-border-anim {
+          animation: rotate-border 5s linear infinite;
+        }
+        .shimmer-overlay::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: linear-gradient(
+            105deg,
+            transparent 35%,
+            rgba(255,255,255,0.3) 50%,
+            transparent 65%
+          );
+          animation: shimmer-pass 3.5s ease-in-out infinite;
+        }
+        .step-circle-pulse {
+          animation: active-pulse 2.2s ease-in-out infinite;
+        }
+      `}</style>
 
-          {/* 3-Step Progress List */}
-          <div>
-            {steps.map((step, i) => (
-              <div key={step.num}>
-                <div className="flex items-start gap-3.5">
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-black text-primary-foreground ${step.color}`}
-                  >
-                    {step.num}
-                  </div>
-                  <div className="min-w-0 pb-5 pt-0.5">
-                    <p className="text-sm font-semibold text-foreground">
-                      {step.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {step.subtitle}
-                    </p>
+      <div className="relative mx-auto w-full max-w-sm md:mx-0 md:max-w-none">
+        {/* ── Animated gradient border ── */}
+        <div
+          className="premium-border-anim rounded-2xl p-[1.5px]"
+          style={{
+            background:
+              'conic-gradient(from var(--border-angle, 0deg), #059669, #0d9488, #10b981, #34d399, #14b8a6, #047857, #059669)',
+          }}
+        >
+          {/* ── Glass card body ── */}
+          <div className="relative overflow-hidden rounded-[14.5px] bg-white/75 p-6 backdrop-blur-xl shadow-2xl shadow-black/[0.06] dark:bg-zinc-900/75 dark:shadow-black/30 sm:p-7">
+            {/* Inner top-left glow */}
+            <div className="pointer-events-none absolute -inset-px rounded-[14.5px] bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.06]" />
+
+            {/* ── Card Header ── */}
+            <div className="relative mb-7 flex items-center justify-between">
+              <p className="text-sm font-semibold tracking-wide text-foreground/90">
+                {t('hero.escrowStatus')}
+              </p>
+              <span className="shimmer-overlay relative overflow-hidden rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                {t('hero.secured')}
+              </span>
+            </div>
+
+            {/* ── Timeline Steps ── */}
+            <div className="relative">
+              {/* Vertical gradient connector line */}
+              <div className="absolute left-4 top-4 bottom-[44px] w-px bg-gradient-to-b from-emerald-400 via-teal-400/60 to-zinc-300/80 dark:from-emerald-500/70 dark:via-teal-500/40 dark:to-zinc-700/50" />
+
+              {steps.map((step, i) => (
+                <div key={step.num} className="relative">
+                  <div className="flex items-start gap-4">
+                    {/* Glowing step circle */}
+                    <div
+                      className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm ${step.color} ${i === 0 ? 'step-circle-pulse' : ''}`}
+                    >
+                      {step.num}
+                    </div>
+                    {/* Step text */}
+                    <div className="min-w-0 pb-5 pt-1">
+                      <p className="text-[13px] font-semibold text-foreground">
+                        {step.title}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                        {step.subtitle}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                {i < steps.length - 1 && (
-                  <div className="ml-3.5 h-4 w-px border-l border-dashed border-border" />
-                )}
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-border/30" />
+
+            {/* ── Amount ── */}
+            <div className="py-4 text-center">
+              <div className="inline-flex items-baseline rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/10 px-5 py-2.5 backdrop-blur-sm ring-1 ring-inset ring-emerald-500/10 dark:ring-emerald-500/5">
+                <span
+                  className="text-2xl font-bold tracking-tight sm:text-3xl"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #0d9488, #10b981)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  ৳৫০,০০০
+                </span>
+                <span
+                  className="text-lg font-semibold"
+                  style={{
+                    background: 'linear-gradient(135deg, #059669, #0d9488, #10b981)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    opacity: 0.7,
+                  }}
+                >
+                  .০০
+                </span>
               </div>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-border/60" />
-
-          {/* Amount */}
-          <div className="py-4 text-center">
-            <p className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              ৳৫০,০০০<span className="text-lg">.০০</span>
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {t('hero.exampleAmount')}
-            </p>
+              <p className="mt-2.5 text-[11px] text-muted-foreground">
+                {t('hero.exampleAmount')}
+              </p>
+            </div>
           </div>
         </div>
       </div>
