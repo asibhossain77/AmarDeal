@@ -103,7 +103,7 @@ function checkRateLimit(sessionId: string): boolean {
 // Gemini-only AI Provider
 // ============================================================
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 type Msg = { role: string; content: string }
 

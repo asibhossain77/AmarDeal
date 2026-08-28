@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-3.6-flash'
 
 export async function GET() {
   const apiKey = process.env.GEMINI_API_KEY
