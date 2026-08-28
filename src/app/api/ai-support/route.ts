@@ -118,7 +118,7 @@ async function callGroq(messages: { role: string; content: string }[]): Promise<
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
+      model: 'llama-3.3-70b-versatile',
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       max_tokens: 512,
       temperature: 0.7,
@@ -160,7 +160,7 @@ async function callGemini(userMessage: string, history: { role: string; content:
   contents.push({ role: 'user', parts: [{ text: userMessage }] })
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -347,3 +347,19 @@ Stage Summary:
 - FCM manages its own push subscription internally via Firebase servers
 - Backend (fcm.ts, firebase-admin.ts, API routes) was already correctly configured
 
+
+---
+Task ID: 1
+Agent: Main
+Task: Fix AI support Gemini 404 error - update outdated model names
+
+Work Log:
+- Identified error: Gemini API returning 404 for model `gemini-2.5-flash-preview-04-17` (model no longer exists)
+- Updated Gemini model from `gemini-2.5-flash-preview-04-17` to `gemini-2.0-flash` (stable, production-ready)
+- Updated Groq model from `llama-3.1-8b-instant` to `llama-3.3-70b-versatile` (more capable, current)
+- Verified dev server running without errors
+
+Stage Summary:
+- Fixed: AI support should now work with both Gemini and Groq APIs
+- File modified: `src/app/api/ai-support/route.ts` (2 model name changes)
+- User needs to redeploy to Vercel for the fix to take effect on production
