@@ -28,11 +28,11 @@ interface ProviderConfig {
 }
 
 const PROVIDERS: ProviderConfig[] = [
-  { id: 'groq',       name: 'Groq',       model: 'auto (7 models)',                     envKey: 'GROQ_API_KEY',       type: 'openai', baseUrl: 'https://api.groq.com/openai/v1' },
+  { id: 'gemini',     name: 'Gemini',      model: 'gemini-3.6-flash',                       envKey: 'GEMINI_API_KEY',       type: 'gemini' },
   { id: 'cerebras',   name: 'Cerebras',    model: 'llama3.1-8b',                            envKey: 'CEREBRAS_API_KEY',    type: 'openai', baseUrl: 'https://api.cerebras.ai/v1' },
   { id: 'together',   name: 'Together AI', model: 'meta-llama/Llama-3.2-3B-Instruct-Turbo',  envKey: 'TOGETHER_API_KEY',    type: 'openai', baseUrl: 'https://api.together.xyz/v1' },
   { id: 'openrouter', name: 'OpenRouter',  model: 'meta-llama/llama-3.1-8b-instruct:free',  envKey: 'OPENROUTER_API_KEY',  type: 'openai', baseUrl: 'https://openrouter.ai/api/v1' },
-  { id: 'gemini',     name: 'Gemini',      model: 'gemini-3.6-flash',                       envKey: 'GEMINI_API_KEY',       type: 'gemini' },
+  { id: 'groq',       name: 'Groq',       model: 'auto (7 models)',                     envKey: 'GROQ_API_KEY',       type: 'openai', baseUrl: 'https://api.groq.com/openai/v1' },
 ]
 
 async function testGroq(p: ProviderConfig): Promise<ProviderTest> {
