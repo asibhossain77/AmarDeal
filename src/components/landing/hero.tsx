@@ -63,20 +63,20 @@ function FloatingMiniCard({
         <div
           className={[
             'relative overflow-hidden',
-            'w-[140px] h-[62px] sm:w-[155px] sm:h-[68px] lg:w-[180px] lg:h-[76px] xl:w-[195px] xl:h-[82px]',
-            'rounded-[16px] sm:rounded-[18px] lg:rounded-[20px] xl:rounded-[22px]',
-            'pl-[36px] pr-3 sm:pl-[40px] sm:pr-3.5 lg:pl-[46px] lg:pr-4 xl:pl-[50px] xl:pr-4',
-            'py-2 sm:py-2.5 lg:py-3 xl:py-3.5',
+            'w-[115px] h-[50px] sm:w-[130px] sm:h-[55px] lg:w-[150px] lg:h-[62px] xl:w-[165px] xl:h-[68px]',
+            'rounded-[14px] sm:rounded-[16px] lg:rounded-[18px] xl:rounded-[19px]',
+            'pl-[30px] pr-2.5 sm:pl-[34px] sm:pr-3 lg:pl-[38px] lg:pr-3 xl:pl-[42px] xl:pr-3',
+            'py-1.5 sm:py-2 lg:py-2.5 xl:py-2.5',
             isHighlight
-              ? 'bg-primary shadow-lg shadow-primary/25 dark:shadow-primary/15'
-              : 'border border-border/40 bg-white/90 shadow-md shadow-black/[0.06] backdrop-blur-md dark:border-border/25 dark:bg-zinc-900/70 dark:shadow-black/[0.2]',
+              ? 'bg-primary/90 shadow-md shadow-primary/20 dark:shadow-primary/12'
+              : 'border border-border/30 bg-white/60 shadow-sm shadow-black/[0.04] backdrop-blur-md dark:border-border/20 dark:bg-zinc-900/50 dark:shadow-black/[0.15]',
           ].join(' ')}
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.08]" />
 
           <p
             className={[
-              'text-[10px] font-medium leading-tight sm:text-[11px] lg:text-[11px] xl:text-[12px]',
+              'text-[9px] font-medium leading-tight sm:text-[10px] lg:text-[10px] xl:text-[10px]',
               isHighlight ? 'text-primary-foreground/70' : 'text-muted-foreground',
             ].join(' ')}
           >
@@ -84,7 +84,7 @@ function FloatingMiniCard({
           </p>
           <p
             className={[
-              'mt-0.5 text-[13px] font-bold leading-tight sm:text-[14px] lg:text-[15px] xl:text-[16px]',
+              'mt-0.5 text-[11px] font-bold leading-tight sm:text-[12px] lg:text-[13px] xl:text-[14px]',
               isHighlight ? 'text-primary-foreground' : 'text-foreground',
             ].join(' ')}
           >
@@ -96,18 +96,18 @@ function FloatingMiniCard({
         <div
           className={[
             'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center',
-            'w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] lg:w-[44px] lg:h-[44px] xl:w-[48px] xl:h-[48px]',
-            'rounded-[10px] sm:rounded-[11px] lg:rounded-[13px] xl:rounded-[14px]',
-            '-left-[18px]',
-            'shadow-md',
+            'w-[30px] h-[30px] sm:w-[34px] sm:h-[34px] lg:w-[38px] lg:h-[38px] xl:w-[42px] xl:h-[42px]',
+            'rounded-[9px] sm:rounded-[10px] lg:rounded-[11px] xl:rounded-[12px]',
+            '-left-[15px]',
+            'shadow-sm',
             isHighlight
-              ? 'bg-primary shadow-primary/30 dark:shadow-primary/20'
-              : 'bg-primary/15 dark:bg-primary/20',
+              ? 'bg-primary/90 shadow-primary/25 dark:shadow-primary/15'
+              : 'bg-primary/12 dark:bg-primary/15',
           ].join(' ')}
         >
           <Icon
             className={[
-              'w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] lg:w-[22px] lg:h-[22px] xl:w-[24px] xl:h-[24px]',
+              'w-[15px] h-[15px] sm:w-[17px] sm:h-[17px] lg:w-[19px] lg:h-[19px] xl:w-[21px] xl:h-[21px]',
               isHighlight ? 'text-primary-foreground' : 'text-primary',
             ].join(' ')}
             strokeWidth={2.2}
