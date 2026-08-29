@@ -56,7 +56,7 @@ function FloatingMiniCard({
       initial={{ opacity: 0, y: 8, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`pointer-events-none absolute ${floatClass}`}
+      className={`pointer-events-none ${floatClass}`}
     >
       <div className="relative">
         {/* Card body */}
@@ -274,13 +274,33 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         </div>
       </div>
 
-      {/* Floating Cards - 4 corners around the dashboard */}
+      {/* Mobile: 2 floating cards above main card */}
+      <div className="flex sm:hidden items-center justify-center gap-4 mb-4 px-6">
+        <FloatingMiniCard
+          icon={Shield}
+          title={t('hero.float.paymentSecured')}
+          value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
+          floatClass="float-card-1"
+          delay={0.8}
+          variant="light"
+        />
+        <FloatingMiniCard
+          icon={CheckCircle2}
+          title={t('hero.float.dealCompleted')}
+          value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
+          floatClass="float-card-3"
+          delay={1.2}
+          variant="highlight"
+        />
+      </div>
+
+      {/* Desktop (sm+): 4 floating cards at corners around the dashboard */}
       {/* Card 1: Payment Secured - TOP LEFT */}
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
         value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
-        floatClass="float-card-1 top-[6%] -left-[100px] sm:top-[7%] sm:-left-[110px] lg:top-[8%] lg:-left-[120px] xl:top-[8%] xl:-left-[130px]"
+        floatClass="hidden sm:block absolute float-card-1 top-[6%] -left-[100px] sm:top-[7%] sm:-left-[110px] lg:top-[8%] lg:-left-[120px] xl:top-[8%] xl:-left-[130px]"
         delay={0.8}
         variant="light"
       />
@@ -289,7 +309,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         icon={UserCheck}
         title={t('hero.float.verifiedUser')}
         value={t('hero.float.trusted')}
-        floatClass="float-card-2 top-[4%] -right-[100px] sm:top-[5%] sm:-right-[110px] lg:top-[5%] lg:-right-[120px] xl:top-[5%] xl:-right-[130px]"
+        floatClass="hidden sm:block absolute float-card-2 top-[4%] -right-[100px] sm:top-[5%] sm:-right-[110px] lg:top-[5%] lg:-right-[120px] xl:top-[5%] xl:-right-[130px]"
         delay={1.0}
         variant="light"
       />
@@ -298,7 +318,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
         value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
-        floatClass="float-card-3 bottom-[14%] -left-[100px] sm:bottom-[13%] sm:-left-[110px] lg:bottom-[14%] lg:-left-[120px] xl:bottom-[14%] xl:-left-[130px]"
+        floatClass="hidden sm:block absolute float-card-3 bottom-[14%] -left-[100px] sm:bottom-[13%] sm:-left-[110px] lg:bottom-[14%] lg:-left-[120px] xl:bottom-[14%] xl:-left-[130px]"
         delay={1.2}
         variant="highlight"
       />
@@ -307,7 +327,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         icon={ShieldCheck}
         title={t('hero.float.dealProtected')}
         value={t('hero.float.hundredSecure')}
-        floatClass="float-card-4 bottom-[8%] -right-[100px] sm:bottom-[7%] sm:-right-[110px] lg:bottom-[9%] lg:-right-[120px] xl:bottom-[9%] xl:-right-[130px]"
+        floatClass="hidden sm:block absolute float-card-4 bottom-[8%] -right-[100px] sm:bottom-[7%] sm:-right-[110px] lg:bottom-[9%] lg:-right-[120px] xl:bottom-[9%] xl:-right-[130px]"
         delay={1.4}
         variant="light"
       />
