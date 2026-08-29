@@ -8,23 +8,72 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response
     const userId = guard.userId
 
+    const body = await req.json()
+    const { businessName, email, phone } = body
+
+    if (!businessName || !email || !phone) {
+      return NextResponse.json(
+        { error: '\u09B8\u09AC \u09AB\u09BF\u09B2\u09CD\u09A1 \u09AA\u09C2\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8' },
+        { status: 400 }
+      )
+    }
+
     const user = await db.user.findUnique({ where: { id: userId } })
     if (!user) {
-      return NextResponse.json({ error: '\u0987\u0989\u099C\u09BE\u09B0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF' }, { status: 404 })
+      return NextResponse.json(
+        { error: '\u0987\u0989\u099C\u09BE\u09B0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF' },
+        { status: 404 }
+      )
     }
 
     if (user.isSeller) {
-      return NextResponse.json({ error: '\u0986\u09AA\u09A8\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u099C\u09A8 \u09B8\u09C7\u09B2\u09BE\u09B0' }, { status: 400 })
+      return NextResponse.json(
+        { error: '\u0986\u09AA\u09A8\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u099C\u09A8 \u09B8\u09C7\u09B2\u09BE\u09B0' },
+        { status: 400 }
+      )
     }
 
-    await db.user.update({
-      where: { id: userId },
-      data: { isSeller: true },
+    const existing = await db.sellerApplication.findFirst({
+      where: { userId, status: 'pending' },
+    })
+    if (existing) {
+      return NextResponse.json(
+        { error: '\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09C7\u09A8\u09CD\u09A1\u09BF\u0982 \u0986\u099B\u09C7', pending: true },
+        { status: 400 }
+      )
+    }
+
+    await db.sellerApplication.create({
+      data: { userId, businessName, email, phone, status: 'pending' },
     })
 
-    return NextResponse.json({ success: true, isSeller: true })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Become seller error:', err)
-    return NextResponse.json({ error: '\u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7' }, { status: 500 })
+    return NextResponse.json(
+      { error: '\u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
+    const userId = guard.userId
+
+    const application = await db.sellerApplication.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json({ application })
+  } catch (err) {
+    console.error('Get seller application error:', err)
+    return NextResponse.json(
+      { error: '\u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7' },
+      { status: 500 }
+    )
   }
 }

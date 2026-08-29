@@ -37,6 +37,7 @@ import {
   Bell,
   Store,
 } from 'lucide-react';
+import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import {
   Tooltip,
   TooltipContent,
@@ -389,6 +390,12 @@ export function Navbar() {
                           </button>
                         );
                       })}
+
+                      {!user?.isAdmin && (
+                        <div className="mt-1">
+                          <SellerApplyButton variant="mobile" onClose={() => setOpen(false)} />
+                        </div>
+                      )}
 
                       {/* User Info */}
                       <div className="my-2 border-t border-border/50 pt-3">

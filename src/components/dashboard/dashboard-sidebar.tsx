@@ -11,8 +11,10 @@ import {
   Settings,
   Users,
   MessageSquare,
+  Store,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { SellerApplyButton } from './seller-apply-dialog';
 
 const emptySubscribe = () => () => {};
 
@@ -43,7 +45,6 @@ export function DashboardSidebar() {
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-16 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
       <div className="flex h-full flex-col">
-        {/* Navigation — pl-5 aligns with header logo area */}
         <nav className="flex-1 space-y-1 pl-5 pr-3 pt-6">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -70,9 +71,11 @@ export function DashboardSidebar() {
           })}
         </nav>
 
-        {/* User Info + Logout at bottom — pl-5 aligns with header logo area */}
-        <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4">
-          <div className="flex items-center gap-3 rounded-xl py-2 mb-2">
+        <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4 space-y-3">
+          {!user?.isAdmin && (
+            <SellerApplyButton variant="sidebar" />
+          )}
+          <div className="flex items-center gap-3 rounded-xl py-2">
             {user?.imageLink ? (
               <img
                 src={user.imageLink}

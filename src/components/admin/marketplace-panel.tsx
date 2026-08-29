@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Save, Plus, Trash2, Pencil, Eye, EyeOff, Image, Link2, GripVertical,
   Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown,
-  Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw,
+  Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw, Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useT } from '@/lib/i18n';
+import { SellerAppsTab } from './seller-apps-tab';
 
 // -- Types --
 interface MarketplaceSettings {
@@ -77,7 +78,7 @@ function statusColor(status: string) {
 }
 
 // -- Card wrapper --
-function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={`rounded-2xl border border-border bg-card p-4 sm:p-5 ${className}`}>
       {children}
@@ -105,7 +106,7 @@ export function AdminMarketplacePanel() {
       </div>
 
       <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-11 rounded-xl bg-muted/60 p-1">
+        <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-11 rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm rounded-lg">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">{t('admin.marketplace.tabSettings')}</span>
@@ -121,6 +122,11 @@ export function AdminMarketplacePanel() {
             <span className="hidden sm:inline">{t('admin.marketplace.tabProducts')}</span>
             <span className="sm:hidden">{t('admin.marketplace.tabProductsShort')}</span>
           </TabsTrigger>
+          <TabsTrigger value="applications" className="gap-1.5 text-xs sm:text-sm rounded-lg">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('admin.sellerApps.tabApplications')}</span>
+            <span className="sm:hidden">{t('admin.sellerApps.tabApplicationsShort')}</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings">
@@ -131,6 +137,9 @@ export function AdminMarketplacePanel() {
         </TabsContent>
         <TabsContent value="products">
           <ProductsTab />
+        </TabsContent>
+        <TabsContent value="applications">
+          <SellerAppsTab />
         </TabsContent>
       </Tabs>
     </div>

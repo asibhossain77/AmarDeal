@@ -89,4 +89,30 @@ Stage Summary:
 - All 3 tabs verified working via browser agent
 - Products table shows 15+ products with seller info, category, price, status management
 - Banners tab shows 3 banners with image preview, status toggle, edit, delete
-- API routes properly protected with requireAdmin for write operations
+- API routes properly protected with requireAdmin for write operations---
+Task ID: 1
+Agent: Main
+Task: Change Become a Seller flow - application form with admin approval instead of direct isSeller
+
+Work Log:
+- Added SellerApplication model to prisma/schema.prisma (id, userId, businessName, email, phone, status, rejectionReason, timestamps)
+- Pushed schema to local SQLite DB with db:push
+- Rewrote /api/user/become-seller to POST (create application with businessName/email/phone) and GET (check status)
+- Created /api/admin/seller-applications (GET all applications) and /api/admin/seller-applications/[id] (PATCH approve/reject)
+- Created SellerApplyButton component with Dialog form (businessName, email, phone fields)
+- Shows pending badge if application is under review, rejected state with re-apply option
+- Shows verified seller badge if already a seller
+- Added SellerApplyButton to dashboard sidebar (above user info, below nav items)
+- Added SellerApplyButton to mobile navbar sheet (dashboard mobile menu)
+- Removed Become a Seller button and seller badge from dashboard-main.tsx overview panel (kept Marketplace button)
+- Created seller-apps-tab.tsx for admin panel with desktop table + mobile cards
+- Added Seller Applications tab (4th tab) to admin marketplace panel
+- Admin can approve (sets isSeller=true on user) or reject (with optional reason) applications
+- Added 20+ i18n keys in both bn.ts and en.ts for seller.* and admin.sellerApps.*
+- Exported SolidCard from marketplace-panel for reuse in seller-apps-tab
+
+Stage Summary:
+- Seller application flow: user fills form in sidebar dialog → application created with 'pending' status → admin reviews in marketplace panel → approve/reject
+- No more direct isSeller toggle - requires admin approval
+- "সেলার হোন" button in sidebar for non-admin users, mobile nav for mobile users
+- Turso table needs to be created manually (auth token not in env)
