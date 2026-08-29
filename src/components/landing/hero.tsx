@@ -11,6 +11,7 @@ import {
   UserCheck,
   CircleCheck,
   CheckCircle2,
+  Wallet,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
@@ -32,31 +33,7 @@ const fadeIn = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-// Floating Icon Only - standalone colored circle/square with just an icon
-function FloatingIconOnly({
-  icon: Icon,
-  floatClass,
-  delay,
-}: {
-  icon: React.ElementType;
-  floatClass: string;
-  delay: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`pointer-events-none absolute z-20 ${floatClass}`}
-    >
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-lg shadow-primary/15 backdrop-blur-md sm:h-11 sm:w-11 lg:h-12 lg:w-12 dark:border-primary/15 dark:bg-primary/15">
-        <Icon className="h-[18px] w-[18px] text-primary sm:h-5 sm:w-5 lg:h-[22px] lg:w-[22px]" strokeWidth={2} />
-      </div>
-    </motion.div>
-  );
-}
-
-// Floating Mini Card - compact, icon extends outside card edge
+// Floating Mini Card - icon always protrudes from LEFT side of card body
 function FloatingMiniCard({
   icon: Icon,
   title,
@@ -64,7 +41,6 @@ function FloatingMiniCard({
   floatClass,
   delay,
   variant = 'light',
-  iconOnRight = false,
 }: {
   icon: React.ElementType;
   title: string;
@@ -72,7 +48,6 @@ function FloatingMiniCard({
   floatClass: string;
   delay: number;
   variant?: 'highlight' | 'light';
-  iconOnRight?: boolean;
 }) {
   const isHighlight = variant === 'highlight';
 
@@ -81,19 +56,17 @@ function FloatingMiniCard({
       initial={{ opacity: 0, y: 8, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`pointer-events-none absolute z-20 ${floatClass}`}
+      className={`pointer-events-none absolute ${floatClass}`}
     >
       <div className="relative">
         {/* Card body */}
         <div
           className={[
             'relative overflow-hidden',
-            'w-[110px] h-[48px] sm:w-[130px] sm:h-[54px] lg:w-[145px] lg:h-[60px] xl:w-[155px] xl:h-[64px]',
-            'rounded-[15px] sm:rounded-[17px] lg:rounded-[18px]',
-            iconOnRight
-              ? 'pl-2.5 pr-7 sm:pl-3 sm:pr-9 lg:pr-10 xl:pr-11'
-              : 'pl-7 sm:pl-9 lg:pl-10 xl:pl-11 pr-2.5 sm:pr-3',
-            'py-2 sm:py-2.5 lg:py-3',
+            'w-[140px] h-[62px] sm:w-[155px] sm:h-[68px] lg:w-[180px] lg:h-[76px] xl:w-[195px] xl:h-[82px]',
+            'rounded-[16px] sm:rounded-[18px] lg:rounded-[20px] xl:rounded-[22px]',
+            'pl-[36px] pr-3 sm:pl-[40px] sm:pr-3.5 lg:pl-[46px] lg:pr-4 xl:pl-[50px] xl:pr-4',
+            'py-2 sm:py-2.5 lg:py-3 xl:py-3.5',
             isHighlight
               ? 'bg-primary shadow-lg shadow-primary/25 dark:shadow-primary/15'
               : 'border border-border/40 bg-white/90 shadow-md shadow-black/[0.06] backdrop-blur-md dark:border-border/25 dark:bg-zinc-900/70 dark:shadow-black/[0.2]',
@@ -103,7 +76,7 @@ function FloatingMiniCard({
 
           <p
             className={[
-              'text-[9px] font-medium leading-tight sm:text-[10px] lg:text-[10px]',
+              'text-[10px] font-medium leading-tight sm:text-[11px] lg:text-[11px] xl:text-[12px]',
               isHighlight ? 'text-primary-foreground/70' : 'text-muted-foreground',
             ].join(' ')}
           >
@@ -111,7 +84,7 @@ function FloatingMiniCard({
           </p>
           <p
             className={[
-              'mt-px text-[11px] font-bold leading-tight sm:text-[12px] lg:text-[13px]',
+              'mt-0.5 text-[13px] font-bold leading-tight sm:text-[14px] lg:text-[15px] xl:text-[16px]',
               isHighlight ? 'text-primary-foreground' : 'text-foreground',
             ].join(' ')}
           >
@@ -119,23 +92,22 @@ function FloatingMiniCard({
           </p>
         </div>
 
-        {/* Icon container - extends OUTSIDE the card edge */}
+        {/* Icon container - protrudes from LEFT edge */}
         <div
           className={[
             'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center',
-            'w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] lg:w-[38px] lg:h-[38px] xl:w-[40px] xl:h-[40px]',
-            'rounded-[9px] sm:rounded-[10px] lg:rounded-[12px]',
-            iconOnRight
-              ? '-right-[10px] sm:-right-[11px] lg:-right-[13px] xl:-right-[14px]'
-              : '-left-[10px] sm:-left-[11px] lg:-left-[13px] xl:-left-[14px]',
+            'w-[36px] h-[36px] sm:w-[40px] sm:h-[40px] lg:w-[44px] lg:h-[44px] xl:w-[48px] xl:h-[48px]',
+            'rounded-[10px] sm:rounded-[11px] lg:rounded-[13px] xl:rounded-[14px]',
+            '-left-[18px]',
+            'shadow-md',
             isHighlight
-              ? 'bg-primary shadow-md shadow-primary/30 dark:shadow-primary/20'
-              : 'bg-primary/15 dark:bg-primary/20 shadow-sm',
+              ? 'bg-primary shadow-primary/30 dark:shadow-primary/20'
+              : 'bg-primary/15 dark:bg-primary/20',
           ].join(' ')}
         >
           <Icon
             className={[
-              'w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] lg:w-[18px] lg:h-[18px] xl:w-[19px] xl:h-[19px]',
+              'w-[18px] h-[18px] sm:w-[20px] sm:h-[20px] lg:w-[22px] lg:h-[22px] xl:w-[24px] xl:h-[24px]',
               isHighlight ? 'text-primary-foreground' : 'text-primary',
             ].join(' ')}
             strokeWidth={2.2}
@@ -163,110 +135,106 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
   return (
     <motion.div variants={fadeIn} className="relative">
       {/* Subtle green glow behind card */}
-      <div className="pointer-events-none absolute -inset-10 rounded-3xl bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
+      <div className="pointer-events-none absolute -inset-10 rounded-[40px] bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
 
-      <div className="main-card-float relative mx-auto w-full aspect-square max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] xl:max-w-[460px]">
-        {/* Glass card body */}
-        <div className="card-body-glass flex h-full flex-col justify-between relative overflow-hidden rounded-3xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
+      <div className="main-card-float relative mx-auto w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[400px] xl:max-w-[440px]">
+        {/* Glass card body - very rounded 32-44px */}
+        <div className="card-body-glass relative overflow-hidden rounded-[28px] sm:rounded-[32px] lg:rounded-[36px] xl:rounded-[40px] border border-border/50 bg-white/85 p-4 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-5 lg:p-6">
 
           {/* Floating decorative blobs */}
           <div className="blob-float-1 pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/[0.07] blur-2xl dark:bg-primary/[0.05]" />
           <div className="blob-float-2 pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/[0.05] blur-2xl dark:bg-primary/[0.04]" />
 
           {/* Inner light reflection */}
-          <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
+          <div className="pointer-events-none absolute -inset-px rounded-[28px] sm:rounded-[32px] lg:rounded-[36px] xl:rounded-[40px] bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
 
           {/* Card Header */}
-          <div className="relative mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
-                <ShieldCheck className="h-[18px] w-[18px] text-primary" strokeWidth={2} />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-primary/15">
+                <Wallet className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-primary" strokeWidth={2} />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-foreground">{t('hero.escrowBalance')}</p>
-                <p className="text-[11px] text-muted-foreground">{t('hero.dealId')}</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-foreground">{t('hero.totalBalance')}</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground">{t('hero.dealId')}</p>
               </div>
             </div>
-            <span className="badge-shimmer relative overflow-hidden rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold text-primary">
+            <span className="badge-shimmer relative overflow-hidden rounded-full bg-primary/15 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-primary">
               {t('hero.status.paymentSecured')}
             </span>
           </div>
 
           {/* Escrow Amount Display */}
-          <div className="relative mb-3 text-center">
-            <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-6 py-3 ring-1 ring-primary/10">
+          <div className="relative my-3 sm:my-4 text-center">
+            <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-5 py-2.5 sm:px-6 sm:py-3 ring-1 ring-primary/10">
               <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/[0.05] blur-xl" />
-              <span className="relative text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
+              <span className="relative text-2xl font-extrabold tracking-tight text-primary sm:text-3xl lg:text-4xl">
                 {locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
               </span>
             </div>
           </div>
 
           {/* Buyer - Midman - Seller Flow */}
-          <div className="relative mb-3 flex items-center justify-center gap-2">
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
-                <span className="text-[11px] font-bold text-foreground">{locale === 'bn' ? 'ক্রেতা' : 'B'}</span>
+          <div className="relative flex items-center justify-center gap-1.5 sm:gap-2">
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
+                <span className="text-[10px] sm:text-[11px] font-bold text-foreground">{locale === 'bn' ? 'ক্রেতা' : 'B'}</span>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground">{t('hero.flow.buyer')}</span>
+              <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">{t('hero.flow.buyer')}</span>
             </div>
 
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-0.5">
-                <div className="h-px w-4 bg-primary/40" />
-                <ArrowRight className="h-3 w-3 text-primary" />
-              </div>
+            <div className="flex items-center">
+              <div className="h-px w-3 sm:w-4 bg-primary/40" />
+              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
             </div>
 
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25">
-                <span className="text-[11px] font-bold">M</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25">
+                <span className="text-[10px] sm:text-[11px] font-bold">M</span>
               </div>
-              <span className="text-[10px] font-bold text-primary">{t('hero.flow.midman')}</span>
+              <span className="text-[9px] sm:text-[10px] font-bold text-primary">{t('hero.flow.midman')}</span>
             </div>
 
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-0.5">
-                <div className="h-px w-4 bg-primary/40" />
-                <ArrowRight className="h-3 w-3 text-primary" />
-              </div>
+            <div className="flex items-center">
+              <div className="h-px w-3 sm:w-4 bg-primary/40" />
+              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
             </div>
 
-            <div className="flex flex-col items-center gap-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
-                <span className="text-[11px] font-bold text-foreground">{locale === 'bn' ? 'বিক্রেতা' : 'S'}</span>
+            <div className="flex flex-col items-center gap-0.5">
+              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
+                <span className="text-[10px] sm:text-[11px] font-bold text-foreground">{locale === 'bn' ? 'বিক্রেতা' : 'S'}</span>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground">{t('hero.flow.seller')}</span>
+              <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">{t('hero.flow.seller')}</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="mb-3 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="my-3 sm:my-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
           {/* Stats Grid */}
-          <div className="mb-3 grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 + i * 0.1, duration: 0.4 }}
-                className="rounded-xl bg-muted/50 p-2.5 text-center dark:bg-zinc-800/40"
+                className="rounded-xl bg-muted/50 p-2 sm:p-2.5 text-center dark:bg-zinc-800/40"
               >
-                <p className="text-[10px] font-medium text-muted-foreground leading-tight">{stat.label}</p>
-                <p className="mt-1 text-sm font-bold text-foreground">{stat.value}</p>
+                <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground leading-tight">{stat.label}</p>
+                <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{stat.value}</p>
               </motion.div>
             ))}
           </div>
 
           {/* Progress Indicator */}
-          <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/30">
+          <div className="mt-3 sm:mt-4 rounded-xl bg-muted/40 p-2.5 sm:p-3 dark:bg-zinc-800/30">
             <div className="flex items-center justify-between">
               {progressSteps.map((step, i) => (
                 <div key={step.label} className="flex items-center">
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-1 sm:gap-1.5">
                     <div
-                      className={`flex h-6 w-6 items-center justify-center rounded-full transition-all duration-300 ${
+                      className={`flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full transition-all duration-300 ${
                         step.done
                           ? 'bg-primary text-primary-foreground'
                           : step.active
@@ -275,15 +243,15 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
                       }`}
                     >
                       {step.done ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        <CheckCircle2 className="h-3 sm:h-3.5 w-3 sm:w-3.5" strokeWidth={2.5} />
                       ) : step.active ? (
-                        <div className="h-2 w-2 rounded-full bg-primary progress-pulse" />
+                        <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary progress-pulse" />
                       ) : (
-                        <CircleCheck className="h-3.5 w-3.5" strokeWidth={2} />
+                        <CircleCheck className="h-3 sm:h-3.5 w-3 sm:w-3.5" strokeWidth={2} />
                       )}
                     </div>
                     <span
-                      className={`text-[9px] font-medium leading-tight text-center max-w-[56px] ${
+                      className={`text-[8px] sm:text-[9px] font-medium leading-tight text-center max-w-[48px] sm:max-w-[56px] ${
                         step.done ? 'text-primary' : step.active ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
@@ -291,7 +259,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
                     </span>
                   </div>
                   {i < progressSteps.length - 1 && (
-                    <div className="mx-1.5 mb-4 h-px w-6 sm:w-8">
+                    <div className="mx-1 sm:mx-1.5 mb-3 sm:mb-4 h-px w-4 sm:w-6 lg:w-8">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
                           step.done ? 'bg-primary/60' : 'bg-border'
@@ -306,44 +274,70 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         </div>
       </div>
 
-      {/* Floating elements - varied, non-symmetric positions around the dashboard */}
-      {/* Card 1: Payment Secured - upper-left area */}
+      {/* Floating Cards - 4 corners around the dashboard */}
+      {/* Card 1: Payment Secured - TOP LEFT */}
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
         value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
-        floatClass="float-card-1 top-0 -left-2 sm:top-1 sm:-left-5 lg:-top-4 lg:-left-[80px] xl:-top-6 xl:-left-[100px]"
+        floatClass="float-card-1 top-[6%] -left-[100px] sm:top-[7%] sm:-left-[110px] lg:top-[8%] lg:-left-[120px] xl:top-[8%] xl:-left-[130px]"
         delay={0.8}
         variant="light"
-        iconOnRight={true}
       />
-      {/* Card 2: Verified User - upper-right, slightly lower than card 1 */}
+      {/* Card 2: Verified User - TOP RIGHT */}
       <FloatingMiniCard
         icon={UserCheck}
         title={t('hero.float.verifiedUser')}
         value={t('hero.float.trusted')}
-        floatClass="float-card-2 top-4 -right-1 sm:top-6 sm:-right-3 lg:top-2 lg:-right-[70px] xl:-right-[85px]"
+        floatClass="float-card-2 top-[4%] -right-[100px] sm:top-[5%] sm:-right-[110px] lg:top-[5%] lg:-right-[120px] xl:top-[5%] xl:-right-[130px]"
         delay={1.0}
         variant="light"
-        iconOnRight={false}
       />
-      {/* Card 3: Deal Completed - lower-left, HIGHLIGHT */}
+      {/* Card 3: Deal Completed - BOTTOM LEFT, HIGHLIGHT */}
       <FloatingMiniCard
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
         value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
-        floatClass="float-card-3 -bottom-4 -left-3 sm:-bottom-6 sm:-left-6 lg:-bottom-2 lg:-left-[95px] xl:-bottom-3 xl:-left-[115px]"
+        floatClass="float-card-3 bottom-[14%] -left-[100px] sm:bottom-[13%] sm:-left-[110px] lg:bottom-[14%] lg:-left-[120px] xl:bottom-[14%] xl:-left-[130px]"
         delay={1.2}
         variant="highlight"
-        iconOnRight={true}
       />
-      {/* Card 4: Icon-only - lower-right, higher than card 3 */}
-      <FloatingIconOnly
+      {/* Card 4: Deal Protected - BOTTOM RIGHT */}
+      <FloatingMiniCard
         icon={ShieldCheck}
-        floatClass="float-card-4 -bottom-2 right-[2px] sm:-bottom-2 sm:right-[10px] lg:-bottom-2 lg:right-[30px] xl:-bottom-2 xl:right-[30px]"
+        title={t('hero.float.dealProtected')}
+        value={t('hero.float.hundredSecure')}
+        floatClass="float-card-4 bottom-[8%] -right-[100px] sm:bottom-[7%] sm:-right-[110px] lg:bottom-[9%] lg:-right-[120px] xl:bottom-[9%] xl:-right-[130px]"
         delay={1.4}
+        variant="light"
       />
     </motion.div>
+  );
+}
+
+// Trust Indicators below CTA buttons
+function TrustIndicators({ t }: { t: (key: string) => string }) {
+  const items = [
+    { icon: Shield, label: t('hero.trust.paymentSecured') },
+    { icon: UserCheck, label: t('hero.trust.verifiedUser') },
+    { icon: ShieldCheck, label: t('hero.trust.dealProtection') },
+  ];
+
+  return (
+    <div className="mt-7 flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:justify-start">
+      {items.map((item, i) => (
+        <motion.div
+          key={item.label}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 + i * 0.1, duration: 0.4 }}
+          className="flex items-center gap-1.5"
+        >
+          <item.icon className="h-4 w-4 text-primary" strokeWidth={2} />
+          <span className="text-xs sm:text-[13px] font-medium text-muted-foreground">{item.label}</span>
+        </motion.div>
+      ))}
+    </div>
   );
 }
 
@@ -398,9 +392,11 @@ export function Hero() {
                 </span>
               </motion.div>
 
-              {/* Main Heading */}
+              {/* Main Heading - 3 lines */}
               <h1 className="mb-4 text-center text-3xl font-bold leading-[1.25] tracking-tight sm:text-4xl lg:text-left lg:text-[2.75rem] xl:text-5xl">
                 {t('hero.heading.line1')}
+                <br />
+                {t('hero.heading.line2')}
                 <br />
                 <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
               </h1>
@@ -453,6 +449,9 @@ export function Hero() {
                   </>
                 )}
               </motion.div>
+
+              {/* Trust Indicators */}
+              <TrustIndicators t={t} />
             </motion.div>
 
             {/* Right Side: Escrow Dashboard */}
@@ -460,9 +459,9 @@ export function Hero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-              className="order-2 lg:order-2"
+              className="order-2"
             >
-              <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[480px] xl:max-w-[520px]">
+              <div className="relative mx-auto w-full max-w-[380px] sm:max-w-[440px] lg:max-w-[560px] xl:max-w-[650px]">
                 <EscrowDashboard locale={locale} t={t} />
               </div>
             </motion.div>

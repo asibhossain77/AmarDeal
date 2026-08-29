@@ -452,3 +452,32 @@ Stage Summary:
 - Mobile verified: 135x60px cards, 12px icon protrusion, no horizontal overflow, minimal 8px content overlap at edges (within padding zone)
 - Dark mode verified: green highlight card visible, dark surface cards with proper contrast
 - Key files modified: src/components/landing/hero.tsx, src/app/globals.css
+
+---
+Task ID: 4
+Agent: Main
+Task: Comprehensive hero section redesign matching reference image
+
+Work Log:
+- Completely rewrote hero.tsx based on detailed visual reference spec
+- Removed FloatingIconOnly component (icon-only card no longer needed)
+- Rewrote FloatingMiniCard: icon ALWAYS protrudes from LEFT side (-left-[18px]), removed iconOnRight prop
+- Increased floating card sizes: 140x62px mobile to 195x82px desktop (was 110-155px)
+- Increased icon sizes: 36px mobile to 48px desktop (was 28-40px)
+- Changed main card border-radius to 28-40px (was rounded-3xl=24px), removed aspect-square for natural height
+- Changed main card header icon from ShieldCheck to Wallet, label to 'মোট ব্যালেন্স'
+- Added TrustIndicators component with 3 trust items below CTA buttons
+- Updated heading to 3-line structure: line1='নিরাপদ', line2='লেনদেন করুন,', highlight='নিশ্চিন্তে থাকুন'
+- Positioned 4 floating cards symmetrically at corners with ~33px overlap on main card edge
+- Removed z-index layering (floating cards naturally stack above main card via DOM order)
+- Updated bn.ts: added hero.heading.line2, hero.totalBalance, hero.trust.* keys, updated CTA text
+- Updated en.ts: same new keys with English translations
+- Updated globals.css: float-card-2 duration from 5.6s to 5.7s per spec
+
+Stage Summary:
+- All 4 floating cards have text+value (no icon-only card), icon always on left side
+- Desktop: cards fully visible at 4 corners, symmetric layout, main card 440px with 40px border-radius
+- Mobile: ~40% of each floating card visible (peeking effect), icons partially visible on right-side cards
+- Dark mode: verified working with proper contrast
+- Trust indicators added below CTA buttons
+- Files modified: hero.tsx, bn.ts, en.ts, globals.css

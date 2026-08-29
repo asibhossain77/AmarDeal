@@ -62,12 +62,14 @@ export const bn = {
 
   // ── Hero ──
   'hero.badge': 'নিরাপদ অনলাইন লেনদেনের বিশ্বস্ত মাধ্যম',
-  'hero.heading.line1': 'নিরাপদে লেনদেন করুন,',
-  'hero.heading.highlight': 'নিশ্চিন্তে থাকুন।',
+  'hero.heading.line1': 'নিরাপদ',
+  'hero.heading.line2': 'লেনদেন করুন,',
+  'hero.heading.highlight': 'নিশ্চিন্তে থাকুন',
   'hero.subtitle': 'Midman ক্রেতা ও বিক্রেতার মধ্যবর্তী নিরাপদ মাধ্যম। আপনার পেমেন্ট সুরক্ষিত রাখুন, কাজ সম্পন্ন করুন এবং নিশ্চিন্তে লেনদেন করুন।',
-  'hero.startDeal': 'নিরাপদে ডিল শুরু করুন',
+  'hero.startDeal': 'নিরাপদ ডিল শুরু করুন',
   'hero.howWorks': 'কীভাবে কাজ করে',
   'hero.escrowBalance': 'এসক্রো ব্যালেন্স',
+  'hero.totalBalance': 'মোট ব্যালেন্স',
   'hero.dealId': 'ডিল #MD-10245',
   'hero.flow.buyer': 'ক্রেতা',
   'hero.flow.midman': 'Midman',
@@ -83,7 +85,10 @@ export const bn = {
   'hero.float.trusted': 'বিশ্বস্ত',
   'hero.float.dealCompleted': 'ডিল সম্পন্ন',
   'hero.float.dealProtected': 'ডিল সুরক্ষিত',
-  'hero.float.hundredSecure': '১০০% সুরক্ষিত',
+  'hero.float.hundredSecure': '১০০% নিরাপদ',
+  'hero.trust.paymentSecured': 'পেমেন্ট সুরক্ষিত',
+  'hero.trust.verifiedUser': 'ভেরিফাইড ইউজার',
+  'hero.trust.dealProtection': 'ডিল প্রোটেকশন',
 
   // ── Footer ──
   'footer.defaultDescription': 'বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করি যাতে আপনি নিশ্চিন্তে কেনাবেচা করতে পারেন।',

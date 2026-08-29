@@ -64,12 +64,14 @@ export const en: Record<TranslationKey, string> = {
 
   // ── Hero ──
   'hero.badge': 'Trusted Medium for Safe Online Transactions',
-  'hero.heading.line1': 'Transact Safely,',
-  'hero.heading.highlight': 'Stay Worry-Free.',
+  'hero.heading.line1': 'Transact',
+  'hero.heading.line2': 'Safely,',
+  'hero.heading.highlight': 'Stay Worry-Free',
   'hero.subtitle': 'Midman is the safe medium between buyers and sellers. Keep your payment secured, complete your work and transact with peace of mind.',
   'hero.startDeal': 'Start a Secure Deal',
   'hero.howWorks': 'How It Works',
   'hero.escrowBalance': 'Escrow Balance',
+  'hero.totalBalance': 'Total Balance',
   'hero.dealId': 'Deal #MD-10245',
   'hero.flow.buyer': 'Buyer',
   'hero.flow.midman': 'Midman',
@@ -85,7 +87,10 @@ export const en: Record<TranslationKey, string> = {
   'hero.float.trusted': 'Trusted',
   'hero.float.dealCompleted': 'Deal Completed',
   'hero.float.dealProtected': 'Deal Protected',
-  'hero.float.hundredSecure': '100% Secure',
+  'hero.float.hundredSecure': '100% Safe',
+  'hero.trust.paymentSecured': 'Payment Secured',
+  'hero.trust.verifiedUser': 'Verified User',
+  'hero.trust.dealProtection': 'Deal Protection',
 
   // ── Footer ──
   'footer.defaultDescription': "Bangladesh's most trusted escrow platform. We ensure safe online transactions so you can buy and sell with confidence.",
