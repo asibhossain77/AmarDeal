@@ -97,7 +97,7 @@ export async function proxy(req: NextRequest) {
   requestHeaders.set('x-nonce', nonce)
 
   // --- 4. Admin auth gate ---
-  const publicAdminRoutes = ['/api/admin/2fa/login-verify']
+  const publicAdminRoutes = ['/api/admin/2fa/login-verify', '/api/admin/marketplace', '/api/admin/marketplace/banners']
   const isAdminRoute = pathname.startsWith('/api/admin/')
   const isPublicAdmin = publicAdminRoutes.some((r) => pathname.startsWith(r))
 

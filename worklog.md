@@ -50,3 +50,43 @@ Stage Summary:
 - Add Product dialog for sellers
 - Navigation works: landing -> marketplace -> back to home
 - Responsive design verified on mobile and desktop
+
+---
+Task ID: 4
+Agent: full-stack-developer subagent
+Task: Create admin marketplace API routes
+
+Work Log:
+- Created /api/admin/marketplace (GET/PUT settings via PlatformSetting)
+- Created /api/admin/marketplace/banners (GET active banners, POST create banner)
+- Created /api/admin/marketplace/banners/[id] (PATCH update, DELETE banner)
+- Created /api/admin/marketplace/products (GET all products, PATCH status, DELETE)
+
+Stage Summary:
+- 4 API route files for admin marketplace management
+- Uses PlatformSetting for settings, MarketplaceBanner model for banners, DigitalProduct for products
+- All admin endpoints protected with requireAdmin
+
+---
+Task ID: 5
+Agent: Main
+Task: Create admin marketplace panel section
+
+Work Log:
+- Added MarketplaceBanner model to Prisma schema (id, title, subtitle, image, link, isActive, sortOrder, timestamps)
+- Ran db:push to apply schema migration
+- Added marketplace to AdminPanel type in store.ts
+- Added Store icon import and marketplace nav item to admin-nav-config.ts (static + translated)
+- Created 4 API routes via subagent for marketplace settings, banners CRUD, products management
+- Created marketplace-panel.tsx with 3 tabs: Settings, Banners, Products
+- Added dynamic import + case in admin-main.tsx
+- Updated proxy.ts to whitelist public marketplace GET endpoints
+- Added 65+ i18n keys in both bn.ts and en.ts
+- Seeded 8 demo products and 3 demo banners
+
+Stage Summary:
+- Full admin marketplace control panel with Settings (toggle/title/subtitle), Banners (CRUD), Products (table with status/delete)
+- All 3 tabs verified working via browser agent
+- Products table shows 15+ products with seller info, category, price, status management
+- Banners tab shows 3 banners with image preview, status toggle, edit, delete
+- API routes properly protected with requireAdmin for write operations

@@ -21,6 +21,7 @@ import {
   LogIn,
   Zap,
   Link2,
+  Store,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -66,6 +67,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: 'সেটিংস ও কন্টেন্ট',
     items: [
       { label: 'ওয়েবসাইট সেটিংস', icon: Settings, panel: 'settings' },
+      { label: 'মার্কেটপ্লেস', icon: Store, panel: 'marketplace' },
       { label: 'ইমেইল সেটিংস', icon: Mail, panel: 'email-settings' },
       { label: 'হোয়াটসঅ্যাপ সেটিংস', icon: MessageSquare, panel: 'whatsapp-settings' },
       { label: 'AI সাপোর্ট', icon: Bot, panel: 'ai-prompt' },
@@ -119,6 +121,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
       title: t('adminNav.groupSettings'),
       items: [
         { label: t('adminNav.websiteSettings'), icon: Settings, panel: 'settings' },
+        { label: t('adminNav.marketplace'), icon: Store, panel: 'marketplace' },
         { label: t('adminNav.emailSettings'), icon: Mail, panel: 'email-settings' },
         { label: t('adminNav.whatsappSettings'), icon: MessageSquare, panel: 'whatsapp-settings' },
         { label: t('adminNav.aiSupport'), icon: Bot, panel: 'ai-prompt' },
