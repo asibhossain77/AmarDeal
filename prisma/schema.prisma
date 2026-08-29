@@ -37,6 +37,8 @@ model User {
   affiliateEarnings AffiliateEarning[]  @relation("AffiliateOwner")
   referredUsers     User[]              @relation("UserReferral")
   affiliateWithdrawals AffiliateWithdrawal[]
+  digitalProducts   DigitalProduct[]
+  productChatMessages ProductChatMessage[]
 }
 
 model Admin {
@@ -229,6 +231,38 @@ model AffiliateWithdrawal {
 
   @@index([userId])
   @@index([status])
+}
+
+model DigitalProduct {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float
+  category    String   @default("other")
+  image       String?
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id])
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chatMessages ProductChatMessage[]
+
+  @@index([sellerId, status])
+  @@index([status, createdAt])
+}
+
+model ProductChatMessage {
+  id        String   @id @default(cuid())
+  productId String
+  product   DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([senderId])
 }
 
 model AffiliatePaymentMethod {

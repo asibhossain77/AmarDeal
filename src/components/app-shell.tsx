@@ -25,6 +25,7 @@ const PrivacySection = dynamic(() => import('@/components/landing/privacy-sectio
 const ContactSection = dynamic(() => import('@/components/landing/contact-section').then(m => ({ default: m.ContactSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 const ContractSection = dynamic(() => import('@/components/landing/contract-section').then(m => ({ default: m.ContractSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const MarketplaceSection = dynamic(() => import('@/components/landing/marketplace-section').then(m => ({ default: m.MarketplaceSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -168,6 +169,16 @@ function BlogPage() {
   return (
     <PageWrapper>
       <BlogView />
+    </PageWrapper>
+  );
+}
+
+function PageMarketplace() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  return (
+    <PageWrapper title={t('page.marketplace.title')} subtitle={t('page.marketplace.subtitle')}>
+      <MarketplaceSection />
     </PageWrapper>
   );
 }
@@ -331,6 +342,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-privacy' && <PagePrivacy />}
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
+      {view === 'page-marketplace' && <PageMarketplace />}
       <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />

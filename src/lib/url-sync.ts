@@ -23,6 +23,7 @@ const VIEW_PATHS: Record<string, string> = {
   'page-privacy': 'privacy',
   'page-terms': 'terms',
   'page-contact': 'contact',
+  'page-marketplace': 'marketplace',
 };
 
 const PATH_VIEWS: Record<string, AppView> = {
@@ -39,6 +40,7 @@ const PATH_VIEWS: Record<string, AppView> = {
   'privacy': 'page-privacy',
   'terms': 'page-terms',
   'contact': 'page-contact',
+  'marketplace': 'page-marketplace',
 };
 
 /* ── Build URL from store state ── */
@@ -173,7 +175,7 @@ function pushUrl(url: string) {
 
 /* ── Apply current URL to store (reusable) ── */
 
-const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact']);
+const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace']);
 const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'seller', 'auth']);
 
 function applyUrlToStore() {

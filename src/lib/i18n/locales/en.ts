@@ -26,6 +26,7 @@ export const en: Record<TranslationKey, string> = {
   'nav.faq': 'FAQ',
   'nav.user': 'User',
   'nav.adminLabel': 'Admin',
+  'nav.marketplace': 'Marketplace',
 
   // ── Admin Nav ──
   'adminNav.dashboard': 'Dashboard',
@@ -1599,4 +1600,35 @@ export const en: Record<TranslationKey, string> = {
   'adminAffPayout.batchSuccess': 'All withdrawals approved',
   'adminAffPayout.actionFailed': 'Action failed',
   'adminAffPayout.copied': 'Copied',
-};
+
+  // -- Page Titles --
+  'page.marketplace.title': 'Digital Marketplace',
+  'page.marketplace.subtitle': 'Buy and sell digital products safely',
+
+  // -- Marketplace --
+  'marketplace.searchPlaceholder': 'Search products...',
+  'marketplace.seller': 'Seller',
+  'marketplace.verified': 'Verified',
+  'marketplace.messageSeller': 'Message Seller',
+  'marketplace.orderViaMidman': 'Order via Midman Deal',
+  'marketplace.noProducts': 'No products found',
+  'marketplace.noProductsDesc': 'No products have been added in this category yet',
+  'marketplace.addProduct': 'Add Product',
+  'marketplace.formTitle': 'Product Name',
+  'marketplace.formTitlePh': 'e.g. Logo Design',
+  'marketplace.formDesc': 'Description',
+  'marketplace.formDescPh': 'Write details about the product...',
+  'marketplace.formPrice': 'Price',
+  'marketplace.formCategory': 'Category',
+  'marketplace.formImage': 'Image URL',
+  'marketplace.optional': 'optional',
+  'marketplace.submitProduct': 'Publish Product',
+  'marketplace.productAdded': 'Product added successfully!',
+  'marketplace.addFailed': 'Failed to add product',
+  'marketplace.noMessages': 'No messages yet',
+  'marketplace.noMessagesDesc': 'Send a message to the seller, ask your questions',
+  'marketplace.typeMessage': 'Type your message...',
+  'marketplace.loginRequired': 'Please login to use this feature',
+  'marketplace.sendFailed': 'Failed to send message',
+  'marketplace.online': 'Online',
+} as const;

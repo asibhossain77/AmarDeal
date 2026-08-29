@@ -35,6 +35,7 @@ import {
   Mail,
   MessageSquare,
   Bell,
+  Store,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -287,6 +288,7 @@ export function Navbar() {
               { href: '/security', viewKey: 'page-security', label: t('nav.features'), Icon: Sparkles },
               { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
               { href: '/how-it-works', viewKey: 'page-how-it-works', label: t('nav.howItWorks'), Icon: ListChecks },
+              { href: '/marketplace', viewKey: 'page-marketplace', label: t('nav.marketplace'), Icon: Store },
               { href: '/faq', viewKey: 'page-faq', label: t('nav.faq'), Icon: CircleHelp },
               { href: '/blog', viewKey: 'blog', label: t('nav.blog'), Icon: BookOpen },
               { href: '/about', viewKey: 'page-about', label: t('nav.about'), Icon: Users },
@@ -475,6 +477,9 @@ export function Navbar() {
                       </a>
                       <a href="/how-it-works" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-how-it-works'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <ListChecks className="h-[18px] w-[18px] shrink-0" /> {t('nav.howItWorks')}
+                      </a>
+                      <a href="/marketplace" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-marketplace'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                        <Store className="h-[18px] w-[18px] shrink-0" /> {t('nav.marketplace')}
                       </a>
                       <a href="/faq" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-faq'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <CircleHelp className="h-[18px] w-[18px] shrink-0" /> {t('nav.faq')}

@@ -24,6 +24,7 @@ export const bn = {
   'nav.faq': 'FAQ',
   'nav.user': 'ইউজার',
   'nav.adminLabel': 'অ্যাডমিন',
+  'nav.marketplace': 'মার্কেটপ্লেস',
 
   // ── Admin Nav ──
   'adminNav.dashboard': 'ড্যাশবোর্ড',
@@ -1597,6 +1598,37 @@ export const bn = {
   'adminAffPayout.batchSuccess': 'সব উত্তোলন অনুমোদিত হয়েছে',
   'adminAffPayout.actionFailed': 'অ্যাকশন ব্যর্থ হয়েছে',
   'adminAffPayout.copied': 'কপি হয়েছে',
+
+  // ── Page Titles ──
+  'page.marketplace.title': 'ডিজিটাল মার্কেটপ্লেস',
+  'page.marketplace.subtitle': 'নিরাপদে ডিজিটাল পণ্য কিনুন ও বিক্রি করুন',
+
+  // ── Marketplace ──
+  'marketplace.searchPlaceholder': 'পণ্য খুঁজুন...',
+  'marketplace.seller': 'বিক্রেতা',
+  'marketplace.verified': 'যাচাইকৃত',
+  'marketplace.messageSeller': 'সেলারকে মেসেজ করুন',
+  'marketplace.orderViaMidman': 'মিডম্যান ডিলে অর্ডার',
+  'marketplace.noProducts': 'কোনো পণ্য পাওয়া যায়নি',
+  'marketplace.noProductsDesc': 'এই ক্যাটাগরিতে এখনো কোনো পণ্য যোগ করা হয়নি',
+  'marketplace.addProduct': 'পণ্য যোগ করুন',
+  'marketplace.formTitle': 'পণ্যের নাম',
+  'marketplace.formTitlePh': 'যেমন: লোগো ডিজাইন',
+  'marketplace.formDesc': 'বিবরণ',
+  'marketplace.formDescPh': 'পণ্য সম্পর্কে বিস্তারিত লিখুন...',
+  'marketplace.formPrice': 'মূল্য',
+  'marketplace.formCategory': 'ক্যাটাগরি',
+  'marketplace.formImage': 'ছবির লিংক',
+  'marketplace.optional': 'ঐচ্ছিক',
+  'marketplace.submitProduct': 'পণ্য প্রকাশ করুন',
+  'marketplace.productAdded': 'পণ্য সফলভাবে যোগ হয়েছে!',
+  'marketplace.addFailed': 'পণ্য যোগ করতে সমস্যা হয়েছে',
+  'marketplace.noMessages': 'কোনো মেসেজ নেই',
+  'marketplace.noMessagesDesc': 'সেলারকে মেসেজ পাঠান, আপনার প্রশ্ন জিজ্ঞাসা করুন',
+  'marketplace.typeMessage': 'আপনার মেসেজ লিখুন...',
+  'marketplace.loginRequired': 'এই ফিচার ব্যবহার করতে লগইন করুন',
+  'marketplace.sendFailed': 'মেসেজ পাঠাতে সমস্যা হয়েছে',
+  'marketplace.online': 'অনলাইন',
 } as const;
 
 export type TranslationKey = keyof typeof bn;
