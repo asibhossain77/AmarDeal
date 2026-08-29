@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -13,6 +13,8 @@ import {
   Handshake,
   ClipboardList,
   ArrowUpRight,
+  Store,
+  Sparkles,
 } from 'lucide-react';
 import { NewDealForm } from './new-deal-form';
 import { DealWorkflowTracker } from './deal-workflow-tracker';
@@ -24,6 +26,7 @@ import { AffiliatePanel } from './affiliate-panel';
 import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
+import { toast } from 'sonner';
 
 const emptySubscribe = () => () => {};
 
@@ -196,9 +199,31 @@ function TableSkeleton() {
 
 function OverviewPanel() {
   const user = useAppStore((s) => s.user);
+  const setUser = useAppStore((s) => s.setUser);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+  const setView = useAppStore((s) => s.setView);
   const userId = user?.id;
   const t = useT();
+
+  const [becomingSeller, setBecomingSeller] = useState(false);
+
+  const handleBecomeSeller = async () => {
+    setBecomingSeller(true);
+    try {
+      const res = await fetch('/api/user/become-seller', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('dashboard.becomeSellerSuccess'));
+        if (user) setUser({ ...user, isSeller: true });
+      } else {
+        toast.error(data.error || t('dashboard.becomeSellerError'));
+      }
+    } catch {
+      toast.error(t('dashboard.becomeSellerError'));
+    } finally {
+      setBecomingSeller(false);
+    }
+  };
 
   /* ── Queries ── */
   const { data: stats, isLoading: statsLoading } = useQuery<UserStats>({
@@ -353,6 +378,35 @@ function OverviewPanel() {
                 <ClipboardList className="h-5 w-5" />
                 {t('dashboard.myDealsBtn')}
               </Button>
+
+              {/* Marketplace */}
+              <Button
+                onClick={() => setView('page-marketplace')}
+                variant="outline"
+                className="w-full h-12 rounded-lg text-base font-semibold gap-2.5"
+              >
+                <Store className="h-5 w-5" />
+                {t('dashboard.goToMarketplace')}
+              </Button>
+
+              {/* Become a Seller */}
+              {!user?.isAdmin && !user?.isSeller && (
+                <Button
+                  onClick={handleBecomeSeller}
+                  disabled={becomingSeller}
+                  className="w-full h-12 rounded-lg text-base font-semibold gap-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  {becomingSeller ? t('dashboard.becomingSeller') : t('dashboard.becomeSeller')}
+                </Button>
+              )}
+
+              {user?.isSeller && (
+                <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                  <Store className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-primary">{t('dashboard.sellerBadge')}</span>
+                </div>
+              )}
               </div>
             </div>
 
