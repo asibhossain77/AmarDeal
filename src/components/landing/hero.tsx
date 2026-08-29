@@ -32,8 +32,31 @@ const fadeIn = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-// Floating Mini Card - icon container sits partially OUTSIDE the card, overlapping its edge
-// iconOnRight: when true, icon protrudes from the RIGHT side (for left-positioned cards)
+// Floating Icon Only - standalone colored circle/square with just an icon
+function FloatingIconOnly({
+  icon: Icon,
+  floatClass,
+  delay,
+}: {
+  icon: React.ElementType;
+  floatClass: string;
+  delay: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={`pointer-events-none absolute z-20 ${floatClass}`}
+    >
+      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 shadow-lg shadow-primary/15 backdrop-blur-md sm:h-11 sm:w-11 lg:h-12 lg:w-12 dark:border-primary/15 dark:bg-primary/15">
+        <Icon className="h-[18px] w-[18px] text-primary sm:h-5 sm:w-5 lg:h-[22px] lg:w-[22px]" strokeWidth={2} />
+      </div>
+    </motion.div>
+  );
+}
+
+// Floating Mini Card - compact, icon extends outside card edge
 function FloatingMiniCard({
   icon: Icon,
   title,
@@ -55,37 +78,32 @@ function FloatingMiniCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      initial={{ opacity: 0, y: 8, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ delay, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`pointer-events-none absolute z-20 ${floatClass}`}
     >
       <div className="relative">
-        {/* Card body - the main rectangular surface */}
+        {/* Card body */}
         <div
           className={[
             'relative overflow-hidden',
-            // Responsive sizing
-            'w-[135px] h-[60px] sm:w-[155px] sm:h-[66px] lg:w-[170px] lg:h-[74px] xl:w-[180px] xl:h-[78px]',
-            // Border radius
-            'rounded-[17px] sm:rounded-[19px] lg:rounded-[20px]',
-            // Padding - extra on the icon side so text doesn't hide behind icon
+            'w-[110px] h-[48px] sm:w-[130px] sm:h-[54px] lg:w-[145px] lg:h-[60px] xl:w-[155px] xl:h-[64px]',
+            'rounded-[15px] sm:rounded-[17px] lg:rounded-[18px]',
             iconOnRight
-              ? 'pl-3 sm:pl-3.5 pr-8 sm:pr-10 lg:pr-11 xl:pr-12'
-              : 'pl-8 sm:pl-10 lg:pl-11 xl:pl-12 pr-3 sm:pr-3.5',
-            'pt-2.5 pb-2 sm:pt-3 sm:pb-2.5 lg:pt-3.5 lg:pb-3',
-            // Surface
+              ? 'pl-2.5 pr-7 sm:pl-3 sm:pr-9 lg:pr-10 xl:pr-11'
+              : 'pl-7 sm:pl-9 lg:pl-10 xl:pl-11 pr-2.5 sm:pr-3',
+            'py-2 sm:py-2.5 lg:py-3',
             isHighlight
-              ? 'bg-primary shadow-xl shadow-primary/25 dark:shadow-primary/15'
-              : 'border border-border/40 bg-white/90 shadow-lg shadow-black/[0.06] backdrop-blur-md dark:border-border/25 dark:bg-zinc-900/70 dark:shadow-black/[0.2]',
+              ? 'bg-primary shadow-lg shadow-primary/25 dark:shadow-primary/15'
+              : 'border border-border/40 bg-white/90 shadow-md shadow-black/[0.06] backdrop-blur-md dark:border-border/25 dark:bg-zinc-900/70 dark:shadow-black/[0.2]',
           ].join(' ')}
         >
-          {/* Subtle top highlight line for premium feel */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.08]" />
 
           <p
             className={[
-              'text-[10px] font-medium leading-tight sm:text-[11px] lg:text-[11px]',
+              'text-[9px] font-medium leading-tight sm:text-[10px] lg:text-[10px]',
               isHighlight ? 'text-primary-foreground/70' : 'text-muted-foreground',
             ].join(' ')}
           >
@@ -93,7 +111,7 @@ function FloatingMiniCard({
           </p>
           <p
             className={[
-              'mt-0.5 text-[13px] font-bold leading-tight sm:text-[14px] lg:text-[15px]',
+              'mt-px text-[11px] font-bold leading-tight sm:text-[12px] lg:text-[13px]',
               isHighlight ? 'text-primary-foreground' : 'text-foreground',
             ].join(' ')}
           >
@@ -105,22 +123,19 @@ function FloatingMiniCard({
         <div
           className={[
             'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center',
-            // Responsive icon container size
-            'w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] lg:w-[44px] lg:h-[44px] xl:w-[46px] xl:h-[46px]',
-            'rounded-[11px] sm:rounded-[12px] lg:rounded-[14px]',
-            // Position: extends outside the card's edge toward the dashboard
+            'w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] lg:w-[38px] lg:h-[38px] xl:w-[40px] xl:h-[40px]',
+            'rounded-[9px] sm:rounded-[10px] lg:rounded-[12px]',
             iconOnRight
-              ? '-right-[12px] sm:-right-[13px] lg:-right-[15px] xl:-right-[16px]'
-              : '-left-[12px] sm:-left-[13px] lg:-left-[15px] xl:-left-[16px]',
-            // Surface color
+              ? '-right-[10px] sm:-right-[11px] lg:-right-[13px] xl:-right-[14px]'
+              : '-left-[10px] sm:-left-[11px] lg:-left-[13px] xl:-left-[14px]',
             isHighlight
-              ? 'bg-primary shadow-lg shadow-primary/30 dark:shadow-primary/20'
-              : 'bg-primary/15 dark:bg-primary/20 shadow-md',
+              ? 'bg-primary shadow-md shadow-primary/30 dark:shadow-primary/20'
+              : 'bg-primary/15 dark:bg-primary/20 shadow-sm',
           ].join(' ')}
         >
           <Icon
             className={[
-              'w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] lg:w-[21px] lg:h-[21px] xl:w-[22px] xl:h-[22px]',
+              'w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] lg:w-[18px] lg:h-[18px] xl:w-[19px] xl:h-[19px]',
               isHighlight ? 'text-primary-foreground' : 'text-primary',
             ].join(' ')}
             strokeWidth={2.2}
@@ -152,14 +167,14 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
 
       <div className="main-card-float relative mx-auto max-w-[280px] sm:max-w-xs lg:max-w-sm xl:max-w-md">
         {/* Glass card body */}
-        <div className="card-body-glass relative overflow-hidden rounded-2xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
+        <div className="card-body-glass relative overflow-hidden rounded-3xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
 
           {/* Floating decorative blobs */}
           <div className="blob-float-1 pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/[0.07] blur-2xl dark:bg-primary/[0.05]" />
           <div className="blob-float-2 pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/[0.05] blur-2xl dark:bg-primary/[0.04]" />
 
           {/* Inner light reflection */}
-          <div className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
+          <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
 
           {/* Card Header */}
           <div className="relative mb-5 flex items-center justify-between">
@@ -291,46 +306,42 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         </div>
       </div>
 
-      {/* 4 Floating Mini Cards - orbit the dashboard, icons face toward it */}
-      {/* Card 1: Payment Secured - top-left, icon faces RIGHT toward dashboard */}
+      {/* Floating elements - varied, non-symmetric positions around the dashboard */}
+      {/* Card 1: Payment Secured - upper-left area */}
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
         value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
-        floatClass="float-card-1 -top-9 -left-2 sm:-top-12 sm:-left-5 lg:-top-14 lg:-left-[90px] xl:-left-[110px]"
+        floatClass="float-card-1 top-0 -left-2 sm:top-1 sm:-left-5 lg:-top-4 lg:-left-[80px] xl:-top-6 xl:-left-[100px]"
         delay={0.8}
         variant="light"
         iconOnRight={true}
       />
-      {/* Card 2: Verified User - top-right, icon faces LEFT toward dashboard */}
+      {/* Card 2: Verified User - upper-right, slightly lower than card 1 */}
       <FloatingMiniCard
         icon={UserCheck}
         title={t('hero.float.verifiedUser')}
         value={t('hero.float.trusted')}
-        floatClass="float-card-2 -top-7 -right-2 sm:-top-10 sm:-right-5 lg:-top-12 lg:-right-[90px] xl:-right-[110px]"
+        floatClass="float-card-2 top-4 -right-1 sm:top-6 sm:-right-3 lg:top-2 lg:-right-[70px] xl:-right-[85px]"
         delay={1.0}
         variant="light"
         iconOnRight={false}
       />
-      {/* Card 3: Deal Completed - bottom-left, HIGHLIGHT card, icon faces RIGHT */}
+      {/* Card 3: Deal Completed - lower-left, HIGHLIGHT */}
       <FloatingMiniCard
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
         value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
-        floatClass="float-card-3 -bottom-7 -left-2 sm:-bottom-10 sm:-left-5 lg:-bottom-12 lg:-left-[90px] xl:-left-[110px]"
+        floatClass="float-card-3 -bottom-4 -left-3 sm:-bottom-6 sm:-left-6 lg:-bottom-2 lg:-left-[95px] xl:-bottom-3 xl:-left-[115px]"
         delay={1.2}
         variant="highlight"
         iconOnRight={true}
       />
-      {/* Card 4: Deal Protected - bottom-right, icon faces LEFT toward dashboard */}
-      <FloatingMiniCard
+      {/* Card 4: Icon-only - lower-right, higher than card 3 */}
+      <FloatingIconOnly
         icon={ShieldCheck}
-        title={t('hero.float.dealProtected')}
-        value={t('hero.float.hundredSecure')}
-        floatClass="float-card-4 -bottom-9 -right-2 sm:-bottom-12 sm:-right-5 lg:-bottom-14 lg:-right-[90px] xl:-right-[110px]"
+        floatClass="float-card-4 -bottom-8 -right-1 sm:-bottom-12 sm:-right-3 lg:-bottom-16 lg:-right-[60px] xl:-bottom-20 xl:-right-[75px]"
         delay={1.4}
-        variant="light"
-        iconOnRight={false}
       />
     </motion.div>
   );
