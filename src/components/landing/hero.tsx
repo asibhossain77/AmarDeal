@@ -165,9 +165,9 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
       {/* Subtle green glow behind card */}
       <div className="pointer-events-none absolute -inset-10 rounded-3xl bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
 
-      <div className="main-card-float relative mx-auto max-w-[280px] sm:max-w-xs lg:max-w-sm xl:max-w-md">
+      <div className="main-card-float relative mx-auto w-full aspect-square max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] xl:max-w-[460px]">
         {/* Glass card body */}
-        <div className="card-body-glass relative overflow-hidden rounded-3xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
+        <div className="card-body-glass flex h-full flex-col justify-between relative overflow-hidden rounded-3xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
 
           {/* Floating decorative blobs */}
           <div className="blob-float-1 pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/[0.07] blur-2xl dark:bg-primary/[0.05]" />
@@ -177,7 +177,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
           <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
 
           {/* Card Header */}
-          <div className="relative mb-5 flex items-center justify-between">
+          <div className="relative mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15">
                 <ShieldCheck className="h-[18px] w-[18px] text-primary" strokeWidth={2} />
@@ -193,7 +193,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
           </div>
 
           {/* Escrow Amount Display */}
-          <div className="relative mb-5 text-center">
+          <div className="relative mb-3 text-center">
             <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-6 py-3 ring-1 ring-primary/10">
               <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/[0.05] blur-xl" />
               <span className="relative text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">
@@ -203,7 +203,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
           </div>
 
           {/* Buyer - Midman - Seller Flow */}
-          <div className="relative mb-5 flex items-center justify-center gap-2">
+          <div className="relative mb-3 flex items-center justify-center gap-2">
             <div className="flex flex-col items-center gap-1">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
                 <span className="text-[11px] font-bold text-foreground">{locale === 'bn' ? 'ক্রেতা' : 'B'}</span>
@@ -241,10 +241,10 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
           </div>
 
           {/* Divider */}
-          <div className="mb-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="mb-3 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
           {/* Stats Grid */}
-          <div className="mb-5 grid grid-cols-3 gap-3">
+          <div className="mb-3 grid grid-cols-3 gap-3">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -340,7 +340,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
       {/* Card 4: Icon-only - lower-right, higher than card 3 */}
       <FloatingIconOnly
         icon={ShieldCheck}
-        floatClass="float-card-4 -bottom-8 -right-1 sm:-bottom-12 sm:-right-3 lg:-bottom-16 lg:-right-[60px] xl:-bottom-20 xl:-right-[75px]"
+        floatClass="float-card-4 -bottom-2 right-[2px] sm:-bottom-2 sm:right-[10px] lg:-bottom-2 lg:right-[30px] xl:-bottom-2 xl:right-[30px]"
         delay={1.4}
       />
     </motion.div>
