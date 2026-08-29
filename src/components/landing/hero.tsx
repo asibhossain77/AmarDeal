@@ -32,7 +32,8 @@ const fadeIn = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
 };
 
-// Floating Mini Card - supports 'highlight' (primary bg) and 'light' (white bg) variants
+// Floating Mini Card - icon container sits partially OUTSIDE the card, overlapping its edge
+// iconOnRight: when true, icon protrudes from the RIGHT side (for left-positioned cards)
 function FloatingMiniCard({
   icon: Icon,
   title,
@@ -40,6 +41,7 @@ function FloatingMiniCard({
   floatClass,
   delay,
   variant = 'light',
+  iconOnRight = false,
 }: {
   icon: React.ElementType;
   title: string;
@@ -47,52 +49,82 @@ function FloatingMiniCard({
   floatClass: string;
   delay: number;
   variant?: 'highlight' | 'light';
+  iconOnRight?: boolean;
 }) {
   const isHighlight = variant === 'highlight';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={`pointer-events-none absolute z-20 ${floatClass}`}
     >
-      <div
-        className={
-          isHighlight
-            ? 'flex items-center gap-2 rounded-2xl bg-primary px-3.5 py-2.5 shadow-lg shadow-primary/25 sm:gap-2.5 sm:px-4 sm:py-3'
-            : 'flex items-center gap-2 rounded-2xl border border-border/50 bg-white/90 px-3.5 py-2.5 shadow-md shadow-black/[0.04] backdrop-blur-md dark:border-border/30 dark:bg-zinc-900/70 dark:shadow-black/[0.15] sm:gap-2.5 sm:px-4 sm:py-3'
-        }
-      >
+      <div className="relative">
+        {/* Card body - the main rectangular surface */}
         <div
-          className={
+          className={[
+            'relative overflow-hidden',
+            // Responsive sizing
+            'w-[135px] h-[60px] sm:w-[155px] sm:h-[66px] lg:w-[170px] lg:h-[74px] xl:w-[180px] xl:h-[78px]',
+            // Border radius
+            'rounded-[17px] sm:rounded-[19px] lg:rounded-[20px]',
+            // Padding - extra on the icon side so text doesn't hide behind icon
+            iconOnRight
+              ? 'pl-3 sm:pl-3.5 pr-8 sm:pr-10 lg:pr-11 xl:pr-12'
+              : 'pl-8 sm:pl-10 lg:pl-11 xl:pl-12 pr-3 sm:pr-3.5',
+            'pt-2.5 pb-2 sm:pt-3 sm:pb-2.5 lg:pt-3.5 lg:pb-3',
+            // Surface
             isHighlight
-            ? 'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/20 sm:h-8 sm:w-8'
-            : 'flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/12 sm:h-8 sm:w-8'
-          }
+              ? 'bg-primary shadow-xl shadow-primary/25 dark:shadow-primary/15'
+              : 'border border-border/40 bg-white/90 shadow-lg shadow-black/[0.06] backdrop-blur-md dark:border-border/25 dark:bg-zinc-900/70 dark:shadow-black/[0.2]',
+          ].join(' ')}
         >
-          <Icon
-            className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
-              isHighlight ? 'text-primary-foreground' : 'text-primary'
-            }`}
-            strokeWidth={2}
-          />
-        </div>
-        <div className="min-w-0">
+          {/* Subtle top highlight line for premium feel */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.08]" />
+
           <p
-            className={`text-[10px] font-medium leading-tight sm:text-[11px] ${
-              isHighlight ? 'text-primary-foreground/80' : 'text-muted-foreground'
-            }`}
+            className={[
+              'text-[10px] font-medium leading-tight sm:text-[11px] lg:text-[11px]',
+              isHighlight ? 'text-primary-foreground/70' : 'text-muted-foreground',
+            ].join(' ')}
           >
             {title}
           </p>
           <p
-            className={`text-xs font-bold leading-tight sm:text-sm ${
-              isHighlight ? 'text-primary-foreground' : 'text-foreground'
-            }`}
+            className={[
+              'mt-0.5 text-[13px] font-bold leading-tight sm:text-[14px] lg:text-[15px]',
+              isHighlight ? 'text-primary-foreground' : 'text-foreground',
+            ].join(' ')}
           >
             {value}
           </p>
+        </div>
+
+        {/* Icon container - extends OUTSIDE the card edge */}
+        <div
+          className={[
+            'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center',
+            // Responsive icon container size
+            'w-[34px] h-[34px] sm:w-[38px] sm:h-[38px] lg:w-[44px] lg:h-[44px] xl:w-[46px] xl:h-[46px]',
+            'rounded-[11px] sm:rounded-[12px] lg:rounded-[14px]',
+            // Position: extends outside the card's edge toward the dashboard
+            iconOnRight
+              ? '-right-[12px] sm:-right-[13px] lg:-right-[15px] xl:-right-[16px]'
+              : '-left-[12px] sm:-left-[13px] lg:-left-[15px] xl:-left-[16px]',
+            // Surface color
+            isHighlight
+              ? 'bg-primary shadow-lg shadow-primary/30 dark:shadow-primary/20'
+              : 'bg-primary/15 dark:bg-primary/20 shadow-md',
+          ].join(' ')}
+        >
+          <Icon
+            className={[
+              'w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] lg:w-[21px] lg:h-[21px] xl:w-[22px] xl:h-[22px]',
+              isHighlight ? 'text-primary-foreground' : 'text-primary',
+            ].join(' ')}
+            strokeWidth={2.2}
+          />
         </div>
       </div>
     </motion.div>
@@ -118,7 +150,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
       {/* Subtle green glow behind card */}
       <div className="pointer-events-none absolute -inset-10 rounded-3xl bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
 
-      <div className="main-card-float relative">
+      <div className="main-card-float relative mx-auto max-w-[280px] sm:max-w-xs lg:max-w-sm xl:max-w-md">
         {/* Glass card body */}
         <div className="card-body-glass relative overflow-hidden rounded-2xl border border-border/50 bg-white/85 p-5 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-6">
 
@@ -259,42 +291,46 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         </div>
       </div>
 
-      {/* 4 Floating Mini Cards - positioned OUTSIDE the main card perimeter */}
-      {/* Card 1: Payment Secured - upper-left, outside edge */}
+      {/* 4 Floating Mini Cards - orbit the dashboard, icons face toward it */}
+      {/* Card 1: Payment Secured - top-left, icon faces RIGHT toward dashboard */}
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
         value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
-        floatClass="float-card-1 top-2 -left-4 sm:top-3 sm:-left-6 md:-left-8 lg:top-4 lg:-left-12"
+        floatClass="float-card-1 -top-9 -left-2 sm:-top-12 sm:-left-5 lg:-top-14 lg:-left-[90px] xl:-left-[110px]"
         delay={0.8}
         variant="light"
+        iconOnRight={true}
       />
-      {/* Card 2: Verified User - upper-right, outside edge */}
+      {/* Card 2: Verified User - top-right, icon faces LEFT toward dashboard */}
       <FloatingMiniCard
         icon={UserCheck}
         title={t('hero.float.verifiedUser')}
         value={t('hero.float.trusted')}
-        floatClass="float-card-2 top-0 -right-2 sm:top-1 sm:-right-5 md:-right-7 lg:top-2 lg:-right-14"
+        floatClass="float-card-2 -top-7 -right-2 sm:-top-10 sm:-right-5 lg:-top-12 lg:-right-[90px] xl:-right-[110px]"
         delay={1.0}
         variant="light"
+        iconOnRight={false}
       />
-      {/* Card 3: Deal Completed - lower-left, HIGHLIGHT card (primary bg) */}
+      {/* Card 3: Deal Completed - bottom-left, HIGHLIGHT card, icon faces RIGHT */}
       <FloatingMiniCard
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
         value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
-        floatClass="float-card-3 -bottom-2 -left-3 sm:-bottom-3 sm:-left-5 md:-left-8 lg:-bottom-4 lg:-left-14"
+        floatClass="float-card-3 -bottom-7 -left-2 sm:-bottom-10 sm:-left-5 lg:-bottom-12 lg:-left-[90px] xl:-left-[110px]"
         delay={1.2}
         variant="highlight"
+        iconOnRight={true}
       />
-      {/* Card 4: Deal Protected - lower-right, outside edge */}
+      {/* Card 4: Deal Protected - bottom-right, icon faces LEFT toward dashboard */}
       <FloatingMiniCard
         icon={ShieldCheck}
         title={t('hero.float.dealProtected')}
         value={t('hero.float.hundredSecure')}
-        floatClass="float-card-4 -bottom-1 -right-2 sm:-bottom-2 sm:-right-4 md:-right-6 lg:-bottom-3 lg:-right-10"
+        floatClass="float-card-4 -bottom-9 -right-2 sm:-bottom-12 sm:-right-5 lg:-bottom-14 lg:-right-[90px] xl:-right-[110px]"
         delay={1.4}
         variant="light"
+        iconOnRight={false}
       />
     </motion.div>
   );
@@ -415,7 +451,7 @@ export function Hero() {
               transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
               className="order-2 lg:order-2"
             >
-              <div className="relative mx-auto w-full max-w-[280px] sm:max-w-xs lg:mx-0 lg:max-w-sm xl:max-w-md">
+              <div className="relative mx-auto w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[480px] xl:max-w-[520px]">
                 <EscrowDashboard locale={locale} t={t} />
               </div>
             </motion.div>

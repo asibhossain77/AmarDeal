@@ -424,3 +424,31 @@ Stage Summary:
 - Mobile: breathing space on all 4 sides, cards orbit dashboard, no content overlap
 - Dark mode: cards visible, highlight card stands out, dashboard readable
 - Tablet: tighter md: breakpoint prevents edge clipping while maintaining layout
+---
+Task ID: 2
+Agent: Main Agent
+Task: Refine floating cards in Midman.bd hero section - icon-outside-card design, color hierarchy, positioning, responsive layout
+
+Work Log:
+- Read existing hero.tsx, globals.css, and i18n locale files to understand current state
+- Updated CSS animations in globals.css: changed from mixed horizontal+vertical to pure vertical translate3d(0, ±5-8px, 0), durations 4.8s-6s (faster, more subtle)
+- Completely rewrote FloatingMiniCard component with new architecture:
+  - Card body: rectangular surface with responsive sizing (135x60px mobile → 180x78px desktop), border-radius 17-20px
+  - Icon container: absolutely positioned to extend OUTSIDE card edge via -left-[12-16px] or -right-[12-16px]
+  - Added iconOnRight prop to flip icon side (left cards face right, right cards face left)
+  - Variant system: 'highlight' (bg-primary full green card + icon, primary-foreground text) vs 'light' (white/glass card, primary-tinted icon)
+  - Premium top highlight line via gradient pseudo-element
+- Updated 4 floating card instances:
+  - Card 1 (Shield, top-left): iconOnRight=true, light variant
+  - Card 2 (UserCheck, top-right): iconOnRight=false, light variant
+  - Card 3 (CheckCircle2, bottom-left): iconOnRight=true, HIGHLIGHT variant (green)
+  - Card 4 (ShieldCheck, bottom-right): iconOnRight=false, light variant
+- Responsive positioning: mobile -left-2/-right-2 → sm -left-5/-right-5 → lg -left-[90px]/-right-[90px] → xl -left-[110px]/-right-[110px]
+- Added mx-auto max-w constraint to dashboard card (max-w-[280px] sm:max-w-xs lg:max-w-sm xl:max-w-md) to keep it centered within the larger wrapper
+- Increased wrapper max-width for breathing room (340px → 480px → 520px across breakpoints)
+
+Stage Summary:
+- Desktop verified: 4 cards at corners, 16px icon protrusion, 1 green highlight card, clear breathing space, no content obstruction
+- Mobile verified: 135x60px cards, 12px icon protrusion, no horizontal overflow, minimal 8px content overlap at edges (within padding zone)
+- Dark mode verified: green highlight card visible, dark surface cards with proper contrast
+- Key files modified: src/components/landing/hero.tsx, src/app/globals.css
