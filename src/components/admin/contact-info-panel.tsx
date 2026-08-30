@@ -1,7 +1,7 @@
 'use client';
 import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export function ContactInfoPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const adminFileInputId = 'admin-pic-upload';
 
   useEffect(() => {
     Promise.all([
@@ -112,7 +112,8 @@ export function ContactInfoPanel() {
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      const inp = document.getElementById(adminFileInputId) as HTMLInputElement | null;
+      if (inp) inp.value = '';
     }
   };
 
@@ -139,9 +140,9 @@ export function ContactInfoPanel() {
         </div>
 
         <div className="flex flex-col items-center gap-5">
-          <div
+          <label
+            htmlFor={adminFileInputId}
             className="h-24 w-24 rounded-full overflow-hidden border-2 border-border/40 bg-muted/30 flex items-center justify-center relative group cursor-pointer"
-            onClick={() => !uploading && fileInputRef.current?.click()}
           >
             {profile.adminImageUrl ? (
               <img src={profile.adminImageUrl} alt="Profile" className="h-full w-full object-cover" loading="lazy" decoding="async" />
@@ -149,23 +150,24 @@ export function ContactInfoPanel() {
               <User className="h-10 w-10 text-muted-foreground/40" />
             )}
             {uploading && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
                 <Loader2 className="h-6 w-6 text-white animate-spin" />
               </div>
             )}
             {!uploading && (
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
                 <Camera className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={handleAdminImageUpload}
-            />
-          </div>
+          </label>
+          <input
+            id={adminFileInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={handleAdminImageUpload}
+            disabled={uploading}
+          />
           {profile.adminImageUrl && (
             <Button
               variant="ghost"

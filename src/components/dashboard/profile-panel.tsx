@@ -1,7 +1,6 @@
 'use client';
 
-import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useSyncExternalStore, useRef, useEffect } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,7 @@ export function ProfilePanel() {
 
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = 'profile-pic-upload';
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,7 +44,8 @@ export function ProfilePanel() {
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      const inp = document.getElementById(fileInputId) as HTMLInputElement | null;
+      if (inp) inp.value = '';
     }
   };
 
@@ -100,9 +100,9 @@ export function ProfilePanel() {
       <div className="w-full rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
         {/* Avatar with upload */}
         <div className="flex items-center gap-4">
-          <div
+          <label
+            htmlFor={fileInputId}
             className="relative group shrink-0 cursor-pointer"
-            onClick={() => !uploading && fileInputRef.current?.click()}
           >
             {currentImage ? (
               <img
@@ -117,37 +117,37 @@ export function ProfilePanel() {
               </div>
             )}
             {uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center pointer-events-none">
                 <Loader2 className="h-5 w-5 text-white animate-spin" />
               </div>
             )}
             {!uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
                 <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={handleUpload}
-            />
-          </div>
+          </label>
+          <input
+            id={fileInputId}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="sr-only"
+            onChange={handleUpload}
+            disabled={uploading}
+          />
           <div>
             <h3 className="text-lg font-bold text-foreground">{user?.name || t('dashboard.user')}</h3>
             <Badge className={`${roleBadgeClass} border-0 font-medium mt-1`}>{roleLabel}</Badge>
             <div className="flex gap-2 mt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 text-xs rounded-lg gap-1.5"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                {uploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন'}
-              </Button>
+              <label htmlFor={fileInputId}>
+                <span
+                  className="inline-flex items-center h-8 px-3 text-xs rounded-lg gap-1.5 border border-input bg-background hover:bg-accent hover:text-accent-foreground cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  style={uploading ? { pointerEvents: 'none', opacity: 0.5 } : {}}
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  {uploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন'}
+                </span>
+              </label>
               {currentImage && (
                 <Button
                   size="sm"
