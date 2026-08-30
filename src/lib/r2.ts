@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
 const r2 = new S3Client({
   region: 'auto',
@@ -53,4 +53,24 @@ export async function uploadToR2(
     : `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${key}`
 
   return { url, key }
+}
+
+/** Extract R2 key from a public URL like https://cdn.midman.bd/profiles/123.jpg */
+function urlToKey(url: string): string | null {
+  const base = R2_PUBLIC_URL || ''
+  if (base && url.startsWith(base + '/')) {
+    return url.slice(base.length + 1)
+  }
+  return null
+}
+
+/** Delete a file from R2 by its public URL. Silently ignores if not found. */
+export async function deleteFromR2(url: string): Promise<void> {
+  const key = urlToKey(url)
+  if (!key) return
+  try {
+    await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+  } catch {
+    // ignore — DB cleanup is the source of truth
+  }
 }

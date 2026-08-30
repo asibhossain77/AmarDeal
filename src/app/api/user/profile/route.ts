@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { comparePassword, hashPassword, needsRehash } from '@/lib/password'
+import { deleteFromR2 } from '@/lib/r2'
 
 export async function PUT(req: NextRequest) {
   try {
@@ -41,6 +42,10 @@ export async function PUT(req: NextRequest) {
 
     /* ─── Update Profile Image Link ─── */
     if (action === 'update_image_link') {
+      const oldUrl = user.imageLink
+      if (!imageLink && oldUrl) {
+        await deleteFromR2(oldUrl)
+      }
       await db.user.update({
         where: { id },
         data: { imageLink: imageLink || null },

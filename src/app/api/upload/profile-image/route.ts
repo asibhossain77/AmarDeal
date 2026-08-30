@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { uploadToR2 } from '@/lib/r2'
+import { uploadToR2, deleteFromR2 } from '@/lib/r2'
 import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
         { success: false, error: 'ছবি ফাইল দিন' },
         { status: 400 }
       )
+    }
+
+    const user = await db.user.findUnique({ where: { id: userId }, select: { imageLink: true } })
+    if (user?.imageLink) {
+      await deleteFromR2(user.imageLink)
     }
 
     const result = await uploadToR2(file, 'profiles')

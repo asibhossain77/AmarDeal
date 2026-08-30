@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-guard'
-import { uploadToR2 } from '@/lib/r2'
+import { uploadToR2, deleteFromR2 } from '@/lib/r2'
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: 'প্রোফাইল ছবি প্রদান করুন' }, { status: 400 })
+    }
+
+    const old = await db.platformSetting.findUnique({ where: { key: 'admin_image_url' } })
+    if (old?.value) {
+      await deleteFromR2(old.value)
     }
 
     const result = await uploadToR2(file, 'profiles')
