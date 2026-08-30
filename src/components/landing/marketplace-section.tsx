@@ -150,7 +150,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
   const catColor = getCategoryColor(product.category);
   const gradientBg = CATEGORY_BG[product.category] || CATEGORY_BG.other;
   return (
-    <motion.div custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
+    <motion.article role="listitem" custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
       <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientBg}`}>
         {product.image ? (
           <img src={product.image} alt={product.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -184,7 +184,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
           </div>
         </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 }
 
@@ -365,18 +365,20 @@ export function MarketplaceSection() {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <section aria-label={t('page.marketplace.title')} className="space-y-6 sm:space-y-8">
       <PromoSlider locale={locale} onExplore={() => {}} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} className="h-11 w-full rounded-xl border border-border/40 bg-background pl-10 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all dark:border-border/25" />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} aria-label={t('marketplace.searchPlaceholder')} className="h-11 w-full rounded-xl border border-border/40 bg-background pl-10 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all dark:border-border/25" />
         </div>
         {user?.isSeller && (
           <Button onClick={() => setShowAddDialog(true)} className="gap-2 rounded-xl text-[13px] font-semibold shadow-md shadow-primary/20"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
         )}
       </div>
-      <CategoryGrid active={activeCategory} onSelect={setActiveCategory} locale={locale} />
+      <nav aria-label={locale === 'bn' ? '\u0995\u09CD\u09AF\u09BE\u099F\u09C7\u0997\u09B0\u09BF \u09AB\u09BF\u09B2\u09CD\u099F\u09BE\u09B0' : 'Category filter'}>
+        <CategoryGrid active={activeCategory} onSelect={setActiveCategory} locale={locale} />
+      </nav>
       <div className="flex items-center gap-2">
         <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
         <h2 className="text-[15px] font-bold text-foreground sm:text-base">{locale === 'bn' ? '\u09B8\u0995\u09B2 \u09AA\u09A3\u09CD\u09AF' : 'All Products'} {!loading && <span className="ml-2 text-[13px] font-normal text-muted-foreground">({filtered.length})</span>}</h2>
@@ -395,11 +397,11 @@ export function MarketplaceSection() {
           <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => setSelectedProduct(product)} t={t} locale={locale} />))}</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => setSelectedProduct(product)} t={t} locale={locale} />))}</div>
       )}
       <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => setSelectedProduct(null)} onMessageSeller={() => { if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; } setChatProduct(selectedProduct); setSelectedProduct(null); }} onOrderMidman={() => { handleOrderMidman(); setSelectedProduct(null); }} t={t} locale={locale} />
       <ProductChatDialog product={chatProduct} open={!!chatProduct} onClose={() => setChatProduct(null)} t={t} locale={locale} />
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
-    </div>
+    </section>
   );
 }
