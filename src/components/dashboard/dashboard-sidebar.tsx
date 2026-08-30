@@ -39,10 +39,19 @@ export function DashboardSidebar() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const user = useAppStore((s) => s.user);
   const t = useT();
-  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  // Reset imgError when image URL changes
-  useEffect(() => { setImgError(false); }, [user?.imageLink]);
+  const currentImage = user?.imageLink || null;
+
+  // Preload image
+  useEffect(() => {
+    setImgLoaded(false);
+    if (!currentImage) return;
+    const img = new Image();
+    img.onload = () => setImgLoaded(true);
+    img.onerror = () => setImgLoaded(false);
+    img.src = currentImage;
+  }, [currentImage]);
 
   if (!mounted) return null;
 
@@ -80,18 +89,21 @@ export function DashboardSidebar() {
             <SellerApplyButton variant="sidebar" />
           )}
           <div className="flex items-center gap-3 rounded-xl py-2">
-            {user?.imageLink && !imgError ? (
-              <img
-                src={user.imageLink}
-                alt={user.name}
-                className="h-9 w-9 shrink-0 rounded-full object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-                {user?.name?.charAt(0) || 'U'}
-              </div>
-            )}
+            <div
+              className="h-9 w-9 shrink-0 rounded-full overflow-hidden"
+              style={currentImage && imgLoaded
+                ? { backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
+              }
+            >
+              {!(currentImage && imgLoaded) && (
+                <span className="flex h-full w-full items-center justify-center text-sm font-bold select-none"
+                  style={{ color: 'oklch(0.768 0.189 131)' }}
+                >
+                  {user?.name?.charAt(0) || 'U'}
+                </span>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('dashboard.user')}</p>
               <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>

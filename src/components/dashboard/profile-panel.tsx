@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -19,11 +19,26 @@ export function ProfilePanel() {
 
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const fileInputId = 'profile-pic-upload';
 
-  // Reset imgError when image URL changes (e.g. after upload)
-  useEffect(() => { setImgError(false); }, [user?.imageLink]);
+  const currentImage = user?.imageLink || null;
+
+  // Preload image and track load state
+  useEffect(() => {
+    setImgLoaded(false);
+    if (!currentImage) return;
+    const img = new Image();
+    img.onload = () => {
+      console.log('[Profile] Image preloaded OK:', currentImage);
+      setImgLoaded(true);
+    };
+    img.onerror = () => {
+      console.error('[Profile] Image preload FAILED:', currentImage);
+      setImgLoaded(false);
+    };
+    img.src = currentImage;
+  }, [currentImage]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,19 +53,9 @@ export function ProfilePanel() {
       fd.append('image', file);
       const res = await fetch('/api/upload/profile-image', { method: 'POST', body: fd });
       const data = await res.json();
-      console.log('[Profile] Upload response:', data);
       if (res.ok && data.success) {
-        console.log('[Profile] Setting imageLink to:', data.url);
         if (user) setUser({ ...user, imageLink: data.url });
         toast.success('প্রোফাইল ছবি আপডেট হয়েছে!');
-        // Force refresh user data from DB to confirm
-        fetch('/api/auth/me').then(r => r.json()).then(me => {
-          console.log('[Profile] /auth/me returned imageLink:', me.imageLink);
-          const currentUser = useAppStore.getState().user;
-          if (me.imageLink && currentUser) {
-            useAppStore.getState().setUser({ ...currentUser, imageLink: me.imageLink });
-          }
-        }).catch(() => {});
       } else {
         toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
       }
@@ -102,12 +107,7 @@ export function ProfilePanel() {
     RoleIcon = Store;
   }
 
-  const currentImage = user?.imageLink || null;
-
-  // Debug: log imageLink changes
-  useEffect(() => {
-    console.log('[Profile] imageLink changed:', user?.imageLink || 'null');
-  }, [user?.imageLink]);
+  const showImage = currentImage && imgLoaded;
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
@@ -119,46 +119,43 @@ export function ProfilePanel() {
       <div className="w-full rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
         {/* Avatar with upload */}
         <div className="flex items-center gap-4">
-          <label
-            htmlFor={fileInputId}
-            className="relative group shrink-0 cursor-pointer"
-          >
-            {currentImage && !imgError ? (
-              <img
-                src={currentImage}
-                alt={user?.name || 'Profile'}
-                className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-3 ring-primary/20"
-                onError={() => {
-                  console.error('[Profile] Image failed to load:', currentImage);
-                  toast.error('ছবি লোড হচ্ছে না: ' + (currentImage || '').slice(0, 80));
-                  setImgError(true);
-                }}
-                onLoad={() => console.log('[Profile] Image loaded OK:', currentImage)}
-              />
-            ) : (
-              <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/15 text-2xl sm:text-3xl font-bold text-primary">
-                {user?.name?.charAt(0) || 'U'}
-              </div>
-            )}
-            {uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center pointer-events-none">
-                <Loader2 className="h-5 w-5 text-white animate-spin" />
-              </div>
-            )}
-            {!uploading && (
-              <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center pointer-events-none">
-                <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            )}
-          </label>
-          <input
-            id={fileInputId}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            className="sr-only"
-            onChange={handleUpload}
-            disabled={uploading}
-          />
+          <div className="relative shrink-0">
+            <label
+              htmlFor={fileInputId}
+              className="block h-16 w-16 sm:h-20 sm:w-20 rounded-full cursor-pointer ring-3 ring-primary/20 overflow-hidden"
+              style={showImage
+                ? { backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
+              }
+            >
+              {!showImage && (
+                <span className="flex h-full w-full items-center justify-center text-2xl sm:text-3xl font-bold select-none"
+                  style={{ color: 'oklch(0.768 0.189 131)' }}
+                >
+                  {user?.name?.charAt(0) || 'U'}
+                </span>
+              )}
+              {uploading && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                </span>
+              )}
+              {!uploading && showImage && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/30 transition-colors">
+                  <Camera className="h-5 w-5 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                </span>
+              )}
+              <span className="sr-only">ছবি আপলোড করুন</span>
+            </label>
+            <input
+              id={fileInputId}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="sr-only"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </div>
           <div>
             <h3 className="text-lg font-bold text-foreground">{user?.name || t('dashboard.user')}</h3>
             <Badge className={`${roleBadgeClass} border-0 font-medium mt-1`}>{roleLabel}</Badge>
@@ -180,7 +177,7 @@ export function ProfilePanel() {
                   onClick={handleRemoveImage}
                   disabled={removing}
                 >
-                  {removing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  {removing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3" />}
                   সরান
                 </Button>
               )}
