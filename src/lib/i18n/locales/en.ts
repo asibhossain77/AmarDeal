@@ -556,6 +556,8 @@ export const en: Record<TranslationKey, string> = {
   'seller.viewProfileShort': 'View profile',
   'seller.addNewProductMsg': 'Taking you to the add product page...',
   'seller.noProductsYet': 'No products added yet',
+  'seller.accountDisabled': 'Seller Account Disabled',
+  'seller.accountDisabledDesc': 'Your seller account has been disabled by admin. You can apply again.',
 
   // ── Support ──
   'support.aiSupport': 'AI Support',
@@ -1390,6 +1392,14 @@ export const en: Record<TranslationKey, string> = {
   'admin.sellerApps.rejectSuccess': 'Application rejected',
   'admin.sellerApps.rejectionReason': 'Rejection reason',
   'admin.sellerApps.pendingCount': 'Pending applications',
+  'admin.sellerApps.disabled': 'Disabled',
+  'admin.sellerApps.disable': 'Disable',
+  'admin.sellerApps.disableSuccess': 'Seller account disabled',
+  'admin.sellerApps.disableConfirm': 'Disable this seller account?',
+  'admin.sellerApps.disableDesc': 'This seller will lose access to their seller dashboard.',
+  'admin.sellerApps.enable': 'Re-enable',
+  'admin.sellerApps.enableSuccess': 'Seller account re-enabled',
+  'admin.sellerApps.rejectReasonLabel': 'Enter reason for rejection',
 
   // -- admin-main.tsx additional keys --
   'common.unknown': 'Unknown',

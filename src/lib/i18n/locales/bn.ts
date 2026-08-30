@@ -554,6 +554,8 @@ export const bn = {
   'seller.viewProfileShort': 'প্রোফাইল দেখুন',
   'seller.addNewProductMsg': 'নতুন পণ্য যোগ করার পেজে নিচ্ছি...',
   'seller.noProductsYet': 'এখনো কোনো পণ্য যোগ করা হয়নি',
+  'seller.accountDisabled': 'সেলার অ্যাকাউন্ট নিষ্ক্রিয়',
+  'seller.accountDisabledDesc': 'আপনার সেলার অ্যাকাউন্ট অ্যাডমিন কর্তৃক নিষ্ক্রিয় করা হয়েছে। আবার আবেদন করতে পারেন।',
 
   // ── Support ──
   'support.aiSupport': 'AI সাপোর্ট',
@@ -1388,6 +1390,14 @@ export const bn = {
   'admin.sellerApps.rejectSuccess': 'আবেদন বাতিল হয়েছে',
   'admin.sellerApps.rejectionReason': 'বাতিলের কারণ',
   'admin.sellerApps.pendingCount': 'পেন্ডিং আবেদন',
+  'admin.sellerApps.disabled': 'নিষ্ক্রিয়',
+  'admin.sellerApps.disable': 'নিষ্ক্রিয় করুন',
+  'admin.sellerApps.disableSuccess': 'সেলার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে',
+  'admin.sellerApps.disableConfirm': 'সেলার অ্যাকাউন্ট নিষ্ক্রিয় করবেন?',
+  'admin.sellerApps.disableDesc': 'এই সেলারের অ্যাকাউন্ট নিষ্ক্রিয় হবে এবং সেলার ড্যাশবোর্ডে আর প্রবেশ করতে পারবেন না।',
+  'admin.sellerApps.enable': 'পুনরায় সক্রিয় করুন',
+  'admin.sellerApps.enableSuccess': 'সেলার অ্যাকাউন্ট পুনরায় সক্রিয় করা হয়েছে',
+  'admin.sellerApps.rejectReasonLabel': 'বাতিল করার কারণ লিখুন',
 
   // -- admin-main.tsx additional keys --
   'common.unknown': 'অজানা',

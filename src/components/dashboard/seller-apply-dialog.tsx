@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, Clock, XCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Store, Clock, XCircle, Loader2, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -111,6 +111,74 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
         <Clock className="h-[18px] w-[18px] text-amber-500" />
         <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('seller.pending')}</span>
       </div>
+    );
+  }
+
+  if (application?.status === 'disabled') {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <button
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-orange-600 bg-orange-500/10 border border-orange-500/20 transition-colors hover:bg-orange-500/15 ${
+              variant === 'mobile' ? 'px-4 py-3' : ''
+            }`}
+          >
+            <Ban className="h-[18px] w-[18px]" />
+            <span className="flex-1 text-left">{t('seller.accountDisabled')}</span>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-500" />
+              {t('seller.accountDisabled')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('seller.accountDisabledDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 rounded-xl bg-orange-500/5 border border-orange-500/10 p-4">
+            <p className="text-xs text-muted-foreground mb-3">{t('seller.applyDesc')}</p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.businessName')}</Label>
+                <Input
+                  placeholder={t('seller.businessNamePh')}
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.email')}</Label>
+                <Input
+                  type="email"
+                  placeholder={t('seller.emailPh')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.phone')}</Label>
+                <Input
+                  placeholder={t('seller.phonePh')}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {submitting ? t('seller.submitting') : t('seller.submit')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 

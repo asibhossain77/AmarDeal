@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  UserCheck, UserX, Users, Clock, Loader2,
+  UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,7 +25,7 @@ interface SellerApp {
   status: string;
   rejectionReason: string | null;
   createdAt: string;
-  user: { id: string; name: string; email: string; phone: string; imageLink: string | null };
+  user: { id: string; name: string; email: string; phone: string; imageLink: string | null; isSeller: boolean };
 }
 
 export function SellerAppsTab() {
@@ -33,6 +33,7 @@ export function SellerAppsTab() {
   const [apps, setApps] = useState<SellerApp[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectId, setRejectId] = useState<string | null>(null);
+  const [disableId, setDisableId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -49,18 +50,24 @@ export function SellerAppsTab() {
 
   useEffect(() => { fetchApps(); }, [fetchApps]);
 
-  const handleApprove = async (id: string) => {
+  const handleAction = async (id: string, status: string, reason?: string) => {
     setProcessing(id);
     try {
       const url = '/api/admin/seller-applications/' + id;
       const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'approved' }),
+        body: JSON.stringify({ status, rejectionReason: reason || null }),
       });
       if (res.ok) {
-        toast.success(t('admin.sellerApps.approveSuccess'));
+        if (status === 'approved') toast.success(t('admin.sellerApps.approveSuccess'));
+        else if (status === 'rejected') toast.success(t('admin.sellerApps.rejectSuccess'));
+        else if (status === 'disabled') toast.success(t('admin.sellerApps.disableSuccess'));
+        else if (status === 'enabled') toast.success(t('admin.sellerApps.enableSuccess'));
         fetchApps();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed');
       }
     } catch { /* ignore */ }
     setProcessing(null);
@@ -68,22 +75,15 @@ export function SellerAppsTab() {
 
   const handleReject = async () => {
     if (!rejectId) return;
-    setProcessing(rejectId);
-    try {
-      const url = '/api/admin/seller-applications/' + rejectId;
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'rejected', rejectionReason: rejectReason || null }),
-      });
-      if (res.ok) {
-        toast.success(t('admin.sellerApps.rejectSuccess'));
-        setRejectId(null);
-        setRejectReason('');
-        fetchApps();
-      }
-    } catch { /* ignore */ }
-    setProcessing(null);
+    await handleAction(rejectId, 'rejected', rejectReason);
+    setRejectId(null);
+    setRejectReason('');
+  };
+
+  const handleDisable = async () => {
+    if (!disableId) return;
+    await handleAction(disableId, 'disabled');
+    setDisableId(null);
   };
 
   const pendingCount = apps.filter((a) => a.status === 'pending').length;
@@ -97,6 +97,11 @@ export function SellerAppsTab() {
     if (status === 'approved') return (
       <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium gap-1">
         <UserCheck className="h-3 w-3" /> {t('admin.sellerApps.approved')}
+      </Badge>
+    );
+    if (status === 'disabled') return (
+      <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-500/15 dark:text-zinc-400 border-0 font-medium gap-1">
+        <Ban className="h-3 w-3" /> {t('admin.sellerApps.disabled')}
       </Badge>
     );
     return (
@@ -182,7 +187,7 @@ export function SellerAppsTab() {
                           <div className="flex items-center justify-center gap-1.5">
                             <Button
                               size="sm"
-                              onClick={() => handleApprove(app.id)}
+                              onClick={() => handleAction(app.id, 'approved')}
                               disabled={processing === app.id}
                               className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                             >
@@ -200,6 +205,27 @@ export function SellerAppsTab() {
                               {t('admin.sellerApps.reject')}
                             </Button>
                           </div>
+                        ) : app.status === 'approved' ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDisableId(app.id)}
+                            disabled={processing === app.id}
+                            className="h-8 gap-1 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-500/20 dark:hover:bg-orange-500/10"
+                          >
+                            <Ban className="h-3 w-3" />
+                            {t('admin.sellerApps.disable')}
+                          </Button>
+                        ) : app.status === 'disabled' ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleAction(app.id, 'enabled')}
+                            disabled={processing === app.id}
+                            className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            {processing === app.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                            {t('admin.sellerApps.enable')}
+                          </Button>
                         ) : app.rejectionReason ? (
                           <span className="text-xs text-red-500" title={app.rejectionReason}>{t('admin.sellerApps.rejectionReason')}</span>
                         ) : null}
@@ -253,7 +279,7 @@ export function SellerAppsTab() {
                   <div className="flex items-center gap-2 pt-1">
                     <Button
                       size="sm"
-                      onClick={() => handleApprove(app.id)}
+                      onClick={() => handleAction(app.id, 'approved')}
                       disabled={processing === app.id}
                       className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
@@ -272,6 +298,33 @@ export function SellerAppsTab() {
                     </Button>
                   </div>
                 )}
+                {app.status === 'approved' && (
+                  <div className="pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDisableId(app.id)}
+                      disabled={processing === app.id}
+                      className="w-full gap-1.5 text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-500/20 dark:hover:bg-orange-500/10"
+                    >
+                      <Ban className="h-3.5 w-3.5" />
+                      {t('admin.sellerApps.disable')}
+                    </Button>
+                  </div>
+                )}
+                {app.status === 'disabled' && (
+                  <div className="pt-1">
+                    <Button
+                      size="sm"
+                      onClick={() => handleAction(app.id, 'enabled')}
+                      disabled={processing === app.id}
+                      className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {processing === app.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                      {t('admin.sellerApps.enable')}
+                    </Button>
+                  </div>
+                )}
               </SolidCard>
             ))}
           </div>
@@ -286,7 +339,7 @@ export function SellerAppsTab() {
               <UserX className="h-5 w-5 text-red-500" />
               {t('admin.sellerApps.rejectConfirm')}
             </DialogTitle>
-            <DialogDescription>{t('admin.sellerApps.rejectReason')}</DialogDescription>
+            <DialogDescription>{t('admin.sellerApps.rejectReasonLabel')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
@@ -304,6 +357,26 @@ export function SellerAppsTab() {
             <Button onClick={handleReject} disabled={processing === rejectId} className="bg-red-600 hover:bg-red-700 text-white gap-2">
               {processing === rejectId && <Loader2 className="h-4 w-4 animate-spin" />}
               {t('admin.sellerApps.reject')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Disable Confirm Dialog */}
+      <Dialog open={!!disableId} onOpenChange={(open) => { if (!open) setDisableId(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-500" />
+              {t('admin.sellerApps.disableConfirm')}
+            </DialogTitle>
+            <DialogDescription>{t('admin.sellerApps.disableDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDisableId(null)}>{t('admin.marketplace.cancel')}</Button>
+            <Button onClick={handleDisable} disabled={processing === disableId} className="bg-orange-600 hover:bg-orange-700 text-white gap-2">
+              {processing === disableId && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t('admin.sellerApps.disable')}
             </Button>
           </div>
         </DialogContent>

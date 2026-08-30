@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
 
 export async function GET() {
@@ -9,7 +9,7 @@ export async function GET() {
 
     const applications = await db.sellerApplication.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true } } },
+      include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true, isSeller: true } } },
     })
 
     return NextResponse.json({ applications })
