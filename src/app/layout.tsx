@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { headers } from "next/headers";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -286,6 +287,7 @@ export default async function RootLayout({
             <Toaster />
           </QueryProvider>
           {GA_ID && <GoogleAnalytics gaId={GA_ID} nonce={nonce} />}
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
