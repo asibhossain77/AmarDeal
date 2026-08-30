@@ -19,3 +19,21 @@ Stage Summary:
 - Both marketplace dialog and seller dashboard support file upload
 - Drag-and-drop + click-to-browse + URL paste all supported
 - Preview with remove button shown after upload
+
+---
+Task ID: 4
+Agent: Main
+Task: Turso database connection check and git push
+
+Work Log:
+- Verified project already has Turso support in src/lib/db.ts (auto-detects libsql:// URLs)
+- Updated .env: DATABASE_URL changed from local SQLite to libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io
+- Added TURSO_AUTH_TOKEN to .env with provided JWT token
+- Tested Turso connection with libsql client - connection successful
+- Verified all 20 tables exist on Turso (User, Deal, DigitalProduct, SellerApplication, etc.)
+- Checked data: 81 users, 5 deals, 1 seller application, 2 payment methods, 34 platform settings
+- Pushed 4 pending commits to origin/main (987370f..1f5de9c)
+
+Stage Summary:
+- Turso database connected and verified - all tables present with live data
+- Git push successful to https://github.com/asibhossain77/AmarDeal.git
