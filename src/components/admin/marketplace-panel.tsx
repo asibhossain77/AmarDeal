@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Save, Plus, Trash2, Pencil, Eye, EyeOff, Image, Link2, GripVertical,
   Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown,
-  Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw, Users,
+  Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw, Users, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -271,6 +271,32 @@ function BannersTab() {
   const [editing, setEditing] = useState<Banner | null>(null);
   const [form, setForm] = useState({ ...EMPTY_BANNER });
   const [saving, setSaving] = useState(false);
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const bannerFileInputId = 'banner-image-upload';
+
+  const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('সর্বোচ্চ 2MB'); return; }
+    setBannerUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/upload/banner-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForm((p) => ({ ...p, image: data.url }));
+      } else {
+        toast.error(data.error || 'আপলোড ব্যর্থ');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা');
+    } finally {
+      setBannerUploading(false);
+      const inp = document.getElementById(bannerFileInputId) as HTMLInputElement | null;
+      if (inp) inp.value = '';
+    }
+  };
 
   const loadBanners = useCallback(async () => {
     try {
@@ -420,14 +446,30 @@ function BannersTab() {
                     <Image className="h-3.5 w-3.5" />
                     {t('admin.marketplace.bannerImage')} *
                   </Label>
-                  <Input
-                    placeholder="https://example.com/banner.png"
-                    value={form.image}
-                    onChange={(e) => setForm((p) => ({ ...p, image: e.target.value }))}
-                  />
+                  <div className="flex gap-2">
+                    <label htmlFor={bannerFileInputId} className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors text-sm text-muted-foreground">
+                      {bannerUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {bannerUploading ? 'আপলোড হচ্ছে...' : 'ছবি আপলোড করুন'}
+                    </label>
+                    <input
+                      id={bannerFileInputId}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handleBannerImageUpload}
+                      disabled={bannerUploading}
+                    />
+                  </div>
                   {form.image && (
-                    <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px]">
+                    <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px] relative group">
                       <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setForm((p) => ({ ...p, image: '' }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   )}
                 </div>

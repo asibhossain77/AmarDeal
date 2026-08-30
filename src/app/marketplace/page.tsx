@@ -28,6 +28,14 @@ export async function generateMetadata(): Promise<Metadata> {
     .map(c => CATEGORIES_BN[c] || c)
     .join(', ');
 
+  let siteLogoUrl = `${SITE_URL}/logo.svg`;
+  try {
+    const logoSetting = await db.platformSetting.findUnique({ where: { key: 'site_logo' } });
+    if (logoSetting?.value && !logoSetting.value.startsWith('data:')) {
+      siteLogoUrl = logoSetting.value.startsWith('http') ? logoSetting.value : `${SITE_URL}${logoSetting.value}`;
+    }
+  } catch { /* fallback */ }
+
   return {
     title: 'ডিজিটাল মার্কেটপ্লেস - নিরাপদে ডিজিটাল পণ্য কিনুন ও বিক্রি করুন | Midman মিডম্যান',
     description: `Midman মিডম্যান মার্কেটপ্লেসে ${products.length}টিরও বেশি ডিজিটাল পণ্য পাবেন। ${categoryNames || 'ডিজিটাল'} ক্যাটাগরিতে সেরা পণ্য কিনুন। সরাসরি সেলারের সাথে চ্যাট করুন বা মিডম্যান এসক্রো ডিলের মাধ্যমে ১০০% নিরাপদে অর্ডার করুন। বাংলাদেশের সবচেয়ে নিরাপদ ডিজিটাল মার্কেটপ্লেস।`,
@@ -74,7 +82,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'Midman মিডম্যান',
       images: [
         {
-          url: `${SITE_URL}/uploads/site-logo.png`,
+          url: siteLogoUrl,
           width: 1200,
           height: 630,
           alt: 'Midman মিডম্যান ডিজিটাল মার্কেটপ্লেস - নিরাপদে কিনুন ও বিক্রি করুন',
@@ -85,7 +93,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: 'ডিজিটাল মার্কেটপ্লেস | Midman মিডম্যান',
       description: `বাংলাদেশের নিরাপদ ডিজিটাল মার্কেটপ্লেস। ${products.length}টি+ পণ্য, এসক্রো সুরক্ষা সহ ডিজিটাল কেনাবেচা।`,
-      images: [`${SITE_URL}/uploads/site-logo.png`],
+      images: [siteLogoUrl],
     },
   };
 }
@@ -108,7 +116,7 @@ function buildJsonLd(products: { id: string; title: string; description: string;
         name: p.title,
         description: p.description,
         url: `${SITE_URL}/marketplace`,
-        image: p.image ? (p.image.startsWith('http') ? p.image : `${SITE_URL}${p.image}`) : `${SITE_URL}/uploads/site-logo.png`,
+        image: p.image ? (p.image.startsWith('http') ? p.image : `${SITE_URL}${p.image}`) : siteLogoUrl,
         offers: {
           '@type': 'Offer',
           price: p.price,

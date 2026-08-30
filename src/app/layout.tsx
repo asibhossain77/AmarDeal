@@ -3,6 +3,7 @@ import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
+import { db } from "@/lib/db";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from "@/lib/query-client";
@@ -11,6 +12,15 @@ import { LocaleEffect } from "@/components/shared/locale-effect";
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
 const SITE_URL = "https://midman.bd";
+const FALLBACK_LOGO = "/logo.svg";
+
+async function getSiteLogo(): Promise<string> {
+  try {
+    const row = await db.platformSetting.findUnique({ where: { key: 'site_logo' } });
+    if (row?.value && row.value !== '/logo.png' && !row.value.startsWith('data:')) return row.value;
+  } catch { /* fallback */ }
+  return FALLBACK_LOGO;
+}
 
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
@@ -19,7 +29,9 @@ const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const logo = await getSiteLogo();
+  return {
   metadataBase: new URL(SITE_URL),
   title: {
     default: "Midman মিডম্যান | বাংলাদেশের সেরা এসক্রো সার্ভিস - নিরাপদ অনলাইন লেনদেন",
@@ -90,9 +102,9 @@ export const metadata: Metadata = {
   classification: "এসক্রো সার্ভিস",
 
   icons: {
-    icon: "/uploads/site-logo.png",
-    shortcut: "/uploads/site-logo.png",
-    apple: "/uploads/site-logo.png",
+    icon: logo,
+    shortcut: logo,
+    apple: logo,
   },
 
   alternates: {
@@ -121,7 +133,7 @@ export const metadata: Metadata = {
     siteName: "Midman মিডম্যান",
     images: [
       {
-        url: "/uploads/site-logo.png",
+        url: logo,
         width: 1000,
         height: 1000,
         alt: "Midman মিডম্যান - বাংলাদেশের সেরা এসক্রো সার্ভিস",
@@ -134,7 +146,7 @@ export const metadata: Metadata = {
     title: "Midman মিডম্যান - নিরাপদ অনলাইন লেনদেন",
     description:
       "Midman (মিডম্যান) বাংলাদেশের সবচেয়ে নিরাপদ অনলাইন লেনদেন প্ল্যাটফর্ম। এসক্রো সার্ভিস দিয়ে প্রতারণামুক্ত লেনদেন।",
-    images: ["/uploads/site-logo.png"],
+    images: [logo],
   },
 
   verification: {
@@ -149,10 +161,13 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#16a34a",
     "theme-color": "#16a34a",
   },
-};
+  };
+}
 
 /* JSON-LD Structured Data for Google */
-const jsonLd = {
+async function buildJsonLd() {
+  const logo = await getSiteLogo();
+  return {
   "@context": "https://schema.org",
   "@graph": [
     {
@@ -178,7 +193,7 @@ const jsonLd = {
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/uploads/site-logo.png`,
+        url: logo.startsWith('http') ? logo : `${SITE_URL}${logo}`,
         width: 1000,
         height: 1000,
       },
@@ -242,6 +257,7 @@ const jsonLd = {
     },
   ],
 };
+}
 
 export default async function RootLayout({
   children,
@@ -269,7 +285,7 @@ export default async function RootLayout({
             (non-JS MIME type), so no nonce is needed here. */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(await buildJsonLd()) }}
         />
       </head>
       <body className={`${hindSiliguri.variable} font-sans antialiased`} suppressHydrationWarning>

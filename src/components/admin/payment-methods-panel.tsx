@@ -20,6 +20,8 @@ import {
   Eye,
   Wallet,
   ImageIcon,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -162,6 +164,31 @@ export function PaymentMethodsPanel() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pmLogoUploading, setPmLogoUploading] = useState(false);
+
+  const handlePmLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('সর্বোচ্চ 2MB'); return; }
+    setPmLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/upload/general-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForm((p) => ({ ...p, image: data.url }));
+      } else {
+        toast.error(data.error || 'আপলোড ব্যর্থ');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা');
+    } finally {
+      setPmLogoUploading(false);
+      const inp = document.getElementById('pm-logo-upload') as HTMLInputElement | null;
+      if (inp) inp.value = '';
+    }
+  };
 
   const fetchMethods = useCallback(async () => {
     try {
@@ -666,16 +693,25 @@ export function PaymentMethodsPanel() {
                       <ImageIcon className="h-3.5 w-3.5" />
                       {t("admin.payments.logoImageLink")}
                     </Label>
-                    <Input
-                      value={form.image}
-                      onChange={(e) =>
-                        setForm({ ...form, image: e.target.value })
-                      }
-                      placeholder="https://example.com/logo.png"
+                    <label htmlFor="pm-logo-upload" className="flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors text-sm text-muted-foreground">
+                      {pmLogoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {pmLogoUploading ? 'আপলোড হচ্ছে...' : 'লোগো আপলোড করুন'}
+                    </label>
+                    <input
+                      id="pm-logo-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handlePmLogoUpload}
+                      disabled={pmLogoUploading}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      {t("admin.payments.logoImageHint")}
-                    </p>
+                    {form.image && (
+                      <button
+                        type="button"
+                        className="text-xs text-red-500 hover:underline"
+                        onClick={() => setForm({ ...form, image: '' })}
+                      >সরান</button>
+                    )}
                   </div>
 
                   {/* Live preview of the gateway card */}
