@@ -10,6 +10,8 @@ import {
   Package,
   LogOut,
   X,
+  UserCircle,
+  Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,6 +27,8 @@ const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPan
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
   { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },
   { labelKey: 'seller.myProducts', icon: Package, panel: 'my-products' },
+  { labelKey: 'seller.addProduct', icon: Plus, panel: 'add-product' },
+  { labelKey: 'seller.businessProfile', icon: UserCircle, panel: 'business-profile' },
 ];
 
 export function SellerSidebar() {

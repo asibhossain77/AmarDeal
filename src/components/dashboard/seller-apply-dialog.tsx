@@ -34,10 +34,13 @@ export function SellerApplyButton({ variant = 'sidebar', onClose }: SellerApplyB
 
   if (user?.isSeller) {
     return (
-      <div className={`flex items-center gap-2.5 rounded-xl px-3 py-3 bg-primary/10 border border-primary/20`}>
-        <Store className="h-[18px] w-[18px] text-primary" />
-        <span className="text-sm font-semibold text-primary">{t('dashboard.sellerBadge')}</span>
-      </div>
+      <button
+        onClick={() => { useAppStore.getState().setView('seller'); onClose?.(); }}
+        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-3 bg-primary/10 border border-primary/20 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+      >
+        <Store className="h-[18px] w-[18px]" />
+        <span>{t('seller.goToDashboard')}</span>
+      </button>
     );
   }
 
