@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
+import { useState, useEffect, useSyncExternalStore, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
   Bell, Menu, Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -142,6 +142,19 @@ function AddProductPanel() {
   const [category, setCategory] = useState('other');
   const [image, setImage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('image', file);
+      const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success && data.url) setImage(data.url);
+      else toast.error(data.error || 'Upload failed');
+    } catch { toast.error('Upload failed'); } finally { setUploading(false); }
+  };
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim() || !price || Number(price) <= 0) {
@@ -215,15 +228,27 @@ function AddProductPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-semibold">{t('seller.productImage')} (URL)</Label>
-          <div className="flex items-center gap-3">
-            <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => setImage(e.target.value)} />
-            {image && (
-              <div className="h-10 w-10 shrink-0 rounded-lg bg-muted overflow-hidden">
-                <img src={image} alt="preview" className="h-10 w-10 object-cover" />
-              </div>
-            )}
-          </div>
+          <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
+          {image && !image.startsWith('data:') ? (
+            <div className="relative group">
+              <img src={image} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" />
+              <button type="button" onClick={() => { setImage(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+            </div>
+          ) : (
+            <div
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
+              onClick={() => fileRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+            >
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
+              <p className="text-[13px] text-muted-foreground">{uploading ? t('marketplace.uploading') : t('marketplace.dragDrop')}</p>
+              <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
+            </div>
+          )}
+          <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
+          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => setImage(e.target.value)} className="text-[13px]" />
         </div>
 
         <div className="flex justify-end pt-2">

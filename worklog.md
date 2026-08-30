@@ -1,24 +1,21 @@
 ---
-Task ID: 2
+Task ID: 3
 Agent: Main
-Task: Marketplace SEO optimization
+Task: Cloudflare R2 image upload for product images
 
 Work Log:
-- Read marketplace page.tsx, layout.tsx, sitemap.ts, robots.ts, marketplace-section.tsx
-- Enhanced marketplace/page.tsx with generateMetadata() that dynamically fetches products from DB
-- Title now includes product count and category names
-- Description dynamically includes product count + category list
-- Added 25+ marketplace-specific keywords (bn + en)
-- Full OpenGraph + Twitter Card metadata with 1200x630 image
-- Built 4 JSON-LD structured data blocks: ItemList (products with price/seller/category), BreadcrumbList (Home > Marketplace), CollectionPage (linked to organization), ItemList (categories with filter URLs)
-- Updated sitemap.ts to be async, fetches latest product date for marketplace lastModified
-- Added marketplace (priority 0.95) and 6 category filter pages to sitemap
-- Changed marketplace-section.tsx: div > section with aria-label, input type=text > type=search with aria-label, category grid wrapped in nav with aria-label, product grid div gets role=list, ProductCard div > article with role=listitem
-- Verified all SEO output via Agent Browser: meta tags, JSON-LD, sitemap, zero errors
+- Added R2 credentials to .env file (Account ID, Access Key, Secret, Bucket, Public URL)
+- Installed @aws-sdk/client-s3 package
+- Created src/lib/r2.ts reusable R2 upload utility with file type/size validation, products/ prefix
+- Created src/app/api/upload/product-image/route.ts API (seller-only, auth required, 2MB max, JPEG/PNG/WebP/GIF)
+- Added 5 new i18n keys (uploadImage, uploading, dragDrop, maxSize, orUrl) to bn.ts and en.ts
+- Updated marketplace AddProductDialog: added ImageUploader component with drag-and-drop, file picker, preview with remove, URL fallback
+- Updated seller dashboard AddProductPanel: same ImageUploader with drag-and-drop, preview, URL fallback
+- Verified marketplace page renders correctly with zero errors
 
 Stage Summary:
-- Dynamic metadata with real product data
-- 4 structured data schemas for Google Rich Results
-- Sitemap with 7 marketplace URLs (priority 0.95)
-- Semantic HTML with ARIA for accessibility
-- Zero new lint errors
+- R2 upload working via /api/upload/product-image
+- Files stored in products/ prefix with timestamp-random filename
+- Both marketplace dialog and seller dashboard support file upload
+- Drag-and-drop + click-to-browse + URL paste all supported
+- Preview with remove button shown after upload

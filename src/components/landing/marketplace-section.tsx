@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Search, MessageCircle, ShieldCheck, ShoppingCart, X, Send, Package, Plus, Loader2, User,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star,
+  ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star, Upload, ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -297,10 +297,45 @@ function ProductChatDialog({ product, open, onClose, t, locale }: { product: Pro
 }
 
 // -- AddProductDialog --
+function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: string; onChange: (v: string) => void; t: (k: string) => string; uploading: boolean; onUpload: (f: File) => void }) {
+  const [dragOver, setDragOver] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) onUpload(f); };
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) onUpload(f); };
+  if (image && !image.startsWith('data:')) return (
+    <div className="relative group">
+      <img src={image} alt="Product" className="w-full h-40 object-cover rounded-xl border border-border/40" />
+      <button type="button" onClick={() => { onChange(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><X className="h-3.5 w-3.5" /></button>
+    </div>
+  );
+  return (
+    <div className="space-y-2">
+      <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop} onClick={() => fileRef.current?.click()} className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 cursor-pointer transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-border/40 hover:border-primary/30 hover:bg-muted/30'}`}>
+        {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-6 w-6 text-muted-foreground" />}
+        <p className="text-[12px] text-muted-foreground text-center">{uploading ? t('marketplace.uploading') : t('marketplace.dragDrop')}</p>
+        <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFile} className="hidden" />
+      </div>
+      <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
+      <Input value={image} onChange={e => onChange(e.target.value)} placeholder="https://..." className="text-[12px]" />
+    </div>
+  );
+}
+
 function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boolean; onClose: () => void; onCreated: (product: Product) => void; t: (k: string) => string; locale: string }) {
   const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [price, setPrice] = useState(''); const [category, setCategory] = useState('other'); const [image, setImage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false); const [uploading, setUploading] = useState(false);
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append('image', file);
+      const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success && data.url) setImage(data.url);
+      else toast.error(data.error || 'Upload failed');
+    } catch { toast.error('Upload failed'); } finally { setUploading(false); }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim() || !price) return;
@@ -326,7 +361,7 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
               </div>
-              <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formImage')} <span className="text-muted-foreground">({t('marketplace.optional')})</span></label><Input value={image} onChange={e => setImage(e.target.value)} placeholder="https://..." /></div>
+              <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formImage')} <span className="text-muted-foreground">({t('marketplace.optional')})</span></label><ImageUploader image={image} onChange={setImage} t={t} uploading={uploading} onUpload={handleImageUpload} /></div>
               <Button type="submit" disabled={submitting} className="w-full gap-2 rounded-xl py-5 text-[14px] font-semibold">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{t('marketplace.submitProduct')}</Button>
             </form>
           </motion.div>
