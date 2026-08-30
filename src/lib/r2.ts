@@ -12,6 +12,16 @@ const r2 = new S3Client({
 export const R2_BUCKET = process.env.R2_BUCKET_NAME || 'midman-storage'
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || ''
 
+/** Validate that R2 is properly configured. Call at the start of upload APIs. */
+export function assertR2Configured(): void {
+  if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || !process.env.R2_BUCKET_NAME) {
+    throw new Error('R2 credentials are not configured')
+  }
+  if (!R2_PUBLIC_URL) {
+    console.error('[R2] WARNING: R2_PUBLIC_URL is not set. Uploaded files will not be publicly accessible.')
+  }
+}
+
 const ALLOWED_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -25,6 +35,8 @@ export async function uploadToR2(
   file: File,
   prefix: string = 'products'
 ): Promise<{ url: string; key: string }> {
+  assertR2Configured()
+
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error('আপলোডের জন্য JPEG, PNG, WebP অথবা GIF ফাইল হতে হবে')
   }
@@ -48,9 +60,12 @@ export async function uploadToR2(
     ContentType: file.type,
   }))
 
-  const url = R2_PUBLIC_URL
-    ? `${R2_PUBLIC_URL}/${key}`
-    : `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${key}`
+  if (!R2_PUBLIC_URL) {
+    throw new Error('R2 public URL is not configured. Set R2_PUBLIC_URL environment variable.')
+  }
+
+  const url = `${R2_PUBLIC_URL}/${key}`
+  console.error('[R2] Upload success:', url)
 
   return { url, key }
 }

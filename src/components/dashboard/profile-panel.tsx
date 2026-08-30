@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,11 @@ export function ProfilePanel() {
 
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const fileInputId = 'profile-pic-upload';
+
+  // Reset imgError when image URL changes (e.g. after upload)
+  useEffect(() => { setImgError(false); }, [user?.imageLink]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,12 +108,12 @@ export function ProfilePanel() {
             htmlFor={fileInputId}
             className="relative group shrink-0 cursor-pointer"
           >
-            {currentImage ? (
+            {currentImage && !imgError ? (
               <img
                 src={currentImage}
                 alt={user?.name || 'Profile'}
                 className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-3 ring-primary/20"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/15 text-2xl sm:text-3xl font-bold text-primary">

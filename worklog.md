@@ -37,3 +37,24 @@ Work Log:
 Stage Summary:
 - Turso database connected and verified - all tables present with live data
 - Git push successful to https://github.com/asibhossain77/AmarDeal.git
+
+---
+Task ID: 5
+Agent: Main
+Task: Debug why uploaded profile images don't show on website
+
+Work Log:
+- Investigated the full upload flow: r2.ts → upload API → DB save → frontend display
+- Tested R2 upload directly: upload succeeds, URL is correct (https://cdn.midman.bd/profiles/...), image is publicly accessible (HTTP 200, content-type: image/png)
+- Found root cause: If R2_PUBLIC_URL env var is missing on Vercel, old code silently constructed a non-public S3 endpoint URL (https://xxx.r2.cloudflarestorage.com/bucket/key) which returns 401
+- Fixed r2.ts: Added assertR2Configured() and made uploadToR2() throw a clear error if R2_PUBLIC_URL is not set
+- Added console.error logging throughout upload APIs (profile-image, admin upload-profile-pic) to trace: file info, old imageLink, R2 result URL, DB save result
+- Fixed image onError handlers in profile-panel.tsx and dashboard-sidebar.tsx: replaced display:none with proper state-based fallback (shows letter avatar when image fails to load)
+- Added useEffect to reset imgError state when image URL changes (important after upload)
+- Verified R2 upload works correctly locally with correct URL generation and public accessibility
+
+Stage Summary:
+- Key fix: R2 upload now throws explicit error if R2_PUBLIC_URL is not set, instead of silently returning broken URL
+- Image display now shows proper fallback (letter avatar) when image fails to load
+- All upload APIs have detailed error logging for Vercel debugging
+- User needs to verify R2_PUBLIC_URL=https://cdn.midman.bd is set on Vercel environment variables

@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { useAppStore, type DashboardPanel } from '@/lib/store';
 import {
   LayoutDashboard,
@@ -39,6 +39,10 @@ export function DashboardSidebar() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const user = useAppStore((s) => s.user);
   const t = useT();
+  const [imgError, setImgError] = useState(false);
+
+  // Reset imgError when image URL changes
+  useEffect(() => { setImgError(false); }, [user?.imageLink]);
 
   if (!mounted) return null;
 
@@ -76,12 +80,12 @@ export function DashboardSidebar() {
             <SellerApplyButton variant="sidebar" />
           )}
           <div className="flex items-center gap-3 rounded-xl py-2">
-            {user?.imageLink ? (
+            {user?.imageLink && !imgError ? (
               <img
                 src={user.imageLink}
                 alt={user.name}
                 className="h-9 w-9 shrink-0 rounded-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={() => setImgError(true)}
               />
             ) : (
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
