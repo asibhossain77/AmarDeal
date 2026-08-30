@@ -128,7 +128,6 @@ export function ProfilePanel() {
                 src={currentImage}
                 alt={user?.name || 'Profile'}
                 className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-3 ring-primary/20"
-                crossOrigin="anonymous"
                 onError={() => {
                   console.error('[Profile] Image failed to load:', currentImage);
                   toast.error('ছবি লোড হচ্ছে না: ' + (currentImage || '').slice(0, 80));
