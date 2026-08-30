@@ -38,9 +38,19 @@ export function ProfilePanel() {
       fd.append('image', file);
       const res = await fetch('/api/upload/profile-image', { method: 'POST', body: fd });
       const data = await res.json();
+      console.log('[Profile] Upload response:', data);
       if (res.ok && data.success) {
+        console.log('[Profile] Setting imageLink to:', data.url);
         if (user) setUser({ ...user, imageLink: data.url });
         toast.success('প্রোফাইল ছবি আপডেট হয়েছে!');
+        // Force refresh user data from DB to confirm
+        fetch('/api/auth/me').then(r => r.json()).then(me => {
+          console.log('[Profile] /auth/me returned imageLink:', me.imageLink);
+          const currentUser = useAppStore.getState().user;
+          if (me.imageLink && currentUser) {
+            useAppStore.getState().setUser({ ...currentUser, imageLink: me.imageLink });
+          }
+        }).catch(() => {});
       } else {
         toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
       }
@@ -94,6 +104,11 @@ export function ProfilePanel() {
 
   const currentImage = user?.imageLink || null;
 
+  // Debug: log imageLink changes
+  useEffect(() => {
+    console.log('[Profile] imageLink changed:', user?.imageLink || 'null');
+  }, [user?.imageLink]);
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div>
@@ -113,7 +128,13 @@ export function ProfilePanel() {
                 src={currentImage}
                 alt={user?.name || 'Profile'}
                 className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover ring-3 ring-primary/20"
-                onError={() => setImgError(true)}
+                crossOrigin="anonymous"
+                onError={() => {
+                  console.error('[Profile] Image failed to load:', currentImage);
+                  toast.error('ছবি লোড হচ্ছে না: ' + (currentImage || '').slice(0, 80));
+                  setImgError(true);
+                }}
+                onLoad={() => console.log('[Profile] Image loaded OK:', currentImage)}
               />
             ) : (
               <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/15 text-2xl sm:text-3xl font-bold text-primary">
