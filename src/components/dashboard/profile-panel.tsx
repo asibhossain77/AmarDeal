@@ -6,9 +6,7 @@ import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { User, Mail, Phone, Shield, Crown, Store, Camera, Check, X } from 'lucide-react';
+import { User, Mail, Phone, Shield, Crown, Store, Camera, X, Loader2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { toast } from 'sonner';
 
@@ -20,61 +18,39 @@ export function ProfilePanel() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
 
-  const [imageLink, setImageLink] = useState('');
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const previewTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync current user's imageLink on mount / user change
-  useEffect(() => {
-    if (user?.imageLink) {
-      setImageLink(user.imageLink);
-      setPreviewUrl(user.imageLink);
-    } else {
-      setImageLink('');
-      setPreviewUrl(null);
-    }
-  }, [user?.imageLink]);
-
-  // Debounced preview
-  const handleImageLinkChange = (val: string) => {
-    setImageLink(val);
-    if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
-    if (!val.trim()) {
-      setPreviewUrl(null);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('ছবি সর্বোচ্চ 2MB হতে পারে');
       return;
     }
-    previewTimerRef.current = setTimeout(() => {
-      setPreviewUrl(val.trim());
-    }, 600);
-  };
-
-  const handleSaveImage = async () => {
-    if (!imageLink.trim()) return;
-    setSaving(true);
+    setUploading(true);
     try {
-      const res = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update_image_link', imageLink: imageLink.trim() }),
-      });
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/upload/profile-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (user) setUser({ ...user, imageLink: data.url });
         toast.success('প্রোফাইল ছবি আপডেট হয়েছে!');
-        // Update store
-        if (user) setUser({ ...user, imageLink: imageLink.trim() });
       } else {
-        toast.error(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
       }
     } catch {
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
-      setSaving(false);
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveImage = async () => {
-    setSaving(true);
+    setRemoving(true);
     try {
       const res = await fetch('/api/user/profile', {
         method: 'PUT',
@@ -84,8 +60,6 @@ export function ProfilePanel() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success('প্রোফাইল ছবি সরানো হয়েছে!');
-        setImageLink('');
-        setPreviewUrl(null);
         if (user) setUser({ ...user, imageLink: null });
       } else {
         toast.error(data.error || 'সরাতে সমস্যা হয়েছে');
@@ -93,7 +67,7 @@ export function ProfilePanel() {
     } catch {
       toast.error('সার্ভারে সমস্যা হয়েছে');
     } finally {
-      setSaving(false);
+      setRemoving(false);
     }
   };
 
@@ -114,7 +88,7 @@ export function ProfilePanel() {
     RoleIcon = Store;
   }
 
-  const currentImage = previewUrl || user?.imageLink || null;
+  const currentImage = user?.imageLink || null;
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
@@ -124,9 +98,12 @@ export function ProfilePanel() {
       </div>
 
       <div className="w-full rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 space-y-6">
-        {/* Avatar with image */}
+        {/* Avatar with upload */}
         <div className="flex items-center gap-4">
-          <div className="relative group shrink-0">
+          <div
+            className="relative group shrink-0 cursor-pointer"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          >
             {currentImage ? (
               <img
                 src={currentImage}
@@ -139,67 +116,51 @@ export function ProfilePanel() {
                 {user?.name?.charAt(0) || 'U'}
               </div>
             )}
+            {uploading && (
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              </div>
+            )}
+            {!uploading && (
+              <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleUpload}
+            />
           </div>
           <div>
             <h3 className="text-lg font-bold text-foreground">{user?.name || t('dashboard.user')}</h3>
             <Badge className={`${roleBadgeClass} border-0 font-medium mt-1`}>{roleLabel}</Badge>
-          </div>
-        </div>
-
-        {/* Profile Image Link Section */}
-        <div className="space-y-3 rounded-2xl border border-border/50 bg-muted/20 p-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: '#84CC1620', color: '#84CC16' }}>
-              <Camera className="h-4 w-4" />
-            </div>
-            <Label className="text-sm font-semibold text-foreground">প্রোফাইল ছবি</Label>
-          </div>
-          <p className="text-xs text-muted-foreground pl-9">অনলাইনে থাকা আপনার ছবির ইমেজ লিংক এখানে দিন, আপনার প্রোফাইল ও ডিলে ছবি দেখাবে</p>
-
-          {/* Preview */}
-          {previewUrl && (
-            <div className="pl-9">
-              <div className="relative inline-block rounded-xl overflow-hidden border border-border/30">
-                <img
-                  src={previewUrl}
-                  alt="প্রিভিউ"
-                  className="h-24 w-24 rounded-xl object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Input + Buttons */}
-          <div className="pl-9 flex gap-2">
-            <Input
-              placeholder="https://example.com/image.jpg"
-              value={imageLink}
-              onChange={(e) => handleImageLinkChange(e.target.value)}
-              className="h-10 rounded-xl text-sm flex-1"
-            />
-            {user?.imageLink && !imageLink.trim() ? null : (
-              <Button
-                size="sm"
-                className="h-10 px-3 rounded-xl gap-1.5"
-                onClick={handleSaveImage}
-                disabled={saving || !imageLink.trim() || imageLink.trim() === (user?.imageLink || '')}
-              >
-                {saving ? <LoadingAnimation size="sm" /> : <Check className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">সেভ</span>
-              </Button>
-            )}
-            {currentImage && (
+            <div className="flex gap-2 mt-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-10 px-3 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                onClick={handleRemoveImage}
-                disabled={saving}
+                className="h-8 px-3 text-xs rounded-lg gap-1.5"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
               >
-                <X className="h-3.5 w-3.5" />
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                {uploading ? 'আপলোড হচ্ছে...' : 'ছবি পরিবর্তন'}
               </Button>
-            )}
+              {currentImage && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-3 text-xs rounded-lg gap-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                  onClick={handleRemoveImage}
+                  disabled={removing}
+                >
+                  {removing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  সরান
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

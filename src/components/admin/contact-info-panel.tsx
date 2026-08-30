@@ -1,13 +1,12 @@
 'use client';
 import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useT } from '@/lib/i18n';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, ImageIcon, Send } from 'lucide-react';
+import { Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, Camera, X, Loader2 } from 'lucide-react';
 import { invalidateSiteSettingsCache } from '@/lib/use-site-settings';
 
 interface ContactData {
@@ -36,6 +35,8 @@ export function ContactInfoPanel() {
   const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     Promise.all([
@@ -76,7 +77,6 @@ export function ContactInfoPanel() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             admin_display_name: profile.adminName,
-            admin_image_url: profile.adminImageUrl,
           }),
         }),
       ]);
@@ -86,6 +86,33 @@ export function ContactInfoPanel() {
       toast.error(t('admin.contact.saveError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAdminImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('ছবি সর্বোচ্চ 2MB হতে পারে');
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('profile', file);
+      const res = await fetch('/api/admin/upload-profile-pic', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setProfile(p => ({ ...p, adminImageUrl: data.imageUrl }));
+        toast.success('ছবি আপলোড হয়েছে!');
+      } else {
+        toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -112,13 +139,44 @@ export function ContactInfoPanel() {
         </div>
 
         <div className="flex flex-col items-center gap-5">
-          <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-border/40 bg-muted/30 flex items-center justify-center">
+          <div
+            className="h-24 w-24 rounded-full overflow-hidden border-2 border-border/40 bg-muted/30 flex items-center justify-center relative group cursor-pointer"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+          >
             {profile.adminImageUrl ? (
               <img src={profile.adminImageUrl} alt="Profile" className="h-full w-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <User className="h-10 w-10 text-muted-foreground/40" />
             )}
+            {uploading && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 text-white animate-spin" />
+              </div>
+            )}
+            {!uploading && (
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <Camera className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleAdminImageUpload}
+            />
           </div>
+          {profile.adminImageUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 text-xs gap-1"
+              onClick={() => { setProfile(p => ({ ...p, adminImageUrl: '' })); }}
+              disabled={uploading}
+            >
+              <X className="h-3 w-3" /> ছবি সরান
+            </Button>
+          )}
           <div className="w-full space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="adminName" className="text-sm font-medium text-foreground">{t('admin.contact.adminName')}</Label>
@@ -127,16 +185,6 @@ export function ContactInfoPanel() {
                 value={profile.adminName}
                 onChange={e => setProfile(p => ({ ...p, adminName: e.target.value }))}
                 placeholder={t('admin.contact.namePlaceholder')}
-                className="rounded-xl border-border/60 bg-background"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="adminImage" className="text-sm font-medium text-foreground flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.profileImage')}</Label>
-              <Input
-                id="adminImage"
-                value={profile.adminImageUrl}
-                onChange={e => setProfile(p => ({ ...p, adminImageUrl: e.target.value }))}
-                placeholder="https://example.com/photo.jpg"
                 className="rounded-xl border-border/60 bg-background"
               />
             </div>
