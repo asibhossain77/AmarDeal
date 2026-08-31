@@ -472,16 +472,11 @@ function SellerOverviewPanel() {
         })}
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3">
-        <button onClick={() => setSellerPanel('add-product')} className="rounded-2xl bg-primary/10 border border-primary/15 p-4 text-left transition-colors hover:bg-primary/15">
+      <div className="mb-6">
+        <button onClick={() => setSellerPanel('add-product')} className="w-full rounded-2xl bg-primary/10 border border-primary/15 p-4 text-left transition-colors hover:bg-primary/15">
           <Plus className="h-5 w-5 text-primary mb-2" />
           <p className="text-sm font-semibold text-foreground">{t('seller.addProduct')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{t('seller.addProductShort')}</p>
-        </button>
-        <button onClick={() => setSellerPanel('business-profile')} className="rounded-2xl bg-muted/50 border border-border/50 p-4 text-left transition-colors hover:bg-accent">
-          <UserCircle className="h-5 w-5 text-foreground mb-2" />
-          <p className="text-sm font-semibold text-foreground">{t('seller.businessProfile')}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{t('seller.viewProfileShort')}</p>
         </button>
       </div>
 

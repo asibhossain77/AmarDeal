@@ -7,10 +7,8 @@ import { useT } from '@/lib/i18n';
 import {
   LayoutDashboard,
   Clock,
-  Package,
   LogOut,
   X,
-  UserCircle,
   Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,10 +24,8 @@ interface NavItem {
 
 const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPanel }[] = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
-  { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },
-  { labelKey: 'seller.myProducts', icon: Package, panel: 'my-products' },
   { labelKey: 'seller.addProduct', icon: Plus, panel: 'add-product' },
-  { labelKey: 'seller.businessProfile', icon: UserCircle, panel: 'business-profile' },
+  { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },
 ];
 
 export function SellerSidebar() {
