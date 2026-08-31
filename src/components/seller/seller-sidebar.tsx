@@ -132,7 +132,7 @@ export function SellerSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-0 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
         {sidebarContent}
       </aside>
 

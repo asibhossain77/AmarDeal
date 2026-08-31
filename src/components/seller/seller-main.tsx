@@ -14,7 +14,7 @@ import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
-  Menu, Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
+  Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
   UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -385,7 +385,6 @@ function SellerOverviewPanel() {
   const overviewAvatarUrl = cdnUrl(user?.imageLink);
   const [overviewAvatarLoaded, setOverviewAvatarLoaded] = useState(false);
   useEffect(() => { setOverviewAvatarLoaded(false); if (!overviewAvatarUrl) return; const img = new Image(); img.onload = () => setOverviewAvatarLoaded(true); img.src = overviewAvatarUrl; }, [overviewAvatarUrl]);
-  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const setSellerPanel = useAppStore((s) => s.setSellerPanel);
   const [stats, setStats] = useState({ incoming: 0, active: 0, completed: 0, totalEarnings: 0 });
   const [loading, setLoading] = useState(true);
@@ -431,9 +430,6 @@ function SellerOverviewPanel() {
         className="mb-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 p-5 sm:p-6"
       >
         <div className="flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-foreground transition-colors md:hidden" aria-label="Menu">
-            <Menu className="h-5 w-5" />
-          </button>
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-primary overflow-hidden shadow-sm"
             style={overviewAvatarUrl && overviewAvatarLoaded
