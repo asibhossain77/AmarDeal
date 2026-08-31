@@ -48,7 +48,6 @@ const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payou
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 import {
-  Bell,
   ShieldCheck,
   ShieldX,
   Handshake,
@@ -3827,6 +3826,17 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
   }
 }
 
+/** Time-based greeting (uses Asia/Dhaka) */
+function getGreeting(): string {
+  const now = new Date();
+  const h = parseInt(now.toLocaleTimeString('en-US', { timeZone: 'Asia/Dhaka', hour: 'numeric', hour12: false }), 10);
+  if (h < 5) return 'শুভ রাত্রি';
+  if (h < 12) return 'শুভ সকাল';
+  if (h < 17) return 'শুভ দুপুর';
+  if (h < 20) return 'শুভ সন্ধ্যা';
+  return 'শুভ রাত্রি';
+}
+
 /* ═══════════════════════════════════════════
    Admin Main (Exported)
    ═══════════════════════════════════════════ */
@@ -3876,31 +3886,61 @@ export function AdminMain() {
 
   return (
     <div className="flex-1 p-3 sm:p-4 md:p-6 lg:px-6 lg:py-8">
-      {/* ── Top Bar ── */}
-      <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
-            <span className="text-primary">{siteName}</span>
-            <span className="text-muted-foreground font-normal text-sm sm:text-base">
-              {' '}— {t('admin.panelSuffix')}
-            </span>
-          </h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">
-            {t('admin.escrowDashboard')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Notification Bell */}
-          <button
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            aria-label={t('admin.notifications')}
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
-          </button>
-          {/* Admin Avatar */}
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
-            {user?.name?.charAt(0) || '?'}
+      {/* ── Welcome Header ── */}
+      <div className="mb-6 sm:mb-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 dark:from-primary/15 dark:via-primary/8 dark:border-primary/15">
+          {/* Decorative blobs */}
+          <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/8 blur-2xl" />
+          <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl" />
+          
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5">
+            {/* Left: Greeting + Title */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-lg sm:text-xl">👋</span>
+                <p className="text-sm text-muted-foreground">
+                  {getGreeting()}
+                </p>
+              </div>
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                {user?.name || t('nav.adminLabel')}
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                <span className="text-primary font-semibold">{siteName}</span>
+                <span className="mx-1.5 text-border">|</span>
+                {t('admin.escrowDashboard')}
+              </p>
+            </div>
+
+            {/* Right: Profile Chip */}
+            <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
+              <div className="flex items-center gap-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border border-border/40 px-3 py-2 shadow-sm">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary overflow-hidden ring-2 ring-primary/20"
+                  style={user?.imageLink
+                    ? { backgroundImage: `url(${cdnUrl(user.imageLink)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : undefined
+                  }
+                >
+                  {!user?.imageLink && (user?.name?.charAt(0) || 'A')}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground leading-tight">
+                    {user?.name || t('nav.adminLabel')}
+                  </p>
+                  <Badge
+                    variant="outline"
+                    className="mt-1 text-[10px] font-medium px-1.5 py-0 h-4 border-primary/30 text-primary bg-primary/5"
+                  >
+                    {user?.adminRole === 'super_admin'
+                      ? t('profile.roleSuperAdmin')
+                      : user?.adminRole === 'staff'
+                        ? 'Staff'
+                        : 'Support'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
