@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { cdnUrl } from '@/lib/cdn-url';
 import {
   ArrowLeft,
   FileCheck,
@@ -276,6 +277,9 @@ interface DealData {
 export function SellerDealTracker() {
   const { setSellerPanel, activeDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const trackerAvatarUrl = cdnUrl(user?.imageLink);
+  const [trackerAvatarLoaded, setTrackerAvatarLoaded] = useState(false);
+  useEffect(() => { setTrackerAvatarLoaded(false); if (!trackerAvatarUrl) return; const img = new Image(); img.onload = () => setTrackerAvatarLoaded(true); img.src = trackerAvatarUrl; }, [trackerAvatarUrl]);
 
   const [dealData, setDealData] = useState<DealData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -427,8 +431,14 @@ export function SellerDealTracker() {
             <span className="hidden sm:block text-xs font-medium truncate max-w-[100px]" style={{ color: 'var(--muted-foreground)' }}>
               {user?.name || 'বিক্রেতা'}
             </span>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold" style={{ backgroundColor: '#84CC1625', color: '#84CC16' }}>
-              {user?.name?.charAt(0) || 'ব'}
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold overflow-hidden"
+              style={trackerAvatarUrl && trackerAvatarLoaded
+                ? { backgroundImage: `url(${trackerAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { backgroundColor: '#84CC1625', color: '#84CC16' }
+              }
+            >
+              {!(trackerAvatarUrl && trackerAvatarLoaded) && (user?.name?.charAt(0) || 'ব')}
             </div>
           </div>
         </div>

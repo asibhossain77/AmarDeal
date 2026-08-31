@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Store,
 } from 'lucide-react';
+import { cdnUrl } from '@/lib/cdn-url';
 import { NewDealForm } from './new-deal-form';
 import { DealWorkflowTracker } from './deal-workflow-tracker';
 import { UserPaymentView } from './user-payment-view';
@@ -198,6 +199,9 @@ function TableSkeleton() {
 
 function OverviewPanel() {
   const user = useAppStore((s) => s.user);
+  const avatarUrl = cdnUrl(user?.imageLink);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
+  useEffect(() => { setAvatarLoaded(false); if (!avatarUrl) return; const img = new Image(); img.onload = () => setAvatarLoaded(true); img.src = avatarUrl; }, [avatarUrl]);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
   const setView = useAppStore((s) => s.setView);
   const userId = user?.id;
@@ -274,10 +278,11 @@ function OverviewPanel() {
       <div className="mb-6 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/15 p-5 sm:p-6 flex items-center gap-4">
         <button
           onClick={() => setDashboardPanel('profile')}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:scale-105 transition-transform"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-lg shadow-primary/25 hover:scale-105 transition-transform overflow-hidden"
           aria-label={t('dashboard.profile')}
+          style={avatarUrl && avatarLoaded ? { backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
         >
-          {user?.name?.charAt(0) || 'U'}
+          {!(avatarUrl && avatarLoaded) && (user?.name?.charAt(0) || 'U')}
         </button>
         <div className="min-w-0">
           <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">

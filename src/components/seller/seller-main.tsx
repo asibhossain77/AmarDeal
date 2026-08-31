@@ -379,6 +379,9 @@ function MyProductsPanel() {
 
 function SellerOverviewPanel() {
   const user = useAppStore((s) => s.user);
+  const overviewAvatarUrl = cdnUrl(user?.imageLink);
+  const [overviewAvatarLoaded, setOverviewAvatarLoaded] = useState(false);
+  useEffect(() => { setOverviewAvatarLoaded(false); if (!overviewAvatarUrl) return; const img = new Image(); img.onload = () => setOverviewAvatarLoaded(true); img.src = overviewAvatarUrl; }, [overviewAvatarUrl]);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const setSellerPanel = useAppStore((s) => s.setSellerPanel);
   const [stats, setStats] = useState({ incoming: 0, active: 0, completed: 0, totalEarnings: 0 });
@@ -434,8 +437,14 @@ function SellerOverviewPanel() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
           </button>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
-            {user?.name?.charAt(0) || 'S'}
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-primary overflow-hidden"
+            style={overviewAvatarUrl && overviewAvatarLoaded
+              ? { backgroundImage: `url(${overviewAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
+            }
+          >
+            {!(overviewAvatarUrl && overviewAvatarLoaded) && (user?.name?.charAt(0) || 'S')}
           </div>
         </div>
       </div>

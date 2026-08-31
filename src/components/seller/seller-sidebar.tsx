@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useEffect } from 'react';
 import { useAppStore, type SellerPanel } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useT } from '@/lib/i18n';
@@ -36,6 +36,9 @@ export function SellerSidebar() {
   const { sidebarOpen, setSidebarOpen, logout, setSellerPanel } = useAppStore();
   const sellerPanel = useAppStore((s) => s.sellerPanel);
   const user = useAppStore((s) => s.user);
+  const sidebarAvatarUrl = cdnUrl(user?.imageLink);
+  const [sidebarAvatarLoaded, setSidebarAvatarLoaded] = useState(false);
+  useEffect(() => { setSidebarAvatarLoaded(false); if (!sidebarAvatarUrl) return; const img = new Image(); img.onload = () => setSidebarAvatarLoaded(true); img.src = sidebarAvatarUrl; }, [sidebarAvatarUrl]);
   const { siteName, siteLogo } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
@@ -103,8 +106,14 @@ export function SellerSidebar() {
       {/* User Info + Logout at bottom */}
       <div className="border-t border-border/50 p-4">
         <div className="flex items-center gap-3 rounded-xl px-3 py-2 mb-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-            {user?.name?.charAt(0) || t('seller.welcomeSeller').charAt(0)}
+          <div
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-primary overflow-hidden"
+            style={sidebarAvatarUrl && sidebarAvatarLoaded
+              ? { backgroundImage: `url(${sidebarAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+              : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
+            }
+          >
+            {!(sidebarAvatarUrl && sidebarAvatarLoaded) && (user?.name?.charAt(0) || t('seller.welcomeSeller').charAt(0))}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-foreground">{user?.name || t('profile.roleSeller')}</p>

@@ -1541,6 +1541,9 @@ function ChatDateDivider({ text }: { text: string }) {
 export function DealWorkflowTracker() {
   const { setDashboardPanel, activeDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const headerAvatarUrl = cdnUrl(user?.imageLink);
+  const [headerAvatarLoaded, setHeaderAvatarLoaded] = useState(false);
+  useEffect(() => { setHeaderAvatarLoaded(false); if (!headerAvatarUrl) return; const img = new Image(); img.onload = () => setHeaderAvatarLoaded(true); img.src = headerAvatarUrl; }, [headerAvatarUrl]);
 
   /* ── Tab state (custom pill toggle) ── */
   const [activeTab, setActiveTab] = useState<'info' | 'chat'>('info');
@@ -2038,10 +2041,13 @@ export function DealWorkflowTracker() {
               {user?.name || 'ইউজার'}
             </span>
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-              style={{ backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold overflow-hidden"
+              style={headerAvatarUrl && headerAvatarLoaded
+                ? { backgroundImage: `url(${headerAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { backgroundColor: PARROT_GREEN_MILD, color: PARROT_GREEN }
+              }
             >
-              {user?.name?.charAt(0) || 'ই'}
+              {!(headerAvatarUrl && headerAvatarLoaded) && (user?.name?.charAt(0) || 'ই')}
             </div>
           </div>
         </div>
