@@ -161,3 +161,34 @@ Stage Summary:
 - User's main account (dashboard, buyer features) remain fully functional
 - Seller badge shows in admin user list (green for active, orange for disabled)
 
+---
+Task ID: 7
+Agent: Main
+Task: Add admin user delete feature with safety safeguards
+
+Work Log:
+- Added `deleteFromR2` import to admin/users/role/route.ts
+- Added `delete_user` action to `/api/admin/users/role` endpoint with:
+  - Safeguard: prevents deleting the last super admin
+  - Safeguard: prevents deleting users with any deals (buyer/seller/creator) — financial records must be preserved
+  - Deletes user's profile image from R2 storage
+  - Deletes all digital product images from R2 storage
+  - Cleans up all relations in a transaction: product chat messages, digital products, seller applications, reviews (null userId), affiliate earnings, affiliate withdrawals, referral references, admin record
+  - Finally deletes the user (notifications cascade delete automatically)
+- Added `Trash2` icon to lucide-react imports in admin-main.tsx
+- Updated `handleAction` to handle `delete_user`: after success, clears selected user state and returns to user list
+- Added "Delete User" button with AlertDialog confirmation in user detail view:
+  - Hidden for super_admin users (last super admin protection)
+  - Shows user name, email, and warning in Bengali
+  - Lists what will be deleted (data, profile pic, products)
+  - Notes that users with deals cannot be deleted
+  - Red destructive styling with loading state
+
+Stage Summary:
+- 2 files modified: src/app/api/admin/users/role/route.ts, src/components/admin/admin-main.tsx
+- Admin can now permanently delete users from the database (with safety safeguards)
+- Users with deals cannot be deleted (must deactivate instead) to preserve financial records
+- All user data, R2 images, and related records are cleaned up properly
+- Super admin cannot be deleted if they are the last one
+- Confirmation dialog shows Bengali warning messages
+

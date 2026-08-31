@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
 import { hashPassword } from '@/lib/password'
+import { deleteFromR2 } from '@/lib/r2'
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,6 +153,79 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'অ্যাডমিন থেকে সরানো হয়েছে',
+      })
+    }
+
+    /* ─── Delete User ─── */
+    if (action === 'delete_user') {
+      // Prevent deleting admin users through this action
+      if (user.admin?.role === 'super_admin') {
+        const superAdminCount = await db.admin.count({ where: { role: 'super_admin' } })
+        if (superAdminCount <= 1) {
+          return NextResponse.json(
+            { error: 'শেষ সুপার অ্যাডমিনকে ডিলিট করা যাবে না' },
+            { status: 400 }
+          )
+        }
+      }
+
+      // Check if user has any deals — prevent deletion to preserve financial records
+      const dealCount = await db.deal.count({
+        where: {
+          OR: [
+            { buyerId: userId },
+            { sellerId: userId },
+            { creatorId: userId },
+          ],
+        },
+      })
+      if (dealCount > 0) {
+        return NextResponse.json(
+          { error: `এই ইউজারের ${dealCount}টি ডিল আছে। ডিল থাকা অবস্থায় ইউজার ডিলিট করা যাবে না। ইউজার ডিঅ্যাক্টিভেট করুন।` },
+          { status: 400 }
+        )
+      }
+
+      // Delete user's profile image from R2
+      if (user.imageLink) {
+        await deleteFromR2(user.imageLink)
+      }
+
+      // Delete digital product images from R2
+      const products = await db.digitalProduct.findMany({
+        where: { sellerId: userId },
+        select: { id: true, image: true },
+      })
+      for (const p of products) {
+        if (p.image) await deleteFromR2(p.image)
+      }
+
+      // Clean up relations in a transaction
+      await db.$transaction([
+        // Delete product chat messages
+        db.productChatMessage.deleteMany({ where: { senderId: userId } }),
+        // Delete digital products (cascade deletes their chat messages)
+        db.digitalProduct.deleteMany({ where: { sellerId: userId } }),
+        // Delete seller applications
+        db.sellerApplication.deleteMany({ where: { userId } }),
+        // Null out reviews
+        db.review.updateMany({ where: { userId }, data: { userId: null } }),
+        // Delete affiliate earnings
+        db.affiliateEarning.deleteMany({ where: { affiliateId: userId } }),
+        // Delete affiliate withdrawals
+        db.affiliateWithdrawal.deleteMany({ where: { userId } }),
+        // Null out referral references from other users
+        db.user.updateMany({ where: { referredBy: userId }, data: { referredBy: null } }),
+        // Delete admin record if exists
+        db.admin.deleteMany({ where: { userId } }),
+        // Notifications will cascade delete automatically
+        // Finally delete the user
+        db.user.delete({ where: { id: userId } }),
+      ])
+
+      return NextResponse.json({
+        success: true,
+        message: 'ইউজার সফলভাবে ডিলিট করা হয়েছে',
       })
     }
 

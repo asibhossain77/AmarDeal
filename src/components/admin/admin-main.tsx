@@ -83,6 +83,7 @@ import {
   Shield,
   UserCog,
   User,
+  Trash2,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -1573,6 +1574,16 @@ function UsersPanel() {
       if (res.ok) {
         const data = await res.json();
         toast.success(data.message || t('common.success'));
+        // If user was deleted, go back to list
+        if (action === 'delete_user') {
+          setSelectedUser(null);
+          setNewPassword('');
+          setShowPassword(false);
+          setViewUserDeals(false);
+          setUserDeals([]);
+          fetchUsers();
+          return;
+        }
         fetchUsers();
         // Update selectedUser if viewing the same user
         if (selectedUser?.id === userId) {
@@ -1893,6 +1904,49 @@ function UsersPanel() {
                 <XCircle className="h-4 w-4" />
                 Remove Admin Role
               </Button>
+            )}
+
+            {/* Delete User (for non-super-admin users) */}
+            {!(u.isAdmin && u.adminRole === 'super_admin') && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    disabled={isActing}
+                    className="w-full h-11 gap-2 rounded-xl text-sm font-bold border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:border-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete User
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-red-600 dark:text-red-400">ইউজার ডিলিট করুন</AlertDialogTitle>
+                    <AlertDialogDescription className="text-left space-y-2">
+                      <p>আপনি কি <span className="font-bold text-foreground">{u.name}</span> ({u.email}) কে সম্পূর্ণ ডিলিট করতে চান?</p>
+                      <p className="text-red-600 dark:text-red-400 font-medium">⚠ এই অ্যাকশন আর ফিরিয়ে আনা যাবে না!</p>
+                      <ul className="text-xs space-y-1 text-muted-foreground mt-1.5">
+                        <li>• ইউজারের সকল ডেটা মুছে যাবে</li>
+                        <li>• প্রোফাইল ছবি, ডিজিটাল প্রোডাক্ট মুছে যাবে</li>
+                        <li>• ডিল থাকলে ডিলিট করা যাবে না (ডিঅ্যাক্টিভেট করুন)</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>বাতিল</AlertDialogCancel>
+                    <Button
+                      variant="destructive"
+                      disabled={isActing}
+                      onClick={() => handleAction(u.id, 'delete_user')}
+                      className="gap-2"
+                    >
+                      {isActing ? <LoadingAnimation size="sm" /> : <Trash2 className="h-4 w-4" />}
+                      হ্যাঁ, ডিলিট করুন
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </SolidCard>
