@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, Camera, X, Loader2 } from 'lucide-react';
+import { Save, User, Phone, Mail, MessageCircle, MapPin, Facebook, Users, Camera, X, Loader2, Send } from 'lucide-react';
 import { invalidateSiteSettingsCache } from '@/lib/use-site-settings';
 import { cdnUrl } from '@/lib/cdn-url';
 

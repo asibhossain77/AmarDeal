@@ -119,3 +119,19 @@ Stage Summary:
 - Backwards compatible: cdnUrl() converts old URLs to proxy URLs
 - 22 component files updated, 1 new utility, 2 config files updated
 
+---
+Task ID: 5
+Agent: Main
+Task: Fix client-side exception on admin যোগাযোগ (contact-info) page
+
+Work Log:
+- User reported "Application error: a client-side exception has occurred" on admin জোগাজোক (যোগাযোগ/contact-info) page
+- Ran `bun run lint` and found critical error: `'Send' is not defined` at line 256 in contact-info-panel.tsx
+- Root cause: admin-cdn-updater subagent (Task 4-d) added cdnUrl() to contact-info-panel.tsx but the file already had a bug — the `<Send>` icon from lucide-react was used on line 256 for the Telegram group field but was never imported
+- Fixed by adding `Send` to the lucide-react import on line 9
+- Verified fix with lint — no more errors in contact-info-panel.tsx
+
+Stage Summary:
+- 1 file fixed: contact-info-panel.tsx (added missing `Send` import)
+- The subagent's cdnUrl() changes were correct; the crash was from a pre-existing missing import that became apparent when the panel was loaded
+
