@@ -44,8 +44,8 @@ export function ProfilePanel() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('ছবি সর্বোচ্চ 5MB হতে পারে (compressed হয়ে যাবে)');
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('ছবি সর্বোচ্চ 2MB হতে পারে');
       return;
     }
     setUploading(true);
@@ -151,7 +151,7 @@ export function ProfilePanel() {
             <input
               id={fileInputId}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               className="sr-only"
               onChange={handleUpload}
               disabled={uploading}
