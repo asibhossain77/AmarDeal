@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { uploadToR2 } from '@/lib/r2'
+import { uploadToR2, deleteFromR2 } from '@/lib/r2'
 import { db } from '@/lib/db'
 
 export async function POST(req: NextRequest) {
@@ -23,12 +23,18 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData()
     const file = formData.get('image') as File | null
+    const oldImage = formData.get('oldImage') as string | null
 
     if (!file) {
       return NextResponse.json(
         { success: false, error: 'ইমেজ ফাইল দিন' },
         { status: 400 }
       )
+    }
+
+    // Delete old image from R2 if replacing
+    if (oldImage) {
+      await deleteFromR2(oldImage)
     }
 
     const result = await uploadToR2(file, 'products')

@@ -283,6 +283,7 @@ function BannersTab() {
     try {
       const fd = new FormData();
       fd.append('image', file);
+      if (editing?.image) fd.append('oldImage', editing.image);
       const res = await fetch('/api/upload/banner-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (res.ok && data.success) {

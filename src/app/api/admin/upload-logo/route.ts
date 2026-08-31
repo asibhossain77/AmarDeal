@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     const old = await db.platformSetting.findUnique({ where: { key: 'site_logo' } })
-    if (old?.value && old.value.startsWith('https://')) {
+    if (old?.value) {
       await deleteFromR2(old.value)
     }
 

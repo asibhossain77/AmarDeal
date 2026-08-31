@@ -176,6 +176,7 @@ export function PaymentMethodsPanel() {
     try {
       const fd = new FormData();
       fd.append('image', file);
+      if (form.image) fd.append('oldImage', form.image);
       const res = await fetch('/api/upload/general-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (res.ok && data.success) {

@@ -150,6 +150,7 @@ function AddProductPanel() {
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('image', file);
+      if (image) fd.append('oldImage', image);
       const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (data.success && data.url) setImage(data.url);
