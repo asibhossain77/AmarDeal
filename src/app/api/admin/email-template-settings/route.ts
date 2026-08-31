@@ -94,22 +94,42 @@ export async function POST(req: NextRequest) {
 
     // Handle template toggle (email_off_xxx = '1' or delete if enabled)
     if (body._disabledTemplates) {
+      let disabledMap: Record<string, boolean>;
       try {
-        const disabledMap: Record<string, boolean> = JSON.parse(body._disabledTemplates);
-        for (const [type, isOff] of Object.entries(disabledMap)) {
-          const key = `email_off_${type}`;
+        disabledMap = JSON.parse(body._disabledTemplates);
+      } catch (parseErr) {
+        console.error('[EMAIL TEMPLATE SETTINGS] Failed to parse _disabledTemplates:', parseErr);
+        return NextResponse.json(
+          { error: 'টেমপ্লেট ডেটা পার্স করতে সমস্যা' },
+          { status: 400 },
+        );
+      }
+
+      const savedKeys: string[] = [];
+      for (const [type, isOff] of Object.entries(disabledMap)) {
+        if (!TEMPLATE_TYPES.includes(type)) continue; // Skip unknown types
+        const key = `email_off_${type}`;
+        try {
           if (isOff) {
             await db.platformSetting.upsert({
               where: { key },
               create: { key, value: '1' },
               update: { value: '1' },
             });
+            savedKeys.push(`${type}=off`);
           } else {
-            // Delete the key to enable the template
-            await db.platformSetting.deleteMany({ where: { key } }).catch(() => {});
+            const deleted = await db.platformSetting.deleteMany({ where: { key } });
+            savedKeys.push(`${type}=on(del:${deleted.count})`);
           }
+        } catch (dbErr) {
+          console.error(`[EMAIL TEMPLATE SETTINGS] DB error for ${key}:`, dbErr);
+          return NextResponse.json(
+            { error: `টেমপ্লেট সেভ করতে সমস্যা: ${type}` },
+            { status: 500 },
+          );
         }
-      } catch {}
+      }
+      console.log('[EMAIL TEMPLATE SETTINGS] Saved template toggles:', savedKeys.join(', '));
     }
 
     // Clear in-memory cache so next email send picks up new values
@@ -117,7 +137,16 @@ export async function POST(req: NextRequest) {
     clearEmailSettingsCache();
     clearDisabledTemplatesCache();
 
-    return NextResponse.json({ success: true });
+    // Re-read from DB to verify persistence (catches Turso replica lag)
+    const verifyRows = await db.platformSetting.findMany({
+      where: { key: { startsWith: 'email_off_' } },
+    });
+    const verifiedDisabled: Record<string, boolean> = {};
+    for (const t of TEMPLATE_TYPES) {
+      verifiedDisabled[t] = verifyRows.some((r) => r.key === `email_off_${t}` && r.value === '1');
+    }
+
+    return NextResponse.json({ success: true, verifiedDisabled });
   } catch (err) {
     console.error('[EMAIL TEMPLATE SETTINGS SAVE ERROR]', err);
     return NextResponse.json(

@@ -103,8 +103,13 @@ export function EmailSettingsPanel() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<Record<string, string>>({});
   const [showSmtpKey, setShowSmtpKey] = useState(false);
-  const [disabledTemplates, setDisabledTemplates] = useState<Record<string, boolean>>({});
-  const [originalDisabled, setOriginalDisabled] = useState<Record<string, boolean>>({});
+  const [disabledTemplates, setDisabledTemplates] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(EMAIL_TEMPLATES.map((t) => [t.type, false]))
+  );
+  const [originalDisabled, setOriginalDisabled] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(EMAIL_TEMPLATES.map((t) => [t.type, false]))
+  );
+  const [savingToggles, setSavingToggles] = useState(false);
 
   // Check email config on mount
   useEffect(() => {
@@ -230,6 +235,24 @@ export function EmailSettingsPanel() {
     });
   };
 
+  const reloadSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/email-template-settings');
+      const data = await res.json();
+      if (!data.error) {
+        setSettings(data);
+        setOriginalSettings(data);
+        if (data._disabledTemplates) {
+          try {
+            const parsed = JSON.parse(data._disabledTemplates);
+            setDisabledTemplates(parsed);
+            setOriginalDisabled(parsed);
+          } catch {}
+        }
+      }
+    } catch {}
+  };
+
   const handleSave = async () => {
     setSavingSettings(true);
     try {
@@ -241,8 +264,8 @@ export function EmailSettingsPanel() {
       });
       const data = await res.json();
       if (data.success) {
-        setOriginalSettings({ ...settings });
-        setOriginalDisabled({ ...disabledTemplates });
+        // Re-fetch from DB to verify persistence
+        await reloadSettings();
         toast.success(t('admin.email.settingsSaved'));
       } else {
         toast.error(data.error || t('common.failed'));
@@ -251,6 +274,30 @@ export function EmailSettingsPanel() {
       toast.error(t('common.serverError'));
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleSaveToggles = async () => {
+    setSavingToggles(true);
+    try {
+      const payload = { ...settings, _disabledTemplates: JSON.stringify(disabledTemplates) };
+      const res = await fetch('/api/admin/email-template-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Re-fetch from DB to verify persistence
+        await reloadSettings();
+        toast.success(t('admin.email.settingsSaved'));
+      } else {
+        toast.error(data.error || t('common.failed'));
+      }
+    } catch {
+      toast.error(t('common.serverError'));
+    } finally {
+      setSavingToggles(false);
     }
   };
 
@@ -459,6 +506,21 @@ export function EmailSettingsPanel() {
             })}
           </div>
         )}
+
+        <div className="mt-5 flex justify-center sm:justify-end">
+          <Button
+            onClick={handleSaveToggles}
+            disabled={savingToggles || !disabledChanged || loadingSettings}
+            className="h-10 gap-2 rounded-xl px-6 text-sm font-semibold shadow-md shadow-primary/20"
+          >
+            {savingToggles ? (
+              <LoadingAnimation size="sm" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            {savingToggles ? t('common.saving') : t('common.save')}
+          </Button>
+        </div>
       </SolidCard>
 
       {/* ── Configuration & Verification ── */}

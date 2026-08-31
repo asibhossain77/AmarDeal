@@ -237,3 +237,34 @@ Stage Summary:
 - Mobile header fixed — no more gap at top, proper h-14 navbar with hamburger menu
 - Mobile drawer also uses collapsible sections matching desktop behavior
 
+---
+Task ID: 10
+Agent: Main
+Task: Fix email template toggle settings not persisting (auto-reset issue)
+
+Work Log:
+- Investigated the full data flow: frontend state → API save → DB read → cache
+- Found 4 issues causing templates to auto-reset:
+  1. Silent `catch {}` in POST handler swallowed DB errors but still returned `{ success: true }`
+  2. No save button in the template toggles card (was in a different card above)
+  3. `disabledTemplates` initialized as `{}` instead of all template types with `false`
+  4. No re-verification after save — UI trusted save succeeded without checking DB
+- Fixed API route (email-template-settings/route.ts):
+  - Removed silent catch, added proper error logging for each template type
+  - Added `TEMPLATE_TYPES.includes(type)` validation to skip unknown types
+  - Added per-DB-operation error handling that returns 500 on failure
+  - Added server-side verification: after save, re-reads from DB and returns `verifiedDisabled`
+- Fixed email-settings-panel.tsx:
+  - Initialized `disabledTemplates` and `originalDisabled` with all template types set to `false`
+  - Added `reloadSettings()` function that re-fetches from API after save
+  - Updated `handleSave` to call `reloadSettings()` after successful save
+  - Added new `handleSaveToggles` function dedicated to template toggle saves
+  - Added separate Save button inside the Template Toggles card (was missing before)
+
+Stage Summary:
+- 2 files modified: email-template-settings/route.ts, email-settings-panel.tsx
+- Template toggles now have their own dedicated Save button
+- API properly errors instead of silently failing
+- After every save, settings are re-fetched from DB to verify persistence
+- All template types pre-initialized to prevent undefined state issues
+- Server logs template toggle saves for debugging: `[EMAIL TEMPLATE SETTINGS] Saved template toggles: welcome=off, deal_created=on(del:1)`
