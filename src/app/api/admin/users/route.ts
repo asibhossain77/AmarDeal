@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
         email: true,
         phone: true,
         isActive: true,
+        isSeller: true,
+        sellerDisabled: true,
         createdAt: true,
         admin: {
           select: {
@@ -32,6 +34,8 @@ export async function GET(req: NextRequest) {
       email: u.email,
       phone: u.phone,
       isActive: u.isActive,
+      isSeller: u.isSeller,
+      sellerDisabled: u.sellerDisabled,
       isAdmin: !!u.admin,
       adminRole: u.admin?.role ?? null,
       adminPermissions: u.admin?.permissions ? JSON.parse(u.admin.permissions) : [],

@@ -26,6 +26,7 @@ export interface UserInfo {
   adminRole: string | null
   permissions: string[]
   isSeller: boolean
+  sellerDisabled: boolean
   imageLink?: string | null
 }
 

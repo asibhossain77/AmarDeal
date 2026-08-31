@@ -14,7 +14,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
   Bell, Menu, Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -603,10 +603,38 @@ function ActiveDealsPanel() {
 
 export function SellerMain() {
   const sellerPanel = useAppStore((s) => s.sellerPanel);
+  const user = useAppStore((s) => s.user);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
 
   if (!mounted) return null;
+
+  // If seller account is disabled by admin, show disabled message
+  if (user?.sellerDisabled) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
+        <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+          <div className="h-20 w-20 rounded-2xl bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center mb-5">
+            <Store className="h-10 w-10 text-orange-500" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">সেলার অ্যাকাউন্ট নিষ্ক্রিয়</h2>
+          <p className="text-sm text-muted-foreground mb-1">আপনার সেলার অ্যাকাউন্ট অ্যাডমিন দ্বারা সাময়িকভাবে নিষ্ক্রিয় করা হয়েছে।</p>
+          <p className="text-sm text-muted-foreground mb-6">অ্যাকাউন্ট আনলক করতে সাপোর্টে যোগাযোগ করুন।</p>
+          <div className="rounded-xl bg-muted/40 border border-border/50 p-4 w-full space-y-2">
+            <p className="text-xs font-semibold text-foreground">সাপোর্টে যোগাযোগ করুন:</p>
+            <p className="text-xs text-muted-foreground">এই সমস্যার সমাধানের জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন। আপনার অ্যাকাউন্ট পুনরায় সক্রিয় করা হবে।</p>
+          </div>
+          <button
+            onClick={() => useAppStore.getState().setView('dashboard')}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            ড্যাশবোর্ডে ফিরে যান
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">

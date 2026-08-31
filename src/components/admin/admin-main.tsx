@@ -156,6 +156,8 @@ interface UserRow {
   email: string;
   phone: string;
   isActive: boolean;
+  isSeller: boolean;
+  sellerDisabled: boolean;
   isAdmin: boolean;
   adminRole: string | null;
   adminPermissions: string[];
@@ -1576,7 +1578,11 @@ function UsersPanel() {
         if (selectedUser?.id === userId) {
           setSelectedUser((prev) =>
             prev
-              ? { ...prev, isActive: action === 'toggle_active' ? (value as boolean) : prev.isActive }
+              ? {
+                  ...prev,
+                  isActive: action === 'toggle_active' ? (value as boolean) : prev.isActive,
+                  sellerDisabled: action === 'toggle_seller_disabled' ? (value as boolean) : prev.sellerDisabled,
+                }
               : null
           );
           if (action === 'change_password') setNewPassword('');
@@ -1662,6 +1668,11 @@ function UsersPanel() {
                   {u.isAdmin ? null : (
                     <Badge className={`${u.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'} border-0 text-xs font-medium`}>
                       {u.isActive ? t('status.active') : t('status.cancelled')}
+                    </Badge>
+                  )}
+                  {u.isSeller && (
+                    <Badge className={`${u.sellerDisabled ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'} border-0 text-xs font-medium`}>
+                      {u.sellerDisabled ? 'Seller Disabled' : 'Seller'}
                     </Badge>
                   )}
                 </div>
@@ -1773,6 +1784,30 @@ function UsersPanel() {
                   )}
                   {u.isActive ? 'Deactivate User' : 'Activate User'}
                 </Button>
+
+                {/* Disable/Enable Seller Account */}
+                {u.isSeller && (
+                  <Button
+                    size="lg"
+                    disabled={isActing}
+                    onClick={() => handleAction(u.id, 'toggle_seller_disabled', !u.sellerDisabled)}
+                    variant={u.sellerDisabled ? 'default' : 'outline'}
+                    className={`w-full h-11 sm:h-12 gap-2 rounded-xl text-sm font-bold ${
+                      u.sellerDisabled
+                        ? 'shadow-lg shadow-emerald-500/25'
+                        : 'border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800/50 dark:text-orange-400 dark:hover:bg-orange-500/10'
+                    }`}
+                  >
+                    {isActing ? (
+                      <LoadingAnimation size="sm" />
+                    ) : u.sellerDisabled ? (
+                      <UserCheck className="h-4 w-4" />
+                    ) : (
+                      <UserX className="h-4 w-4" />
+                    )}
+                    {u.sellerDisabled ? 'Enable Seller Account' : 'Disable Seller Account'}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -2000,7 +2035,14 @@ function UsersPanel() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-foreground truncate whitespace-nowrap">{u.name}</p>
-                          <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
+                            {u.isSeller && (
+                              <Badge className={`${u.sellerDisabled ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'} border-0 text-[10px] font-medium px-1.5 py-0`}>
+                                {u.sellerDisabled ? 'Seller Disabled' : 'Seller'}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -2052,6 +2094,11 @@ function UsersPanel() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="text-sm font-semibold text-foreground truncate">{u.name}</p>
                     <RoleBadge isAdmin={u.isAdmin} adminRole={u.adminRole} adminPermissions={u.adminPermissions} />
+                    {u.isSeller && (
+                      <Badge className={`${u.sellerDisabled ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'} border-0 text-[10px] font-medium px-1.5 py-0`}>
+                        {u.sellerDisabled ? 'Seller Disabled' : 'Seller'}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                   <p className="text-xs text-muted-foreground font-mono mt-0.5">{u.phone}</p>

@@ -37,6 +37,25 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    /* ─── Toggle Seller Disabled ─── */
+    if (action === 'toggle_seller_disabled') {
+      if (!user.isSeller) {
+        return NextResponse.json(
+          { error: 'এই ইউজার সেলার নয়' },
+          { status: 400 }
+        )
+      }
+      const newStatus = value === true || value === 'true'
+      await db.user.update({
+        where: { id: userId },
+        data: { sellerDisabled: newStatus },
+      })
+      return NextResponse.json({
+        success: true,
+        message: newStatus ? 'সেলার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে' : 'সেলার অ্যাকাউন্ট সক্রিয় করা হয়েছে',
+      })
+    }
+
     /* ─── Change Password ─── */
     if (action === 'change_password') {
       const newPassword = typeof value === 'string' ? value.trim() : ''

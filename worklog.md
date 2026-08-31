@@ -135,3 +135,29 @@ Stage Summary:
 - 1 file fixed: contact-info-panel.tsx (added missing `Send` import)
 - The subagent's cdnUrl() changes were correct; the crash was from a pre-existing missing import that became apparent when the panel was loaded
 
+---
+Task ID: 6
+Agent: Main
+Task: Add seller account disable feature (separate from user account deactivation)
+
+Work Log:
+- Added `sellerDisabled` Boolean field (default false) to User model in prisma/schema.prisma
+- Pushed schema to database with `bun run db:push`
+- Updated `/api/auth/me` to return `sellerDisabled` in the response
+- Updated `/api/admin/users` to return `isSeller` and `sellerDisabled` in user list
+- Added `toggle_seller_disabled` action to `/api/admin/users/role` endpoint
+- Added `sellerDisabled: boolean` to `UserInfo` interface in Zustand store
+- Added `isSeller` and `sellerDisabled` to `UserRow` interface in admin-main.tsx
+- Added Seller badge (green/orange) in admin user list table (desktop + mobile)
+- Added Seller badge in admin user detail header
+- Added "Disable Seller Account" / "Enable Seller Account" button in user detail view (only for sellers)
+- Updated `handleAction` to handle `toggle_seller_disabled` state update
+- Added seller disabled blocking screen in SellerMain component — shows Bengali message to contact support + back to dashboard button
+
+Stage Summary:
+- 6 files modified: schema.prisma, auth/me/route.ts, admin/users/route.ts, admin/users/role/route.ts, store.ts, admin-main.tsx, seller-main.tsx
+- Admin can now disable/enable seller accounts independently from user accounts
+- When seller is disabled, user sees Bengali message: "সেলার অ্যাকাউন্ট নিষ্ক্রিয়" with instructions to contact support
+- User's main account (dashboard, buyer features) remain fully functional
+- Seller badge shows in admin user list (green for active, orange for disabled)
+

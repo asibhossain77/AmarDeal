@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
       adminRole: user.admin?.role ?? null,
       permissions: adminPermissions,
       isSeller: user.isSeller,
+      sellerDisabled: user.sellerDisabled,
       imageLink: user.imageLink ?? null,
     })
   } catch (err) {
