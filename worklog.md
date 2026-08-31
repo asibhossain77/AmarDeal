@@ -209,3 +209,31 @@ Stage Summary:
 - Added missing `const t = useT()` to SellerOverviewPanel and ActiveDealsPanel
 - Root cause: `t` was undefined because `useT()` hook was not called in these two components
 
+---
+Task ID: 9
+Agent: Main
+Task: Fix admin panel mobile header and reorganize sidebar into collapsible dropdown sections
+
+Work Log:
+- Diagnosed admin mobile header issue: mobile top bar was at `fixed top-16` but landing Navbar is hidden in admin view, creating a 64px gap
+- Completely rewrote `admin-view.tsx`:
+  - Added fixed top navbar (h-14, glassmorphism) matching seller view pattern
+  - Top navbar has: hamburger menu (mobile), Admin label with icon, BN/EN language toggle, dark/light theme toggle, Home button
+  - Mobile drawer uses Sheet component with collapsible nav sections
+  - Content area uses `pt-14` instead of `pt-12 md:pt-0`
+- Completely rewrote `admin-sidebar.tsx`:
+  - Changed from `md:top-0` to `md:top-14` to sit below the new top navbar
+  - Each nav group is now a Collapsible section with clickable header + chevron icon
+  - Active group auto-expands (defaultOpen based on active panel)
+  - Chevron rotates 180° when expanded using CSS `group-data-[state=open]:rotate-180`
+  - Added user avatar with CDN image support
+- Fixed pre-existing bug: added missing `PackageCheck` import to admin-main.tsx (caused crash on admin page load)
+- Verified all changes with agent-browser: desktop collapsible sections, mobile header, mobile drawer, navigation, theme toggle
+
+Stage Summary:
+- 3 files modified: admin-view.tsx, admin-sidebar.tsx, admin-main.tsx
+- Admin panel now has a fixed top navbar with Admin label, language/theme/home controls
+- All sidebar nav groups (5 total: পরিচালনা, ডিল ও ইউজার, অর্থ ও ফি, সেটিংস ও কন্টেন্ট, অ্যাকাউন্ট) are collapsible dropdown sections
+- Mobile header fixed — no more gap at top, proper h-14 navbar with hamburger menu
+- Mobile drawer also uses collapsible sections matching desktop behavior
+

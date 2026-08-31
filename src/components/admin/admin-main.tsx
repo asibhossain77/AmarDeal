@@ -85,6 +85,7 @@ import {
   UserCog,
   User,
   Trash2,
+  PackageCheck,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};

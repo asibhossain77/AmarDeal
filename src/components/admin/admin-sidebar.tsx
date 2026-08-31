@@ -1,10 +1,12 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
-import { LogOut } from 'lucide-react';
+import { LogOut, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getAdminNavGroups, filterTranslatedNavGroups } from './admin-nav-config';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -22,43 +24,55 @@ export function AdminSidebar() {
   );
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-0 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
       <div className="flex h-full flex-col">
-        <nav className="flex-1 overflow-y-auto pl-5 pr-3 pt-6">
-          {groups.map((group) => (
-            <div key={group.title} className="mb-5 last:mb-0">
-              <p className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                {group.title}
-              </p>
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  const active = adminPanel === item.panel;
-                  return (
-                    <button
-                      key={item.panel}
-                      onClick={() => setAdminPanel(item.panel)}
-                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
-                        active
-                          ? 'bg-primary/10 text-primary dark:bg-primary/15'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                      }`}
-                    >
-                      <Icon className="h-[18px] w-[18px]" />
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <nav className="flex-1 overflow-y-auto pl-5 pr-3 pt-5 pb-4">
+          {groups.map((group) => {
+            const hasActive = group.items.some((item) => adminPanel === item.panel);
+            return (
+              <Collapsible key={group.title} defaultOpen={hasActive} className="mb-4 last:mb-0">
+                <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 hover:text-muted-foreground hover:bg-accent/50 transition-colors group">
+                  <span>{group.title}</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-1 space-y-0.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = adminPanel === item.panel;
+                      return (
+                        <button
+                          key={item.panel}
+                          onClick={() => setAdminPanel(item.panel)}
+                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                            active
+                              ? 'bg-primary/10 text-primary dark:bg-primary/15'
+                              : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                          }`}
+                        >
+                          <Icon className="h-[18px] w-[18px]" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
         </nav>
 
         {/* Admin User Info + Logout */}
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4">
           <div className="flex items-center gap-3 rounded-xl py-2 mb-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-              {user?.name?.charAt(0) || 'A'}
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary overflow-hidden"
+              style={user?.imageLink
+                ? { backgroundImage: `url(${cdnUrl(user.imageLink)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : undefined
+              }
+            >
+              {!user?.imageLink && (user?.name?.charAt(0) || 'A')}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">
