@@ -224,9 +224,10 @@ export function EmailSettingsPanel() {
   const disabledChanged = JSON.stringify(disabledTemplates) !== JSON.stringify(originalDisabled);
 
   const ALL_FIELDS = [...BREVO_FIELDS, ...TEMPLATE_FIELDS];
+  // Only check text field changes for the main Save button (toggles have their own Save)
   const hasChanged = ALL_FIELDS.some(
     (f) => settings[f.key] !== originalSettings[f.key],
-  ) || disabledChanged;
+  );
 
   const toggleTemplate = (type: string) => {
     setDisabledTemplates((prev) => {
@@ -235,14 +236,14 @@ export function EmailSettingsPanel() {
     });
   };
 
-  const reloadSettings = async () => {
+  const reloadSettings = async (options?: { skipToggles?: boolean }) => {
     try {
       const res = await fetch('/api/admin/email-template-settings');
       const data = await res.json();
       if (!data.error) {
         setSettings(data);
         setOriginalSettings(data);
-        if (data._disabledTemplates) {
+        if (!options?.skipToggles && data._disabledTemplates) {
           try {
             const parsed = JSON.parse(data._disabledTemplates);
             setDisabledTemplates(parsed);
@@ -256,16 +257,21 @@ export function EmailSettingsPanel() {
   const handleSave = async () => {
     setSavingSettings(true);
     try {
-      const payload = { ...settings, _disabledTemplates: JSON.stringify(disabledTemplates) };
+      // Only send text settings — NOT _disabledTemplates
+      // This prevents accidentally overwriting toggle state with stale values
+      const textPayload: Record<string, string> = {};
+      for (const f of ALL_FIELDS) {
+        textPayload[f.key] = settings[f.key] || '';
+      }
       const res = await fetch('/api/admin/email-template-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(textPayload),
       });
       const data = await res.json();
       if (data.success) {
-        // Re-fetch from DB to verify persistence
-        await reloadSettings();
+        // Re-fetch text settings only — don't overwrite toggle state with potentially stale replica data
+        await reloadSettings({ skipToggles: true });
         toast.success(t('admin.email.settingsSaved'));
       } else {
         toast.error(data.error || t('common.failed'));
@@ -280,7 +286,8 @@ export function EmailSettingsPanel() {
   const handleSaveToggles = async () => {
     setSavingToggles(true);
     try {
-      const payload = { ...settings, _disabledTemplates: JSON.stringify(disabledTemplates) };
+      // Only send _disabledTemplates — no text settings
+      const payload = { _disabledTemplates: JSON.stringify(disabledTemplates) };
       const res = await fetch('/api/admin/email-template-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -288,8 +295,16 @@ export function EmailSettingsPanel() {
       });
       const data = await res.json();
       if (data.success) {
-        // Re-fetch from DB to verify persistence
-        await reloadSettings();
+        // Use verifiedDisabled from POST response (server-side re-read after write)
+        // This avoids Turso replica lag that a separate GET could hit
+        if (data.verifiedDisabled && typeof data.verifiedDisabled === 'object') {
+          setDisabledTemplates(data.verifiedDisabled);
+          setOriginalDisabled(data.verifiedDisabled);
+        } else {
+          // Fallback: re-fetch with a small delay for replication
+          await new Promise((r) => setTimeout(r, 800));
+          await reloadSettings();
+        }
         toast.success(t('admin.email.settingsSaved'));
       } else {
         toast.error(data.error || t('common.failed'));
