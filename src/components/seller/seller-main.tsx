@@ -14,7 +14,7 @@ import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
-  Bell, Menu, Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
+  Menu, Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
   UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -423,34 +423,34 @@ function SellerOverviewPanel() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors md:hidden" aria-label="Menu">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/10 p-5 sm:p-6"
+      >
+        <div className="flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:text-foreground transition-colors md:hidden" aria-label="Menu">
             <Menu className="h-5 w-5" />
           </button>
-          <div className="text-center md:text-left">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {t('seller.welcome')}, {user?.name?.split(' ')[0] || t('seller.welcomeSeller')}
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">{t('seller.dashboardSummary')}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-colors" aria-label="Notification">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
-          </button>
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-primary overflow-hidden"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-base font-bold text-primary overflow-hidden shadow-sm"
             style={overviewAvatarUrl && overviewAvatarLoaded
               ? { backgroundImage: `url(${overviewAvatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-              : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
+              : { backgroundColor: 'oklch(0.768 0.189 131 / 0.18)' }
             }
           >
             {!(overviewAvatarUrl && overviewAvatarLoaded) && (user?.name?.charAt(0) || 'S')}
           </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-primary/80 mb-0.5">{t('seller.dashboardSummary')}</p>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground truncate">
+              {t('seller.welcome')}, {user?.name?.split(' ')[0] || t('seller.welcomeSeller')} 👋
+            </h1>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {cards.map((stat, i) => {
