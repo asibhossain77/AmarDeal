@@ -327,7 +327,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   return (
     <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-[#09090b]">
-      <Navbar />
+      {!['dashboard', 'seller', 'admin'].includes(view) && <Navbar />}
       {view === 'auth' && <AuthView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'seller' && <SellerView />}
