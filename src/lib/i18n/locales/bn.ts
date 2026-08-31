@@ -34,6 +34,7 @@ export const bn = {
   'adminNav.feeRules': 'ফি কাঠামো',
   'adminNav.allDeals': 'সকল ডিল',
   'adminNav.userManagement': 'ইউজার ম্যানেজমেন্ট',
+  'adminNav.pendingProducts': 'পেন্ডিং প্রোডাক্ট',
   'adminNav.contact': 'যোগাযোগ',
   'adminNav.websiteSettings': 'ওয়েবসাইট সেটিংস',
   'adminNav.contract': 'চুক্তি পেজ',

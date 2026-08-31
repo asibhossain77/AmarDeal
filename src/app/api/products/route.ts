@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         category: validCategory,
         image: image || null,
         sellerId: userId,
-        status: 'active',
+        status: 'pending',
       },
       include: {
         seller: {

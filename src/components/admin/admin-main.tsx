@@ -46,6 +46,7 @@ const PipraPayPanel = dynamic(() => import('./piprapay-panel').then(m => ({ defa
 const AdminAffiliatePanel = dynamic(() => import('./affiliate-panel').then(m => ({ default: m.AdminAffiliatePanel })), { loading: () => <PanelLoader /> });
 const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payouts-panel').then(m => ({ default: m.AdminAffiliatePayoutsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
+const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 import {
   Bell,
   ShieldCheck,
@@ -174,6 +175,7 @@ interface AdminStats {
   totalProfit: number;
   adminCalls: number;
   disputedCount: number;
+  pendingProducts: number;
 }
 
 interface PlatformSettings {
@@ -463,6 +465,14 @@ function DashboardStatsPanel() {
           color: 'text-rose-500 dark:text-rose-400',
           bg: 'bg-rose-500/10',
           target: 'disputes' as const,
+        },
+        {
+          label: t('adminNav.pendingProducts'),
+          value: stats.pendingProducts?.toLocaleString('en') || '0',
+          icon: PackageCheck,
+          color: 'text-amber-500 dark:text-amber-400',
+          bg: 'bg-amber-500/10',
+          target: 'pending-products' as const,
         },
         {
           label: `${t('admin.verify.totalTransactions')} (৳)`,
@@ -3809,6 +3819,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminAffiliatePayoutsPanel />;
     case 'marketplace':
       return <AdminMarketplacePanel />;
+    case 'pending-products':
+      return <PendingProductsPanel />;
     default:
       return null;
   }
