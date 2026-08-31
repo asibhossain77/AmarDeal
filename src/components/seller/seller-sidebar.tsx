@@ -6,10 +6,11 @@ import { useSiteSettings } from '@/lib/use-site-settings';
 import { useT } from '@/lib/i18n';
 import {
   LayoutDashboard,
+  PlusCircle,
   Clock,
+  Plus,
   LogOut,
   X,
-  Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -24,6 +25,7 @@ interface NavItem {
 
 const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPanel }[] = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
+  { labelKey: 'deal.createTitle', icon: PlusCircle, panel: 'new-deal' },
   { labelKey: 'seller.addProduct', icon: Plus, panel: 'add-product' },
   { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },
 ];

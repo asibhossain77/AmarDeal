@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { SellerDealTracker } from './seller-deal-tracker';
+import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
@@ -636,10 +637,11 @@ export function SellerMain() {
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
-      {sellerPanel !== 'overview' && sellerPanel !== 'deal-detail' && (
+      {sellerPanel !== 'overview' && sellerPanel !== 'deal-detail' && sellerPanel !== 'new-deal' && (
         <div className="mb-4"><BackButton /></div>
       )}
       {sellerPanel === 'overview' && <SellerOverviewPanel />}
+      {sellerPanel === 'new-deal' && <NewDealForm mode="seller" />}
       {sellerPanel === 'active-deals' && <ActiveDealsPanel />}
       {sellerPanel === 'deal-detail' && <SellerDealTracker />}
       {sellerPanel === 'my-products' && <MyProductsPanel />}
