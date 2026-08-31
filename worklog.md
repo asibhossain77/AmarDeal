@@ -192,3 +192,20 @@ Stage Summary:
 - Super admin cannot be deleted if they are the last one
 - Confirmation dialog shows Bengali warning messages
 
+---
+Task ID: 8
+Agent: Main
+Task: Fix client-side crash when newly approved seller logs in
+
+Work Log:
+- User reported: after admin approves seller application, seller user gets "Application error: a client-side exception has occurred" on login
+- Investigated seller-main.tsx and found root cause: `SellerOverviewPanel` (line 381) and `ActiveDealsPanel` (line 525) both use `t()` for translations but never call `useT()` hook
+- Other panels (BusinessProfilePanel, AddProductPanel, MyProductsPanel) all correctly call `const t = useT()` at the top
+- Added `const t = useT()` as the first line in both `SellerOverviewPanel` and `ActiveDealsPanel`
+- The crash only appeared after seller approval because before that, the seller view was never rendered (user wasn't a seller), so the undefined `t` reference was never triggered
+
+Stage Summary:
+- 1 file fixed: src/components/seller/seller-main.tsx
+- Added missing `const t = useT()` to SellerOverviewPanel and ActiveDealsPanel
+- Root cause: `t` was undefined because `useT()` hook was not called in these two components
+

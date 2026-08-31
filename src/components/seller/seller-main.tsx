@@ -379,6 +379,7 @@ function MyProductsPanel() {
    ================================================ */
 
 function SellerOverviewPanel() {
+  const t = useT();
   const user = useAppStore((s) => s.user);
   const overviewAvatarUrl = cdnUrl(user?.imageLink);
   const [overviewAvatarLoaded, setOverviewAvatarLoaded] = useState(false);
@@ -523,6 +524,7 @@ function getStatusBadge(status: string) {
 }
 
 function ActiveDealsPanel() {
+  const t = useT();
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAppStore((s) => s.user);
