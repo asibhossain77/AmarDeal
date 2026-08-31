@@ -4,6 +4,7 @@ import { useSiteSettings } from '@/lib/use-site-settings';
 import { useAppStore, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { Separator } from '@/components/ui/separator';
+import { cdnUrl } from '@/lib/cdn-url';
 
 export function Footer() {
   const { siteName, siteNameEn, siteLogo, footerDescription, footerCopyrightText, footerMadeIn } = useSiteSettings();
@@ -46,7 +47,7 @@ export function Footer() {
             <a href="/" onClick={(e) => { e.preventDefault(); setView('landing'); }} className="mb-4 flex items-center gap-2.5">
               {siteLogo ? (
                 <img
-                  src={siteLogo}
+                  src={cdnUrl(siteLogo) || ''}
                   alt={displayName}
                   className="h-9 w-9 rounded-lg object-contain"
                   loading="lazy" decoding="async"

@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Save, Eye, Image, Link, Type, Palette, Bold, Italic, Minus, Plus } from 'lucide-react';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { cdnUrl } from '@/lib/cdn-url';
 import { useT } from '@/lib/i18n';
 
 interface PopupConfig {
@@ -259,7 +260,7 @@ export function PopupPanel() {
           />
           {config.image && (
             <div className="mt-2 rounded-xl overflow-hidden border border-border max-w-[200px]">
-              <img src={config.image} alt={t('admin.popup.imageAlt')} className="w-full h-auto object-contain" />
+              <img src={cdnUrl(config.image) || ''} alt={t('admin.popup.imageAlt')} className="w-full h-auto object-contain" />
             </div>
           )}
         </div>
@@ -328,7 +329,7 @@ export function PopupPanel() {
             {/* Preview Body */}
             <div className="p-5 space-y-3">
               {config.image && (
-                <img src={config.image} alt={t('admin.popup.previewAlt')} className="w-full rounded-xl object-contain max-h-[160px]" />
+                <img src={cdnUrl(config.image) || ''} alt={t('admin.popup.previewAlt')} className="w-full rounded-xl object-contain max-h-[160px]" />
               )}
               {config.content ? (
                 <div

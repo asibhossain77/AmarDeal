@@ -17,6 +17,7 @@ import {
   UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cdnUrl } from '@/lib/cdn-url';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -88,7 +89,7 @@ function BusinessProfilePanel() {
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
                 {user?.imageLink ? (
-                  <img src={user.imageLink} alt={user.name} className="h-16 w-16 rounded-2xl object-cover" />
+                  <img src={cdnUrl(user.imageLink) || ''} alt={user.name} className="h-16 w-16 rounded-2xl object-cover" />
                 ) : (
                   <Store className="h-7 w-7 text-primary" />
                 )}
@@ -231,7 +232,7 @@ function AddProductPanel() {
           <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
           {image && !image.startsWith('data:') ? (
             <div className="relative group">
-              <img src={image} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" />
+              <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" />
               <button type="button" onClick={() => { setImage(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
@@ -334,7 +335,7 @@ function MyProductsPanel() {
               </button>
               {p.image ? (
                 <div className="h-32 rounded-xl bg-muted overflow-hidden">
-                  <img src={p.image} alt={p.title} className="h-32 w-full object-cover" />
+                  <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-32 w-full object-cover" />
                 </div>
               ) : (
                 <div className="h-32 rounded-xl bg-muted/50 flex items-center justify-center">

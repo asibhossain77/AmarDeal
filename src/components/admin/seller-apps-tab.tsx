@@ -15,6 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useT } from '@/lib/i18n';
 import { SolidCard } from './marketplace-panel';
+import { cdnUrl } from '@/lib/cdn-url';
 
 interface SellerApp {
   id: string;
@@ -117,7 +118,7 @@ export function SellerAppsTab() {
       : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary';
     if (imageLink) {
       const imgCls = size === 'lg' ? 'h-10 w-10 rounded-full object-cover' : 'h-8 w-8 rounded-full object-cover';
-      return <img src={imageLink} alt={name} className={imgCls} />;
+      return <img src={cdnUrl(imageLink) || ''} alt={name} className={imgCls} />;
     }
     return <div className={cls}>{name.charAt(0)}</div>;
   }

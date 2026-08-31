@@ -14,6 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -53,7 +54,7 @@ export function SellerSidebar() {
         <div className="flex items-center gap-2.5">
           {siteLogo ? (
             <img
-              src={siteLogo}
+              src={cdnUrl(siteLogo) || ''}
               alt={siteName}
               className="h-9 w-9 rounded-lg object-contain"
               loading="lazy" decoding="async"

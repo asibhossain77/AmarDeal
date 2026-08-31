@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useSiteSettings } from '@/lib/use-site-settings';
+import { cdnUrl } from '@/lib/cdn-url';
 
 /**
  * DynamicFavicon — updates the browser tab icon to match the site-logo
@@ -20,7 +21,8 @@ export function DynamicFavicon() {
       link.rel = 'icon';
       document.head.appendChild(link);
     }
-    link.href = siteLogo;
+    const url = cdnUrl(siteLogo) || siteLogo;
+    link.href = url;
 
     // Also update apple-touch-icon if it exists
     let appleLink = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
@@ -29,7 +31,7 @@ export function DynamicFavicon() {
       appleLink.rel = 'apple-touch-icon';
       document.head.appendChild(appleLink);
     }
-    appleLink.href = siteLogo;
+    appleLink.href = url;
   }, [siteLogo]);
 
   return null; // renders nothing visible

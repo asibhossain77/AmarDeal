@@ -43,6 +43,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -79,7 +80,7 @@ function LogoButton({ onClick }: { onClick: () => void }) {
     <button onClick={onClick} className="flex items-center gap-2.5">
       {siteLogo ? (
         <img
-          src={siteLogo}
+          src={cdnUrl(siteLogo) || ''}
           alt={displayName}
           fetchPriority="high"
           className="h-9 w-9 rounded-lg object-contain"
@@ -102,7 +103,7 @@ function MobileBrandHeader({ sub }: { sub?: string }) {
     <div className="mb-4 flex items-center gap-2.5 px-1">
       {siteLogo ? (
         <img
-          src={siteLogo}
+          src={cdnUrl(siteLogo) || ''}
           alt={displayName}
           fetchPriority="high"
           className="h-9 w-9 rounded-lg object-contain"

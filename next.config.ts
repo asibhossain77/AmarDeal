@@ -13,7 +13,7 @@ const securityHeaders = [
   // See buildCsp() in proxy.ts for the directive list.
 ];
 
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
@@ -44,8 +44,14 @@ const nextConfig = {
   },
   async rewrites() {
     return [
+      // Proxy CDN images through same origin (fixes Brave browser Shields blocking)
       {
-        source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|ref/).*)',
+        source: '/cdn/:path*',
+        destination: 'https://cdn.midman.bd/:path*',
+      },
+      // SPA catch-all — skip api, _next, static assets, and cdn proxy
+      {
+        source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|ref/|cdn/).*)',
         destination: '/',
       },
     ];

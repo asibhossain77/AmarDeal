@@ -64,14 +64,21 @@ export async function uploadToR2(
     throw new Error('R2 public URL is not configured. Set R2_PUBLIC_URL environment variable.')
   }
 
-  const url = `${R2_PUBLIC_URL}/${key}`
-  console.error('[R2] Upload success:', url)
+  // Return proxy URL so images load as same-origin (fixes Brave Shields)
+  const proxyUrl = `/cdn/${key}`
+  const publicUrl = `${R2_PUBLIC_URL}/${key}`
+  console.error('[R2] Upload success:', publicUrl)
 
-  return { url, key }
+  return { url: proxyUrl, key }
 }
 
-/** Extract R2 key from a public URL like https://cdn.midman.bd/profiles/123.jpg */
+/** Extract R2 key from a URL — handles both proxied (/cdn/profiles/123.jpg) and direct (https://cdn.midman.bd/profiles/123.jpg) URLs */
 function urlToKey(url: string): string | null {
+  // Proxied URL: /cdn/profiles/123.jpg → profiles/123.jpg
+  if (url.startsWith('/cdn/')) {
+    return url.slice(5) // remove "/cdn/"
+  }
+  // Direct CDN URL
   const base = R2_PUBLIC_URL || ''
   if (base && url.startsWith(base + '/')) {
     return url.slice(base.length + 1)

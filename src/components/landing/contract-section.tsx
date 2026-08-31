@@ -4,6 +4,7 @@ import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import { FileText } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -59,7 +60,7 @@ export function ContractSection() {
           <div className="flex items-center gap-4">
             {data?.adminImageUrl ? (
               <img
-                src={data.adminImageUrl}
+                src={cdnUrl(data.adminImageUrl) || ''}
                 alt={data.adminName || t('contact.admin')}
                 className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-primary/20"
                 loading="lazy" decoding="async"

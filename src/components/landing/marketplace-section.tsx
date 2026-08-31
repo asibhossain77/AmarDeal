@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
+import { cdnUrl } from '@/lib/cdn-url';
 
 interface ProductSeller { name: string; imageLink?: string | null; }
 interface Product {
@@ -153,7 +154,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
     <motion.article role="listitem" custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
       <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientBg}`}>
         {product.image ? (
-          <img src={product.image} alt={product.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <CatIcon className={`h-12 w-12 ${catColor} opacity-30 transition-opacity group-hover:opacity-50 sm:h-14 sm:w-14`} strokeWidth={1.2} />
@@ -174,7 +175,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
           <span className="text-lg font-extrabold text-primary sm:text-xl">{formatPrice(product.price, locale)}</span>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Avatar className="h-4 w-4"><AvatarImage src={product.seller.imageLink || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
+              <Avatar className="h-4 w-4"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
               <span className="max-w-[70px] truncate text-[10px] font-medium sm:text-[11px]">{product.seller.name}</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground/60">
@@ -203,7 +204,7 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onOrderM
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
           <motion.div initial={{ opacity: 0, y: 40, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }} transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }} className="fixed inset-x-4 top-[5%] z-50 mx-auto max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border border-border/40 bg-card p-0 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 dark:border-border/25">
             <div className={`relative aspect-[16/9] overflow-hidden rounded-t-2xl bg-gradient-to-br ${gradientBg}`}>
-              {product.image ? (<img src={product.image} alt={product.title} className="h-full w-full object-cover" />) : (<div className="flex h-full w-full items-center justify-center"><CatIcon className={`h-16 w-16 ${catColor} opacity-30`} strokeWidth={1.2} /></div>)}
+              {product.image ? (<img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-cover" />) : (<div className="flex h-full w-full items-center justify-center"><CatIcon className={`h-16 w-16 ${catColor} opacity-30`} strokeWidth={1.2} /></div>)}
               <button onClick={onClose} className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-md transition-colors hover:bg-background dark:bg-zinc-900/80"><X className="h-4 w-4" /></button>
             </div>
             <div className="p-5 sm:p-6">
@@ -215,7 +216,7 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onOrderM
               <p className="mt-2 text-2xl font-extrabold text-primary">{formatPrice(product.price, locale)}</p>
               <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
               <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
-                <Avatar className="h-10 w-10"><AvatarImage src={product.seller.imageLink || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
+                <Avatar className="h-10 w-10"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
                 <div className="flex-1"><p className="text-sm font-semibold text-foreground">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
                 <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
               </div>
@@ -264,7 +265,7 @@ function ProductChatDialog({ product, open, onClose, t, locale }: { product: Pro
           <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.96 }} transition={{ duration: 0.3 }} className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-2xl sm:inset-x-auto sm:left-1/2 sm:bottom-6 sm:-translate-x-1/2 dark:border-border/25" style={{ height: 'min(480px, 80vh)' }}>
             <div className="flex items-center gap-3 border-b border-border/30 px-4 py-3 dark:border-border/20">
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-              <Avatar className="h-8 w-8"><AvatarImage src={product.seller.imageLink || undefined} /><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
+              <Avatar className="h-8 w-8"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
               <div className="flex-1 min-w-0"><p className="truncate text-sm font-semibold text-foreground">{product.seller.name}</p><p className="truncate text-[11px] text-muted-foreground">{product.title}</p></div>
               <div className="flex items-center gap-1 text-primary"><div className="h-2 w-2 rounded-full bg-primary animate-pulse" /><span className="text-[10px] font-medium">{t('marketplace.online')}</span></div>
             </div>
@@ -304,7 +305,7 @@ function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: str
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) onUpload(f); };
   if (image && !image.startsWith('data:')) return (
     <div className="relative group">
-      <img src={image} alt="Product" className="w-full h-40 object-cover rounded-xl border border-border/40" />
+      <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-40 object-cover rounded-xl border border-border/40" />
       <button type="button" onClick={() => { onChange(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><X className="h-3.5 w-3.5" /></button>
     </div>
   );

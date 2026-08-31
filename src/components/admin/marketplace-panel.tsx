@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useT } from '@/lib/i18n';
 import { SellerAppsTab } from './seller-apps-tab';
+import { cdnUrl } from '@/lib/cdn-url';
 
 // -- Types --
 interface MarketplaceSettings {
@@ -462,7 +463,7 @@ function BannersTab() {
                   </div>
                   {form.image && (
                     <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px] relative group">
-                      <img src={form.image} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={cdnUrl(form.image) || ''} alt="Preview" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -537,7 +538,7 @@ function BannersTab() {
                 {/* Banner Image */}
                 <div className="sm:w-48 h-32 sm:h-auto bg-muted relative shrink-0">
                   {b.image ? (
-                    <img src={b.image} alt={b.title} className="w-full h-full object-cover" />
+                    <img src={cdnUrl(b.image) || ''} alt={b.title} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Image className="h-8 w-8 text-muted-foreground/30" />
@@ -783,7 +784,7 @@ function ProductsTab() {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                           {p.image ? (
-                            <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                            <img src={cdnUrl(p.image) || ''} alt={p.title} className="w-full h-full object-cover" />
                           ) : (
                             <Package className="h-4 w-4 text-muted-foreground/50" />
                           )}
@@ -857,7 +858,7 @@ function ProductsTab() {
                 <div className="flex items-start gap-3">
                   <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                     {p.image ? (
-                      <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                      <img src={cdnUrl(p.image) || ''} alt={p.title} className="w-full h-full object-cover" />
                     ) : (
                       <Package className="h-5 w-5 text-muted-foreground/50" />
                     )}

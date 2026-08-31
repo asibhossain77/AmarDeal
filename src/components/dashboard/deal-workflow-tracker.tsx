@@ -16,6 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { cdnUrl } from '@/lib/cdn-url';
 import {
   ArrowLeft,
   FileCheck,
@@ -1317,7 +1318,7 @@ function InfoCard({
     <div className="group flex items-center gap-3 rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-4 transition-all duration-200 hover:border-[rgba(101,163,13,0.25)] hover:shadow-md hover:shadow-[rgba(101,163,13,0.06)]">
       {avatar ? (
         <img
-          src={avatar}
+          src={cdnUrl(avatar) || ''}
           alt={label}
           className="h-9 w-9 md:h-11 md:w-11 shrink-0 rounded-lg md:rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -2150,13 +2151,13 @@ export function DealWorkflowTracker() {
                     icon={User}
                     label="ক্রেতা"
                     value={buyerName}
-                    avatar={dealData?.buyer?.imageLink}
+                    avatar={cdnUrl(dealData?.buyer?.imageLink)}
                   />
                   <InfoCard
                     icon={User}
                     label="বিক্রেতা"
                     value={sellerName}
-                    avatar={dealData?.seller?.imageLink}
+                    avatar={cdnUrl(dealData?.seller?.imageLink)}
                   />
                   <div className="hidden sm:block">
                     <InfoCard
@@ -2528,7 +2529,7 @@ export function DealWorkflowTracker() {
                 <div className="flex items-center gap-3">
                   {counterpartyImage ? (
                     <img
-                      src={counterpartyImage}
+                      src={cdnUrl(counterpartyImage) || ''}
                       alt={isBuyer ? sellerName : buyerName}
                       className="h-10 w-10 rounded-full object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

@@ -1,60 +1,121 @@
 ---
-Task ID: 3
-Agent: Main
-Task: Cloudflare R2 image upload for product images
+Task ID: 4-a
+Agent: dashboard-cdn-updater
+Task: Apply cdnUrl() to dashboard component image sources
 
 Work Log:
-- Added R2 credentials to .env file (Account ID, Access Key, Secret, Bucket, Public URL)
-- Installed @aws-sdk/client-s3 package
-- Created src/lib/r2.ts reusable R2 upload utility with file type/size validation, products/ prefix
-- Created src/app/api/upload/product-image/route.ts API (seller-only, auth required, 2MB max, JPEG/PNG/WebP/GIF)
-- Added 5 new i18n keys (uploadImage, uploading, dragDrop, maxSize, orUrl) to bn.ts and en.ts
-- Updated marketplace AddProductDialog: added ImageUploader component with drag-and-drop, file picker, preview with remove, URL fallback
-- Updated seller dashboard AddProductPanel: same ImageUploader with drag-and-drop, preview, URL fallback
-- Verified marketplace page renders correctly with zero errors
+- Read and analyzed all three target files for dynamic image sources
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to profile-panel.tsx (line 11)
+- Applied `cdnUrl()` to profile-panel.tsx: `img.src` in preload useEffect (line 41) and `backgroundImage: url(...)` in avatar label style (line 128)
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to dashboard-sidebar.tsx (line 18)
+- Applied `cdnUrl()` to dashboard-sidebar.tsx: `img.src` in preload useEffect (line 54) and `backgroundImage: url(...)` in avatar div style (line 96)
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to deal-workflow-tracker.tsx (line 19)
+- Applied `cdnUrl()` to deal-workflow-tracker.tsx InfoCard component: `<img src={cdnUrl(avatar) || ''}>` (line 1321)
+- Applied `cdnUrl()` at InfoCard call sites: `avatar={cdnUrl(dealData?.buyer?.imageLink)}` (line 2154) and `avatar={cdnUrl(dealData?.seller?.imageLink)}` (line 2160)
+- Applied `cdnUrl()` to counterparty image: `<img src={cdnUrl(counterpartyImage) || ''}>` (line 2532)
+- Verified no TypeScript errors introduced by changes (pre-existing errors on lines 159 and 2612 are unrelated)
+- Did NOT apply cdnUrl to static SVGs, data URIs, or Lucide icon components
 
 Stage Summary:
-- R2 upload working via /api/upload/product-image
-- Files stored in products/ prefix with timestamp-random filename
-- Both marketplace dialog and seller dashboard support file upload
-- Drag-and-drop + click-to-browse + URL paste all supported
-- Preview with remove button shown after upload
+- 3 files modified: profile-panel.tsx, dashboard-sidebar.tsx, deal-workflow-tracker.tsx
+- 7 dynamic image source expressions wrapped with cdnUrl() across the three files
+- All CDN images from cdn.midman.bd will now be proxied through /cdn/ on the same domain
+- Double-wrapping is safe since cdnUrl is idempotent (already-proxied URLs pass through unchanged)
 
 ---
-Task ID: 4
-Agent: Main
-Task: Turso database connection check and git push
+Task ID: 4-b
+Agent: landing-cdn-updater
+Task: Apply cdnUrl() to landing component image sources
 
 Work Log:
-- Verified project already has Turso support in src/lib/db.ts (auto-detects libsql:// URLs)
-- Updated .env: DATABASE_URL changed from local SQLite to libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io
-- Added TURSO_AUTH_TOKEN to .env with provided JWT token
-- Tested Turso connection with libsql client - connection successful
-- Verified all 20 tables exist on Turso (User, Deal, DigitalProduct, SellerApplication, etc.)
-- Checked data: 81 users, 5 deals, 1 seller application, 2 payment methods, 34 platform settings
-- Pushed 4 pending commits to origin/main (987370f..1f5de9c)
+- Read and analyzed all 7 target files for dynamic image sources from database/API
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to all 7 files
+- marketplace-section.tsx (7 edits): `product.image` in card grid, product detail modal, and ImageUploader; `product.seller.imageLink` in 3 AvatarImage components (card, detail, chat header)
+- blog-view.tsx (2 edits): `post.coverImage` in BlogPostDetail and BlogListing card
+- contract-section.tsx (1 edit): `data.adminImageUrl` in admin profile card
+- contact-section.tsx (1 edit): `data.adminImageUrl` in centered admin profile
+- site-popup.tsx (1 edit): `data.image` in popup body
+- navbar.tsx (2 edits): `siteLogo` in LogoButton and MobileBrandHeader components
+- footer.tsx (1 edit): `siteLogo` in brand column
+- Fixed accidental typo (mb-6 → mb-80) in blog-view.tsx immediately after applying
+- Verified no remaining unwrapped dynamic image sources via grep
+- Did NOT apply cdnUrl to static SVGs, data URIs, Lucide icons, or inline arrow SVGs
 
 Stage Summary:
-- Turso database connected and verified - all tables present with live data
-- Git push successful to https://github.com/asibhossain77/AmarDeal.git
+- 7 files modified: marketplace-section.tsx, blog-view.tsx, contract-section.tsx, contact-section.tsx, site-popup.tsx, navbar.tsx, footer.tsx
+- 15 dynamic image source expressions wrapped with cdnUrl() across the seven files
+- All CDN images from cdn.midman.bd will now be proxied through /cdn/ on the same domain
+- cdnUrl is idempotent so already-proxied URLs and non-CDN URLs pass through unchanged
 
 ---
-Task ID: 5
-Agent: Main
-Task: Debug why uploaded profile images don't show on website
+Task ID: 4-c
+Agent: seller-cdn-updater
+Task: Apply cdnUrl() to seller component image sources
 
 Work Log:
-- Investigated the full upload flow: r2.ts → upload API → DB save → frontend display
-- Tested R2 upload directly: upload succeeds, URL is correct (https://cdn.midman.bd/profiles/...), image is publicly accessible (HTTP 200, content-type: image/png)
-- Found root cause: If R2_PUBLIC_URL env var is missing on Vercel, old code silently constructed a non-public S3 endpoint URL (https://xxx.r2.cloudflarestorage.com/bucket/key) which returns 401
-- Fixed r2.ts: Added assertR2Configured() and made uploadToR2() throw a clear error if R2_PUBLIC_URL is not set
-- Added console.error logging throughout upload APIs (profile-image, admin upload-profile-pic) to trace: file info, old imageLink, R2 result URL, DB save result
-- Fixed image onError handlers in profile-panel.tsx and dashboard-sidebar.tsx: replaced display:none with proper state-based fallback (shows letter avatar when image fails to load)
-- Added useEffect to reset imgError state when image URL changes (important after upload)
-- Verified R2 upload works correctly locally with correct URL generation and public accessibility
+- Read and analyzed seller-main.tsx (615 lines) and seller-sidebar.tsx (157 lines)
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to seller-main.tsx (line 20, after sonner import)
+- Applied `cdnUrl()` to 3 dynamic img srcs in seller-main.tsx:
+  - Line 92: `user.imageLink` (seller avatar in overview card)
+  - Line 235: `image` (product image preview in add-product form)
+  - Line 338: `p.image` (product card thumbnail in my-products list)
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to seller-sidebar.tsx (line 17, after framer-motion import)
+- Applied `cdnUrl()` to 1 dynamic img src in seller-sidebar.tsx:
+  - Line 57: `siteLogo` (brand logo in sidebar header)
+- Did NOT apply cdnUrl to Lucide icons, static SVGs, or the user initials fallback div
+- Note: the `image` variable in the product form is already guarded by `!image.startsWith('data:')` so data URIs are excluded before cdnUrl is called; cdnUrl also safely passes through non-CDN URLs
 
 Stage Summary:
-- Key fix: R2 upload now throws explicit error if R2_PUBLIC_URL is not set, instead of silently returning broken URL
-- Image display now shows proper fallback (letter avatar) when image fails to load
-- All upload APIs have detailed error logging for Vercel debugging
-- User needs to verify R2_PUBLIC_URL=https://cdn.midman.bd is set on Vercel environment variables
+- 2 files modified: seller-main.tsx, seller-sidebar.tsx
+- 4 dynamic image source expressions wrapped with cdnUrl()
+- All seller-facing CDN images from cdn.midman.bd will now be proxied through /cdn/ on the same domain
+
+---
+Task ID: 4-d
+Agent: admin-cdn-updater
+Task: Apply cdnUrl() to admin component image sources
+
+Work Log:
+- Read and analyzed all 10 target files for dynamic image sources from database/API
+- Added `import { cdnUrl } from '@/lib/cdn-url'` to 9 files (two-factor-panel.tsx skipped)
+- seller-apps-tab.tsx (1 edit): `imageLink` in UserAvatar component
+- marketplace-panel.tsx (4 edits): `form.image` in banner editor preview, `b.image` in banner list cards, `p.image` in product table and product mobile cards
+- popup-panel.tsx (2 edits): `config.image` in editor preview and modal preview
+- contact-info-panel.tsx (1 edit): `profile.adminImageUrl` in admin profile picture
+- payment-methods-panel.tsx (1 edit): `form.image` in gateway card live preview
+- admin-main.tsx (1 edit): `deal.paymentMethod.image` in deal detail card
+- blog-panel.tsx (1 edit): `post.coverImage` in blog post list thumbnail
+- contract-panel.tsx (1 edit): `previewUrl` (derived from `adminImageUrl`) in admin image preview
+- auth-view.tsx (1 edit): `siteLogo` in auth page header (from useSiteSettings)
+- two-factor-panel.tsx: Inspected and confirmed the only `<img src={...}>` is a QR code data URL (`qrDataUrl`) — NOT a CDN image, so NO change applied
+- Verified no remaining unwrapped dynamic image sources via grep
+- Did NOT apply cdnUrl to static SVGs, data URIs, Lucide icons, or hardcoded paths
+
+Stage Summary:
+- 9 files modified: seller-apps-tab.tsx, marketplace-panel.tsx, popup-panel.tsx, contact-info-panel.tsx, payment-methods-panel.tsx, admin-main.tsx, blog-panel.tsx, contract-panel.tsx, auth-view.tsx
+- 1 file intentionally skipped: two-factor-panel.tsx (QR data URL, not CDN)
+- 13 dynamic image source expressions wrapped with cdnUrl() across the nine files
+- All CDN images from cdn.midman.bd will now be proxied through /cdn/ on the same domain
+- cdnUrl is idempotent so already-proxied URLs and non-CDN URLs pass through unchanged
+
+---
+Task ID: 4-e
+Agent: Main
+Task: Fix CDN images not rendering in Brave browser by proxying through same origin
+
+Work Log:
+- Diagnosed root cause: Brave browser Shields blocks cross-origin images from cdn.midman.bd
+- Created /cdn/:path* rewrite in next.config.ts to proxy all R2 CDN requests through same origin
+- Updated catch-all SPA rewrite to exclude /cdn/ prefix
+- Updated proxy.ts matcher to skip /cdn/
+- Created src/lib/cdn-url.ts with cdnUrl() utility
+- Updated src/lib/r2.ts to return proxy URLs and handle both URL formats in deleteFromR2
+- Applied cdnUrl() to ALL dynamic image sources across 22 component files
+- Verified proxy works: curl returns 200 image/png
+
+Stage Summary:
+- All CDN images now load as same-origin requests via /cdn/ proxy
+- Fixes Brave browser Shields blocking cross-origin images
+- Backwards compatible: cdnUrl() converts old URLs to proxy URLs
+- 22 component files updated, 1 new utility, 2 config files updated
+

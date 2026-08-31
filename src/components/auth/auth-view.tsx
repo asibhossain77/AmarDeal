@@ -29,6 +29,7 @@ import {
   Phone,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -970,7 +971,7 @@ export function AuthView() {
             {/* ── Header ── */}
             <div className="mb-6 flex flex-col items-center gap-3 text-center">
               {siteLogo ? (
-                <img src={siteLogo} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
+                <img src={cdnUrl(siteLogo) || ''} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
               ) : (
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-lg">
                   <span className="text-base font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>

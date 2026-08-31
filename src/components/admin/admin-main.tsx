@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
+import { cdnUrl } from '@/lib/cdn-url';
 
 function PanelLoader() {
   const t = useT();
@@ -752,7 +753,7 @@ function PaymentVerifyPanel() {
                 <div className="h-10 w-10 rounded-xl bg-muted/60 flex items-center justify-center shrink-0 overflow-hidden">
                   {deal.paymentMethod.image ? (
                     <img
-                      src={deal.paymentMethod.image}
+                      src={cdnUrl(deal.paymentMethod.image) || ''}
                       alt={deal.paymentMethod.name}
                       className="h-full w-full object-cover"
                       loading="lazy" decoding="async"

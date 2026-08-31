@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -182,7 +183,7 @@ export function ContractPanel() {
           {showPreview && previewUrl && (
             <div className="rounded-xl border border-border/50 p-3 flex items-center gap-3">
               <img
-                src={previewUrl}
+                src={cdnUrl(previewUrl) || ''}
                 alt={t('admin.contract.previewAlt')}
                 className="h-12 w-12 rounded-full object-cover"
                 loading="lazy" decoding="async"

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -50,7 +51,7 @@ export function DashboardSidebar() {
     const img = new Image();
     img.onload = () => setImgLoaded(true);
     img.onerror = () => setImgLoaded(false);
-    img.src = currentImage;
+    img.src = cdnUrl(currentImage) || '';
   }, [currentImage]);
 
   if (!mounted) return null;
@@ -92,7 +93,7 @@ export function DashboardSidebar() {
             <div
               className="h-9 w-9 shrink-0 rounded-full overflow-hidden"
               style={currentImage && imgLoaded
-                ? { backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                ? { backgroundImage: `url(${cdnUrl(currentImage) || ''})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                 : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
               }
             >

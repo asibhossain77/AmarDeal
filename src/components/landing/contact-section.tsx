@@ -5,6 +5,7 @@ import { useState, useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MessageCircle, MapPin, Facebook, Users, User, Send } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -131,7 +132,7 @@ export function ContactSection() {
               <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full border-4 border-white dark:border-zinc-800 shadow-2xl shadow-gray-400/30 dark:shadow-none overflow-hidden">
                 {data?.adminImageUrl ? (
                   <img
-                    src={data.adminImageUrl}
+                    src={cdnUrl(data.adminImageUrl) || ''}
                     alt={data.adminName || t('contact.admin')}
                     className="h-full w-full object-cover"
                     loading="lazy" decoding="async"

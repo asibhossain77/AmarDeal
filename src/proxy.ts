@@ -32,7 +32,7 @@ const SESSION_COOKIE = 'midman_session'
 export const config = {
   // Run on everything except true static assets.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|uploads).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|uploads|cdn/).*)',
   ],
 }
 

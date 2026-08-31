@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { User, Mail, Phone, Shield, Crown, Store, Camera, X, Loader2 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { toast } from 'sonner';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -37,7 +38,7 @@ export function ProfilePanel() {
       console.error('[Profile] Image preload FAILED:', currentImage);
       setImgLoaded(false);
     };
-    img.src = currentImage;
+    img.src = cdnUrl(currentImage) || '';
   }, [currentImage]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +125,7 @@ export function ProfilePanel() {
               htmlFor={fileInputId}
               className="block h-16 w-16 sm:h-20 sm:w-20 rounded-full cursor-pointer ring-3 ring-primary/20 overflow-hidden"
               style={showImage
-                ? { backgroundImage: `url(${currentImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                ? { backgroundImage: `url(${cdnUrl(currentImage) || ''})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                 : { backgroundColor: 'oklch(0.768 0.189 131 / 0.15)' }
               }
             >

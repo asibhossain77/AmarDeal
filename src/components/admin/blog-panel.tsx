@@ -21,6 +21,8 @@ import {
   AlertDialogCancel,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cdnUrl } from '@/lib/cdn-url';
+
 import {
   Plus,
   Pencil,
@@ -284,7 +286,7 @@ export function BlogPanel() {
             >
               {post.coverImage ? (
                 <img
-                  src={post.coverImage}
+                  src={cdnUrl(post.coverImage) || ''}
                   alt=""
                   className="h-16 w-16 sm:h-20 sm:w-20 rounded-lg object-cover shrink-0"
                   loading="lazy" decoding="async"

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { sanitizeHtml } from '@/lib/sanitize';
+import { cdnUrl } from '@/lib/cdn-url';
 
 interface PopupData {
   enabled: boolean;
@@ -84,7 +85,7 @@ export function SitePopup() {
               <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
                 {data.image && (
                   <img
-                    src={data.image}
+                    src={cdnUrl(data.image) || ''}
                     alt=""
                     className="w-full rounded-xl object-contain max-h-[180px]"
                   />
