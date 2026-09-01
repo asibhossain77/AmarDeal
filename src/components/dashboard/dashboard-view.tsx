@@ -134,9 +134,9 @@ export function DashboardView() {
               </SheetContent>
             </Sheet>
 
-            {/* Desktop: Dashboard label */}
-            <div className="hidden md:flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
+            {/* Dashboard label - show on all screens */}
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-primary/15 hidden md:flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">M</span>
               </div>
               <h1 className="text-sm font-bold tracking-tight text-foreground">{t('nav.dashboard')}</h1>
