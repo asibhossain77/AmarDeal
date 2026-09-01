@@ -104,7 +104,8 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
       } else {
         setDashboardPanel('deal-detail');
       }
-    } catch {
+    } catch (err) {
+      console.error('[DEAL CREATE] Client error:', err);
       setError(t('deal.serverError'));
     } finally {
       setLoading(false);

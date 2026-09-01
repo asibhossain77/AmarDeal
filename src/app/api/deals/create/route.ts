@@ -10,7 +10,8 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response
     const userId = guard.userId
 
-    const { title, role, amount, partyEmail, terms } = await req.json()
+    const body = await req.json()
+    const { title, role, amount, partyEmail, terms } = body
 
     if (!title || !amount || !partyEmail) {
       return NextResponse.json(
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (amount <= 0) {
+    const numAmount = Number(amount)
+    if (isNaN(numAmount) || numAmount <= 0) {
       return NextResponse.json(
         { error: 'পরিমাণ অবশ্যই শূন্যের বেশি হতে হবে' },
         { status: 400 }
@@ -64,13 +66,13 @@ export async function POST(req: NextRequest) {
 
     const deal = await db.deal.create({
       data: {
-        title,
-        amount,
+        title: String(title),
+        amount: numAmount,
         status: 'created',
         buyerId,
         sellerId,
         creatorId: userId,
-        terms: terms || null,
+        terms: terms ? String(terms) : null,
       },
       include: {
         buyer: { select: { id: true, name: true, email: true } },
@@ -79,89 +81,96 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Create notification for the counterparty
-    const notifMessage = `${isCreatorBuyer ? 'ক্রেতা' : 'বিক্রেতা'} হিসেবে আপনাকে একটি নতুন ডিল পাঠানো হয়েছে: "${title}"`
-    await db.notification.create({
-      data: {
-        userId: counterparty.id,
-        type: 'deal_request',
-        title: 'নতুন ডিল অনুরোধ',
-        message: notifMessage,
-        dealId: deal.id,
-      },
-    })
-
-    // Send real-time notification via WebSocket
-    try {
-      await fetch('http://localhost:3004/notify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: counterparty.id,
-          notification: {
-            id: deal.id + '-notif',
+    // ── All post-creation tasks (notifications, emails) are fire-and-forget ──
+    // Wrapped in a single async IIFE so nothing can crash the response.
+    ;(async () => {
+      try {
+        // Create DB notification for the counterparty
+        const notifMessage = `${isCreatorBuyer ? 'ক্রেতা' : 'বিক্রেতা'} হিসেবে আপনাকে একটি নতুন ডিল পাঠানো হয়েছে: "${deal.title}"`
+        await db.notification.create({
+          data: {
+            userId: counterparty.id,
             type: 'deal_request',
             title: 'নতুন ডিল অনুরোধ',
             message: notifMessage,
             dealId: deal.id,
-            createdAt: new Date().toISOString(),
           },
-        }),
-      })
-    } catch {
-      // WebSocket notification failed silently — DB notification still exists
-    }
+        }).catch(() => {})
 
-    // Email notification to counterparty
-    sendEmail(counterparty.email!, () => dealCreatedEmail(
-      counterparty.name || 'ইউজার',
-      deal.title,
-      deal.amount,
-      deal.creator?.name || 'একজন ইউজার',
-      isCreatorBuyer ? 'buyer' : 'seller',
-    ), 'deal_created').catch(() => {})
+        // WebSocket notification
+        try {
+          await fetch('http://localhost:3004/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: counterparty.id,
+              notification: {
+                id: deal.id + '-notif',
+                type: 'deal_request',
+                title: 'নতুন ডিল অনুরোধ',
+                message: notifMessage,
+                dealId: deal.id,
+                createdAt: new Date().toISOString(),
+              },
+            }),
+          })
+        } catch { /* ws not available */ }
 
-    // WhatsApp notification to counterparty
-    sendWhatsApp(counterparty.phone, () => ({
-      body: dealCreatedWa(
-        counterparty.name || 'ইউজার',
-        deal.title,
-        deal.amount,
-        deal.creator?.name || 'একজন ইউজার',
-        isCreatorBuyer ? 'buyer' : 'seller',
-      ),
-    }), 'deal_created').catch(() => {})
-
-    // Email notification to admin
-    try {
-      const adminUser = await db.user.findFirst({
-        where: { admin: { isNot: null } },
-        select: { name: true, email: true, phone: true },
-      })
-      if (adminUser?.email) {
-        sendEmail(adminUser.email, () => adminNewDealEmail(
-          adminUser.name || 'অ্যাডমিন',
-          deal.title,
-          `৳${deal.amount.toLocaleString('en')}`,
-          deal.creator?.name || 'একজন ইউজার',
-          deal.buyer?.name || '-',
-          deal.seller?.name || '-',
-        ), 'deal_created').catch(() => {})
-      }
-      // WhatsApp notification to admin
-      if (adminUser?.phone) {
-        sendWhatsApp(adminUser.phone, () => ({
-          body: adminNewDealWa(
-            adminUser.name || 'অ্যাডমিন',
+        // Email + WhatsApp to counterparty
+        if (counterparty.email) {
+          sendEmail(counterparty.email, () => dealCreatedEmail(
+            counterparty.name || 'ইউজার',
             deal.title,
-            `৳${deal.amount.toLocaleString('en')}`,
+            deal.amount,
             deal.creator?.name || 'একজন ইউজার',
-            deal.buyer?.name || '-',
-            deal.seller?.name || '-',
-          ),
-        }), 'deal_created').catch(() => {})
+            isCreatorBuyer ? 'buyer' : 'seller',
+          ), 'deal_created').catch((e) => console.error('[DEAL CREATE] counterparty email error:', e))
+        }
+        if (counterparty.phone) {
+          sendWhatsApp(counterparty.phone, () => ({
+            body: dealCreatedWa(
+              counterparty.name || 'ইউজার',
+              deal.title,
+              deal.amount,
+              deal.creator?.name || 'একজন ইউজার',
+              isCreatorBuyer ? 'buyer' : 'seller',
+            ),
+          }), 'deal_created').catch((e) => console.error('[DEAL CREATE] counterparty wa error:', e))
+        }
+
+        // Admin notifications
+        try {
+          const adminUser = await db.user.findFirst({
+            where: { admin: { isNot: null } },
+            select: { name: true, email: true, phone: true },
+          })
+          if (adminUser?.email) {
+            sendEmail(adminUser.email, () => adminNewDealEmail(
+              adminUser.name || 'অ্যাডমিন',
+              deal.title,
+              `৳${deal.amount.toLocaleString('en')}`,
+              deal.creator?.name || 'একজন ইউজার',
+              deal.buyer?.name || '-',
+              deal.seller?.name || '-',
+            ), 'deal_created').catch(() => {})
+          }
+          if (adminUser?.phone) {
+            sendWhatsApp(adminUser.phone, () => ({
+              body: adminNewDealWa(
+                adminUser.name || 'অ্যাডমিন',
+                deal.title,
+                `৳${deal.amount.toLocaleString('en')}`,
+                deal.creator?.name || 'একজন ইউজার',
+                deal.buyer?.name || '-',
+                deal.seller?.name || '-',
+              ),
+            }), 'deal_created').catch(() => {})
+          }
+        } catch { /* admin notify failed silently */ }
+      } catch (e) {
+        console.error('[DEAL CREATE] Post-creation notification error:', e)
       }
-    } catch { /* silent */ }
+    })()
 
     return NextResponse.json({
       id: deal.id,
