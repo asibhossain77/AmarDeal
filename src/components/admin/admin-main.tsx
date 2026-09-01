@@ -3893,30 +3893,30 @@ export function AdminMain() {
           <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-primary/8 blur-2xl" />
           <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl" />
           
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5">
+          <div className="relative flex flex-row items-center justify-between gap-3 p-4 sm:p-5">
             {/* Left: Greeting + Title */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-lg sm:text-xl">👋</span>
-                <p className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-base sm:text-xl">👋</span>
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   {getGreeting()}
                 </p>
               </div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
                 {user?.name || t('nav.adminLabel')}
               </h1>
-              <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+              <p className="mt-0.5 text-[11px] sm:text-sm text-muted-foreground truncate">
                 <span className="text-primary font-semibold">{siteName}</span>
-                <span className="mx-1.5 text-border">|</span>
+                <span className="mx-1 text-border">|</span>
                 {t('admin.escrowDashboard')}
               </p>
             </div>
 
             {/* Right: Profile Chip */}
-            <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
-              <div className="flex items-center gap-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border border-border/40 px-3 py-2 shadow-sm">
+            <div className="shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border border-border/40 px-2.5 sm:px-3 py-2 shadow-sm">
                 <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary overflow-hidden ring-2 ring-primary/20"
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary overflow-hidden ring-2 ring-primary/20"
                   style={user?.imageLink
                     ? { backgroundImage: `url(${cdnUrl(user.imageLink)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                     : undefined
@@ -3924,7 +3924,7 @@ export function AdminMain() {
                 >
                   {!user?.imageLink && (user?.name?.charAt(0) || 'A')}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 hidden sm:block">
                   <p className="truncate text-sm font-semibold text-foreground leading-tight">
                     {user?.name || t('nav.adminLabel')}
                   </p>
