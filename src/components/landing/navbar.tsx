@@ -323,7 +323,7 @@ export function Navbar() {
             {user ? (
               <Button size="sm" onClick={() => navigateToDashboard()} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
                 <LayoutDashboard className="h-4 w-4" />
-                {t('hero.startNow')}
+                {t('nav.dashboard')}
               </Button>
             ) : (
               <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
@@ -516,7 +516,7 @@ export function Navbar() {
                             <Button onClick={() => {
                               setOpen(false); navigateToDashboard();
                             }} className="w-full gap-2 rounded-lg font-medium">
-                              <LayoutDashboard className="h-4 w-4" /> {t('hero.startNow')}
+                              <LayoutDashboard className="h-4 w-4" /> {t('nav.dashboard')}
                             </Button>
                             <button
                               onClick={() => { setOpen(false); handleLogout(); }}
