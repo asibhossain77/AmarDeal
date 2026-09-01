@@ -144,18 +144,27 @@ export function AddProductPanel() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('other');
   const [image, setImage] = useState('');
+  const [imgDimensions, setImgDimensions] = useState<{ w: number; h: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
+    setImgDimensions(null);
     try {
       const fd = new FormData(); fd.append('image', file);
       if (image) fd.append('oldImage', image);
       const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
       const data = await res.json();
-      if (data.success && data.url) setImage(data.url);
+      if (data.success && data.url) {
+        setImage(data.url);
+        // Get dimensions
+        const url = data.url.startsWith('/cdn/') ? `https://cdn.midman.bd/${data.url.slice(5)}` : data.url;
+        const img = new Image();
+        img.onload = () => setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+        img.src = url;
+      }
       else toast.error(data.error || 'Upload failed');
     } catch { toast.error('Upload failed'); } finally { setUploading(false); }
   };
@@ -175,7 +184,7 @@ export function AddProductPanel() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(t('seller.productAdded'));
-        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage('');
+        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setImgDimensions(null);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -235,8 +244,13 @@ export function AddProductPanel() {
           <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
           {image && !image.startsWith('data:') ? (
             <div className="relative group">
-              <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" />
-              <button type="button" onClick={() => { setImage(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+              <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" onLoad={(e) => {
+                const img = e.currentTarget; setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+              }} />
+              {imgDimensions && (
+                <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
+              )}
+              <button type="button" onClick={() => { setImage(''); setImgDimensions(null); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
             <div
