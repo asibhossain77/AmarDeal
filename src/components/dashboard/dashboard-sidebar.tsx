@@ -11,8 +11,13 @@ import {
   Settings,
   Users,
   MessageSquare,
-  Store,
   ShoppingCart,
+  Store,
+  PackagePlus,
+  Package,
+  ClipboardCheck,
+  Briefcase,
+  SeparatorHorizontal,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
@@ -24,6 +29,7 @@ interface NavItem {
   labelKey: string;
   icon: React.ElementType;
   panel: DashboardPanel;
+  sellerOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -34,6 +40,13 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.affiliate', icon: Users, panel: 'affiliate' },
   { labelKey: 'nav.review', icon: MessageSquare, panel: 'review' },
   { labelKey: 'nav.settings', icon: Settings, panel: 'settings' },
+];
+
+const sellerNavItems: NavItem[] = [
+  { labelKey: 'seller.activeDealsList', icon: ClipboardCheck, panel: 'seller-orders', sellerOnly: true },
+  { labelKey: 'seller.myProducts', icon: Package, panel: 'seller-products', sellerOnly: true },
+  { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },
+  { labelKey: 'seller.businessProfile', icon: Briefcase, panel: 'seller-business-profile', sellerOnly: true },
 ];
 
 export function DashboardSidebar() {
@@ -57,10 +70,13 @@ export function DashboardSidebar() {
 
   if (!mounted) return null;
 
+  const isSeller = user?.isSeller && !user?.sellerDisabled;
+
   return (
     <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-0 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
       <div className="flex h-full flex-col">
-        <nav className="flex-1 space-y-1 pl-5 pr-3 pt-6">
+        <nav className="flex-1 space-y-1 pl-5 pr-3 pt-6 overflow-y-auto">
+          {/* Regular nav items */}
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = dashboardPanel === item.panel;
@@ -84,6 +100,35 @@ export function DashboardSidebar() {
               </button>
             );
           })}
+
+          {/* Seller section (only shown for sellers) */}
+          {isSeller && (
+            <>
+              <div className="flex items-center gap-2 px-3 pt-5 pb-2">
+                <div className="h-px flex-1 bg-border/50" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary/60">{t('nav.sellerMode') || 'সেলার'}</span>
+                <div className="h-px flex-1 bg-border/50" />
+              </div>
+              {sellerNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = dashboardPanel === item.panel;
+                return (
+                  <button
+                    key={item.panel}
+                    onClick={() => setDashboardPanel(item.panel)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-primary/10 text-primary dark:bg-primary/15'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-[18px] w-[18px]" />
+                    {t(item.labelKey as any)}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4 space-y-3">
@@ -94,17 +139,7 @@ export function DashboardSidebar() {
             <ShoppingCart className="h-[18px] w-[18px]" />
             {t('page.marketplace.title') || 'মার্কেটপ্লেস'}
           </button>
-          {user?.isSeller ? (
-            <button
-              onClick={() => useAppStore.getState().setView('seller')}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 transition-all"
-            >
-              <Store className="h-[18px] w-[18px]" />
-              {t('nav.sellerMode') || 'সেলার ড্যাশবোর্ড'}
-            </button>
-          ) : (
-            !user?.isAdmin && <SellerApplyButton variant="sidebar" />
-          )}
+          {!isSeller && !user?.isAdmin && <SellerApplyButton variant="sidebar" />}
           <div className="flex items-center gap-3 rounded-xl py-2">
             <div
               className="h-9 w-9 shrink-0 rounded-full overflow-hidden"

@@ -35,7 +35,7 @@ export function SellerApplyButton({ variant = 'sidebar', onClose }: SellerApplyB
   if (user?.isSeller) {
     return (
       <button
-        onClick={() => { useAppStore.getState().setView('seller'); onClose?.(); }}
+        onClick={() => { useAppStore.getState().setDashboardPanel('seller-orders'); onClose?.(); }}
         className="flex w-full items-center gap-2.5 rounded-xl px-3 py-3 bg-primary/10 border border-primary/20 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
       >
         <Store className="h-[18px] w-[18px]" />

@@ -14,6 +14,7 @@ import {
   ClipboardList,
   ArrowUpRight,
   Store,
+  PackagePlus,
 } from 'lucide-react';
 import { cdnUrl } from '@/lib/cdn-url';
 import { NewDealForm } from './new-deal-form';
@@ -26,6 +27,7 @@ import { AffiliatePanel } from './affiliate-panel';
 import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
+import { AddProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
 
 
 const emptySubscribe = () => () => {};
@@ -206,10 +208,10 @@ function OverviewPanel() {
   const setView = useAppStore((s) => s.setView);
   const userId = user?.id;
   const t = useT();
+  const isSeller = user?.isSeller && !user?.sellerDisabled;
 
 
-
-  /* ── Queries ── */
+  // Queries
   const { data: stats, isLoading: statsLoading } = useQuery<UserStats>({
     queryKey: ['user-dashboard-stats', userId],
     queryFn: async () => {
@@ -238,7 +240,7 @@ function OverviewPanel() {
     enabled: !!userId,
   });
 
-  /* ── Derived stat cards ── */
+  // Derived stat cards
   const statCards = stats
     ? [
         {
@@ -274,7 +276,7 @@ function OverviewPanel() {
 
   return (
     <>
-      {/* ── Welcome Banner ── */}
+      {/* Welcome Banner */}
       <div className="mb-6 rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/15 p-5 sm:p-6 flex items-center gap-4">
         <button
           onClick={() => setDashboardPanel('profile')}
@@ -294,7 +296,7 @@ function OverviewPanel() {
         </div>
       </div>
 
-      {/* ── Stats Grid ── */}
+      {/* Stats Grid */}
       <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {statsLoading
           ? Array.from({ length: 4 }).map((_, i) => (
@@ -331,7 +333,7 @@ function OverviewPanel() {
             })}
       </div>
 
-      {/* ── Activity Grid: Quick Actions + Balance / Recent Deals ── */}
+      {/* Activity Grid: Quick Actions + Balance / Recent Deals */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         {/* Right Column → Quick Actions + Balance (order-1 mobile, order-2 desktop) */}
         <motion.div
@@ -373,6 +375,17 @@ function OverviewPanel() {
                 <Store className="h-5 w-5" />
                 {t('dashboard.goToMarketplace')}
               </Button>
+              {/* Add Product (seller only) */}
+              {isSeller && (
+                <Button
+                  onClick={() => setDashboardPanel('seller-add-product')}
+                  variant="outline"
+                  className="w-full h-12 rounded-lg text-base font-semibold gap-2.5 border-primary/20 text-primary hover:bg-primary/10"
+                >
+                  <PackagePlus className="h-5 w-5" />
+                  {t('seller.addProduct')}
+                </Button>
+              )}
               </div>
             </div>
 
@@ -504,15 +517,42 @@ function OverviewPanel() {
   );
 }
 
-/* ─── Main Content ─── */
+/* Main Content */
 export function DashboardMain() {
   const dashboardPanel = useAppStore((s) => s.dashboardPanel);
+  const user = useAppStore((s) => s.user);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   if (!mounted) return null;
 
-  // Deal-detail and payment panels fill full height on mobile for no-scroll layout
+  // Deal-detail panel fills full height on mobile for no-scroll layout
   const isImmersive = dashboardPanel === 'deal-detail';
+
+  // Show seller disabled message
+  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile'].includes(dashboardPanel)) {
+    return (
+      <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
+        <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+          <div className="h-20 w-20 rounded-2xl bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center mb-5">
+            <Store className="h-10 w-10 text-orange-500" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">সেলার অ্যাকাউন্ট নিষ্ক্রিয়</h2>
+          <p className="text-sm text-muted-foreground mb-1">আপনার সেলার অ্যাকাউন্ট অ্যাডমিন দ্বারা সাময়িকভাবে নিষ্ক্রিয় করা হয়েছে।</p>
+          <p className="text-sm text-muted-foreground mb-6">অ্যাকাউন্ট আনলক করতে সাপোর্টে যোগাযোগ করুন।</p>
+          <div className="rounded-xl bg-muted/40 border border-border/50 p-4 w-full space-y-2">
+            <p className="text-xs font-semibold text-foreground">সাপোর্টে যোগাযোগ করুন:</p>
+            <p className="text-xs text-muted-foreground">এই সমস্যার সমাধানের জন্য আমাদের সাপোর্ট টিমের সাথে যোগাযোগ করুন। আপনার অ্যাকাউন্ট পুনরায় সক্রিয় করা হবে।</p>
+          </div>
+          <button
+            onClick={() => useAppStore.getState().setDashboardPanel('overview')}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border border-border/60 bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            ড্যাশবোর্ডে ফিরে যান
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
@@ -531,6 +571,11 @@ export function DashboardMain() {
       {dashboardPanel === 'affiliate' && <AffiliatePanel />}
       {dashboardPanel === 'review' && <DashboardReviewPanel />}
       {dashboardPanel === 'settings' && <SettingsPanel />}
+      {/* Seller panels */}
+      {dashboardPanel === 'seller-orders' && <ActiveDealsPanel />}
+      {dashboardPanel === 'seller-products' && <MyProductsPanel />}
+      {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
+      {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
     </div>
   );
 }

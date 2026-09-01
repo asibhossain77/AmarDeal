@@ -275,7 +275,7 @@ interface DealData {
    ═══════════════════════════════════════════════════════════ */
 
 export function SellerDealTracker() {
-  const { setSellerPanel, activeDeal, user } = useAppStore();
+  const { setDashboardPanel, activeDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const trackerAvatarUrl = cdnUrl(user?.imageLink);
   const [trackerAvatarLoaded, setTrackerAvatarLoaded] = useState(false);
@@ -411,7 +411,7 @@ export function SellerDealTracker() {
         <div className="flex items-center justify-between border-b px-4 py-3 sm:px-5" style={{ borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setSellerPanel('active-deals')}
+              onClick={() => setDashboardPanel('seller-orders')}
               className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-accent"
               aria-label="ফিরে যান"
             >

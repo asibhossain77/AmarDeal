@@ -16,7 +16,7 @@ const emptySubscribe = () => () => {};
 
 /* ─── Main New Deal Form ─── */
 export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
-  const { setDashboardPanel, setSellerPanel, setActiveDeal, user } = useAppStore();
+  const { setDashboardPanel, setActiveDeal, user } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
 
@@ -87,7 +87,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
       });
       toast.success(t('deal.createSuccess'));
       if (mode === 'seller') {
-        setSellerPanel('deal-detail');
+        setDashboardPanel('seller-order-detail');
       } else {
         setDashboardPanel('deal-detail');
       }
@@ -96,7 +96,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
     } finally {
       setLoading(false);
     }
-  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setSellerPanel, setActiveDeal, t, mode]);
+  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setActiveDeal, t, mode]);
 
   if (!mounted) return null;
 

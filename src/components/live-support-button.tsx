@@ -58,13 +58,11 @@ function FacebookIcon({ className }: { className?: string }) {
 export function LiveSupportButton() {
   const view = useAppStore((s) => s.view);
   const dashboardPanel = useAppStore((s) => s.dashboardPanel);
-  const sellerPanel = useAppStore((s) => s.sellerPanel);
   const adminPanel = useAppStore((s) => s.adminPanel);
 
   // Hide support button on deal detail pages (they have their own admin call button in chat)
   const isDealDetail =
-    (view === 'dashboard' && dashboardPanel === 'deal-detail') ||
-    (view === 'seller' && sellerPanel === 'deal-detail') ||
+    (view === 'dashboard' && (dashboardPanel === 'deal-detail' || dashboardPanel === 'seller-order-detail')) ||
     (view === 'admin' && adminPanel === 'all-deals');
 
   const [isOpen, setIsOpen] = useState(false);

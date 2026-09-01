@@ -19,7 +19,6 @@ export function BackButton({ label, className = '', variant = 'outline' }: BackB
   const view = useAppStore((s) => s.view);
   const _prevView = useAppStore((s) => s._prevView);
   const _prevDashPanel = useAppStore((s) => s._prevDashPanel);
-  const _prevSellerPanel = useAppStore((s) => s._prevSellerPanel);
 
   const displayLabel = label ?? t('common.back');
 
@@ -27,7 +26,6 @@ export function BackButton({ label, className = '', variant = 'outline' }: BackB
   const isBackToPublicView = _prevView === 'landing' || _prevView === 'auth';
   const canGoBack =
     (view === 'dashboard' && _prevDashPanel) ||
-    (view === 'seller' && _prevSellerPanel) ||
     (Boolean(_prevView) && !isBackToPublicView);
 
   if (!canGoBack) return null;

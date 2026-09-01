@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
 export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace'
-export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review'
+export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile'
+/* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
 export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
 
@@ -56,13 +57,13 @@ interface AppState {
   /* Navigation history (single-level) */
   _prevView: AppView | null
   _prevDashPanel: DashboardPanel | null
-  _prevSellerPanel: SellerPanel | null
+  _prevSellerPanel: SellerPanel | null /* kept for compat, unused */
   setView: (view: AppView) => void
   setUser: (user: UserInfo | null, opts?: { isLogin?: boolean }) => void
   logout: () => void
   setSidebarOpen: (open: boolean) => void
   setDashboardPanel: (panel: DashboardPanel) => void
-  setSellerPanel: (panel: SellerPanel) => void
+  setSellerPanel: (panel: SellerPanel) => void /* kept for compat */
   setAdminPanel: (panel: AdminPanel) => void
   setActiveDeal: (deal: DealInfo | null) => void
   setLocale: (locale: Locale) => void
@@ -132,25 +133,15 @@ export const useAppStore = create<AppState>((set) => ({
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {
       let target: DashboardPanel = s._prevDashPanel;
-      // Skip deal-detail / payment — redirect to my-deals or overview
+      // Skip deal-detail / payment / seller-order-detail
       if (target === 'deal-detail' || target === 'payment') {
-        target = 'my-deals';
+        target = 'overview';
       }
       // Avoid going to the same panel we're already on (prevents loops)
       if (target === s.dashboardPanel) {
         target = 'overview';
       }
       return { dashboardPanel: target, _prevDashPanel: null };
-    }
-    if (s.view === 'seller' && s._prevSellerPanel) {
-      let target: SellerPanel = s._prevSellerPanel;
-      if (target === 'deal-detail') {
-        target = 'active-deals';
-      }
-      if (target === s.sellerPanel) {
-        target = 'overview';
-      }
-      return { sellerPanel: target, _prevSellerPanel: null };
     }
     if (s._prevView) {
       const target = s._prevView;
@@ -161,7 +152,7 @@ export const useAppStore = create<AppState>((set) => ({
   navigateToDashboard: () => set((s) => {
     if (!s.user) return { view: 'auth' };
     if (s.user.isAdmin) return { view: 'admin', adminPanel: 'dashboard', sidebarOpen: false, _prevView: 'landing' };
-    if (s.user.isSeller) return { view: 'seller', sellerPanel: 'overview', sidebarOpen: false, _prevView: 'landing' };
+    if (s.user.isSeller) return { view: 'dashboard', dashboardPanel: 'overview', sidebarOpen: false, _prevView: 'landing' };
     return { view: 'dashboard', dashboardPanel: 'overview', sidebarOpen: false, _prevView: 'landing' };
   }),
 }))

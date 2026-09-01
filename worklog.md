@@ -289,3 +289,28 @@ Stage Summary:
 - Marketplace page `/marketplace` no longer crashes with server-side error
 - Full flow: Seller → Marketplace → Buy Product → Auto Deal Created → Buyer Dashboard (with Seller Mode button to switch back)
 - Full flow: Seller → New Deal → Enter other seller's email → Deal Created → Seller Dashboard
+
+---
+Task ID: 12
+Agent: Main
+Task: Merge seller features into user dashboard (remove separate seller mode)
+
+Work Log:
+- Investigated current codebase: seller components already partially adapted (exported, using setDashboardPanel)
+- Fixed store.ts: cleaned up duplicate DashboardPanel values, changed navigateToDashboard to always send sellers to dashboard
+- Fixed ActiveDealsPanel: changed `setDashboardPanel('seller-order-detail')` to `setDashboardPanel('deal-detail')` 
+- Updated dashboard-main.tsx: added seller import, isSeller variable, seller disabled check, seller panel rendering (seller-orders, seller-products, seller-add-product, seller-business-profile), Add Product button in overview for sellers
+- Updated dashboard-sidebar.tsx: already had seller nav section with separator (done by previous agent)
+- Fixed url-sync.ts: updated valid panel list, changed seller-orders deal URL to use deal-detail panel
+- Added sellerDisabled to login API response
+- Fixed marketplace page crash: siteLogoUrl was scoped inside generateMetadata() but used in buildJsonLd() - moved logo fetch into MarketplacePage() and passed as parameter
+- Fixed Unicode box-drawing characters (──) in JSX comments causing Turbopack parse errors
+
+
+Stage Summary:
+- Sellers now see the SAME dashboard as regular users (no separate seller view)
+- Dashboard sidebar shows extra seller section when user isSeller (seller-disabled check): Seller Orders, My Products, Add Product, Business Profile
+- Dashboard overview shows extra "Add Product" button for sellers
+- Legacy /seller/* URLs redirect to /dashboard/seller-* automatically
+- Marketplace page no longer crashes on server-side render
+- 7 files modified: store.ts, dashboard-main.tsx, dashboard-sidebar.tsx, url-sync.ts, login/route.ts, seller-main.tsx, marketplace/page.tsx

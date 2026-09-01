@@ -61,7 +61,7 @@ function formatTaka(amount: number): string {
    Panel: Business Profile
    ================================================ */
 
-function BusinessProfilePanel() {
+export function BusinessProfilePanel() {
   const t = useT();
   const user = useAppStore((s) => s.user);
   const locale = useAppStore((s) => s.locale);
@@ -136,7 +136,7 @@ function BusinessProfilePanel() {
    Panel: Add Product
    ================================================ */
 
-function AddProductPanel() {
+export function AddProductPanel() {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const [title, setTitle] = useState('');
@@ -270,12 +270,12 @@ function AddProductPanel() {
    Panel: My Products (Real)
    ================================================ */
 
-function MyProductsPanel() {
+export function MyProductsPanel() {
   const t = useT();
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const setSellerPanel = useAppStore((s) => s.setSellerPanel);
+  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -310,7 +310,7 @@ function MyProductsPanel() {
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.myProducts')}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t('seller.myProductsCount', { count: products.length })}</p>
         </div>
-        <Button onClick={() => setSellerPanel('add-product')} className="rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 gap-2 sm:self-start">
+        <Button onClick={() => setDashboardPanel('seller-add-product')} className="rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 gap-2 sm:self-start">
           <Plus className="h-4 w-4" />
           {t('seller.addProduct')}
         </Button>
@@ -322,7 +322,7 @@ function MyProductsPanel() {
         <SolidCard className="text-center py-12">
           <PackageCheck className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
           <p className="text-sm text-muted-foreground">{t('seller.noProducts')}</p>
-          <Button variant="outline" onClick={() => setSellerPanel('add-product')} className="mt-4 gap-2">
+          <Button variant="outline" onClick={() => setDashboardPanel('seller-add-product')} className="mt-4 gap-2">
             <Plus className="h-4 w-4" /> {t('seller.addFirstProduct')}
           </Button>
         </SolidCard>
@@ -386,7 +386,7 @@ function SellerOverviewPanel() {
   const overviewAvatarUrl = cdnUrl(user?.imageLink);
   const [overviewAvatarLoaded, setOverviewAvatarLoaded] = useState(false);
   useEffect(() => { setOverviewAvatarLoaded(false); if (!overviewAvatarUrl) return; const img = new Image(); img.onload = () => setOverviewAvatarLoaded(true); img.src = overviewAvatarUrl; }, [overviewAvatarUrl]);
-  const setSellerPanel = useAppStore((s) => s.setSellerPanel);
+  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
   const [stats, setStats] = useState({ incoming: 0, active: 0, completed: 0, totalEarnings: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -471,7 +471,7 @@ function SellerOverviewPanel() {
       </div>
 
       <div className="mb-6">
-        <button onClick={() => setSellerPanel('add-product')} className="w-full rounded-2xl bg-primary/10 border border-primary/15 p-4 text-left transition-colors hover:bg-primary/15">
+        <button onClick={() => setDashboardPanel('seller-add-product')} className="w-full rounded-2xl bg-primary/10 border border-primary/15 p-4 text-left transition-colors hover:bg-primary/15">
           <Plus className="h-5 w-5 text-primary mb-2" />
           <p className="text-sm font-semibold text-foreground">{t('seller.addProduct')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">{t('seller.addProductShort')}</p>
@@ -516,11 +516,12 @@ function getStatusBadge(status: string) {
   }
 }
 
-function ActiveDealsPanel() {
+export function ActiveDealsPanel() {
   const t = useT();
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
   const user = useAppStore((s) => s.user);
+  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
 
   const fetchDeals = useCallback(async () => {
     if (!user?.id) return;
@@ -539,7 +540,7 @@ function ActiveDealsPanel() {
       buyerId: deal.buyer?.id, sellerId: deal.seller?.id, creatorId: deal.creator?.id,
       buyerName: deal.buyer?.name, sellerName: deal.seller?.name,
     });
-    useAppStore.getState().setSellerPanel('deal-detail');
+    setDashboardPanel('deal-detail');
   };
 
   return (

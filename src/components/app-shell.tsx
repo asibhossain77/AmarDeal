@@ -41,11 +41,10 @@ import { SectionSkeleton } from '@/components/shared/skeletons/landing-skeleton'
 import { DynamicFavicon } from '@/components/shared/dynamic-favicon';
 import { SiteLoader } from '@/components/shared/site-loader';
 
-/* ── Dynamic: heavy views (admin, dashboard, auth, seller) — with skeleton fallbacks ── */
+/* ── Dynamic: heavy views (admin, dashboard, auth) — with skeleton fallbacks ── */
 const AuthView = dynamic(() => import('@/components/auth/auth-view').then(m => ({ default: m.AuthView })), { ssr: false, loading: () => <AuthSkeleton /> });
 const DashboardView = dynamic(() => import('@/components/dashboard/dashboard-view').then(m => ({ default: m.DashboardView })), { ssr: false, loading: () => <DashboardLoadingShell /> });
 const AdminView = dynamic(() => import('@/components/admin/admin-view').then(m => ({ default: m.AdminView })), { ssr: false, loading: () => <PanelLoadingShell /> });
-const SellerView = dynamic(() => import('@/components/seller/seller-view').then(m => ({ default: m.SellerView })), { ssr: false, loading: () => <PanelLoadingShell /> });
 
 /* ── Panel loading shells — sidebar + content skeleton ── */
 function PanelLoadingShell() {
@@ -306,7 +305,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
         }
         // No session: if URL was protected, redirect to login
         const parsed = parseUrl(window.location.pathname);
-        if (parsed.view && ['dashboard', 'seller', 'admin'].includes(parsed.view)) {
+        if (parsed.view && ['dashboard', 'admin'].includes(parsed.view)) {
           setView('auth');
           window.history.replaceState(null, '', '/login');
         } else if (parsed.view === 'auth') {
@@ -327,10 +326,9 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   return (
     <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-[#09090b]">
-      {!['dashboard', 'seller', 'admin'].includes(view) && <Navbar />}
+      {!['dashboard', 'admin'].includes(view) && <Navbar />}
       {view === 'auth' && <AuthView />}
       {view === 'dashboard' && <DashboardView />}
-      {view === 'seller' && <SellerView />}
       {view === 'admin' && <AdminView />}
       {view === 'landing' && <LandingView />}
       {view === 'blog' && <BlogPage />}
