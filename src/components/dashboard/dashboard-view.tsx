@@ -9,7 +9,6 @@ import { useTheme } from 'next-themes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, Menu, Sun, Moon, Globe, Home, ShoppingCart } from 'lucide-react';
 import { SellerApplyButton } from './seller-apply-dialog';
-import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -135,8 +134,8 @@ export function DashboardView() {
               </SheetContent>
             </Sheet>
 
-            {/* Dashboard label (always visible) */}
-            <div className="flex items-center gap-2">
+            {/* Desktop: Dashboard label */}
+            <div className="hidden md:flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">M</span>
               </div>
@@ -165,14 +164,6 @@ export function DashboardView() {
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-            </button>
-
-            <button
-              onClick={() => setView('page-marketplace')}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              aria-label="Marketplace"
-            >
-              <ShoppingCart className="h-[18px] w-[18px]" />
             </button>
 
             <button
