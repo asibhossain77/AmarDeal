@@ -135,19 +135,19 @@ export function DashboardView() {
             </Sheet>
 
             {/* Dashboard label - show on all screens */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="h-7 w-7 rounded-lg bg-primary/15 hidden md:flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">M</span>
               </div>
               <h1 className="text-sm font-bold tracking-tight text-foreground">{t('nav.dashboard')}</h1>
+              {/* Mobile: current panel label */}
+              <span className="text-sm font-medium text-muted-foreground truncate md:hidden">
+                {getPanelLabel(dashboardPanel, t)}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-0.5 shrink-0">
-            {/* Mobile: current panel label */}
-            <span className="text-sm font-medium text-muted-foreground truncate max-w-[90px] sm:max-w-[140px] md:hidden shrink min-w-0">
-              {getPanelLabel(dashboardPanel, t)}
-            </span>
 
             <button
               onClick={toggleLocale}
