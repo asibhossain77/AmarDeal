@@ -161,8 +161,8 @@ export function AddProductPanel() {
     const objectUrl = URL.createObjectURL(file);
     setLocalPreview(objectUrl);
     setImage('');
-    // Get dimensions from local file (separate Image, don't revoke preview URL yet)
-    const dimImg = new Image();
+    // Get dimensions from local file (use globalThis to avoid shadowing by lucide-react Image icon)
+    const dimImg = new globalThis.Image();
     dimImg.onload = () => {
       setImgDimensions({ w: dimImg.naturalWidth, h: dimImg.naturalHeight });
     };
