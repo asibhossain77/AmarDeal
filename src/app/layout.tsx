@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { Analytics } from "@vercel/analytics/next";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import "./globals.css";
@@ -303,6 +304,7 @@ export default async function RootLayout({
           </QueryProvider>
           {GA_ID && <GoogleAnalytics gaId={GA_ID} nonce={nonce} />}
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
