@@ -562,6 +562,12 @@ export const en: Record<TranslationKey, string> = {
   'seller.imageUploading': 'Image is uploading, please wait...',
   'seller.imageUploadFailed': 'Image upload failed. Please try again or provide a URL.',
   'seller.imageUploadFailedHint': 'Image upload failed. Please select an image again or provide a URL below.',
+  'seller.termsText': 'I agree to the terms: I am applying to sell products. Product descriptions must be accurate, illegal products cannot be sold, and platform fees must be paid as per the fee structure. Violation of rules may result in account suspension.',
+  'seller.acceptTerms': 'Please accept the terms',
+  'seller.productSubmitted': 'Product Submitted!',
+  'seller.productPendingDesc': 'Your product has been submitted successfully. It will be published after admin review.',
+  'seller.productPendingNote': 'Waiting for admin approval — usually reviewed within 24 hours',
+  'seller.okBtn': 'OK',
 
   // ── Seller Public Profile ──
   'sellerProfile.notFound': 'Seller not found',

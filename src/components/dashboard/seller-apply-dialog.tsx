@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, Clock, XCircle, Loader2, Ban } from 'lucide-react';
+import { Sparkles, Store, Clock, XCircle, Loader2, Ban, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -58,6 +58,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     fetch('/api/user/become-seller')
@@ -74,9 +75,30 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     if (!businessName.trim()) newErrors.businessName = t('seller.requiredField');
     if (!email.trim()) newErrors.email = t('seller.requiredField');
     if (!phone.trim()) newErrors.phone = t('seller.requiredField');
+    if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const TermsCheckbox = () => (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => { setTermsAccepted(!termsAccepted); setErrors(prev => { const n = {...prev}; delete n.terms; return n; }); }}
+        className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+          termsAccepted ? 'border-primary/30 bg-primary/5' : errors.terms ? 'border-destructive/40 bg-destructive/5' : 'border-border hover:border-border/80'
+        }`}
+      >
+        <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+          termsAccepted ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
+        }`}>
+          {termsAccepted && <Check className="h-3 w-3" />}
+        </div>
+        <span className="text-xs leading-relaxed text-muted-foreground">{t('seller.termsText')}</span>
+      </button>
+      {errors.terms && <p className="text-xs text-destructive pl-1">{errors.terms}</p>}
+    </div>
+  );
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -165,6 +187,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
+              <TermsCheckbox />
             </div>
           </div>
           <div className="flex justify-end mt-4">
@@ -233,6 +256,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
+              <TermsCheckbox />
             </div>
           </div>
           <div className="flex justify-end mt-4">
@@ -299,6 +323,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
             />
             {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
           </div>
+          <TermsCheckbox />
         </div>
         <div className="flex justify-end mt-4">
           <Button

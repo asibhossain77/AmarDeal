@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { SellerDealTracker } from './seller-deal-tracker';
 import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
@@ -151,6 +152,7 @@ export function AddProductPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
+  const [showPendingDialog, setShowPendingDialog] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
@@ -225,8 +227,8 @@ export function AddProductPanel() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(t('seller.productAdded'));
-        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null);
+        setShowPendingDialog(true);
+        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -325,6 +327,30 @@ export function AddProductPanel() {
           </Button>
         </div>
       </SolidCard>
+
+      {/* Pending Approval Dialog */}
+      <Dialog open={showPendingDialog} onOpenChange={setShowPendingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/50">
+              <PackageCheck className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <DialogTitle className="text-center">{t('seller.productSubmitted')}</DialogTitle>
+            <DialogDescription className="text-center">{t('seller.productPendingDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30 p-3">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+              <Clock className="h-4 w-4 shrink-0" />
+              <p className="text-xs font-medium">{t('seller.productPendingNote')}</p>
+            </div>
+          </div>
+          <div className="flex justify-center mt-2">
+            <Button onClick={() => setShowPendingDialog(false)} className="gap-2">
+              {t('seller.okBtn')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
