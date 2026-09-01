@@ -15,7 +15,19 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ products })
+    // Flatten for frontend
+    const flat = products.map(p => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      price: p.price,
+      category: p.category,
+      image: p.image,
+      sellerName: p.seller?.name || '',
+      createdAt: p.createdAt,
+    }))
+
+    return NextResponse.json({ products: flat })
   } catch {
     return NextResponse.json({ error: 'ফেইল হয়েছে' }, { status: 500 })
   }

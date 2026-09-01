@@ -21,7 +21,7 @@ interface PendingProduct {
   price: number;
   category: string;
   sellerName: string;
-  imageKey: string;
+  image: string | null;
   createdAt: string;
 }
 
@@ -155,9 +155,9 @@ export function PendingProductsPanel() {
             >
               {/* Image */}
               <div className="relative aspect-video w-full overflow-hidden bg-muted">
-                {product.imageKey ? (
+                {product.image ? (
                   <img
-                    src={cdnUrl(product.imageKey)}
+                    src={cdnUrl(product.image)}
                     alt={product.title}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
