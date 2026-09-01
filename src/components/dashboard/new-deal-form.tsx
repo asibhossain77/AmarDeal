@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ const emptySubscribe = () => () => {};
 
 /* ─── Main New Deal Form ─── */
 export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
-  const { setDashboardPanel, setActiveDeal, user } = useAppStore();
+  const { setDashboardPanel, setActiveDeal, setDealPreFill, user, dealPreFill } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
 
@@ -28,6 +28,19 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [feePreview, setFeePreview] = useState<{ fee: number; total: number } | null>(null);
+  const preFillApplied = useRef(false);
+
+  // Apply pre-fill data from marketplace buy flow
+  useEffect(() => {
+    if (preFillApplied.current || !dealPreFill) return;
+    preFillApplied.current = true;
+    setTitle(dealPreFill.title);
+    setAmount(String(dealPreFill.amount));
+    setPartyEmail(dealPreFill.partyEmail);
+    setRole('buyer'); // buying from marketplace
+    // Clear pre-fill after applying
+    setDealPreFill(null);
+  }, [dealPreFill, setDealPreFill]);
 
   // Fetch fee preview when amount changes
   useEffect(() => {

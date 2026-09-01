@@ -314,3 +314,18 @@ Stage Summary:
 - Legacy /seller/* URLs redirect to /dashboard/seller-* automatically
 - Marketplace page no longer crashes on server-side render
 - 7 files modified: store.ts, dashboard-main.tsx, dashboard-sidebar.tsx, url-sync.ts, login/route.ts, seller-main.tsx, marketplace/page.tsx
+---
+Task ID: 1
+Agent: Main
+Task: Product buy → auto open deal creation page with pre-filled fields
+
+Work Log:
+- Added seller email to products GET API response (include email in seller select)
+- Added DealPreFill interface and dealPreFill state/setDealPreFill action to Zustand store
+- Updated ProductSeller interface in marketplace-section.tsx to include email field
+- Replaced confirmBuy in marketplace-section.tsx: instead of calling /buy API, now sets dealPreFill and navigates to new-deal panel
+- Modified NewDealForm to read dealPreFill from store on mount, auto-fill title/amount/partyEmail/role, then clear pre-fill
+
+Stage Summary:
+- Buy Now flow now: Product Detail → Confirm → Navigate to Deal Creation form with pre-filled product name, amount, seller email, and buyer role
+- Files changed: src/app/api/products/route.ts, src/lib/store.ts, src/components/landing/marketplace-section.tsx, src/components/dashboard/new-deal-form.tsx

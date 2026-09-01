@@ -17,7 +17,7 @@ import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 
-interface ProductSeller { id: string; name: string; imageLink?: string | null; }
+interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; }
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
@@ -443,38 +443,17 @@ export function MarketplaceSection() {
 
   const confirmBuy = async () => {
     if (!selectedProduct) return;
-    setBuying(true);
-    try {
-      const res = await fetch(`/api/products/${selectedProduct.id}/buy`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success && data.deal) {
-        toast.success(locale === 'bn' ? 'ডিল সফলভাবে তৈরি হয়েছে!' : 'Deal created successfully!');
-        setShowBuyConfirm(false);
-        setSelectedProduct(null);
-        // Navigate to deal detail
-        const store = useAppStore.getState();
-        store.setActiveDeal({
-          id: data.deal.id,
-          title: data.deal.title,
-          amount: data.deal.amount,
-          status: data.deal.status,
-          createdAt: data.deal.createdAt,
-          buyerId: data.deal.buyerId,
-          sellerId: data.deal.sellerId,
-          creatorId: data.deal.creatorId,
-          buyerName: data.deal.buyerName,
-          sellerName: data.deal.sellerName,
-        });
-        store.setDashboardPanel('deal-detail');
-        store.setView('dashboard');
-      } else {
-        toast.error(data.error || 'সমস্যা হয়েছে');
-      }
-    } catch {
-      toast.error('নেটওয়ার্ক সমস্যা, আবার চেষ্টা করুন');
-    } finally {
-      setBuying(false);
-    }
+    setShowBuyConfirm(false);
+    setSelectedProduct(null);
+    // Pre-fill deal form and navigate to deal creation page
+    const store = useAppStore.getState();
+    store.setDealPreFill({
+      title: selectedProduct.title,
+      amount: selectedProduct.price,
+      partyEmail: selectedProduct.seller.email || '',
+    });
+    store.setDashboardPanel('new-deal');
+    store.setView('dashboard');
   };
 
   return (

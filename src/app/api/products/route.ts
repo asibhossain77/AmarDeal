@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         seller: {
-          select: { id: true, name: true, imageLink: true },
+          select: { id: true, name: true, imageLink: true, email: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
         id: p.seller.id,
         name: p.seller.name,
         imageLink: p.seller.imageLink,
+        email: p.seller.email,
       },
     }))
 

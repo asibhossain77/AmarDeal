@@ -31,7 +31,13 @@ export interface UserInfo {
   imageLink?: string | null
 }
 
-interface DealInfo {
+export interface DealPreFill {
+  title: string
+  amount: number
+  partyEmail: string
+}
+
+export interface DealInfo {
   id: string
   title: string
   amount: number
@@ -53,6 +59,7 @@ interface AppState {
   sellerPanel: SellerPanel
   adminPanel: AdminPanel
   activeDeal: DealInfo | null
+  dealPreFill: DealPreFill | null
   locale: Locale
   sellerProfileId: string | null
   /* Navigation history (single-level) */
@@ -67,6 +74,7 @@ interface AppState {
   setSellerPanel: (panel: SellerPanel) => void /* kept for compat */
   setAdminPanel: (panel: AdminPanel) => void
   setActiveDeal: (deal: DealInfo | null) => void
+  setDealPreFill: (preFill: DealPreFill | null) => void
   setLocale: (locale: Locale) => void
   setSellerProfileId: (id: string | null) => void
   /** Go back to previous page/panel */
@@ -89,6 +97,7 @@ export const useAppStore = create<AppState>((set) => ({
   sellerPanel: 'overview',
   adminPanel: 'dashboard',
   activeDeal: null,
+  dealPreFill: null,
   locale: getSavedLocale(),
   sellerProfileId: null,
   _prevView: null,
@@ -127,6 +136,7 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
+  setDealPreFill: (dealPreFill) => set({ dealPreFill }),
   setLocale: (locale) => {
     localStorage.setItem('midman-locale', locale);
     document.documentElement.lang = locale === 'bn' ? 'bn' : 'en';
