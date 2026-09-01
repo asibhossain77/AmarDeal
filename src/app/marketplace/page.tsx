@@ -98,7 +98,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function buildJsonLd(products: { id: string; title: string; description: string; price: number; image: string | null; category: string; createdAt: Date; seller: { name: string } }[]) {
+function buildJsonLd(products: { id: string; title: string; description: string; price: number; image: string | null; category: string; createdAt: Date; seller: { name: string } }[], fallbackImage?: string) {
   const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
@@ -116,7 +116,7 @@ function buildJsonLd(products: { id: string; title: string; description: string;
         name: p.title,
         description: p.description,
         url: `${SITE_URL}/marketplace`,
-        image: p.image ? (p.image.startsWith('http') ? p.image : `${SITE_URL}${p.image}`) : siteLogoUrl,
+        image: p.image ? (p.image.startsWith('http') ? p.image : `${SITE_URL}${p.image}`) : (fallbackImage || `${SITE_URL}/logo.svg`),
         offers: {
           '@type': 'Offer',
           price: p.price,
@@ -199,7 +199,16 @@ export default async function MarketplacePage() {
     orderBy: { createdAt: 'desc' },
   });
 
-  const jsonLdArray = buildJsonLd(products);
+  // Get logo for JSON-LD fallback
+  let siteLogoUrl = `${SITE_URL}/logo.svg`;
+  try {
+    const logoSetting = await db.platformSetting.findUnique({ where: { key: 'site_logo' } });
+    if (logoSetting?.value && !logoSetting.value.startsWith('data:')) {
+      siteLogoUrl = logoSetting.value.startsWith('http') ? logoSetting.value : `${SITE_URL}${logoSetting.value}`;
+    }
+  } catch { /* fallback */ }
+
+  const jsonLdArray = buildJsonLd(products, siteLogoUrl);
 
   return (
     <>

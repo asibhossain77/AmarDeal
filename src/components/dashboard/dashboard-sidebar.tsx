@@ -12,6 +12,7 @@ import {
   Users,
   MessageSquare,
   Store,
+  ShoppingCart,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
@@ -86,6 +87,13 @@ export function DashboardSidebar() {
         </nav>
 
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4 space-y-3">
+          <button
+            onClick={() => useAppStore.getState().setView('page-marketplace')}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+          >
+            <ShoppingCart className="h-[18px] w-[18px]" />
+            {t('page.marketplace.title') || 'মার্কেটপ্লেস'}
+          </button>
           {user?.isSeller ? (
             <button
               onClick={() => useAppStore.getState().setView('seller')}

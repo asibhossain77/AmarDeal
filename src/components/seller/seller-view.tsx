@@ -5,7 +5,7 @@ import { SellerSidebar } from './seller-sidebar';
 import { SellerMain } from './seller-main';
 import { useAppStore } from '@/lib/store';
 import { useTheme } from 'next-themes';
-import { Menu, Sun, Moon, Globe, Home } from 'lucide-react';
+import { Menu, Sun, Moon, Globe, Home, Store } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
 
@@ -54,6 +54,14 @@ export function SellerView() {
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+            </button>
+
+            <button
+              onClick={() => setView('page-marketplace')}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              aria-label="Marketplace"
+            >
+              <Store className="h-[18px] w-[18px]" />
             </button>
 
             <button

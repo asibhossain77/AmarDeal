@@ -268,3 +268,24 @@ Stage Summary:
 - After every save, settings are re-fetched from DB to verify persistence
 - All template types pre-initialized to prevent undefined state issues
 - Server logs template toggle saves for debugging: `[EMAIL TEMPLATE SETTINGS] Saved template toggles: welcome=off, deal_created=on(del:1)`
+
+---
+Task ID: 11
+Agent: Main
+Task: Enable sellers to create deals with other sellers and buy products from marketplace
+
+Work Log:
+- Investigated current seller access to marketplace and deal creation
+- Found that API-level restrictions are already correct — sellers CAN buy products and create deals with other sellers (no isSeller check in buy or deal create APIs)
+- Fixed bug: seller sidebar "মার্কেটপ্লেস" link navigated to `landing` instead of `page-marketplace`
+- Added Store (marketplace) icon button in seller view header for quick access
+- Added marketplace link button in buyer dashboard sidebar (visible to all users including sellers in buyer mode)
+- Fixed marketplace page server-side crash: `siteLogoUrl` was defined inside `generateMetadata()` but referenced in `buildJsonLd()` — extracted logo fetch to `MarketplacePage()` and passed as parameter
+
+Stage Summary:
+- 4 files modified: seller-sidebar.tsx, seller-view.tsx, dashboard-sidebar.tsx, marketplace/page.tsx
+- Sellers can now access marketplace directly from seller header (Store icon) and seller sidebar
+- Sellers in buyer mode can access marketplace from buyer dashboard sidebar
+- Marketplace page `/marketplace` no longer crashes with server-side error
+- Full flow: Seller → Marketplace → Buy Product → Auto Deal Created → Buyer Dashboard (with Seller Mode button to switch back)
+- Full flow: Seller → New Deal → Enter other seller's email → Deal Created → Seller Dashboard

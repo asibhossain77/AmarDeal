@@ -118,7 +118,7 @@ export function SellerSidebar() {
           {t('seller.myPurchases') || 'আমার কেনাকাটা'}
         </button>
         <button
-          onClick={() => { setView('landing'); setSidebarOpen(false); }}
+          onClick={() => { setView('page-marketplace'); setSidebarOpen(false); }}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
         >
           <Store className="h-[18px] w-[18px]" />
