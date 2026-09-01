@@ -26,6 +26,7 @@ const ContactSection = dynamic(() => import('@/components/landing/contact-sectio
 const ContractSection = dynamic(() => import('@/components/landing/contract-section').then(m => ({ default: m.ContractSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const MarketplaceSection = dynamic(() => import('@/components/landing/marketplace-section').then(m => ({ default: m.MarketplaceSection })), { ssr: false, loading: () => <SectionSkeleton /> });
+const SellerProfileView = dynamic(() => import('@/components/landing/seller-profile-view').then(m => ({ default: m.SellerProfileView })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -373,6 +374,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
       {view === 'page-marketplace' && <PageMarketplace />}
+      {view === 'page-seller-profile' && <SellerProfileView />}
       <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />

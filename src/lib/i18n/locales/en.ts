@@ -560,6 +560,24 @@ export const en: Record<TranslationKey, string> = {
   'seller.accountDisabled': 'Seller Account Disabled',
   'seller.accountDisabledDesc': 'Your seller account has been disabled by admin. You can apply again.',
 
+  // ── Seller Public Profile ──
+  'sellerProfile.notFound': 'Seller not found',
+  'sellerProfile.backToMarketplace': 'Back to Marketplace',
+  'sellerProfile.follow': 'Follow',
+  'sellerProfile.following': 'Following',
+  'sellerProfile.followers': 'Followers',
+  'sellerProfile.products': 'Products',
+  'sellerProfile.allProducts': 'All Products',
+  'sellerProfile.reviews': 'Reviews',
+  'sellerProfile.writeReview': 'Write a Review',
+  'sellerProfile.reviewPlaceholder': 'Write your opinion...',
+  'sellerProfile.submitReview': 'Submit Review',
+  'sellerProfile.reviewAdded': 'Review added!',
+  'sellerProfile.noReviews': 'No reviews yet',
+  'sellerProfile.loginToReview': 'Login to leave a review',
+  'sellerProfile.writeComment': 'Write a comment',
+  'sellerProfile.viewProfile': 'View Profile',
+
   // ── Support ──
   'support.aiSupport': 'AI Support',
   'support.replying': 'Replying directly',

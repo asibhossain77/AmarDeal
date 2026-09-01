@@ -558,6 +558,24 @@ export const bn = {
   'seller.accountDisabled': 'সেলার অ্যাকাউন্ট নিষ্ক্রিয়',
   'seller.accountDisabledDesc': 'আপনার সেলার অ্যাকাউন্ট অ্যাডমিন কর্তৃক নিষ্ক্রিয় করা হয়েছে। আবার আবেদন করতে পারেন।',
 
+  // ── Seller Public Profile ──
+  'sellerProfile.notFound': 'সেলার পাওয়া যায়নি',
+  'sellerProfile.backToMarketplace': 'মার্কেটপ্লেসে ফিরুন',
+  'sellerProfile.follow': 'ফলো',
+  'sellerProfile.following': 'ফলোয়িং',
+  'sellerProfile.followers': 'ফলোয়ার',
+  'sellerProfile.products': 'পণ্য',
+  'sellerProfile.allProducts': 'সকল পণ্য',
+  'sellerProfile.reviews': 'রিভিউ',
+  'sellerProfile.writeReview': 'রিভিউ লিখুন',
+  'sellerProfile.reviewPlaceholder': 'আপনার মতামত লিখুন...',
+  'sellerProfile.submitReview': 'রিভিউ দিন',
+  'sellerProfile.reviewAdded': 'রিভিউ যোগ হয়েছে!',
+  'sellerProfile.noReviews': 'এখনো কোনো রিভিউ নেই',
+  'sellerProfile.loginToReview': 'রিভিউ দিতে লগইন করুন',
+  'sellerProfile.writeComment': 'মতামত লিখুন',
+  'sellerProfile.viewProfile': 'প্রোফাইল দেখুন',
+
   // ── Support ──
   'support.aiSupport': 'AI সাপোর্ট',
   'support.replying': 'সরাসরি উত্তর দিচ্ছে',

@@ -17,7 +17,7 @@ import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 
-interface ProductSeller { name: string; imageLink?: string | null; }
+interface ProductSeller { id: string; name: string; imageLink?: string | null; }
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
@@ -34,6 +34,8 @@ const CATEGORIES = [
   { key: 'marketing', bn: '\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F\u09BF\u0982', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
   { key: 'education', bn: '\u09B6\u09BF\u0995\u09CD\u09B7\u09BE', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
   { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
+  { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
+  { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
 ];
 
 const CATEGORY_BG: Record<string, string> = {
@@ -43,6 +45,8 @@ const CATEGORY_BG: Record<string, string> = {
   marketing: 'from-purple-500/10 to-purple-500/5 dark:from-purple-500/15 dark:to-purple-500/5',
   education: 'from-amber-500/10 to-amber-500/5 dark:from-amber-500/15 dark:to-amber-500/5',
   software: 'from-cyan-500/10 to-cyan-500/5 dark:from-cyan-500/15 dark:to-cyan-500/5',
+  social_media: 'from-green-500/10 to-green-500/5 dark:from-green-500/15 dark:to-green-500/5',
+  id: 'from-rose-500/10 to-rose-500/5 dark:from-rose-500/15 dark:to-rose-500/5',
   other: 'from-zinc-500/10 to-zinc-500/5 dark:from-zinc-500/15 dark:to-zinc-500/5',
 };
 
@@ -220,6 +224,10 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
               <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
                 <Avatar className="h-10 w-10"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
                 <div className="flex-1"><p className="text-sm font-semibold text-foreground">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); useAppStore.getState().setSellerProfileId(product.seller.id); useAppStore.getState().setView('page-seller-profile'); setShowDetail(false); }}
+                  className="text-[11px] font-medium text-primary hover:underline"
+                >{t('sellerProfile.viewProfile')}</button>
                 <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
               </div>
 

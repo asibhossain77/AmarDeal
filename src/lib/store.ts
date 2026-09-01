@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile'
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
@@ -54,6 +54,7 @@ interface AppState {
   adminPanel: AdminPanel
   activeDeal: DealInfo | null
   locale: Locale
+  sellerProfileId: string | null
   /* Navigation history (single-level) */
   _prevView: AppView | null
   _prevDashPanel: DashboardPanel | null
@@ -67,6 +68,7 @@ interface AppState {
   setAdminPanel: (panel: AdminPanel) => void
   setActiveDeal: (deal: DealInfo | null) => void
   setLocale: (locale: Locale) => void
+  setSellerProfileId: (id: string | null) => void
   /** Go back to previous page/panel */
   goBack: () => void
   /** Navigate to the user's main view (dashboard, seller, or admin) */
@@ -88,6 +90,7 @@ export const useAppStore = create<AppState>((set) => ({
   adminPanel: 'dashboard',
   activeDeal: null,
   locale: getSavedLocale(),
+  sellerProfileId: null,
   _prevView: null,
   _prevDashPanel: null,
   _prevSellerPanel: null,
@@ -129,6 +132,7 @@ export const useAppStore = create<AppState>((set) => ({
     document.documentElement.lang = locale === 'bn' ? 'bn' : 'en';
     set({ locale });
   },
+  setSellerProfileId: (sellerProfileId) => set({ sellerProfileId }),
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {

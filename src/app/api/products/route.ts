@@ -9,6 +9,8 @@ const VALID_CATEGORIES = [
   'marketing',
   'education',
   'software',
+  'social_media',
+  'id',
   'other',
 ] as const
 
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         seller: {
-          select: { name: true, imageLink: true },
+          select: { id: true, name: true, imageLink: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -44,6 +46,7 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       seller: {
+        id: p.seller.id,
         name: p.seller.name,
         imageLink: p.seller.imageLink,
       },
