@@ -557,6 +557,9 @@ export const bn = {
   'seller.noProductsYet': 'এখনো কোনো পণ্য যোগ করা হয়নি',
   'seller.accountDisabled': 'সেলার অ্যাকাউন্ট নিষ্ক্রিয়',
   'seller.accountDisabledDesc': 'আপনার সেলার অ্যাকাউন্ট অ্যাডমিন কর্তৃক নিষ্ক্রিয় করা হয়েছে। আবার আবেদন করতে পারেন।',
+  'seller.imageUploading': 'ইমেজ আপলোড হচ্ছে, অপেক্ষা করুন...',
+  'seller.imageUploadFailed': 'ইমেজ আপলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন বা URL দিন।',
+  'seller.imageUploadFailedHint': 'ইমেজ আপলোড ব্যর্থ হয়েছে। অনুগ্রহ করে আবার ইমেজ সিলেক্ট করুন বা নিচে URL দিন।',
 
   // ── Seller Public Profile ──
   'sellerProfile.notFound': 'সেলার পাওয়া যায়নি',

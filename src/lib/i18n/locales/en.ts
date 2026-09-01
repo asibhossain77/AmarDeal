@@ -559,6 +559,9 @@ export const en: Record<TranslationKey, string> = {
   'seller.noProductsYet': 'No products added yet',
   'seller.accountDisabled': 'Seller Account Disabled',
   'seller.accountDisabledDesc': 'Your seller account has been disabled by admin. You can apply again.',
+  'seller.imageUploading': 'Image is uploading, please wait...',
+  'seller.imageUploadFailed': 'Image upload failed. Please try again or provide a URL.',
+  'seller.imageUploadFailedHint': 'Image upload failed. Please select an image again or provide a URL below.',
 
   // ── Seller Public Profile ──
   'sellerProfile.notFound': 'Seller not found',

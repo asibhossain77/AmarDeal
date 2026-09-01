@@ -25,12 +25,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ছবি প্রদান করুন' }, { status: 400 })
     }
 
+    console.log('[Upload] Product image:', { name: file.name, size: file.size, type: file.type })
+
     // Delete old image if re-uploading
     if (oldImage) {
       await deleteFromR2(oldImage)
     }
 
     const result = await uploadToR2(file, 'products')
+    console.log('[Upload] R2 upload SUCCESS:', result.url)
 
     return NextResponse.json({
       success: true,

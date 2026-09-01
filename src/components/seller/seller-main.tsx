@@ -150,10 +150,12 @@ export function AddProductPanel() {
   const [imgDimensions, setImgDimensions] = useState<{ w: number; h: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
+    setUploadError(false);
     setImgDimensions(null);
     // Show immediate local preview
     const objectUrl = URL.createObjectURL(file);
@@ -172,6 +174,7 @@ export function AddProductPanel() {
       const data = await res.json();
       if (data.success && data.url) {
         setImage(data.url);
+        setUploadError(false);
         // Revoke local preview only after CDN URL takes over
         URL.revokeObjectURL(objectUrl);
       }
@@ -179,15 +182,27 @@ export function AddProductPanel() {
         toast.error(data.error || 'Upload failed');
         URL.revokeObjectURL(objectUrl);
         setLocalPreview('');
+        setUploadError(true);
       }
     } catch {
       toast.error('Upload failed');
       URL.revokeObjectURL(objectUrl);
       setLocalPreview('');
+      setUploadError(true);
     } finally { setUploading(false); }
   };
 
   const handleSubmit = async () => {
+    // Block if image is still uploading
+    if (uploading) {
+      toast.error(t('seller.imageUploading'));
+      return;
+    }
+    // Block if upload failed (localPreview was shown but image CDN URL never set)
+    if (uploadError) {
+      toast.error(t('seller.imageUploadFailed'));
+      return;
+    }
     if (!title.trim() || !description.trim() || !price || Number(price) <= 0) {
       toast.error(t('seller.fillAllFields'));
       return;
@@ -268,7 +283,7 @@ export function AddProductPanel() {
               {imgDimensions && (
                 <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
               )}
-              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setImgDimensions(null); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
             <div
@@ -284,14 +299,20 @@ export function AddProductPanel() {
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
             </div>
           )}
+          {uploadError && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+              <span>⚠</span>
+              <span>{t('seller.imageUploadFailedHint')}</span>
+            </div>
+          )}
           <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
-          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); }} className="text-[13px]" />
+          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
         </div>
 
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSubmit} disabled={submitting} className="gap-2 shadow-lg shadow-primary/25">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {submitting ? t('seller.adding') : t('seller.addProductBtn')}
+          <Button onClick={handleSubmit} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {submitting ? t('seller.adding') : uploading ? t('seller.imageUploading') : t('seller.addProductBtn')}
           </Button>
         </div>
       </SolidCard>
