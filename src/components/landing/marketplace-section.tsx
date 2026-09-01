@@ -190,8 +190,10 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
 }
 
 // -- ProductDetailDialog --
-function ProductDetailDialog({ product, open, onClose, onMessageSeller, onOrderMidman, t, locale }: {
-  product: Product | null; open: boolean; onClose: () => void; onMessageSeller: () => void; onOrderMidman: () => void; t: (k: string) => string; locale: string;
+function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow, buying, showBuyConfirm, onConfirmBuy, onCancelBuy, t, locale }: {
+  product: Product | null; open: boolean; onClose: () => void; onMessageSeller: () => void; onBuyNow: () => void;
+  buying: boolean; showBuyConfirm: boolean; onConfirmBuy: () => void; onCancelBuy: () => void;
+  t: (k: string) => string; locale: string;
 }) {
   if (!product || !open) return null;
   const CatIcon = getCategoryIcon(product.category);
@@ -220,10 +222,37 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onOrderM
                 <div className="flex-1"><p className="text-sm font-semibold text-foreground">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
                 <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
               </div>
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <Button onClick={onMessageSeller} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold shadow-md shadow-primary/20"><MessageCircle className="h-4.5 w-4.5" /> {t('marketplace.messageSeller')}</Button>
-                <Button onClick={onOrderMidman} variant="outline" className="flex-1 gap-2 rounded-xl border-primary/30 py-5 text-[14px] font-semibold text-primary hover:bg-primary/5"><ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.orderViaMidman')}</Button>
-              </div>
+
+              {/* Confirmation View */}
+              {showBuyConfirm ? (
+                <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground">{locale === 'bn' ? 'ডিল তৈরি করবেন?' : 'Create Deal?'}</p>
+                      <p className="mt-1 text-[13px] text-muted-foreground">
+                        {locale === 'bn'
+                          ? `এই পণ্যের জন্য একটি মিডম্যান ডিল তৈরি হবে। পরিমাণ: ${formatPrice(product.price, locale)}`
+                          : `A Midman deal will be created for this product. Amount: ${formatPrice(product.price, locale)}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={onConfirmBuy} disabled={buying} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
+                      {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                      {buying ? (locale === 'bn' ? 'তৈরি হচ্ছে...' : 'Creating...') : (locale === 'bn' ? 'হ্যাঁ, ডিল তৈরি করুন' : 'Yes, Create Deal')}
+                    </Button>
+                    <Button onClick={onCancelBuy} disabled={buying} variant="outline" className="flex-1 rounded-xl py-5 text-[14px] font-semibold">
+                      {locale === 'bn' ? 'বাতিল' : 'Cancel'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <Button onClick={onMessageSeller} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold shadow-md shadow-primary/20"><MessageCircle className="h-4.5 w-4.5" /> {t('marketplace.messageSeller')}</Button>
+                  <Button onClick={onBuyNow} variant="outline" className="flex-1 gap-2 rounded-xl border-primary/30 py-5 text-[14px] font-semibold text-primary hover:bg-primary/5"><ShoppingCart className="h-4.5 w-4.5" /> {locale === 'bn' ? 'এখনই কিনুন' : 'Buy Now'}</Button>
+                </div>
+              )}
             </div>
           </motion.div>
         </>
@@ -390,14 +419,48 @@ export function MarketplaceSection() {
 
   const filtered = products.filter(p => !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase()));
 
-  const handleOrderMidman = () => {
+  const [buying, setBuying] = useState(false);
+  const [showBuyConfirm, setShowBuyConfirm] = useState(false);
+
+  const handleBuyNow = async () => {
     if (!user) { setView('auth'); return; }
-    useAppStore.getState().setDashboardPanel('new-deal');
-    useAppStore.getState().setView('dashboard');
-    if (selectedProduct) {
-      sessionStorage.setItem('marketplace_deal_title', selectedProduct.title);
-      sessionStorage.setItem('marketplace_deal_amount', String(selectedProduct.price));
-      sessionStorage.setItem('marketplace_deal_desc', selectedProduct.description);
+    if (!selectedProduct) return;
+    setShowBuyConfirm(true);
+  };
+
+  const confirmBuy = async () => {
+    if (!selectedProduct) return;
+    setBuying(true);
+    try {
+      const res = await fetch(`/api/products/${selectedProduct.id}/buy`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.deal) {
+        toast.success(locale === 'bn' ? 'ডিল সফলভাবে তৈরি হয়েছে!' : 'Deal created successfully!');
+        setShowBuyConfirm(false);
+        setSelectedProduct(null);
+        // Navigate to deal detail
+        const store = useAppStore.getState();
+        store.setActiveDeal({
+          id: data.deal.id,
+          title: data.deal.title,
+          amount: data.deal.amount,
+          status: data.deal.status,
+          createdAt: data.deal.createdAt,
+          buyerId: data.deal.buyerId,
+          sellerId: data.deal.sellerId,
+          creatorId: data.deal.creatorId,
+          buyerName: data.deal.buyerName,
+          sellerName: data.deal.sellerName,
+        });
+        store.setDashboardPanel('deal-detail');
+        store.setView('dashboard');
+      } else {
+        toast.error(data.error || 'সমস্যা হয়েছে');
+      }
+    } catch {
+      toast.error('নেটওয়ার্ক সমস্যা, আবার চেষ্টা করুন');
+    } finally {
+      setBuying(false);
     }
   };
 
@@ -436,7 +499,7 @@ export function MarketplaceSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => setSelectedProduct(product)} t={t} locale={locale} />))}</div>
       )}
-      <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => setSelectedProduct(null)} onMessageSeller={() => { if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; } setChatProduct(selectedProduct); setSelectedProduct(null); }} onOrderMidman={() => { handleOrderMidman(); setSelectedProduct(null); }} t={t} locale={locale} />
+      <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => { setSelectedProduct(null); setShowBuyConfirm(false); }} onMessageSeller={() => { if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; } setChatProduct(selectedProduct); setSelectedProduct(null); }} onBuyNow={handleBuyNow} buying={buying} showBuyConfirm={showBuyConfirm} onConfirmBuy={confirmBuy} onCancelBuy={() => setShowBuyConfirm(false)} t={t} locale={locale} />
       <ProductChatDialog product={chatProduct} open={!!chatProduct} onClose={() => setChatProduct(null)} t={t} locale={locale} />
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>

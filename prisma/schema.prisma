@@ -71,6 +71,7 @@ model Deal {
   paymentAmount    Float?
   platformFee      Float?
   rejectionReason  String?
+  productId         String?
   adminCalled      Boolean  @default(false)
   adminCalledAt    DateTime?
   createdAt        DateTime @default(now())
@@ -80,6 +81,7 @@ model Deal {
   seller        User?          @relation("DealSeller", fields: [sellerId], references: [id])
   creator       User           @relation("DealCreator", fields: [creatorId], references: [id])
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  product       DigitalProduct? @relation(fields: [productId], references: [id])
 }
 
 model PaymentMethod {
@@ -249,6 +251,7 @@ model DigitalProduct {
   updatedAt   DateTime @updatedAt
 
   chatMessages ProductChatMessage[]
+  deals         Deal[]
 
   @@index([sellerId, status])
   @@index([status, createdAt])

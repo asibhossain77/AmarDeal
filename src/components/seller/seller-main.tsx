@@ -42,6 +42,7 @@ interface DealRow {
   buyer?: { id: string; name: string; email: string; phone: string } | null;
   seller?: { id: string; name: string; email: string; phone: string } | null;
   creator?: { id: string; name: string; email: string } | null;
+  product?: { id: string; title: string; image: string | null } | null;
 }
 
 interface SellerProduct {
@@ -572,7 +573,14 @@ function ActiveDealsPanel() {
                 {deals.map((deal) => (
                   <tr key={deal.id} className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">DL-{deal.id.slice(-5)}</td>
-                    <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap max-w-[140px] truncate">{deal.title}</td>
+                    <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap max-w-[180px]">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{deal.title}</span>
+                        {deal.product && (
+                          <Badge variant="secondary" className="shrink-0 text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium">মার্কেটপ্লেস</Badge>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-foreground whitespace-nowrap">{deal.buyer?.name || '---'}</td>
                     <td className="px-4 py-3 text-right font-semibold text-foreground whitespace-nowrap">{formatTaka(deal.amount)}</td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">{getStatusBadge(deal.status)}</td>
