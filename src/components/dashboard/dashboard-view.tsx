@@ -143,9 +143,9 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 shrink-0">
             {/* Mobile: current panel label */}
-            <span className="text-sm font-medium text-muted-foreground truncate max-w-[120px] sm:max-w-[180px] md:hidden">
+            <span className="text-sm font-medium text-muted-foreground truncate max-w-[90px] sm:max-w-[140px] md:hidden shrink min-w-0">
               {getPanelLabel(dashboardPanel, t)}
             </span>
 
@@ -160,7 +160,7 @@ export function DashboardView() {
 
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
@@ -168,7 +168,7 @@ export function DashboardView() {
 
             <button
               onClick={() => setView('landing')}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               aria-label="Home"
             >
               <Home className="h-[18px] w-[18px]" />

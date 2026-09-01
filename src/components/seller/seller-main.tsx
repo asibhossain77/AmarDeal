@@ -144,6 +144,7 @@ export function AddProductPanel() {
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('other');
   const [image, setImage] = useState('');
+  const [localPreview, setLocalPreview] = useState('');
   const [imgDimensions, setImgDimensions] = useState<{ w: number; h: number } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -152,6 +153,16 @@ export function AddProductPanel() {
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     setImgDimensions(null);
+    // Show immediate local preview
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreview(objectUrl);
+    setImage('');
+    // Get dimensions from local file (separate Image, don't revoke preview URL yet)
+    const dimImg = new Image();
+    dimImg.onload = () => {
+      setImgDimensions({ w: dimImg.naturalWidth, h: dimImg.naturalHeight });
+    };
+    dimImg.src = objectUrl;
     try {
       const fd = new FormData(); fd.append('image', file);
       if (image) fd.append('oldImage', image);
@@ -159,14 +170,19 @@ export function AddProductPanel() {
       const data = await res.json();
       if (data.success && data.url) {
         setImage(data.url);
-        // Get dimensions
-        const url = data.url.startsWith('/cdn/') ? `https://cdn.midman.bd/${data.url.slice(5)}` : data.url;
-        const img = new Image();
-        img.onload = () => setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
-        img.src = url;
+        // Revoke local preview only after CDN URL takes over
+        URL.revokeObjectURL(objectUrl);
       }
-      else toast.error(data.error || 'Upload failed');
-    } catch { toast.error('Upload failed'); } finally { setUploading(false); }
+      else {
+        toast.error(data.error || 'Upload failed');
+        URL.revokeObjectURL(objectUrl);
+        setLocalPreview('');
+      }
+    } catch {
+      toast.error('Upload failed');
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview('');
+    } finally { setUploading(false); }
   };
 
   const handleSubmit = async () => {
@@ -184,7 +200,7 @@ export function AddProductPanel() {
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(t('seller.productAdded'));
-        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setImgDimensions(null);
+        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -242,15 +258,15 @@ export function AddProductPanel() {
 
         <div className="space-y-2">
           <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
-          {image && !image.startsWith('data:') ? (
+          {(image || localPreview) ? (
             <div className="relative group">
-              <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" onLoad={(e) => {
+              <img src={localPreview || cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" onLoad={(e) => {
                 const img = e.currentTarget; setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
               }} />
               {imgDimensions && (
                 <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
               )}
-              <button type="button" onClick={() => { setImage(''); setImgDimensions(null); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setImgDimensions(null); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
             <div
@@ -260,13 +276,14 @@ export function AddProductPanel() {
               className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
             >
               {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
-              <p className="text-[13px] text-muted-foreground">{uploading ? t('marketplace.uploading') : t('marketplace.dragDrop')}</p>
+              {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
+              <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
               <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
             </div>
           )}
           <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
-          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => setImage(e.target.value)} className="text-[13px]" />
+          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); }} className="text-[13px]" />
         </div>
 
         <div className="flex justify-end pt-2">
