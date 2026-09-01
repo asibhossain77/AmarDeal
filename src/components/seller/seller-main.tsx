@@ -171,11 +171,19 @@ export function AddProductPanel() {
       const fd = new FormData(); fd.append('image', file);
       if (image) fd.append('oldImage', image);
       const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Server error' }));
+        console.error('[ProductUpload] Failed:', res.status, errData);
+        toast.error(errData.error || `Upload failed (${res.status})`);
+        URL.revokeObjectURL(objectUrl);
+        setLocalPreview('');
+        setUploadError(true);
+        return;
+      }
       const data = await res.json();
       if (data.success && data.url) {
         setImage(data.url);
         setUploadError(false);
-        // Revoke local preview only after CDN URL takes over
         URL.revokeObjectURL(objectUrl);
       }
       else {
@@ -184,7 +192,8 @@ export function AddProductPanel() {
         setLocalPreview('');
         setUploadError(true);
       }
-    } catch {
+    } catch (err) {
+      console.error('[ProductUpload] Network error:', err);
       toast.error('Upload failed');
       URL.revokeObjectURL(objectUrl);
       setLocalPreview('');

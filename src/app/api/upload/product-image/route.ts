@@ -12,11 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'আনুষ্ঠানিকতা প্রয়োজন' }, { status: 401 })
     }
 
-    const user = await db.user.findUnique({ where: { id: session.value }, select: { id: true, isSeller: true, sellerDisabled: true } })
-    if (!user?.isSeller || user.sellerDisabled) {
-      return NextResponse.json({ error: 'সেলার অ্যাকাউন্ট সক্রিয় নয়' }, { status: 403 })
-    }
-
+    // Parse form data FIRST (before DB call — avoids body stream issues)
     const formData = await req.formData()
     const file = formData.get('image') as File | null
     const oldImage = formData.get('oldImage') as string | null
@@ -25,7 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ছবি প্রদান করুন' }, { status: 400 })
     }
 
-    console.log('[Upload] Product image:', { name: file.name, size: file.size, type: file.type })
+    console.error('[Upload] Product image received:', { name: file.name, size: file.size, type: file.type })
+
+    // Seller check (after formData parsing)
+    const user = await db.user.findUnique({ where: { id: session.value }, select: { id: true, isSeller: true, sellerDisabled: true } })
+    if (!user?.isSeller || user.sellerDisabled) {
+      return NextResponse.json({ error: 'সেলার অ্যাকাউন্ট সক্রিয় নয়' }, { status: 403 })
+    }
 
     // Delete old image if re-uploading
     if (oldImage) {
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await uploadToR2(file, 'products')
-    console.log('[Upload] R2 upload SUCCESS:', result.url)
+    console.error('[Upload] Product image R2 SUCCESS:', result.url)
 
     return NextResponse.json({
       success: true,
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'আপলোডে সমস্যা হয়েছে'
-    console.error('[Upload] Product image upload FAILED:', message)
+    console.error('[Upload] Product image upload FAILED:', message, err)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

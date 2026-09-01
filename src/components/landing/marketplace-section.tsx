@@ -370,6 +370,11 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
       const fd = new FormData(); fd.append('image', file);
       if (image) fd.append('oldImage', image);
       const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Server error' }));
+        toast.error(errData.error || `Upload failed (${res.status})`);
+        return;
+      }
       const data = await res.json();
       if (data.success && data.url) setImage(data.url);
       else toast.error(data.error || 'Upload failed');
