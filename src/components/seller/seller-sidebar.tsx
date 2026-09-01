@@ -11,6 +11,8 @@ import {
   Plus,
   LogOut,
   X,
+  ShoppingCart,
+  Store,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -31,7 +33,7 @@ const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPan
 ];
 
 export function SellerSidebar() {
-  const { sidebarOpen, setSidebarOpen, logout, setSellerPanel } = useAppStore();
+  const { sidebarOpen, setSidebarOpen, logout, setSellerPanel, setView, setDashboardPanel } = useAppStore();
   const sellerPanel = useAppStore((s) => s.sellerPanel);
   const user = useAppStore((s) => s.user);
   const sidebarAvatarUrl = cdnUrl(user?.imageLink);
@@ -100,6 +102,29 @@ export function SellerSidebar() {
           );
         })}
       </nav>
+
+      {/* Buyer Mode Switcher */}
+      <div className="mx-3 mb-3 space-y-1">
+        <div className="flex items-center gap-2 px-3 mb-2">
+          <div className="h-px flex-1 bg-border/50" />
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">{t('nav.asBuyer') || 'বায়ার হিসেবে'}</span>
+          <div className="h-px flex-1 bg-border/50" />
+        </div>
+        <button
+          onClick={() => { setDashboardPanel('my-deals'); setView('dashboard'); setSidebarOpen(false); }}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+        >
+          <ShoppingCart className="h-[18px] w-[18px]" />
+          {t('seller.myPurchases') || 'আমার কেনাকাটা'}
+        </button>
+        <button
+          onClick={() => { setView('landing'); setSidebarOpen(false); }}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+        >
+          <Store className="h-[18px] w-[18px]" />
+          {t('page.marketplace.title') || 'মার্কেটপ্লেস'}
+        </button>
+      </div>
 
       {/* User Info + Logout at bottom */}
       <div className="border-t border-border/50 p-4">

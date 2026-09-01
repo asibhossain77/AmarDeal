@@ -86,8 +86,16 @@ export function DashboardSidebar() {
         </nav>
 
         <div className="border-t border-border/50 pl-5 pr-3 pt-4 pb-4 space-y-3">
-          {!user?.isAdmin && (
-            <SellerApplyButton variant="sidebar" />
+          {user?.isSeller ? (
+            <button
+              onClick={() => useAppStore.getState().setView('seller')}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/15 transition-all"
+            >
+              <Store className="h-[18px] w-[18px]" />
+              {t('nav.sellerMode') || 'সেলার ড্যাশবোর্ড'}
+            </button>
+          ) : (
+            !user?.isAdmin && <SellerApplyButton variant="sidebar" />
           )}
           <div className="flex items-center gap-3 rounded-xl py-2">
             <div
