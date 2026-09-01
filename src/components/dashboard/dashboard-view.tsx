@@ -139,10 +139,10 @@ export function DashboardView() {
               <div className="h-7 w-7 rounded-lg bg-primary/15 hidden md:flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">M</span>
               </div>
-              <h1 className="text-sm font-bold tracking-tight text-foreground">{t('nav.dashboard')}</h1>
-              {/* Mobile: current panel label */}
-              <span className="text-sm font-medium text-muted-foreground truncate md:hidden">
-                {getPanelLabel(dashboardPanel, t)}
+              <h1 className="text-sm font-bold tracking-tight text-foreground hidden md:block">{t('nav.dashboard')}</h1>
+              {/* Mobile: current panel label (replaces Dashboard text on mobile) */}
+              <span className="text-sm font-bold tracking-tight text-foreground truncate md:hidden">
+                {getPanelLabel(dashboardPanel, t) || t('nav.dashboard')}
               </span>
             </div>
           </div>
