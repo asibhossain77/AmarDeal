@@ -30,7 +30,7 @@ interface PendingProduct {
 /* ------------------------------------------------------------------ */
 
 export function PendingProductsPanel() {
-  const { t } = useT();
+  const t = useT();
 
   const [products, setProducts] = useState<PendingProduct[]>([]);
   const [loading, setLoading] = useState(true);
