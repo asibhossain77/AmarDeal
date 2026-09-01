@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
+import { deleteFromR2 } from '@/lib/r2';
 
 // GET - admin only, returns all products with seller name
 export async function GET(req: NextRequest) {
@@ -73,6 +74,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'পণ্য পাওয়া যায়নি' }, { status: 404 });
     }
 
+    // If rejecting, delete R2 image
+    if (status.trim() === 'rejected' && existing.image) {
+      await deleteFromR2(existing.image);
+    }
+
     await db.digitalProduct.update({
       where: { id },
       data: { status: status.trim() },
@@ -102,6 +108,11 @@ export async function DELETE(req: NextRequest) {
     const existing = await db.digitalProduct.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'পণ্য পাওয়া যায়নি' }, { status: 404 });
+    }
+
+    // Delete R2 image if exists
+    if (existing.image) {
+      await deleteFromR2(existing.image);
     }
 
     await db.digitalProduct.delete({ where: { id } });

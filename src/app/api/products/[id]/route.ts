@@ -206,7 +206,7 @@ export async function DELETE(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true },
+      select: { sellerId: true, image: true },
     })
 
     if (!existing) {
@@ -226,6 +226,12 @@ export async function DELETE(
         { success: false, error: 'আপনি এই পণ্য মুছে ফেলতে পারবেন না' },
         { status: 403 }
       )
+    }
+
+    // Delete R2 image if exists
+    if (existing.image) {
+      const { deleteFromR2 } = await import('@/lib/r2')
+      await deleteFromR2(existing.image)
     }
 
     await db.digitalProduct.delete({ where: { id } })
