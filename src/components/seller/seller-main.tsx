@@ -34,6 +34,8 @@ const CATEGORIES = [
   { key: 'marketing', bn: '\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F\u09BF\u0982', en: 'Marketing' },
   { key: 'education', bn: '\u09B6\u09BF\u0995\u09CD\u09B7\u09BE', en: 'Education' },
   { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software' },
+  { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media' },
+  { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID' },
   { key: 'other', bn: '\u0985\u09A8\u09CD\u09AF\u09BE\u09A8\u09CD\u09AF', en: 'Other' },
 ];
 
