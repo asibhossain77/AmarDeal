@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function SidebarSkeleton() {
   return (
-    <aside className="hidden md:flex fixed left-0 top-16 bottom-0 w-64 flex-col border-r border-border/40 bg-white dark:bg-zinc-900 z-20">
+    <aside className="hidden md:flex fixed left-0 top-14 bottom-0 w-64 flex-col border-r border-border/40 bg-white dark:bg-zinc-900 z-40">
       {/* Sidebar header */}
       <div className="p-4 border-b border-border/40">
         <Skeleton className="h-5 w-28" />

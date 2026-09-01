@@ -49,10 +49,26 @@ const AdminView = dynamic(() => import('@/components/admin/admin-view').then(m =
 /* ── Panel loading shells — sidebar + content skeleton ── */
 function PanelLoadingShell() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
-      <SidebarSkeleton />
-      <div className="flex-1 md:pl-64">
-        <PanelSkeleton />
+    <div className="min-h-screen">
+      {/* Fixed header skeleton */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-border/50">
+        <div className="flex items-center justify-between h-full px-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+            <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-9 w-16 rounded-lg bg-muted animate-pulse" />
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+          </div>
+        </div>
+      </header>
+      <div className="flex pt-14">
+        <SidebarSkeleton />
+        <div className="flex-1 md:pl-64">
+          <PanelSkeleton />
+        </div>
       </div>
     </div>
   );
@@ -60,10 +76,26 @@ function PanelLoadingShell() {
 
 function DashboardLoadingShell() {
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] min-w-0">
-      <SidebarSkeleton />
-      <div className="flex-1 min-w-0 md:pl-64 overflow-x-hidden">
-        <PanelSkeleton />
+    <div className="min-h-screen">
+      {/* Fixed header skeleton */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-border/50">
+        <div className="flex items-center justify-between h-full px-4">
+          <div className="flex items-center gap-2.5">
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+            <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-9 w-16 rounded-lg bg-muted animate-pulse" />
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+            <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+          </div>
+        </div>
+      </header>
+      <div className="flex pt-14">
+        <SidebarSkeleton />
+        <div className="flex-1 min-w-0 md:pl-64 overflow-x-hidden">
+          <PanelSkeleton />
+        </div>
       </div>
     </div>
   );
