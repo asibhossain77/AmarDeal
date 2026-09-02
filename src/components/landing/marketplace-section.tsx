@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Search, MessageCircle, ShieldCheck, ShoppingCart, X, Send, Package, Plus, Loader2, User,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star, Upload, ImageIcon,
+  ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star, Upload, ImageIcon, Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,6 +199,31 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
   buying: boolean; showBuyConfirm: boolean; onConfirmBuy: () => void; onCancelBuy: () => void;
   t: (k: string) => string; locale: string;
 }) {
+  const user = useAppStore((s) => s.user);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Fetch follow status when product changes
+  useEffect(() => {
+    if (!product || !user || user.id === product.seller.id) { setFollowing(false); return; }
+    fetch(`/api/seller/${product.seller.id}/public`)
+      .then(r => r.json()).then(data => setFollowing(!!data.isFollowing)).catch(() => {});
+  }, [product?.seller.id, user?.id]);
+
+  const handleFollow = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { toast.error(t('marketplace.loginRequired')); useAppStore.getState().setView('auth'); return; }
+    if (!product) return;
+    setFollowLoading(true);
+    try {
+      const res = await fetch(`/api/seller/${product.seller.id}/follow`, { method: 'POST' });
+      const json = await res.json();
+      if (res.ok) { setFollowing(json.following); toast.success(json.following ? t('sellerProfile.following') : t('sellerProfile.follow')); }
+      else toast.error(json.error || 'Failed');
+    } catch { toast.error('Failed'); }
+    finally { setFollowLoading(false); }
+  };
+
   if (!product || !open) return null;
   const CatIcon = getCategoryIcon(product.category);
   const catColor = getCategoryColor(product.category);
@@ -221,14 +246,30 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
               <h2 className="mt-3 text-xl font-bold text-foreground sm:text-2xl">{product.title}</h2>
               <p className="mt-2 text-2xl font-extrabold text-primary">{formatPrice(product.price, locale)}</p>
               <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
-              <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
-                <Avatar className="h-10 w-10"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
-                <div className="flex-1"><p className="text-sm font-semibold text-foreground">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); useAppStore.getState().setSellerProfileId(product.seller.id); useAppStore.getState().setView('page-seller-profile'); setShowDetail(false); }}
-                  className="text-[11px] font-medium text-primary hover:underline"
-                >{t('sellerProfile.viewProfile')}</button>
-                <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
+              <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
+                  <div className="min-w-0"><p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
+                </div>
+                <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
+                  {user && user.id !== product.seller.id && (
+                    <button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all ${following ? 'bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20' : 'bg-primary/10 text-primary hover:bg-primary/15'}`}
+                    >
+                      <Heart className={`h-3.5 w-3.5 ${following ? 'fill-red-500' : ''}`} />
+                      {followLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : (following ? t('sellerProfile.following') : t('sellerProfile.follow'))}
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); useAppStore.getState().setSellerProfileId(product.seller.id); useAppStore.getState().setView('page-seller-profile'); onClose(); }}
+                    className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                  >
+                    <Eye className="h-3.5 w-3.5" />{t('sellerProfile.viewProfile')}
+                  </button>
+                  <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
+                </div>
               </div>
 
               {/* Confirmation View */}
