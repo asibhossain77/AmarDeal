@@ -22,9 +22,15 @@ export type AuthGuardResult =
  */
 export async function requireAuth(req: NextRequest): Promise<AuthGuardResult> {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get(SESSION_COOKIE)
-    const userId = sessionCookie?.value
+    // Try cookies() from next/headers first (standard Next.js way)
+    let userId: string | undefined
+    try {
+      const cookieStore = await cookies()
+      userId = cookieStore.get(SESSION_COOKIE)?.value
+    } catch {
+      // Fallback: read directly from request cookies (works even if cookies() fails in edge/proxy)
+      userId = req.cookies.get(SESSION_COOKIE)?.value
+    }
 
     if (!userId) {
       return {
