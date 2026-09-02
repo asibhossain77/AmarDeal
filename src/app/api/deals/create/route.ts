@@ -182,7 +182,11 @@ export async function POST(req: NextRequest) {
       createdAt: deal.createdAt,
     })
   } catch (err) {
-    console.error('Deal create error:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[DEAL CREATE] Error:', msg)
+    if (msg.includes('no such column') || msg.includes('no such table')) {
+      console.error('[DEAL CREATE] DB SCHEMA MISMATCH — run: npx prisma db push')
+    }
     return NextResponse.json(
       { error: 'ডিল তৈরিতে সমস্যা হয়েছে' },
       { status: 500 }

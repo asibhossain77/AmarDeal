@@ -4,7 +4,6 @@ import { requireAuth } from '@/lib/deal-guard'
 
 /**
  * POST /api/user/recent-deals
- * Body: { userId: string }
  *
  * Returns recent deals the user is involved in, ordered by date desc.
  */
@@ -28,7 +27,13 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(deals)
-  } catch {
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[RECENT DEALS] Error fetching deals:', msg)
+    // Log extra info for schema-mismatch debugging
+    if (msg.includes('no such column') || msg.includes('no such table')) {
+      console.error('[RECENT DEALS] DB SCHEMA MISMATCH — run: prisma db push')
+    }
     return NextResponse.json(
       { error: 'ডিল লোড করতে সমস্যা' },
       { status: 500 },

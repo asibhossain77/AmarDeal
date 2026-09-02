@@ -329,3 +329,26 @@ Work Log:
 Stage Summary:
 - Buy Now flow now: Product Detail → Confirm → Navigate to Deal Creation form with pre-filled product name, amount, seller email, and buyer role
 - Files changed: src/app/api/products/route.ts, src/lib/store.ts, src/components/landing/marketplace-section.tsx, src/components/dashboard/new-deal-form.tsx
+---
+Task ID: 1
+Agent: Main
+Task: Fix production 500 errors on /api/deals/create and /api/user/recent-deals + CSP blocking GTM
+
+Work Log:
+- Investigated all three issues: deal create 500, recent-deals 500, CSP blocking GTM
+- Root cause for 500 errors: production database schema out of sync — `prisma db push` was never run on production after schema changes (creatorId, Notification table, DigitalProduct, etc.)
+- Root cause for CSP: `connect-src 'self' wss: ws:` in proxy.ts blocked service worker fetches to googletagmanager.com
+- Fixed CSP in proxy.ts: added `https://www.googletagmanager.com` to `connect-src`
+- Bumped service worker cache version from v1 to v2 to force SW refresh
+- Added detailed error logging with schema-mismatch detection to both API routes
+- Updated `/api/health` endpoint: added autoFixSchema() that checks for missing columns/tables and auto-adds them via ALTER TABLE/CREATE TABLE
+- Updated SETUP_SQL in health endpoint to include ALL current tables and columns (was missing DigitalProduct, SellerApplication, SellerFollower, SellerReview, AffiliateEarning, etc.)
+- Added `prisma db push --accept-data-loss` to build script so schema is auto-synced during production builds
+- Added separate `deploy` script to package.json for explicit deployment
+
+Stage Summary:
+- 5 files modified: proxy.ts, recent-deals/route.ts, deals/create/route.ts, health/route.ts, package.json, public/sw.js
+- CSP now allows GTM fetches from service worker
+- Build script now runs `prisma db push` automatically before Next.js build
+- Health endpoint auto-detects and fixes missing columns/tables on production
+- Error logging in API routes now shows schema mismatch hint

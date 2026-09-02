@@ -1,6 +1,6 @@
 /* Minimal Service Worker — only for PWA installability */
 
-const CACHE_NAME = 'amardeal-v1';
+const CACHE_NAME = 'amardeal-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
