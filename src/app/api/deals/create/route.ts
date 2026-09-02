@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
 import { sendWhatsApp, dealCreatedWa, adminNewDealWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
+import { notifyUser, notifyAdmins } from '@/lib/push'
 
 export async function POST(req: NextRequest) {
   try {
@@ -85,36 +86,24 @@ export async function POST(req: NextRequest) {
     // Wrapped in a single async IIFE so nothing can crash the response.
     ;(async () => {
       try {
-        // Create DB notification for the counterparty
+        // Unified notification (DB + WebSocket + Push) for the counterparty
         const notifMessage = `${isCreatorBuyer ? 'ক্রেতা' : 'বিক্রেতা'} হিসেবে আপনাকে একটি নতুন ডিল পাঠানো হয়েছে: "${deal.title}"`
-        await db.notification.create({
-          data: {
-            userId: counterparty.id,
-            type: 'deal_request',
-            title: 'নতুন ডিল অনুরোধ',
-            message: notifMessage,
-            dealId: deal.id,
-          },
+        await notifyUser({
+          userId: counterparty.id,
+          dealId: deal.id,
+          type: 'deal_request',
+          title: 'নতুন ডিল অনুরোধ',
+          message: notifMessage,
+          pushUrl: '/dashboard',
         }).catch(() => {})
 
-        // WebSocket notification
-        try {
-          await fetch('http://localhost:3004/notify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: counterparty.id,
-              notification: {
-                id: deal.id + '-notif',
-                type: 'deal_request',
-                title: 'নতুন ডিল অনুরোধ',
-                message: notifMessage,
-                dealId: deal.id,
-                createdAt: new Date().toISOString(),
-              },
-            }),
-          })
-        } catch { /* ws not available */ }
+        // Notify admins
+        await notifyAdmins({
+          dealId: deal.id,
+          type: 'deal_request',
+          title: 'নতুন ডিল',
+          message: `${deal.creator?.name || 'একজন ইউজার'} একটি নতুন ডিল তৈরি করেছে: ${deal.title} (৳${deal.amount.toLocaleString('en')})`,
+        }).catch(() => {})
 
         // Email + WhatsApp to counterparty
         if (counterparty.email) {
@@ -138,7 +127,7 @@ export async function POST(req: NextRequest) {
           }), 'deal_created').catch((e) => console.error('[DEAL CREATE] counterparty wa error:', e))
         }
 
-        // Admin notifications
+        // Admin email/WhatsApp
         try {
           const adminUser = await db.user.findFirst({
             where: { admin: { isNot: null } },

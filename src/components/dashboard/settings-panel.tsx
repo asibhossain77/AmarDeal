@@ -1,7 +1,7 @@
 'use client';
 
 import { LoadingAnimation } from '@/components/shared/loading-animation'
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { useAppStore } from '@/lib/store';
@@ -9,8 +9,9 @@ import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe } from 'lucide-react';
+import { Sun, Moon, LogOut, ShieldCheck, KeyRound, Eye, EyeOff, Globe, Bell, BellOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { requestPushSubscription, unsubscribePush } from '@/hooks/use-push-subscription';
 
 const emptySubscribe = () => () => {};
 
@@ -27,6 +28,59 @@ export function SettingsPanel() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  // Check current push permission/subscription status
+  useEffect(() => {
+    async function checkPush() {
+      if (!('Notification' in window)) {
+        setPushEnabled(false);
+        return;
+      }
+      const perm = Notification.permission;
+      if (perm === 'denied') {
+        setPushEnabled(false);
+        return;
+      }
+      if (perm === 'granted' && 'serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          setPushEnabled(!!sub);
+        } catch {
+          setPushEnabled(false);
+        }
+        return;
+      }
+      setPushEnabled(false);
+    }
+    checkPush();
+  }, []);
+
+  const handlePushToggle = useCallback(async () => {
+    if (!user?.id) return;
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribePush();
+        setPushEnabled(false);
+        toast.success(t('notif.pushDisabled'));
+      } else {
+        const ok = await requestPushSubscription(user.id);
+        if (ok) {
+          setPushEnabled(true);
+          toast.success(t('notif.pushEnabled'));
+        } else {
+          toast.error(t('notif.pushFailed'));
+        }
+      }
+    } catch {
+      toast.error(t('notif.pushFailed'));
+    } finally {
+      setPushLoading(false);
+    }
+  }, [pushEnabled, user?.id, t]);
 
   if (!mounted) return null;
 
@@ -98,6 +152,32 @@ export function SettingsPanel() {
               </div>
             </div>
             <LanguageSwitcher />
+          </div>
+        </div>
+
+        {/* Push Notifications */}
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {pushEnabled ? (
+                <Bell className="h-5 w-5 text-primary" />
+              ) : (
+                <BellOff className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{t('notif.pushTitle')}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('notif.pushSubtitle')}</p>
+              </div>
+            </div>
+            <Button
+              onClick={handlePushToggle}
+              variant={pushEnabled ? 'default' : 'outline'}
+              className="rounded-xl text-xs font-semibold"
+              disabled={pushLoading || pushEnabled === null}
+            >
+              {pushLoading ? <LoadingAnimation size="sm" /> : null}
+              {pushEnabled ? t('notif.pushOn') : t('notif.pushOff')}
+            </Button>
           </div>
         </div>
 

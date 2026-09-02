@@ -352,3 +352,34 @@ Stage Summary:
 - Build script now runs `prisma db push` automatically before Next.js build
 - Health endpoint auto-detects and fixes missing columns/tables on production
 - Error logging in API routes now shows schema mismatch hint
+
+---
+Task ID: 1
+Agent: main
+Task: Add Firebase/Web Push notification system
+
+Work Log:
+- Explored existing notification infrastructure: DB Notification model, WebSocket service (port 3004), Socket.IO hook, email/WhatsApp notifications
+- Installed `web-push` npm package and generated VAPID keys
+- Added `PushSubscription` model to Prisma schema with User relation, pushed to DB
+- Created `src/lib/push.ts` — unified notification utility with `notifyUser()`, `notifyAdmins()`, `sendPushToUser()`, `sendPushToAdmins()`
+- Created `/api/push/vapid-key/route.ts` — returns public VAPID key
+- Created `/api/push/subscribe/route.ts` — POST to save push subscription, DELETE to remove
+- Upgraded `public/sw.js` — added push event handler (showNotification) and click handler (navigate to app)
+- Created `src/components/shared/notification-bell.tsx` — notification bell with dropdown, unread count badge, mark read, real-time updates via Socket.IO
+- Added NotificationBell to navbar: desktop dashboard nav, desktop admin nav, and mobile nav
+- Integrated `notifyUser`/`notifyAdmins` into deal/create, deals/payment, admin/deals/approve, deals/accept routes
+- Created `src/hooks/use-push-subscription.ts` — push subscription management with `requestPushSubscription()`, `unsubscribePush()`
+- Added push notification toggle to dashboard settings panel
+- Added PushSubscription auto-fix to health endpoint for Turso
+- Added i18n keys (bn + en) for all notification UI text
+- Added VAPID keys to .env file
+
+Stage Summary:
+- Full push notification system implemented using Web Push API (VAPID)
+- Notification bell appears in navbar for logged-in users (desktop + mobile)
+- Bell shows unread count, dropdown with notification list, mark-all-read
+- Push notifications are sent alongside DB + WebSocket notifications
+- Users can enable/disable push from Settings panel
+- Auto-cleanup of expired push subscriptions
+- All integrated with existing deal flow (create, payment, approve, complete)

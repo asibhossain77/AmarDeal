@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
 import { sendWhatsApp, paymentSubmittedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { notifyUser, notifyAdmins } from '@/lib/push'
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,24 @@ export async function POST(req: NextRequest) {
     if (deal.seller?.phone) {
       sendWhatsApp(deal.seller.phone, () => ({ body: paymentSubmittedWa(deal.seller.name || 'বিক্রেতা', deal.title, deal.amount || 0) }), 'payment_submitted').catch(() => {})
     }
+
+    // Push notification to seller + admin
+    if (deal.sellerId) {
+      await notifyUser({
+        userId: deal.sellerId,
+        dealId: deal.id,
+        type: 'payment_verified',
+        title: 'পেমেন্ট জমা হয়েছে',
+        message: `"${deal.title}" ডিলে পেমেন্ট জমা হয়েছে। অ্যাডমিন ভেরিফিকেশনের অপেক্ষায়।`,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
+    }
+    await notifyAdmins({
+      dealId: deal.id,
+      type: 'payment_pending',
+      title: 'নতুন পেমেন্ট',
+      message: `"${deal.title}" ডিলে ৳${deal.amount?.toLocaleString('en')} পেমেন্ট জমা হয়েছে। ভেরিফিকেশন প্রয়োজন।`,
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,

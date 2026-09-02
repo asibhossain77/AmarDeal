@@ -47,6 +47,7 @@ model User {
   followingSellers   SellerFollower[] @relation("FollowingSellers")
   sellerReviews      SellerReview[]   @relation("SellerReviews")
   userSellerReviews  SellerReview[]   @relation("UserSellerReviews")
+  pushSubscriptions  PushSubscription[]
 }
 
 model Admin {
@@ -328,6 +329,21 @@ model SellerFollower {
   @@unique([sellerId, followerId])
   @@index([sellerId])
   @@index([followerId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([endpoint])
+  @@index([userId])
 }
 
 model SellerReview {

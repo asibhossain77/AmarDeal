@@ -37,6 +37,7 @@ import {
   Bell,
   Store,
 } from 'lucide-react';
+import { NotificationBell } from '@/components/shared/notification-bell';
 import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import {
   Tooltip,
@@ -248,6 +249,7 @@ export function Navbar() {
               <div className="mx-1 h-5 w-px bg-border/60" />
               <LanguageSwitcher />
               <ThemeToggle />
+              <NotificationBell />
               <button
                 onClick={() => setDashboardPanel('profile')}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary hover:bg-primary/25 transition-colors"
@@ -271,6 +273,7 @@ export function Navbar() {
             <div className="hidden items-center gap-2 md:flex">
               <LanguageSwitcher />
               <ThemeToggle />
+              <NotificationBell />
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">A</div>
               <button
                 onClick={() => setView('dashboard')}
@@ -338,6 +341,8 @@ export function Navbar() {
           <div className="flex items-center gap-2 md:hidden">
             <LanguageSwitcher />
             <ThemeToggle />
+            {isDashboard && <NotificationBell />}
+            {isAdmin && <NotificationBell />}
             {!isAdmin && (
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, paymentVerifiedEmail } from '@/lib/email'
 import { sendWhatsApp, paymentVerifiedWa } from '@/lib/whatsapp'
 import { requireAdmin } from '@/lib/admin-guard'
+import { notifyUser } from '@/lib/push'
 
 export async function POST(
   req: NextRequest,
@@ -45,32 +46,14 @@ export async function POST(
 
     for (const party of notifyParties) {
       if (!party.userId || !party.name) continue
-      await db.notification.create({
-        data: {
-          userId: party.userId,
-          type: 'deal_approved',
-          title: 'ডিল অনুমোদিত',
-          message: `"${deal.title}" ডিলটি অ্যাডমিন কর্তৃক অনুমোদিত হয়েছে। পেমেন্ট ভেরিফাইড।`,
-          dealId: deal.id,
-        },
-      })
-
-      try {
-        await fetch(`http://localhost:3004/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: party.userId,
-            notification: {
-              type: 'deal_approved',
-              title: 'ডিল অনুমোদিত',
-              message: `"${deal.title}" ডিলটি অনুমোদিত হয়েছে।`,
-              dealId: deal.id,
-              createdAt: new Date().toISOString(),
-            },
-          }),
-        })
-      } catch { /* silent */ }
+      await notifyUser({
+        userId: party.userId,
+        dealId: deal.id,
+        type: 'payment_verified',
+        title: 'ডিল অনুমোদিত',
+        message: `"${deal.title}" ডিলটি অ্যাডমিন কর্তৃক অনুমোদিত হয়েছে। পেমেন্ট ভেরিফাইড।`,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
     }
 
     // Email notifications

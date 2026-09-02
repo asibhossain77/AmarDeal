@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, dealCompletedEmail } from '@/lib/email'
 import { sendWhatsApp, dealCompletedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { notifyUser } from '@/lib/push'
 
 export async function POST(
   req: NextRequest,
@@ -44,32 +45,14 @@ export async function POST(
 
     // Notify seller that deal is completed
     if (deal.sellerId) {
-      await db.notification.create({
-        data: {
-          userId: deal.sellerId,
-          type: 'deal_completed',
-          title: 'ডিল সম্পন্ন',
-          message: `"${deal.title}" ডিলটি সফলভাবে সম্পন্ন হয়েছে। পেমেন্ট আপনার অ্যাকাউন্টে প্রক্রিয়া হচ্ছে।`,
-          dealId: deal.id,
-        },
-      })
-
-      try {
-        await fetch(`http://localhost:3004/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: deal.sellerId,
-            notification: {
-              type: 'deal_completed',
-              title: 'ডিল সম্পন্ন',
-              message: `"${deal.title}" ডিলটি সফলভাবে সম্পন্ন হয়েছে।`,
-              dealId: deal.id,
-              createdAt: new Date().toISOString(),
-            },
-          }),
-        })
-      } catch { /* silent */ }
+      await notifyUser({
+        userId: deal.sellerId,
+        dealId: deal.id,
+        type: 'deal_completed',
+        title: 'ডিল সম্পন্ন',
+        message: `"${deal.title}" ডিলটি সফলভাবে সম্পন্ন হয়েছে। পেমেন্ট আপনার অ্যাকাউন্টে প্রক্রিয়া হচ্ছে।`,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
     }
 
     // Email: deal accepted (completed)
