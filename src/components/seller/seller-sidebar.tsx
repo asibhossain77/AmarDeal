@@ -27,6 +27,7 @@ interface NavItem {
 
 const navItemKeys: { labelKey: string; icon: React.ElementType; panel: SellerPanel }[] = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
+  { labelKey: 'seller.businessProfile', icon: Store, panel: 'business-profile' },
   { labelKey: 'deal.createTitle', icon: PlusCircle, panel: 'new-deal' },
   { labelKey: 'seller.addProduct', icon: Plus, panel: 'add-product' },
   { labelKey: 'status.active', icon: Clock, panel: 'active-deals' },

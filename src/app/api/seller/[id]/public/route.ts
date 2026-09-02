@@ -13,19 +13,13 @@ export async function GET(
       where: { id },
       select: {
         id: true, name: true, imageLink: true, isSeller: true, sellerDisabled: true,
+        businessName: true, businessBio: true,
       },
     })
 
     if (!user || !user.isSeller || user.sellerDisabled) {
       return NextResponse.json({ error: 'Seller not found' }, { status: 404 })
     }
-
-    // Get business name from application
-    const application = await db.sellerApplication.findFirst({
-      where: { userId: id, status: 'approved' },
-      orderBy: { createdAt: 'desc' },
-      select: { businessName: true },
-    })
 
     // Get active products
     const products = await db.digitalProduct.findMany({
@@ -57,36 +51,35 @@ export async function GET(
 
     // Check if current user follows
     let isFollowing = false
-    const cookieStore = await req.cookies?.()
-    if (cookieStore) {
-      const session = cookieStore.get('midman_session')
-      if (session?.value) {
+    try {
+      const sessionCookie = req.cookies.get('midman_session')
+      if (sessionCookie?.value) {
         const existing = await db.sellerFollower.findUnique({
-          where: { sellerId_followerId: { sellerId: id, followerId: session.value } },
+          where: { sellerId_followerId: { sellerId: id, followerId: sessionCookie.value } },
         })
         isFollowing = !!existing
       }
-    }
+    } catch { /* no session */ }
 
     // Check if current user already reviewed
     let hasReviewed = false
-    const cookieStore2 = await req.cookies?.()
-    if (cookieStore2) {
-      const session = cookieStore2.get('midman_session')
-      if (session?.value && session.value !== id) {
+    try {
+      const sessionCookie = req.cookies.get('midman_session')
+      if (sessionCookie?.value && sessionCookie.value !== id) {
         const existingReview = await db.sellerReview.findUnique({
-          where: { sellerId_userId: { sellerId: id, userId: session.value } },
+          where: { sellerId_userId: { sellerId: id, userId: sessionCookie.value } },
         })
         hasReviewed = !!existingReview
       }
-    }
+    } catch { /* no session */ }
 
     return NextResponse.json({
       seller: {
         id: user.id,
         name: user.name,
         imageLink: user.imageLink,
-        businessName: application?.businessName || null,
+        businessName: user.businessName,
+        businessBio: user.businessBio,
       },
       products,
       followerCount,

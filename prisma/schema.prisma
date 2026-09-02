@@ -22,6 +22,8 @@ model User {
   resetTokenExpiry DateTime?
   googleId        String?
   imageLink       String?
+  businessName     String?
+  businessBio      String?
   referralCode     String?  @unique
   referredBy       String?
   referrer         User?   @relation("UserReferral", fields: [referredBy], references: [id])

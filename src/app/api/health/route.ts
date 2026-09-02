@@ -109,6 +109,8 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     // User table newer columns
     ['User', 'sellerDisabled', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
     ['User', 'imageLink', 'TEXT', 'NULL'],
+    ['User', 'businessName', 'TEXT', 'NULL'],
+    ['User', 'businessBio', 'TEXT', 'NULL'],
     ['User', 'referralCode', 'TEXT', 'NULL'],
     ['User', 'referredBy', 'TEXT', 'NULL'],
     ['User', 'affiliateBalance', 'REAL NOT NULL DEFAULT 0', '0'],

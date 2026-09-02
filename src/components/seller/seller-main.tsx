@@ -61,76 +61,160 @@ function formatTaka(amount: number): string {
 }
 
 /* ================================================
-   Panel: Business Profile
+   Panel: Business Profile (Editable)
    ================================================ */
 
 export function BusinessProfilePanel() {
   const t = useT();
   const user = useAppStore((s) => s.user);
-  const locale = useAppStore((s) => s.locale);
-  const [profile, setProfile] = useState<{ name: string; email: string; phone: string } | null>(null);
+  const setUser = useAppStore((s) => s.setUser);
+  const [businessName, setBusinessName] = useState('');
+  const [businessBio, setBusinessBio] = useState('');
+  const [profileName, setProfileName] = useState('');
   const [productCount, setProductCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     fetch('/api/seller/profile').then(r => r.json()).then(data => {
-      if (data.business) setProfile(data.business);
+      if (data.user) {
+        setBusinessName(data.user.businessName || '');
+        setBusinessBio(data.user.businessBio || '');
+        setProfileName(data.user.name || '');
+      }
       setProductCount(data.productCount || 0);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/seller/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessName, businessBio, name: profileName }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(t('seller.profileSaved'));
+        setEditing(false);
+        if (data.user && user) {
+          setUser({ ...user, name: data.user.name, businessName: data.user.businessName, businessBio: data.user.businessBio } as any);
+        }
+      } else {
+        toast.error(data.error || t('seller.profileSaveFailed'));
+      }
+    } catch {
+      toast.error(t('seller.profileSaveFailed'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+    );
+  }
+
+  const displayName = businessName || profileName;
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.businessProfile')}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{t('seller.businessProfileDesc')}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.businessProfile')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('seller.businessProfileDesc')}</p>
+        </div>
+        {!editing && (
+          <Button onClick={() => setEditing(true)} variant="outline" className="gap-2 rounded-xl text-sm font-semibold">
+            <Pencil className="h-4 w-4" />
+            {t('seller.editProfile')}
+          </Button>
+        )}
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-      ) : (
-        <>
-          <SolidCard className="space-y-5">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-                {user?.imageLink ? (
-                  <img src={cdnUrl(user.imageLink) || ''} alt={user.name} className="h-16 w-16 rounded-2xl object-cover" />
-                ) : (
-                  <Store className="h-7 w-7 text-primary" />
-                )}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-foreground">{user?.name}</h3>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-                <Badge className="mt-1 bg-primary/10 text-primary border-0 font-medium">{t('dashboard.sellerBadge')}</Badge>
-              </div>
+      <SolidCard className="space-y-5">
+        {/* Header with avatar */}
+        <div className="flex items-center gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 overflow-hidden">
+            {user?.imageLink ? (
+              <img src={cdnUrl(user.imageLink) || ''} alt={user.name} className="h-16 w-16 rounded-2xl object-cover" />
+            ) : (
+              <Store className="h-7 w-7 text-primary" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-foreground truncate">{displayName}</h3>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Badge className="bg-primary/10 text-primary border-0 font-medium text-xs">{t('dashboard.sellerBadge')}</Badge>
+              <span className="text-xs text-muted-foreground">{productCount} {t('sellerProfile.products')}</span>
             </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {editing ? (
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.yourName')}</Label>
+              <Input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder={t('seller.yourNamePh')}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.businessName')}</Label>
+              <Input
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder={t('seller.businessNamePh')}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.businessBio')}</Label>
+              <Textarea
+                value={businessBio}
+                onChange={(e) => setBusinessBio(e.target.value)}
+                placeholder={t('seller.businessBioPh')}
+                rows={4}
+                className="rounded-xl resize-none"
+              />
+              <p className="text-xs text-muted-foreground">{t('seller.bioHint')}</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleSave} disabled={saving} className="flex-1 h-11 rounded-xl font-semibold gap-2 shadow-lg shadow-primary/25">
+                {saving ? <LoadingAnimation size="sm" /> : null}
+                {t('seller.saveProfile')}
+              </Button>
+              <Button onClick={() => setEditing(false)} variant="outline" className="h-11 rounded-xl font-semibold">
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 pt-2">
+            {displayName && (
               <div className="rounded-xl bg-muted/40 p-4 space-y-1">
                 <p className="text-xs text-muted-foreground">{t('seller.businessName')}</p>
-                <p className="text-sm font-semibold text-foreground">{profile?.name || '---'}</p>
+                <p className="text-sm font-semibold text-foreground">{displayName}</p>
               </div>
+            )}
+            {businessBio ? (
               <div className="rounded-xl bg-muted/40 p-4 space-y-1">
-                <p className="text-xs text-muted-foreground">{t('seller.businessEmail')}</p>
-                <p className="text-sm font-semibold text-foreground">{profile?.email || '---'}</p>
+                <p className="text-xs text-muted-foreground">{t('seller.businessBio')}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{businessBio}</p>
               </div>
-              <div className="rounded-xl bg-muted/40 p-4 space-y-1">
-                <p className="text-xs text-muted-foreground">{t('seller.businessPhone')}</p>
-                <p className="text-sm font-semibold text-foreground">{profile?.phone || '---'}</p>
-              </div>
-              <div className="rounded-xl bg-muted/40 p-4 space-y-1">
-                <p className="text-xs text-muted-foreground">{t('seller.totalProducts')}</p>
-                <p className="text-sm font-semibold text-foreground">{productCount}</p>
-              </div>
-            </div>
-          </SolidCard>
-
-          <SolidCard className="text-center py-6">
-            <p className="text-sm text-muted-foreground">{t('seller.profileEditNote')}</p>
-          </SolidCard>
-        </>
-      )}
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-2">{t('seller.noBioYet')}</p>
+            )}
+          </div>
+        )}
+      </SolidCard>
     </motion.div>
   );
 }

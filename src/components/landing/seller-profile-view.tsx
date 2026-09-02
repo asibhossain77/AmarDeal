@@ -18,7 +18,7 @@ import { PageWrapper } from './page-wrapper';
 import { Footer } from './footer';
 
 interface SellerInfo {
-  id: string; name: string; imageLink: string | null; businessName: string | null;
+  id: string; name: string; imageLink: string | null; businessName: string | null; businessBio: string | null;
 }
 interface Product {
   id: string; title: string; description: string; price: number;
@@ -184,6 +184,9 @@ export function SellerProfileView() {
                 {seller.businessName || seller.name}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">{seller.name}</p>
+              {seller.businessBio && (
+                <p className="text-sm text-muted-foreground mt-2 max-w-lg">{seller.businessBio}</p>
+              )}
 
               <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 flex-wrap">
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
