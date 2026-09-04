@@ -7,8 +7,7 @@ export async function POST(
 ) {
   try {
     const { id: sellerId } = await params
-    const cookieStore = await req.cookies()
-    const session = cookieStore.get('midman_session')
+    const session = req.cookies.get('midman_session')
     if (!session?.value) {
       return NextResponse.json({ error: 'Login required' }, { status: 401 })
     }
