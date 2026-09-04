@@ -196,11 +196,19 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
+    <header
+      className={
+        isSidebarView
+          ? 'sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl'
+          : 'sticky top-0 z-50 w-full pt-3 pb-1 px-3 sm:px-6 lg:px-8 transition-all'
+      }
+    >
       <nav
-        className={`relative h-16 items-center justify-between px-4 sm:px-6 ${
-          isSidebarView ? 'flex md:pl-0' : 'mx-auto flex max-w-6xl md:px-8'
-        }`}
+        className={
+          isSidebarView
+            ? 'relative flex h-16 items-center justify-between px-4 sm:px-6 md:pl-0'
+            : 'relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 rounded-2xl sm:rounded-full bg-gradient-to-r from-background/80 via-primary/5 to-background/80 dark:from-zinc-900/85 dark:via-primary/10 dark:to-zinc-900/85 backdrop-blur-xl backdrop-saturate-150 border border-white/40 dark:border-white/10 shadow-xl shadow-primary/5 dark:shadow-primary/10 transition-all duration-300 hover:border-primary/30'
+        }
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
         {isSidebarView && (
@@ -288,7 +296,7 @@ export function Navbar() {
 
         {/* ── Center: Landing Desktop Nav Links (icons only + tooltip on hover) ── */}
         {!isSidebarView && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 p-1 rounded-full bg-accent/30 dark:bg-zinc-800/40 border border-border/40 backdrop-blur-md md:flex">
             {[
               { href: '/security', viewKey: 'page-security', label: t('nav.features'), Icon: Sparkles },
               { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
@@ -305,12 +313,12 @@ export function Navbar() {
                     href={item.href}
                     onClick={(e) => { e.preventDefault(); setView(item.viewKey); }}
                     aria-label={item.label}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-primary hover:bg-background/80 hover:scale-105 hover:shadow-sm"
                   >
-                    <item.Icon className="h-[18px] w-[18px]" />
+                    <item.Icon className="h-4 w-4" />
                   </a>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs font-medium">
+                <TooltipContent side="bottom" className="text-xs font-medium rounded-lg">
                   {item.label}
                 </TooltipContent>
               </Tooltip>
@@ -324,12 +332,12 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <Button size="sm" onClick={() => navigateToDashboard()} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => navigateToDashboard()} className="gap-2 rounded-full font-medium shadow-md shadow-primary/20 hover:scale-105 transition-all">
                 <LayoutDashboard className="h-4 w-4" />
                 {t('nav.dashboard')}
               </Button>
             ) : (
-              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-lg font-medium shadow-md shadow-primary/20">
+              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-full font-medium shadow-md shadow-primary/20 hover:scale-105 transition-all">
                 <LogIn className="h-4 w-4" />
                 {t('nav.loginRegister')}
               </Button>

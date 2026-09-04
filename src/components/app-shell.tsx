@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { DeferredStyles } from '@/components/shared/deferred-styles';
 
 /* ── Eager: above-the-fold landing components ── */
+import { Store } from 'lucide-react';
 import { Navbar } from '@/components/landing/navbar';
 import { Hero } from '@/components/landing/hero';
 import { PageWrapper } from '@/components/landing/page-wrapper';
@@ -102,12 +103,30 @@ function DashboardLoadingShell() {
   );
 }
 
-/* ── Slim landing — only Hero + Trust + CTA ── */
+/* ── Landing with Hero + Marketplace + Reviews + Trust ── */
 function LandingView() {
+  const locale = useAppStore((s) => s.locale);
   return (
     <>
       <main className="flex-1">
         <Hero />
+        <section className="mx-auto w-full max-w-6xl px-4 pt-10 pb-16 sm:px-6 lg:px-8">
+          <div className="mb-6 text-center sm:mb-8">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <Store className="h-3.5 w-3.5" />
+              {locale === 'bn' ? 'ডিজিটাল মার্কেটপ্লেস' : 'Digital Marketplace'}
+            </span>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {locale === 'bn' ? 'জনপ্রিয় ডিজিটাল পণ্য ও সার্ভিস' : 'Featured Digital Products & Services'}
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+              {locale === 'bn'
+                ? 'এসক্রো সুরক্ষায় কিনুন যাচাইকৃত বিশ্বস্ত বিক্রেতাদের পণ্য'
+                : 'Buy verified digital products with complete escrow protection'}
+            </p>
+          </div>
+          <MarketplaceSection />
+        </section>
         <ReviewSection />
         <TrustSecurity />
       </main>
