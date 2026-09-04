@@ -60,7 +60,7 @@ export async function PATCH(
     if (status === 'approved') {
       await db.user.update({
         where: { id: application.userId },
-        data: { isSeller: true },
+        data: { isSeller: true, whatsappNumber: application.whatsappNumber || null },
       })
     } else if (status === 'disabled') {
       await db.user.update({

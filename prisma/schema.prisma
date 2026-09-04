@@ -24,6 +24,7 @@ model User {
   imageLink       String?
   businessName     String?
   businessBio      String?
+  whatsappNumber   String?
   referralCode     String?  @unique
   referredBy       String?
   referrer         User?   @relation("UserReferral", fields: [referredBy], references: [id])
@@ -297,6 +298,7 @@ model SellerApplication {
   businessName    String
   email           String
   phone           String
+  whatsappNumber  String?
   status          String   @default("pending")
   rejectionReason String?
   createdAt       DateTime @default(now())

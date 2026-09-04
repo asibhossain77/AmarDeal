@@ -9,7 +9,7 @@ export async function GET() {
 
     const applications = await db.sellerApplication.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true, isSeller: true } } },
+      include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true, isSeller: true, whatsappNumber: true } } },
     })
 
     return NextResponse.json({ applications })

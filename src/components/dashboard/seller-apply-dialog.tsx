@@ -57,6 +57,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -75,6 +76,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     if (!businessName.trim()) newErrors.businessName = t('seller.requiredField');
     if (!email.trim()) newErrors.email = t('seller.requiredField');
     if (!phone.trim()) newErrors.phone = t('seller.requiredField');
+    if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
     if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -107,7 +109,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
       const res = await fetch('/api/user/become-seller', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName: businessName.trim(), email: email.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ businessName: businessName.trim(), email: email.trim(), phone: phone.trim(), whatsappNumber: whatsappNumber.trim() }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -187,6 +189,14 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
+                <Input
+                  placeholder={t('seller.whatsappNumberPh')}
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                />
+              </div>
               <TermsCheckbox />
             </div>
           </div>
@@ -256,6 +266,14 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
+                <Input
+                  placeholder={t('seller.whatsappNumberPh')}
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                />
+              </div>
               <TermsCheckbox />
             </div>
           </div>
@@ -322,6 +340,15 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
               onChange={(e) => setPhone(e.target.value)}
             />
             {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
+            <Input
+              placeholder={t('seller.whatsappNumberPh')}
+              value={whatsappNumber}
+              onChange={(e) => setWhatsappNumber(e.target.value)}
+            />
+            {errors.whatsappNumber && <p className="text-xs text-destructive">{errors.whatsappNumber}</p>}
           </div>
           <TermsCheckbox />
         </div>

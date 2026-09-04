@@ -23,10 +23,11 @@ interface SellerApp {
   businessName: string;
   email: string;
   phone: string;
+  whatsappNumber: string | null;
   status: string;
   rejectionReason: string | null;
   createdAt: string;
-  user: { id: string; name: string; email: string; phone: string; imageLink: string | null; isSeller: boolean };
+  user: { id: string; name: string; email: string; phone: string; imageLink: string | null; isSeller: boolean; whatsappNumber: string | null };
 }
 
 export function SellerAppsTab() {
@@ -163,6 +164,7 @@ export function SellerAppsTab() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.businessName')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.contactEmail')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.contactPhone')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.whatsappNumber')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.status')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.actions')}</th>
                   </tr>
@@ -182,6 +184,7 @@ export function SellerAppsTab() {
                       <td className="px-4 py-3 font-medium text-foreground">{app.businessName}</td>
                       <td className="px-4 py-3 text-muted-foreground">{app.email}</td>
                       <td className="px-4 py-3 text-muted-foreground">{app.phone}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{app.whatsappNumber || '-'}</td>
                       <td className="px-4 py-3 text-center"><AppStatusBadge status={app.status} /></td>
                       <td className="px-4 py-3 text-center">
                         {app.status === 'pending' ? (
@@ -260,6 +263,10 @@ export function SellerAppsTab() {
                   <div>
                     <span className="text-muted-foreground">{t('admin.sellerApps.contactPhone')}</span>
                     <p className="font-medium text-foreground mt-0.5">{app.phone}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{t('admin.sellerApps.whatsappNumber')}</span>
+                    <p className="font-medium text-foreground mt-0.5">{app.whatsappNumber || '-'}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">{t('admin.sellerApps.contactEmail')}</span>
