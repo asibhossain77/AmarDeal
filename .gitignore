@@ -65,3 +65,7 @@ server.log
 /upload/
 /skills/
 tool-results/
+
+# prisma dummy db (from Turso adapter workaround)
+prisma/dummy.db
+*.db-journal
