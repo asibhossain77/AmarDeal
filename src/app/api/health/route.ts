@@ -124,6 +124,9 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     ['Admin', 'permissions', 'TEXT NOT NULL DEFAULT \'[]\'', '\'[]\''],
     ['Admin', 'totpSecret', 'TEXT', 'NULL'],
     ['Admin', 'totpEnabled', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
+    // PaymentMethod table columns (manual payment instructions + QR)
+    ['PaymentMethod', 'instructions', 'TEXT', 'NULL'],
+    ['PaymentMethod', 'qrImage', 'TEXT', 'NULL'],
   ]
 
   for (const [table, column, colType, defaultVal] of checks) {
@@ -380,6 +383,8 @@ CREATE TABLE IF NOT EXISTS "PaymentMethod" (
   "sortOrder" INTEGER NOT NULL DEFAULT 0,
   "color" TEXT NOT NULL DEFAULT '#84CC16',
   "image" TEXT,
+  "instructions" TEXT,
+  "qrImage" TEXT,
   "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

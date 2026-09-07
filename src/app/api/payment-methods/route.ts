@@ -15,6 +15,8 @@ export async function GET() {
         status: true,
         color: true,
         image: true,
+        instructions: true,
+        qrImage: true,
       },
     })
     return NextResponse.json(methods)

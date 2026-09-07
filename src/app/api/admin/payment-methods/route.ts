@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const guard = await requireAdmin(req);
     if (!guard.ok) return guard.response;
     const body = await req.json()
-    const { name, accountNumber, accountType, status, sortOrder, color, image } = body
+    const { name, accountNumber, accountType, status, sortOrder, color, image, instructions, qrImage } = body
 
     if (!name || !accountNumber) {
       return NextResponse.json(
@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
         sortOrder: sortOrder ?? 0,
         color: color || '#84CC16',
         ...(image && { image }),
+        ...(instructions !== undefined && { instructions: instructions || null }),
+        ...(qrImage && { qrImage }),
       },
     })
 

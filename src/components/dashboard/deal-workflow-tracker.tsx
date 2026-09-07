@@ -116,7 +116,7 @@ function PaymentDialog({
   onSuccess: () => void;
 }) {
   const [step, setStep] = useState<'select' | 'pay'>('select');
-  const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string; accountNumber: string; accountType: string; color: string; image: string | null }[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<{ id: string; name: string; accountNumber: string; accountType: string; color: string; image: string | null; instructions?: string | null; qrImage?: string | null }[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState('');
   const [senderNumber, setSenderNumber] = useState('');
   const [transactionId, setTransactionId] = useState('');
@@ -192,7 +192,7 @@ function PaymentDialog({
 
   const handleSubmit = async () => {
     if (!dealId || !senderNumber.trim() || !transactionId.trim()) {
- toast.error('সকল তথ্য প্রদান করুন');
+      toast.error('সকল তথ্য প্রদান করুন');
       return;
     }
     // Block submit if duplicate transaction is detected
@@ -371,6 +371,56 @@ function PaymentDialog({
                 {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
               </p>
             </div>
+
+            {/* QR / Instruction Image — from admin panel */}
+            {selectedMethod.qrImage && (
+              <div className="mx-5 mt-3 flex justify-center">
+                <a
+                  href={cdnUrl(selectedMethod.qrImage) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group relative block rounded-2xl border-2 p-2 bg-white transition-transform hover:scale-[1.02] active:scale-[0.99]"
+                  style={{ borderColor: themeColor + '40' }}
+                  title="বড় করে দেখতে ক্লিক করুন"
+                >
+                  <img
+                    src={cdnUrl(selectedMethod.qrImage) || ''}
+                    alt={`${selectedMethod.name} QR কোড`}
+                    className="h-40 w-40 object-contain"
+                    loading="lazy" decoding="async"
+                    onError={(e) => {
+                      const el = e.target as HTMLImageElement;
+                      el.style.display = 'none';
+                      el.parentElement?.classList.add('hidden');
+                    }}
+                  />
+                  <span
+                    className="absolute inset-x-0 bottom-0 rounded-b-xl bg-black/55 py-0.5 text-center text-[9px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    বড় করে দেখতে ক্লিক করুন
+                  </span>
+                </a>
+              </div>
+            )}
+
+            {/* Payment Instructions — from admin panel */}
+            {selectedMethod.instructions?.trim() && (
+              <div
+                className="mx-5 mt-3 rounded-2xl px-4 py-3.5"
+                style={{
+                  backgroundColor: themeColor + '0d',
+                  border: `1.5px dashed ${themeColor}40`,
+                }}
+              >
+                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: themeColor }}>
+                  <Info className="h-3.5 w-3.5" />
+                  পেমেন্ট করার নিয়ম
+                </p>
+                <p className="text-[13px] leading-relaxed text-foreground whitespace-pre-line">
+                  {selectedMethod.instructions.trim()}
+                </p>
+              </div>
+            )}
 
             {/* Form Fields */}
             <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">

@@ -24,6 +24,8 @@ import {
   ImageIcon,
   Upload,
   Loader2,
+  QrCode,
+  FileText,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -38,6 +40,8 @@ interface PaymentMethod {
   sortOrder: number;
   color: string;
   image: string | null;
+  instructions?: string | null;
+  qrImage?: string | null;
   createdAt: string;
 }
 
@@ -49,6 +53,8 @@ interface FormData {
   sortOrder: number;
   color: string;
   image: string;
+  instructions: string;
+  qrImage: string;
 }
 
 const emptyForm: FormData = {
@@ -59,6 +65,8 @@ const emptyForm: FormData = {
   sortOrder: 0,
   color: '#84CC16',
   image: '',
+  instructions: '',
+  qrImage: '',
 };
 
 /* ─── Known Gateway Defaults ─── */
@@ -167,30 +175,51 @@ export function PaymentMethodsPanel() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pmLogoUploading, setPmLogoUploading] = useState(false);
+  const [pmQrUploading, setPmQrUploading] = useState(false);
 
-  const handlePmLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadAdminImage = async (
+    file: File,
+    inputId: string,
+    setUploading: (v: boolean) => void,
+    oldUrl: string,
+    onUrl: (url: string) => void,
+  ) => {
     if (file.size > 2 * 1024 * 1024) { toast.error('সর্বোচ্চ 2MB'); return; }
-    setPmLogoUploading(true);
+    setUploading(true);
     try {
       const fd = new FormData();
       fd.append('image', file);
-      if (form.image) fd.append('oldImage', form.image);
+      if (oldUrl) fd.append('oldImage', oldUrl);
       const res = await fetch('/api/upload/general-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (res.ok && data.success) {
-        setForm((p) => ({ ...p, image: data.url }));
+        onUrl(data.url);
       } else {
         toast.error(data.error || 'আপলোড ব্যর্থ');
       }
     } catch {
       toast.error('সার্ভারে সমস্যা');
     } finally {
-      setPmLogoUploading(false);
-      const inp = document.getElementById('pm-logo-upload') as HTMLInputElement | null;
+      setUploading(false);
+      const inp = document.getElementById(inputId) as HTMLInputElement | null;
       if (inp) inp.value = '';
     }
+  };
+
+  const handlePmLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAdminImage(file, 'pm-logo-upload', setPmLogoUploading, form.image, (url) =>
+      setForm((p) => ({ ...p, image: url })),
+    );
+  };
+
+  const handlePmQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAdminImage(file, 'pm-qr-upload', setPmQrUploading, form.qrImage, (url) =>
+      setForm((p) => ({ ...p, qrImage: url })),
+    );
   };
 
   const fetchMethods = useCallback(async () => {
@@ -225,6 +254,8 @@ export function PaymentMethodsPanel() {
       sortOrder: m.sortOrder,
       color: m.color || '#84CC16',
       image: m.image || '',
+      instructions: m.instructions || '',
+      qrImage: m.qrImage || '',
     });
     setDialogOpen(true);
   };
@@ -246,6 +277,8 @@ export function PaymentMethodsPanel() {
         body: JSON.stringify({
         ...form,
         image: form.image.trim() || undefined,
+        instructions: form.instructions.trim() || null,
+        qrImage: form.qrImage.trim() || undefined,
       }),
       });
       if (res.ok) {
@@ -715,6 +748,58 @@ export function PaymentMethodsPanel() {
                         onClick={() => setForm({ ...form, image: '' })}
                       >সরান</button>
                     )}
+                  </div>
+
+                  {/* QR / instruction image upload */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <QrCode className="h-3.5 w-3.5" />
+                      {t('admin.payments.qrImage')}
+                    </Label>
+                    <label htmlFor="pm-qr-upload" className="flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors text-sm text-muted-foreground">
+                      {pmQrUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {pmQrUploading ? 'আপলোড হচ্ছে...' : t('admin.payments.qrUploadBtn')}
+                    </label>
+                    <input
+                      id="pm-qr-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={handlePmQrUpload}
+                      disabled={pmQrUploading}
+                    />
+                    <p className="text-xs text-muted-foreground">{t('admin.payments.qrImageHint')}</p>
+                    {form.qrImage && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={cdnUrl(form.qrImage) || ''}
+                          alt="QR"
+                          className="h-16 w-16 rounded-lg border border-border/50 object-contain bg-white p-1"
+                          loading="lazy" decoding="async"
+                        />
+                        <button
+                          type="button"
+                          className="text-xs text-red-500 hover:underline"
+                          onClick={() => setForm({ ...form, qrImage: '' })}
+                        >সরান</button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment instructions text */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5" />
+                      {t('admin.payments.instructions')}
+                    </Label>
+                    <textarea
+                      value={form.instructions}
+                      onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+                      placeholder={t('admin.payments.instructionsPlaceholder')}
+                      rows={4}
+                      className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
+                    />
+                    <p className="text-xs text-muted-foreground">{t('admin.payments.instructionsHint')}</p>
                   </div>
 
                   {/* Live preview of the gateway card */}

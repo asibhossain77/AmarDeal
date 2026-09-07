@@ -8,7 +8,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, accountNumber, accountType, status, sortOrder, color, image } = body
+    const { name, accountNumber, accountType, status, sortOrder, color, image, instructions, qrImage } = body
 
     const method = await db.paymentMethod.update({
       where: { id },
@@ -20,6 +20,8 @@ export async function PUT(
         ...(sortOrder !== undefined && { sortOrder }),
         ...(color !== undefined && { color }),
         ...(image !== undefined && { image: image || null }),
+        ...(instructions !== undefined && { instructions: instructions || null }),
+        ...(qrImage !== undefined && { qrImage: qrImage || null }),
       },
     })
 

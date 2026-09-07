@@ -101,6 +101,8 @@ model PaymentMethod {
   sortOrder     Int      @default(0)
   color         String   @default("#84CC16")
   image         String?
+  instructions  String?
+  qrImage       String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
