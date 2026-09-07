@@ -43,6 +43,8 @@ import {
   Headphones,
   Zap,
   Wallet,
+  Copy,
+  ChevronDown,
   ArrowRight,
   RotateCcw,
   CircleCheckBig,
@@ -126,6 +128,8 @@ function PaymentDialog({
   const [submitError, setSubmitError] = useState('');
   const [txnDuplicate, setTxnDuplicate] = useState<{ title: string; status: string } | null>(null);
   const [txnChecking, setTxnChecking] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showFullInstructions, setShowFullInstructions] = useState(false);
 
   // Real-time duplicate transaction ID check (debounced on change, also on blur)
   useEffect(() => {
@@ -181,14 +185,29 @@ function PaymentDialog({
   // Handle method selection → go to pay step
   const handleMethodSelect = (methodId: string) => {
     setSelectedMethodId(methodId);
+    setShowFullInstructions(false);
+    setCopied(false);
     // Small delay for visual feedback, then advance
     setTimeout(() => setStep('pay'), 200);
   };
 
   const selectedMethod = paymentMethods.find((m) => m.id === selectedMethodId);
-  const themeColor = selectedMethod?.color || 'var(--primary)';
+  // Fallback must be a real hex so the alpha-suffix tints (${color}14 etc.) stay valid
+  const themeColor = selectedMethod?.color || '#6366f1';
   const total = (parseFloat(amount) || 0) + (fee || 0);
   const numAmount = parseFloat(amount) || 0;
+
+  const copyAccountNumber = async () => {
+    if (!selectedMethod) return;
+    try {
+      await navigator.clipboard.writeText(selectedMethod.accountNumber);
+      setCopied(true);
+      toast.success('নম্বর কপি হয়েছে!');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('কপি করা যায়নি — ম্যানুয়ালি সিলেক্ট করুন');
+    }
+  };
 
   const handleSubmit = async () => {
     if (!dealId || !senderNumber.trim() || !transactionId.trim()) {
@@ -233,7 +252,12 @@ function PaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md gap-0 p-0 overflow-hidden">
+      <DialogContent
+        className="grid grid-rows-[minmax(0,1fr)] gap-0 p-0 overflow-hidden w-full max-w-md max-h-[92dvh] shadow-2xl
+          top-auto bottom-0 left-0 right-0 translate-x-0 translate-y-0 rounded-t-3xl rounded-b-none border-0 duration-300
+          sm:top-[50%] sm:bottom-auto sm:left-[50%] sm:right-auto sm:translate-x-[-50%] sm:translate-y-[-50%]
+          sm:rounded-3xl sm:border sm:max-h-[86vh] sm:max-w-md"
+      >
         <AnimatePresence mode="wait">
         {/* ──────── STEP 1: Payment Method Selection ──────── */}
         {step === 'select' && (
@@ -243,28 +267,37 @@ function PaymentDialog({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
+            className="flex min-h-0 flex-col"
           >
-            {/* Header */}
-            <div className="px-6 pt-6 pb-3">
+            {/* Header — compact, themed */}
+            <div className="relative shrink-0 px-5 pb-4 pt-5" style={{ background: `linear-gradient(160deg, ${themeColor}14 0%, transparent 65%)` }}>
+              <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-muted-foreground/25 sm:hidden" />
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
-                    <Wallet className="h-5 w-5 text-primary" />
+                <DialogTitle className="flex items-center gap-3 text-base font-bold sm:text-lg">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm" style={{ backgroundColor: themeColor + '1f' }}>
+                    <Wallet className="h-5 w-5" style={{ color: themeColor }} />
                   </div>
-                  পেমেন্ট মাধ্যম নির্বাচন করুন
+                  <span className="min-w-0">
+                    <span className="block truncate">পেমেন্ট মাধ্যম নির্বাচন করুন</span>
+                    <DialogDescription className="mt-0.5 text-[11px] font-normal text-muted-foreground">
+                      আপনার পছন্দের মাধ্যমে পেমেন্ট করুন
+                    </DialogDescription>
+                  </span>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground mt-1">
-                  আপনার পছন্দের মাধ্যমে পেমেন্ট করুন
-                </DialogDescription>
               </DialogHeader>
             </div>
 
-            {/* Method List */}
-            <div className="px-5 pb-6">
+            {/* Method List — scrollable */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-5 pt-1">
               {paymentMethods.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-8 text-center">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
+                <div className="flex flex-col items-center justify-center gap-2.5 py-10 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+                    <Wallet className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">কোনো পেমেন্ট মাধ্যম পাওয়া যায়নি</p>
+                </div>
               ) : (
-                <div className="grid gap-3 mt-2">
+                <div className="grid gap-2.5">
                   {paymentMethods.map((m) => {
                     const mc = m.color || '#6b7280';
                     return (
@@ -272,36 +305,33 @@ function PaymentDialog({
                         key={m.id}
                         type="button"
                         onClick={() => handleMethodSelect(m.id)}
-                        className="group relative flex items-center gap-4 rounded-2xl border border-border/50 p-4 text-left transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] hover:shadow-lg"
+                        className="group relative flex items-center gap-3.5 rounded-2xl border p-3.5 text-left transition-all duration-200 active:scale-[0.98]"
                         style={{
-                          borderColor: 'transparent',
-                          background: `linear-gradient(135deg, ${mc}12 0%, ${mc}06 100%)`,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = mc + '50';
-                          e.currentTarget.style.boxShadow = `0 8px 25px ${mc}18`;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'transparent';
-                          e.currentTarget.style.boxShadow = 'none';
+                          borderColor: mc + '2b',
+                          background: `linear-gradient(135deg, ${mc}12 0%, ${mc}05 100%)`,
                         }}
                       >
-                        <div
-                          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm"
-                          style={{ backgroundColor: mc + '20' }}
-                        >
-                          <Wallet className="h-5.5 w-5.5" style={{ color: mc }} />
+                        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-sm" style={{ backgroundColor: mc + '1f' }}>
+                          <Wallet className="h-5 w-5" style={{ color: mc }} />
+                          {m.image && (
+                            <img
+                              src={cdnUrl(m.image) || ''}
+                              alt=""
+                              loading="lazy" decoding="async"
+                              className="absolute inset-0 h-full w-full rounded-xl object-contain p-1.5"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[15px] font-bold text-foreground">{m.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[15px] font-bold text-foreground">{m.name}</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
                             {m.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
                           </p>
                         </div>
-                        <ArrowRight
-                          className="h-4.5 w-4.5 text-muted-foreground/50 transition-transform group-hover:translate-x-1"
-                          style={{ color: mc + '80' }}
-                        />
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:translate-x-0.5" style={{ backgroundColor: mc + '1a' }}>
+                          <ArrowRight className="h-3.5 w-3.5" style={{ color: mc }} />
+                        </div>
                       </button>
                     );
                   })}
@@ -319,126 +349,140 @@ function PaymentDialog({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2 }}
+            className="flex min-h-0 flex-col"
           >
-            {/* Themed Header */}
-            <div
-              className="px-6 pt-6 pb-4"
-              style={{
-                background: `linear-gradient(135deg, ${themeColor}15 0%, ${themeColor}05 100%)`,
-              }}
-            >
+            {/* Sticky themed header */}
+            <div className="relative shrink-0 px-4 pb-3.5 pt-4" style={{ background: `linear-gradient(160deg, ${themeColor}16 0%, transparent 70%)` }}>
+              <div className="mx-auto mb-2.5 h-1 w-10 rounded-full bg-muted-foreground/25 sm:hidden" />
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2.5 text-lg font-bold">
+                <DialogTitle className="flex items-center gap-2.5 text-base font-bold sm:text-lg">
                   <button
                     type="button"
                     onClick={() => setStep('select')}
-                    className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                    aria-label="মাধ্যম পরিবর্তন করুন"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-black/5 transition-colors hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/15"
                   >
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+                    <ArrowLeft className="h-4 w-4 text-foreground/70" />
                   </button>
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-xl"
-                    style={{ backgroundColor: themeColor + '20' }}
-                  >
-                    <Wallet className="h-4.5 w-4.5" style={{ color: themeColor }} />
+                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-sm" style={{ backgroundColor: themeColor + '20' }}>
+                    <Wallet className="h-4 w-4" style={{ color: themeColor }} />
+                    {selectedMethod.image && (
+                      <img
+                        src={cdnUrl(selectedMethod.image) || ''}
+                        alt=""
+                        loading="lazy" decoding="async"
+                        className="absolute inset-0 h-full w-full rounded-xl object-contain p-1"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    )}
                   </div>
-                  {selectedMethod.name}
+                  <span className="min-w-0 flex-1 truncate pr-6">{selectedMethod.name}</span>
                 </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
+                <DialogDescription className="sr-only">
                   নিচের নম্বরে টাকা পাঠান এবং তথ্য দিন
                 </DialogDescription>
               </DialogHeader>
             </div>
 
-            {/* Account Number — Prominent Display */}
-            <div
-              className="mx-5 mt-4 rounded-2xl px-5 py-4"
-              style={{
-                backgroundColor: themeColor + '0d',
-                border: `1.5px solid ${themeColor}30`,
-              }}
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: themeColor + 'aa' }}>
-                {selectedMethod.name} এ পাঠান
-              </p>
-              <p
-                className="text-2xl font-extrabold font-mono tracking-[0.15em] select-all leading-tight"
-                style={{ color: themeColor }}
-              >
-                {selectedMethod.accountNumber}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1.5">
-                {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
-              </p>
-            </div>
-
-            {/* QR / Instruction Image — from admin panel */}
-            {selectedMethod.qrImage && (
-              <div className="mx-5 mt-3 flex justify-center">
-                <a
-                  href={cdnUrl(selectedMethod.qrImage) || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative block rounded-2xl border-2 p-2 bg-white transition-transform hover:scale-[1.02] active:scale-[0.99]"
-                  style={{ borderColor: themeColor + '40' }}
-                  title="বড় করে দেখতে ক্লিক করুন"
-                >
-                  <img
-                    src={cdnUrl(selectedMethod.qrImage) || ''}
-                    alt={`${selectedMethod.name} QR কোড`}
-                    className="h-40 w-40 object-contain"
-                    loading="lazy" decoding="async"
-                    onError={(e) => {
-                      const el = e.target as HTMLImageElement;
-                      el.style.display = 'none';
-                      el.parentElement?.classList.add('hidden');
-                    }}
-                  />
-                  <span
-                    className="absolute inset-x-0 bottom-0 rounded-b-xl bg-black/55 py-0.5 text-center text-[9px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+            {/* Scrollable middle — header & footer always stay visible */}
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 pb-4 pt-1">
+              {/* Account Number — prominent + one-tap copy */}
+              <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: themeColor + '0d', border: `1.5px solid ${themeColor}2b` }}>
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: themeColor, opacity: 0.75 }}>
+                    {selectedMethod.name} এ পাঠান
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {selectedMethod.accountType === 'merchant' ? 'মার্চেন্ট' : 'পার্সোনাল'} নম্বর
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <p
+                    className="min-w-0 flex-1 select-all truncate font-mono text-xl font-extrabold leading-tight tracking-[0.08em] sm:text-2xl"
+                    style={{ color: themeColor }}
                   >
-                    বড় করে দেখতে ক্লিক করুন
-                  </span>
-                </a>
+                    {selectedMethod.accountNumber}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyAccountNumber}
+                    className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-bold transition-all active:scale-95"
+                    style={{ backgroundColor: themeColor + '1a', color: themeColor }}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? 'কপি হয়েছে' : 'কপি'}
+                  </button>
+                </div>
               </div>
-            )}
 
-            {/* Payment Instructions — from admin panel */}
-            {selectedMethod.instructions?.trim() && (
-              <div
-                className="mx-5 mt-3 rounded-2xl px-4 py-3.5"
-                style={{
-                  backgroundColor: themeColor + '0d',
-                  border: `1.5px dashed ${themeColor}40`,
-                }}
-              >
-                <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-1.5" style={{ color: themeColor }}>
-                  <Info className="h-3.5 w-3.5" />
-                  পেমেন্ট করার নিয়ম
-                </p>
-                <p className="text-[13px] leading-relaxed text-foreground whitespace-pre-line">
-                  {selectedMethod.instructions.trim()}
-                </p>
-              </div>
-            )}
+              {/* QR / Instruction Image — compact row with explainer */}
+              {selectedMethod.qrImage && (
+                <div className="flex items-center gap-3.5 rounded-2xl p-2.5" style={{ backgroundColor: themeColor + '08', border: `1.5px solid ${themeColor}20` }}>
+                  <a
+                    href={cdnUrl(selectedMethod.qrImage) || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative shrink-0 rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-black/5 transition-transform active:scale-[0.97]"
+                    title="বড় করে দেখতে ক্লিক করুন"
+                  >
+                    <img
+                      src={cdnUrl(selectedMethod.qrImage) || ''}
+                      alt={`${selectedMethod.name} QR কোড`}
+                      className="h-24 w-24 object-contain"
+                      loading="lazy" decoding="async"
+                      onError={(e) => {
+                        const el = e.target as HTMLImageElement;
+                        el.style.display = 'none';
+                        el.parentElement?.classList.add('hidden');
+                      }}
+                    />
+                  </a>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12.5px] font-bold text-foreground">QR স্ক্যান করুন</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      ক্যামেরা দিয়ে QR স্ক্যান করে সরাসরি টাকা পাঠান। বড় করে দেখতে QR-এ ক্লিক করুন।
+                    </p>
+                  </div>
+                </div>
+              )}
 
-            {/* Form Fields */}
-            <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">
+              {/* Payment Instructions — from admin panel (collapsible to save space) */}
+              {selectedMethod.instructions?.trim() && (
+                <div className="rounded-2xl px-3.5 py-3" style={{ backgroundColor: themeColor + '0d', border: `1.5px dashed ${themeColor}40` }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullInstructions((v) => !v)}
+                    className="flex w-full items-center justify-between gap-2"
+                  >
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: themeColor }}>
+                      <Info className="h-3.5 w-3.5" />
+                      পেমেন্ট করার নিয়ম
+                    </span>
+                    {selectedMethod.instructions.trim().length > 90 && (
+                      <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${showFullInstructions ? 'rotate-180' : ''}`} />
+                    )}
+                  </button>
+                  <p className={`mt-1.5 whitespace-pre-line text-[12.5px] leading-relaxed text-foreground ${!showFullInstructions && selectedMethod.instructions.trim().length > 90 ? 'line-clamp-3' : ''}`}>
+                    {selectedMethod.instructions.trim()}
+                  </p>
+                </div>
+              )}
+
               {/* Fixed Amount + Fee + Total Summary */}
               {numAmount > 0 && (
-                <div className="rounded-xl border overflow-hidden" style={{ borderColor: themeColor + '20', backgroundColor: themeColor + '08' }}>
+                <div className="overflow-hidden rounded-2xl border" style={{ borderColor: themeColor + '20', backgroundColor: themeColor + '08' }}>
                   <div className="flex items-center justify-between px-4 py-2.5">
                     <span className="text-xs text-muted-foreground">ডিল পরিমাণ</span>
                     <span className="text-sm font-semibold text-foreground">৳{Math.round(numAmount).toLocaleString('en')}</span>
                   </div>
                   {fee !== null && fee > 0 && (
-                    <div className="border-t flex items-center justify-between px-4 py-2.5" style={{ borderColor: themeColor + '15' }}>
+                    <div className="flex items-center justify-between border-t px-4 py-2.5" style={{ borderColor: themeColor + '15' }}>
                       <span className="text-xs text-muted-foreground">প্ল্যাটফর্ম ফি</span>
                       <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">+ ৳{Math.round(fee).toLocaleString('en')}</span>
                     </div>
                   )}
                   <div
-                    className="border-t flex items-center justify-between px-4 py-3"
+                    className="flex items-center justify-between border-t px-4 py-3"
                     style={{ borderColor: themeColor + '30', backgroundColor: themeColor + '10' }}
                   >
                     <span className="text-sm font-bold text-foreground">মোট প্রদান</span>
@@ -454,6 +498,7 @@ function PaymentDialog({
                 <Label className="text-xs font-semibold text-foreground">আপনার {selectedMethod.name} নম্বর</Label>
                 <Input
                   placeholder="01XXXXXXXXX"
+                  inputMode="tel"
                   value={senderNumber}
                   onChange={(e) => setSenderNumber(e.target.value)}
                   className="h-11 rounded-xl"
@@ -465,7 +510,7 @@ function PaymentDialog({
                 <Label className="text-xs font-semibold text-foreground">ট্রানজেকশন আইডি / রেফারেন্স</Label>
                 <div className="relative">
                   <Input
-                    placeholder="Transaction ID"
+                    placeholder="যেমন: 9HVX7B2KQZ"
                     value={transactionId}
                     onChange={(e) => { setTransactionId(e.target.value); setSubmitError(''); }}
                     className={`h-11 rounded-xl pr-9 ${txnDuplicate ? 'border-red-500 focus-visible:ring-red-500/30' : ''}`}
@@ -490,41 +535,52 @@ function PaymentDialog({
               </div>
             </div>
 
-            {/* Inline Error Message */}
+            {/* Inline Error — always visible right above the footer */}
             {submitError && (
               <motion.div
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mx-5 mt-3 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3.5 py-2.5"
+                className="mx-4 shrink-0 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 px-3.5 py-2.5"
               >
-                <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] font-medium text-red-700 dark:text-red-400">{submitError}</p>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
+                  <p className="text-[11px] font-medium text-red-700 dark:text-red-400">{submitError}</p>
+                </div>
               </motion.div>
             )}
 
-            {/* Footer */}
-            <div className="border-t border-border/50 px-6 py-4 flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1 h-11 rounded-xl"
-                onClick={() => setStep('select')}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1.5" />
-                পরিবর্তন
-              </Button>
-              <Button
-                className="flex-1 h-11 rounded-xl font-semibold gap-2"
-                style={{ backgroundColor: themeColor, borderColor: themeColor }}
-                onClick={handleSubmit}
-                disabled={submitting || !senderNumber.trim() || !transactionId.trim() || !!txnDuplicate}
-              >
-                {submitting ? (
-                  <LoadingAnimation size="sm" />
-                ) : (
-                  <ArrowRight className="h-4 w-4" />
-                )}
-                {submitting ? 'জমা হচ্ছে...' : 'পেমেন্ট জমা দিন'}
-              </Button>
+            {/* Sticky Footer — always on screen */}
+            <div className="shrink-0 border-t border-border/50 bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <div className="flex items-center gap-2.5">
+                <Button
+                  variant="outline"
+                  className="h-11 shrink-0 rounded-xl px-4"
+                  onClick={() => setStep('select')}
+                  aria-label="মাধ্যম পরিবর্তন করুন"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">পরিবর্তন</span>
+                </Button>
+                <Button
+                  className="h-11 min-w-0 flex-1 gap-2 rounded-xl text-[15px] font-bold"
+                  style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                  onClick={handleSubmit}
+                  disabled={submitting || !senderNumber.trim() || !transactionId.trim() || !!txnDuplicate}
+                >
+                  {submitting ? (
+                    <LoadingAnimation size="sm" />
+                  ) : (
+                    <SendHorizonal className="h-4 w-4 shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {submitting
+                      ? 'জমা হচ্ছে...'
+                      : total > 0
+                        ? `পেমেন্ট জমা দিন • ৳${Math.round(total).toLocaleString('en')}`
+                        : 'পেমেন্ট জমা দিন'}
+                  </span>
+                </Button>
+              </div>
             </div>
           </motion.div>
         )}
