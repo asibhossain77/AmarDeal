@@ -9,11 +9,18 @@ export async function POST(req: NextRequest) {
     const userId = guard.userId
 
     const body = await req.json()
-    const { businessName, email, phone, whatsappNumber } = body
+    const { whatsappNumber } = body
 
-    if (!businessName || !email || !phone || !whatsappNumber) {
+    const wa = typeof whatsappNumber === 'string' ? whatsappNumber.trim() : ''
+    if (!wa) {
       return NextResponse.json(
-        { error: '\u09B8\u09AC \u09AB\u09BF\u09B2\u09CD\u09A1 \u09AA\u09C2\u09B0\u09A3 \u0995\u09B0\u09C1\u09A8' },
+        { error: 'WhatsApp নম্বর দিন' },
+        { status: 400 }
+      )
+    }
+    if (!/^[+]?[0-9\s-]{6,20}$/.test(wa)) {
+      return NextResponse.json(
+        { error: 'সঠিক WhatsApp নম্বর দিন' },
         { status: 400 }
       )
     }
@@ -44,7 +51,14 @@ export async function POST(req: NextRequest) {
     }
 
     await db.sellerApplication.create({
-      data: { userId, businessName, email, phone, whatsappNumber, status: 'pending' },
+      data: {
+        userId,
+        businessName: '',
+        email: user.email || '',
+        phone: user.phone || '',
+        whatsappNumber: wa,
+        status: 'pending',
+      },
     })
 
     return NextResponse.json({ success: true })

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw,
+  UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw, MessageCircle, CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -90,6 +90,31 @@ export function SellerAppsTab() {
 
   const pendingCount = apps.filter((a) => a.status === 'pending').length;
 
+  function waLink(number: string | null): string | null {
+    if (!number) return null;
+    const digits = number.replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('880') && digits.length >= 12) return `https://wa.me/${digits}`;
+    if (digits.startsWith('01') && digits.length === 11) return `https://wa.me/88${digits}`;
+    return null;
+  }
+
+  function WhatsAppCell({ number }: { number: string | null }) {
+    const link = waLink(number);
+    if (!number) return <span className="text-muted-foreground">-</span>;
+    return (
+      <a
+        href={link || `https://wa.me/${number.replace(/[^0-9]/g, '')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-[#25D366] transition-colors"
+      >
+        <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
+        {number}
+      </a>
+    );
+  }
+
   function AppStatusBadge({ status }: { status: string }) {
     if (status === 'pending') return (
       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1">
@@ -161,10 +186,8 @@ export function SellerAppsTab() {
                 <thead>
                   <tr className="border-b border-border/50 bg-muted/30">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.applicant')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.businessName')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.contactEmail')}</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.contactPhone')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.whatsappNumber')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.appliedAt')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.status')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.actions')}</th>
                   </tr>
@@ -181,10 +204,8 @@ export function SellerAppsTab() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-medium text-foreground">{app.businessName}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{app.email}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{app.phone}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{app.whatsappNumber || '-'}</td>
+                      <td className="px-4 py-3"><WhatsAppCell number={app.whatsappNumber || app.user.whatsappNumber} /></td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString('bn-BD')}</td>
                       <td className="px-4 py-3 text-center"><AppStatusBadge status={app.status} /></td>
                       <td className="px-4 py-3 text-center">
                         {app.status === 'pending' ? (
@@ -255,26 +276,19 @@ export function SellerAppsTab() {
                   </div>
                   <AppStatusBadge status={app.status} />
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">{t('admin.sellerApps.businessName')}</span>
-                    <p className="font-medium text-foreground mt-0.5">{app.businessName}</p>
+                <div className="flex items-center justify-between gap-3 rounded-xl bg-[#25D366]/5 border border-[#25D366]/15 px-3 py-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
+                      <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-muted-foreground">{t('admin.sellerApps.whatsappNumber')}</p>
+                      <WhatsAppCell number={app.whatsappNumber || app.user.whatsappNumber} />
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">{t('admin.sellerApps.contactPhone')}</span>
-                    <p className="font-medium text-foreground mt-0.5">{app.phone}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t('admin.sellerApps.whatsappNumber')}</span>
-                    <p className="font-medium text-foreground mt-0.5">{app.whatsappNumber || '-'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t('admin.sellerApps.contactEmail')}</span>
-                    <p className="font-medium text-foreground mt-0.5">{app.email}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t('admin.sellerApps.appliedAt')}</span>
-                    <p className="font-medium text-foreground mt-0.5">{new Date(app.createdAt).toLocaleDateString('bn-BD')}</p>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {new Date(app.createdAt).toLocaleDateString('bn-BD')}
                   </div>
                 </div>
                 {app.status === 'rejected' && app.rejectionReason && (

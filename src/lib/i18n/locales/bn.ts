@@ -235,6 +235,7 @@ export const bn = {
   'seller.phonePh': '০১XXXXXXXXX',
   'seller.whatsappNumber': 'WhatsApp নম্বর',
   'seller.whatsappNumberPh': '০১XXXXXXXXX',
+  'seller.whatsappHelp': 'অ্যাডমিন আপনার সাথে এই নম্বরে WhatsApp-এ যোগাযোগ করবে। তাই সঠিক ও চালু নম্বরটি দিন।',
   'seller.submit': 'আবেদন জমা দিন',
   'seller.submitting': 'জমা দেওয়া হচ্ছে...',
   'seller.pending': 'আবেদন পর্যালোচনাধীন',

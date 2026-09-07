@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, Clock, XCircle, Loader2, Ban, Check } from 'lucide-react';
+import { Sparkles, Store, Clock, XCircle, Loader2, Ban, Check, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -54,9 +54,6 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [businessName, setBusinessName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -73,13 +70,35 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!businessName.trim()) newErrors.businessName = t('seller.requiredField');
-    if (!email.trim()) newErrors.email = t('seller.requiredField');
-    if (!phone.trim()) newErrors.phone = t('seller.requiredField');
     if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
     if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/user/become-seller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsappNumber: whatsappNumber.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('dashboard.becomeSellerSuccess'));
+        setApplication({ id: '', status: 'pending', rejectionReason: null });
+        setOpen(false);
+        onClose?.();
+      } else {
+        toast.error(data.error || t('dashboard.becomeSellerError'));
+      }
+    } catch {
+      toast.error(t('dashboard.becomeSellerError'));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const TermsCheckbox = () => (
@@ -102,30 +121,40 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     </div>
   );
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/user/become-seller', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName: businessName.trim(), email: email.trim(), phone: phone.trim(), whatsappNumber: whatsappNumber.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success(t('dashboard.becomeSellerSuccess'));
-        setApplication({ id: '', status: 'pending', rejectionReason: null });
-        setOpen(false);
-        onClose?.();
-      } else {
-        toast.error(data.error || t('dashboard.becomeSellerError'));
-      }
-    } catch {
-      toast.error(t('dashboard.becomeSellerError'));
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const WhatsAppField = () => (
+    <div className="space-y-2">
+      <Label htmlFor="seller-wa-number" className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
+      <div className="relative">
+        <MessageCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#25D366]" />
+        <Input
+          id="seller-wa-number"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder={t('seller.whatsappNumberPh')}
+          value={whatsappNumber}
+          onChange={(e) => {
+            setWhatsappNumber(e.target.value);
+            if (errors.whatsappNumber) setErrors(prev => { const n = {...prev}; delete n.whatsappNumber; return n; });
+          }}
+          className="pl-10"
+        />
+      </div>
+      {errors.whatsappNumber && <p className="text-xs text-destructive">{errors.whatsappNumber}</p>}
+      <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.whatsappHelp')}</p>
+    </div>
+  );
+
+  const SubmitButton = () => (
+    <Button
+      onClick={handleSubmit}
+      disabled={submitting}
+      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2 shadow-md shadow-amber-500/20"
+    >
+      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+      {submitting ? t('seller.submitting') : t('seller.submit')}
+    </Button>
+  );
 
   if (loading) return null;
 
@@ -161,54 +190,10 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
               {t('seller.accountDisabledDesc')}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-2 rounded-xl bg-orange-500/5 border border-orange-500/10 p-4">
-            <p className="text-xs text-muted-foreground mb-3">{t('seller.applyDesc')}</p>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.businessName')}</Label>
-                <Input
-                  placeholder={t('seller.businessNamePh')}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.email')}</Label>
-                <Input
-                  type="email"
-                  placeholder={t('seller.emailPh')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.phone')}</Label>
-                <Input
-                  placeholder={t('seller.phonePh')}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
-                <Input
-                  placeholder={t('seller.whatsappNumberPh')}
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                />
-              </div>
-              <TermsCheckbox />
-            </div>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {submitting ? t('seller.submitting') : t('seller.submit')}
-            </Button>
+          <div className="space-y-4 mt-2">
+            <WhatsAppField />
+            <TermsCheckbox />
+            <SubmitButton />
           </div>
         </DialogContent>
       </Dialog>
@@ -238,54 +223,10 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
               {t('seller.rejectedDesc')} {application.rejectionReason || 'N/A'}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-2 rounded-xl bg-red-500/5 border border-red-500/10 p-4">
-            <p className="text-xs text-muted-foreground mb-3">{t('seller.applyDesc')}</p>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.businessName')}</Label>
-                <Input
-                  placeholder={t('seller.businessNamePh')}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.email')}</Label>
-                <Input
-                  type="email"
-                  placeholder={t('seller.emailPh')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.phone')}</Label>
-                <Input
-                  placeholder={t('seller.phonePh')}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
-                <Input
-                  placeholder={t('seller.whatsappNumberPh')}
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                />
-              </div>
-              <TermsCheckbox />
-            </div>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {submitting ? t('seller.submitting') : t('seller.submit')}
-            </Button>
+          <div className="space-y-4 mt-2">
+            <WhatsAppField />
+            <TermsCheckbox />
+            <SubmitButton />
           </div>
         </DialogContent>
       </Dialog>
@@ -313,54 +254,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
           <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.businessName')}</Label>
-            <Input
-              placeholder={t('seller.businessNamePh')}
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-            />
-            {errors.businessName && <p className="text-xs text-destructive">{errors.businessName}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.email')}</Label>
-            <Input
-              type="email"
-              placeholder={t('seller.emailPh')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.phone')}</Label>
-            <Input
-              placeholder={t('seller.phonePh')}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
-            <Input
-              placeholder={t('seller.whatsappNumberPh')}
-              value={whatsappNumber}
-              onChange={(e) => setWhatsappNumber(e.target.value)}
-            />
-            {errors.whatsappNumber && <p className="text-xs text-destructive">{errors.whatsappNumber}</p>}
-          </div>
+          <WhatsAppField />
           <TermsCheckbox />
-        </div>
-        <div className="flex justify-end mt-4">
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2"
-          >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {submitting ? t('seller.submitting') : t('seller.submit')}
-          </Button>
+          <SubmitButton />
         </div>
       </DialogContent>
     </Dialog>

@@ -237,6 +237,7 @@ export const en: Record<TranslationKey, string> = {
   'seller.phonePh': '01XXXXXXXXX',
   'seller.whatsappNumber': 'WhatsApp Number',
   'seller.whatsappNumberPh': '01XXXXXXXXX',
+  'seller.whatsappHelp': 'The admin will contact you on WhatsApp at this number. Please provide a valid, active number.',
   'seller.submit': 'Submit Application',
   'seller.submitting': 'Submitting...',
   'seller.pending': 'Application Under Review',
