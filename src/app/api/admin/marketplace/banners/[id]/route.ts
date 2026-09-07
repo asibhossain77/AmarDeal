@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
+import { deleteFromR2 } from '@/lib/r2';
 
 // PATCH - admin only, update a banner by ID
 export async function PATCH(
@@ -26,7 +27,14 @@ export async function PATCH(
     const data: Record<string, unknown> = {};
     if (title !== undefined) data.title = title.trim();
     if (subtitle !== undefined) data.subtitle = subtitle.trim() || null;
-    if (image !== undefined) data.image = image.trim();
+    if (image !== undefined) {
+      const newImage = image.trim();
+      data.image = newImage;
+      // If the image is being replaced/removed, delete the old file from R2
+      if (existing.image && existing.image !== newImage) {
+        await deleteFromR2(existing.image).catch(() => {});
+      }
+    }
     if (link !== undefined) data.link = link.trim() || null;
     if (isActive !== undefined) data.isActive = !!isActive;
     if (sortOrder !== undefined) data.sortOrder = typeof sortOrder === 'number' ? sortOrder : 0;
@@ -58,6 +66,11 @@ export async function DELETE(
     const existing = await db.marketplaceBanner.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'ব্যানার পাওয়া যায়নি' }, { status: 404 });
+    }
+
+    // Remove the banner image from R2 as well
+    if (existing.image) {
+      await deleteFromR2(existing.image).catch(() => {});
     }
 
     await db.marketplaceBanner.delete({ where: { id } });

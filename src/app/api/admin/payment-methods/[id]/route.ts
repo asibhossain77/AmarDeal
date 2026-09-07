@@ -1,14 +1,24 @@
 import { db } from '@/lib/db'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/admin-guard'
+import { deleteFromR2 } from '@/lib/r2'
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireAdmin(request)
+    if (!guard.ok) return guard.response
+
     const { id } = await params
     const body = await request.json()
     const { name, accountNumber, accountType, status, sortOrder, color, image, instructions, qrImage } = body
+
+    const existing = await db.paymentMethod.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Payment method not found' }, { status: 404 })
+    }
 
     const method = await db.paymentMethod.update({
       where: { id },
@@ -25,6 +35,14 @@ export async function PUT(
       },
     })
 
+    // Replace/remove: delete the old files from R2 (only when actually changed)
+    if (image !== undefined && existing.image && existing.image !== (image || null)) {
+      await deleteFromR2(existing.image).catch(() => {})
+    }
+    if (qrImage !== undefined && existing.qrImage && existing.qrImage !== (qrImage || null)) {
+      await deleteFromR2(existing.qrImage).catch(() => {})
+    }
+
     return NextResponse.json(method)
   } catch (err) {
     console.error('PaymentMethod UPDATE error:', err)
@@ -33,11 +51,23 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireAdmin(request)
+    if (!guard.ok) return guard.response
+
     const { id } = await params
+    const existing = await db.paymentMethod.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Payment method not found' }, { status: 404 })
+    }
+
+    // Remove logo + QR image from R2 before deleting the record
+    if (existing.image) await deleteFromR2(existing.image).catch(() => {})
+    if (existing.qrImage) await deleteFromR2(existing.qrImage).catch(() => {})
+
     await db.paymentMethod.delete({ where: { id } })
     return NextResponse.json({ success: true })
   } catch {

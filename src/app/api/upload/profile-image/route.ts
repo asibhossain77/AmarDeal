@@ -24,12 +24,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ছবি প্রদান করুন' }, { status: 400 })
     }
 
-    // Delete old image if re-uploading
+    const result = await uploadToR2(file, 'profiles')
+
+    // Old file is removed only after the new upload succeeded
     if (oldImage) {
       await deleteFromR2(oldImage).catch(() => {})
     }
-
-    const result = await uploadToR2(file, 'profiles')
 
     return NextResponse.json({
       success: true,

@@ -24,12 +24,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'ছবি ফাইল দিন' }, { status: 400 })
     }
 
-    // Delete old banner image from R2 if replacing
+    const result = await uploadToR2(file, 'banners')
+
+    // Old banner image is removed only after the new upload succeeded
     if (oldImage) {
       await deleteFromR2(oldImage).catch(() => {})
     }
-
-    const result = await uploadToR2(file, 'banners')
 
     return NextResponse.json({ success: true, url: result.url })
   } catch (err: unknown) {

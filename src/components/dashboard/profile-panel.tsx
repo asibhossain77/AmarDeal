@@ -52,11 +52,24 @@ export function ProfilePanel() {
     try {
       const fd = new FormData();
       fd.append('image', file);
+      // Send the current image so the server deletes the old file from R2
+      if (user?.imageLink) fd.append('oldImage', user.imageLink);
       const res = await fetch('/api/upload/profile-image', { method: 'POST', body: fd });
       const data = await res.json();
       if (res.ok && data.success) {
-        if (user) setUser({ ...user, imageLink: data.url });
-        toast.success('প্রোফাইল ছবি আপডেট হয়েছে!');
+        // Persist the new URL to the DB, otherwise the image is lost on refresh
+        const saveRes = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_image_link', imageLink: data.url }),
+        });
+        const saveData = await saveRes.json().catch(() => ({}));
+        if (saveRes.ok && saveData.success) {
+          if (user) setUser({ ...user, imageLink: data.url });
+          toast.success('প্রোফাইল ছবি আপডেট হয়েছে!');
+        } else {
+          toast.error(saveData.error || 'ছবি সেভ করা যায়নি — আবার চেষ্টা করুন');
+        }
       } else {
         toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
       }

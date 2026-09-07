@@ -79,7 +79,7 @@ export async function PATCH(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true },
+      select: { sellerId: true, image: true },
     })
 
     if (!existing) {
@@ -143,7 +143,13 @@ export async function PATCH(
     }
 
     if (image !== undefined) {
-      data.image = image || null
+      const newImage = image || null
+      data.image = newImage
+      // If the image is being replaced/removed, delete the old file from R2
+      if (existing.image && existing.image !== newImage) {
+        const { deleteFromR2 } = await import('@/lib/r2')
+        await deleteFromR2(existing.image).catch(() => {})
+      }
     }
 
     if (status !== undefined) {

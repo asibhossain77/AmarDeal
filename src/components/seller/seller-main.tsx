@@ -378,7 +378,7 @@ export function AddProductPanel() {
               {imgDimensions && (
                 <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
               )}
-              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+              <button type="button" onClick={() => { if (image) { fetch('/api/upload/product-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: image }) }).catch(() => {}); } setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
             </div>
           ) : (
             <div
