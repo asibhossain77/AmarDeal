@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // The code is returned ONLY here (shown once in the code box).
-    // It is never exposed again through user-facing GETs — the admin sends it via WhatsApp.
-    return NextResponse.json({ success: true, verificationCode })
+    // SECURITY: the code is NEVER returned to the user and never appears in any
+    // user-facing response. Only the admin can see it in the Admin Panel and
+    // sends it to the user's WhatsApp number manually.
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Become seller error:', err)
     return NextResponse.json(

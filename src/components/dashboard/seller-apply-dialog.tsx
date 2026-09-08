@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, Copy, ShieldCheck, KeyRound, ChevronRight } from 'lucide-react';
+import { Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, ShieldCheck, KeyRound, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -98,11 +98,22 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
-  const [codeCopied, setCodeCopied] = useState(false);
+  // True right after a fresh submit: shows "request submitted, wait for the code"
+  // instead of "enter the code you received". The code itself is NEVER shown to
+  // the user — only the admin sees it and sends it to the user's WhatsApp.
+  const [justSubmitted, setJustSubmitted] = useState(false);
   const [codeInput, setCodeInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (!v) {
+      setJustSubmitted(false);
+      setCodeInput('');
+      setCodeError(null);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/user/become-seller')
@@ -138,9 +149,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(t('dashboard.becomeSellerSuccess'));
-        setSubmittedCode(typeof data.verificationCode === 'string' ? data.verificationCode : null);
+        setJustSubmitted(true);
         setApplication({ id: '', status: 'pending', rejectionReason: null });
-        // keep dialog open — the verification code box is shown inside
+        // keep dialog open — the "wait for WhatsApp code + verify" view is shown inside
       } else {
         toast.error(data.error || t('dashboard.becomeSellerError'));
       }
@@ -232,22 +243,6 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     </Button>
   );
 
-  const handleCopyCode = async () => {
-    if (!submittedCode) return;
-    try {
-      await navigator.clipboard.writeText(submittedCode);
-      setCodeCopied(true);
-      toast.success(t('seller.codeCopied'));
-      setTimeout(() => setCodeCopied(false), 2000);
-    } catch { /* clipboard unavailable */ }
-  };
-
-  const handleCodeDone = () => {
-    setSubmittedCode(null);
-    setOpen(false);
-    onClose?.();
-  };
-
   const normalizeTypedCode = (v: string) => {
     const bn = '০১২৩৪৫৬৭৮৯';
     return v.replace(/[০-৯]/g, (d) => String(bn.indexOf(d))).replace(/[^0-9]/g, '').slice(0, 6);
@@ -269,7 +264,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
         if (curr) useAppStore.getState().setUser({ ...curr, isSeller: true });
         toast.success(t('seller.verifySuccess'));
         setApplication({ id: application?.id || '', status: 'approved', rejectionReason: null });
-        setOpen(false);
+        handleOpenChange(false);
         onClose?.();
       } else {
         setCodeError(data.error || t('seller.verifyWrong'));
@@ -281,43 +276,24 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     }
   };
 
-  const CodeBoxView = () => (
+  // One view for both states:
+  // - justSubmitted: "request received — the admin will send the code to your WhatsApp"
+  // - otherwise: "enter the code the admin sent you"
+  // In BOTH cases the actual code is never displayed to the user.
+  const VerifyDialogContent = ({ justSubmitted = false }: { justSubmitted?: boolean }) => (
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-amber-500" />
-          {t('seller.codeBoxTitle')}
+          {justSubmitted ? (
+            <Sparkles className="h-5 w-5 text-amber-500" />
+          ) : (
+            <ShieldCheck className="h-5 w-5 text-amber-500" />
+          )}
+          {t(justSubmitted ? 'seller.submittedTitle' : 'seller.verifyTitle')}
         </DialogTitle>
-        <DialogDescription>{t('seller.codeBoxDesc')}</DialogDescription>
-      </DialogHeader>
-      <div className="flex flex-col items-center gap-4 mt-2">
-        <div className="w-full rounded-2xl border-2 border-dashed border-amber-400/50 bg-amber-500/5 px-4 py-5 text-center">
-          <p className="font-mono text-3xl font-bold tracking-[0.3em] text-foreground" dir="ltr">{submittedCode}</p>
-        </div>
-        <div className="flex w-full gap-2">
-          <Button variant="outline" onClick={handleCopyCode} className="flex-1 gap-1.5">
-            {codeCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-            {codeCopied ? t('seller.codeCopied') : t('seller.codeCopy')}
-          </Button>
-          <Button
-            onClick={handleCodeDone}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
-          >
-            {t('seller.codeOk')}
-          </Button>
-        </div>
-      </div>
-    </>
-  );
-
-  const VerifyDialogContent = () => (
-    <>
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-amber-500" />
-          {t('seller.verifyTitle')}
-        </DialogTitle>
-        <DialogDescription>{t('seller.verifyDesc')}</DialogDescription>
+        <DialogDescription>
+          {t(justSubmitted ? 'seller.submittedDesc' : 'seller.verifyDesc')}
+        </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 mt-2">
         <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-500/5 px-4 py-4">
@@ -347,9 +323,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
 
   if (loading) return null;
 
-  if (application?.status === 'pending' && !submittedCode) {
+  if (application?.status === 'pending') {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <button
             className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 transition-colors hover:bg-amber-500/15 ${
@@ -365,7 +341,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
           </button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
-          <VerifyDialogContent />
+          <VerifyDialogContent justSubmitted={justSubmitted} />
         </DialogContent>
       </Dialog>
     );
@@ -373,7 +349,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
 
   if (application?.status === 'disabled') {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <button
             className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-orange-600 bg-orange-500/10 border border-orange-500/20 transition-colors hover:bg-orange-500/15 ${
@@ -406,7 +382,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
 
   if (application?.status === 'rejected') {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <button
             className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 transition-colors hover:bg-red-500/15 ${
@@ -438,7 +414,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button
           className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-600 ${
@@ -450,24 +426,18 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        {submittedCode ? (
-          <CodeBoxView />
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                {t('seller.applyTitle')}
-              </DialogTitle>
-              <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <WhatsAppField />
-              <TermsCheckbox />
-              <SubmitButton />
-            </div>
-          </>
-        )}
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            {t('seller.applyTitle')}
+          </DialogTitle>
+          <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <WhatsAppField />
+          <TermsCheckbox />
+          <SubmitButton />
+        </div>
       </DialogContent>
     </Dialog>
   );
