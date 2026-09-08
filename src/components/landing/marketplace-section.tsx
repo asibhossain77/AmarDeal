@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Search, MessageCircle, ShieldCheck, ShoppingCart, X, Send, Package, Plus, Loader2, User,
+  Search, MessageCircle, ShieldCheck, ShoppingCart, X, Package, Plus, Loader2, User,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
   ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star, Upload, ImageIcon, Heart,
 } from 'lucide-react';
@@ -17,13 +17,26 @@ import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 
-interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; }
+interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; }
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
 }
-interface ChatMessage {
-  id: string; senderId: string; senderName: string; text: string; createdAt: string;
+
+/**
+ * Build a wa.me deep link from a stored WhatsApp number.
+ * Handles: 8801712345678, +8801712345678, 01712345678 (BD local), and other
+ * country codes stored with/without '+'. Optional prefilled message text.
+ */
+function waMeLink(number: string | null | undefined, text?: string): string | null {
+  if (!number) return null;
+  const digits = number.replace(/[^0-9]/g, '');
+  if (digits.length < 10) return null;
+  let full = digits;
+  if (full.startsWith('01') && full.length === 11) full = '88' + full;
+  else if (!full.startsWith('880') && full.length === 10) full = '880' + full;
+  const q = text ? `?text=${encodeURIComponent(text)}` : '';
+  return `https://wa.me/${full}${q}`;
 }
 
 const CATEGORIES = [
@@ -194,8 +207,8 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
 }
 
 // -- ProductDetailDialog --
-function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow, buying, showBuyConfirm, onConfirmBuy, onCancelBuy, t, locale }: {
-  product: Product | null; open: boolean; onClose: () => void; onMessageSeller: () => void; onBuyNow: () => void;
+function ProductDetailDialog({ product, open, onClose, onBuyNow, buying, showBuyConfirm, onConfirmBuy, onCancelBuy, t, locale }: {
+  product: Product | null; open: boolean; onClose: () => void; onBuyNow: () => void;
   buying: boolean; showBuyConfirm: boolean; onConfirmBuy: () => void; onCancelBuy: () => void;
   t: (k: string) => string; locale: string;
 }) {
@@ -228,6 +241,10 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
   const CatIcon = getCategoryIcon(product.category);
   const catColor = getCategoryColor(product.category);
   const gradientBg = CATEGORY_BG[product.category] || CATEGORY_BG.other;
+  const sellerWa = product.seller.whatsappNumber || null;
+  const waHref = waMeLink(sellerWa, locale === 'bn'
+    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি দেখলাম। বিস্তারিত জানতে চাই।`
+    : `Hi! I saw your product "${product.title}" on the Midman marketplace. I'd like to know more about it.`);
   return (
     <AnimatePresence>
       {open && (
@@ -249,7 +266,14 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
               <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
-                  <div className="min-w-0"><p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p><p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p></div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p>
+                    {sellerWa ? (
+                      <p className="flex items-center gap-1 text-[12px] font-medium text-[#25D366]" dir="ltr"><MessageCircle className="h-3 w-3 shrink-0" />{sellerWa}</p>
+                    ) : (
+                      <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                   {user && user.id !== product.seller.id && (
@@ -298,74 +322,20 @@ function ProductDetailDialog({ product, open, onClose, onMessageSeller, onBuyNow
                 </div>
               ) : (
                 <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                  <Button onClick={onMessageSeller} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold shadow-md shadow-primary/20"><MessageCircle className="h-4.5 w-4.5" /> {t('marketplace.messageSeller')}</Button>
+                  {waHref && (
+                    <a
+                      href={waHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] py-5 text-[14px] font-semibold text-white shadow-md shadow-[#25D366]/25 transition-colors hover:bg-[#1fb955]"
+                    >
+                      <MessageCircle className="h-4.5 w-4.5" />
+                      {t('marketplace.contactWhatsApp')}
+                    </a>
+                  )}
                   <Button onClick={onBuyNow} variant="outline" className="flex-1 gap-2 rounded-xl border-primary/30 py-5 text-[14px] font-semibold text-primary hover:bg-primary/5"><ShoppingCart className="h-4.5 w-4.5" /> {locale === 'bn' ? 'এখনই কিনুন' : 'Buy Now'}</Button>
                 </div>
-              )}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// -- ProductChatDialog --
-function ProductChatDialog({ product, open, onClose, t, locale }: { product: Product | null; open: boolean; onClose: () => void; t: (k: string) => string; locale: string }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const user = useAppStore((s) => s.user);
-  const scrollToBottom = useCallback(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, []);
-  useEffect(() => {
-    if (!open || !product) return;
-    setLoading(true);
-    fetch(`/api/products/${product.id}/chat`).then(r => r.json()).then(data => { if (data.success) setMessages(data.messages || []); }).catch(() => {}).finally(() => setLoading(false));
-  }, [open, product?.id]);
-  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
-  const sendMessage = async () => {
-    if (!text.trim() || !product || sending || !user) return;
-    const msgText = text.trim(); setText(''); setSending(true);
-    try {
-      const res = await fetch(`/api/products/${product.id}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: msgText }) });
-      const data = await res.json();
-      if (data.success && data.message) setMessages(prev => [...prev, data.message]); else { toast.error(data.error || t('marketplace.sendFailed')); setText(msgText); }
-    } catch { toast.error(t('marketplace.sendFailed')); setText(msgText); } finally { setSending(false); }
-  };
-  if (!product) return null;
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, y: 50, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 30, scale: 0.96 }} transition={{ duration: 0.3 }} className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md flex-col overflow-hidden rounded-2xl border border-border/40 bg-card shadow-2xl sm:inset-x-auto sm:left-1/2 sm:bottom-6 sm:-translate-x-1/2 dark:border-border/25" style={{ height: 'min(480px, 80vh)' }}>
-            <div className="flex items-center gap-3 border-b border-border/30 px-4 py-3 dark:border-border/20">
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-              <Avatar className="h-8 w-8"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-4 w-4" /></AvatarFallback></Avatar>
-              <div className="flex-1 min-w-0"><p className="truncate text-sm font-semibold text-foreground">{product.seller.name}</p><p className="truncate text-[11px] text-muted-foreground">{product.title}</p></div>
-              <div className="flex items-center gap-1 text-primary"><div className="h-2 w-2 rounded-full bg-primary animate-pulse" /><span className="text-[10px] font-medium">{t('marketplace.online')}</span></div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {loading ? (<div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>) : messages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10"><MessageCircle className="h-6 w-6 text-primary" /></div>
-                  <p className="text-sm font-medium text-foreground">{t('marketplace.noMessages')}</p>
-                  <p className="text-[12px] text-muted-foreground">{t('marketplace.noMessagesDesc')}</p>
-                </div>
-              ) : messages.map(msg => {
-                const isMe = msg.senderId === user?.id;
-                return (<div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 ${isMe ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md bg-muted dark:bg-zinc-800'}`}>{!isMe && <p className="mb-0.5 text-[10px] font-semibold text-primary">{msg.senderName}</p>}<p className="text-[13px] leading-relaxed">{msg.text}</p><p className={`mt-1 text-[10px] ${isMe ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{timeAgo(msg.createdAt, locale)}</p></div></div>);
-              })}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className="border-t border-border/30 p-3 dark:border-border/20">
-              {!user ? (<p className="text-center text-[13px] text-muted-foreground">{t('marketplace.loginRequired')}</p>) : (
-                <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex items-center gap-2">
-                  <input type="text" value={text} onChange={e => setText(e.target.value)} placeholder={t('marketplace.typeMessage')} disabled={sending} className="flex-1 rounded-xl border border-border/40 bg-background px-3.5 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 disabled:opacity-50 dark:border-border/25 dark:bg-zinc-900/50" />
-                  <button type="submit" disabled={!text.trim() || sending} className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-40">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</button>
-                </form>
               )}
             </div>
           </motion.div>
@@ -462,7 +432,6 @@ export function MarketplaceSection() {
   const [products, setProducts] = useState<Product[]>([]); const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(''); const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [chatProduct, setChatProduct] = useState<Product | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const fetchProducts = useCallback(async (cat?: string) => {
@@ -532,8 +501,7 @@ export function MarketplaceSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => setSelectedProduct(product)} t={t} locale={locale} />))}</div>
       )}
-      <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => { setSelectedProduct(null); setShowBuyConfirm(false); }} onMessageSeller={() => { if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; } setChatProduct(selectedProduct); setSelectedProduct(null); }} onBuyNow={handleBuyNow} buying={buying} showBuyConfirm={showBuyConfirm} onConfirmBuy={confirmBuy} onCancelBuy={() => setShowBuyConfirm(false)} t={t} locale={locale} />
-      <ProductChatDialog product={chatProduct} open={!!chatProduct} onClose={() => setChatProduct(null)} t={t} locale={locale} />
+      <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => { setSelectedProduct(null); setShowBuyConfirm(false); }} onBuyNow={handleBuyNow} buying={buying} showBuyConfirm={showBuyConfirm} onConfirmBuy={confirmBuy} onCancelBuy={() => setShowBuyConfirm(false)} t={t} locale={locale} />
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>
   );

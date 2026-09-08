@@ -1843,7 +1843,7 @@ export const bn = {
   'marketplace.searchPlaceholder': 'পণ্য খুঁজুন...',
   'marketplace.seller': 'বিক্রেতা',
   'marketplace.verified': 'যাচাইকৃত',
-  'marketplace.messageSeller': 'সেলারকে মেসেজ করুন',
+  'marketplace.contactWhatsApp': 'WhatsApp-এ যোগাযোগ করুন',
   'marketplace.orderViaMidman': 'মিডম্যান ডিলে অর্ডার',
   'marketplace.noProducts': 'কোনো পণ্য পাওয়া যায়নি',
   'marketplace.noProductsDesc': 'এই ক্যাটাগরিতে এখনো কোনো পণ্য যোগ করা হয়নি',
@@ -1864,12 +1864,7 @@ export const bn = {
   'marketplace.submitProduct': 'পণ্য প্রকাশ করুন',
   'marketplace.productAdded': 'পণ্য সফলভাবে যোগ হয়েছে!',
   'marketplace.addFailed': 'পণ্য যোগ করতে সমস্যা হয়েছে',
-  'marketplace.noMessages': 'কোনো মেসেজ নেই',
-  'marketplace.noMessagesDesc': 'সেলারকে মেসেজ পাঠান, আপনার প্রশ্ন জিজ্ঞাসা করুন',
-  'marketplace.typeMessage': 'আপনার মেসেজ লিখুন...',
   'marketplace.loginRequired': 'এই ফিচার ব্যবহার করতে লগইন করুন',
-  'marketplace.sendFailed': 'মেসেজ পাঠাতে সমস্যা হয়েছে',
-  'marketplace.online': 'অনলাইন',
 } as const;
 
 export type TranslationKey = keyof typeof bn;

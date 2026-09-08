@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         seller: {
-          select: { id: true, name: true, imageLink: true, email: true },
+          select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
         name: p.seller.name,
         imageLink: p.seller.imageLink,
         email: p.seller.email,
+        whatsappNumber: p.seller.whatsappNumber,
       },
     }))
 
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
       },
       include: {
         seller: {
-          select: { name: true, imageLink: true },
+          select: { name: true, imageLink: true, whatsappNumber: true },
         },
       },
     })
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
           seller: {
             name: product.seller.name,
             imageLink: product.seller.imageLink,
+            whatsappNumber: product.seller.whatsappNumber,
           },
         },
       },
