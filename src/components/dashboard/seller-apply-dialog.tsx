@@ -162,7 +162,11 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     }
   };
 
-  const TermsCheckbox = () => (
+  // Render helpers (NOT components!) — they must be called as functions inside
+  // JSX. If they were used as <Component /> elements, every parent re-render
+  // (e.g. each keystroke) would create a new component type, remount the whole
+  // subtree, and the mobile keyboard would close after every digit typed.
+  const renderTerms = () => (
     <div className="space-y-2">
       <button
         type="button"
@@ -182,7 +186,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     </div>
   );
 
-  const WhatsAppField = () => (
+  const renderWhatsAppField = () => (
     <div className="space-y-2">
       <Label htmlFor="seller-wa-number" className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
       <div className="flex gap-2">
@@ -232,7 +236,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     </div>
   );
 
-  const SubmitButton = () => (
+  const renderSubmitButton = () => (
     <Button
       onClick={handleSubmit}
       disabled={submitting}
@@ -280,7 +284,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   // - justSubmitted: "request received — the admin will send the code to your WhatsApp"
   // - otherwise: "enter the code the admin sent you"
   // In BOTH cases the actual code is never displayed to the user.
-  const VerifyDialogContent = ({ justSubmitted = false }: { justSubmitted?: boolean }) => (
+  const renderVerifyContent = (justSubmitted: boolean) => (
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
@@ -341,7 +345,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
           </button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
-          <VerifyDialogContent justSubmitted={justSubmitted} />
+          {renderVerifyContent(justSubmitted)}
         </DialogContent>
       </Dialog>
     );
@@ -371,9 +375,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <WhatsAppField />
-            <TermsCheckbox />
-            <SubmitButton />
+            {renderWhatsAppField()}
+            {renderTerms()}
+            {renderSubmitButton()}
           </div>
         </DialogContent>
       </Dialog>
@@ -404,9 +408,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            <WhatsAppField />
-            <TermsCheckbox />
-            <SubmitButton />
+            {renderWhatsAppField()}
+            {renderTerms()}
+            {renderSubmitButton()}
           </div>
         </DialogContent>
       </Dialog>
@@ -434,9 +438,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
           <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <WhatsAppField />
-          <TermsCheckbox />
-          <SubmitButton />
+          {renderWhatsAppField()}
+          {renderTerms()}
+          {renderSubmitButton()}
         </div>
       </DialogContent>
     </Dialog>
