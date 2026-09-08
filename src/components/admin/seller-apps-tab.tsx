@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw, MessageCircle, CalendarDays,
+  UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw, MessageCircle, CalendarDays, Copy, KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,7 @@ interface SellerApp {
   email: string;
   phone: string;
   whatsappNumber: string | null;
+  verificationCode: string | null;
   status: string;
   rejectionReason: string | null;
   createdAt: string;
@@ -115,6 +116,52 @@ export function SellerAppsTab() {
     );
   }
 
+  function waDigits(app: SellerApp): string {
+    const digits = (app.whatsappNumber || app.user.whatsappNumber || '').replace(/[^0-9]/g, '');
+    if (digits.startsWith('880')) return digits;
+    if (digits.startsWith('01') && digits.length === 11) return '88' + digits;
+    return digits;
+  }
+
+  function waSendHref(app: SellerApp): string {
+    const msg = `আপনার Midman সেলার ভেরিফিকেশন কোড: ${app.verificationCode || ''}`;
+    return `https://wa.me/${waDigits(app)}?text=${encodeURIComponent(msg)}`;
+  }
+
+  async function copyCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success(t('seller.codeCopied'));
+    } catch { /* clipboard unavailable */ }
+  }
+
+  function VerificationCodeCell({ app }: { app: SellerApp }) {
+    if (app.status !== 'pending' || !app.verificationCode) {
+      return <span className="text-muted-foreground">-</span>;
+    }
+    return (
+      <div className="inline-flex items-center gap-1.5">
+        <code className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 font-mono text-sm font-bold tracking-[0.2em] text-amber-700 dark:text-amber-400" dir="ltr">{app.verificationCode}</code>
+        <button
+          onClick={() => copyCode(app.verificationCode!)}
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title={t('seller.codeCopy')}
+        >
+          <Copy className="h-3.5 w-3.5" />
+        </button>
+        <a
+          href={waSendHref(app)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-md p-1 text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+          title={t('admin.sellerApps.sendCode')}
+        >
+          <MessageCircle className="h-4 w-4" />
+        </a>
+      </div>
+    );
+  }
+
   function AppStatusBadge({ status }: { status: string }) {
     if (status === 'pending') return (
       <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1">
@@ -187,6 +234,7 @@ export function SellerAppsTab() {
                   <tr className="border-b border-border/50 bg-muted/30">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.applicant')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.whatsappNumber')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.code')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.appliedAt')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.status')}</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.actions')}</th>
@@ -205,6 +253,7 @@ export function SellerAppsTab() {
                         </div>
                       </td>
                       <td className="px-4 py-3"><WhatsAppCell number={app.whatsappNumber || app.user.whatsappNumber} /></td>
+                      <td className="px-4 py-3"><VerificationCodeCell app={app} /></td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString('bn-BD')}</td>
                       <td className="px-4 py-3 text-center"><AppStatusBadge status={app.status} /></td>
                       <td className="px-4 py-3 text-center">
@@ -291,6 +340,39 @@ export function SellerAppsTab() {
                     {new Date(app.createdAt).toLocaleDateString('bn-BD')}
                   </div>
                 </div>
+                {app.status === 'pending' && app.verificationCode && (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border-2 border-dashed border-amber-400/50 bg-amber-500/5 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                        <KeyRound className="h-3 w-3" />
+                        {t('admin.sellerApps.code')}
+                      </p>
+                      <p className="font-mono text-xl font-bold tracking-[0.25em] text-foreground" dir="ltr">{app.verificationCode}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyCode(app.verificationCode!)}
+                        disabled={processing === app.id}
+                        className="h-8 w-8 p-0"
+                        title={t('seller.codeCopy')}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <a href={waSendHref(app)} target="_blank" rel="noopener noreferrer">
+                        <Button
+                          size="sm"
+                          disabled={processing === app.id}
+                          className="h-8 gap-1.5 bg-[#25D366] hover:bg-[#1fb857] text-white"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          {t('admin.sellerApps.sendCode')}
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                )}
                 {app.status === 'rejected' && app.rejectionReason && (
                   <div className="rounded-lg bg-red-500/5 border border-red-500/10 p-2.5 text-xs">
                     <span className="font-medium text-red-600 dark:text-red-400">{t('admin.sellerApps.rejectionReason')}:</span>{' '}

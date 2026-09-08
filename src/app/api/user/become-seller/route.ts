@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { ensureVerificationColumn, generateVerificationCode, withVerificationColumn } from '@/lib/seller-verify'
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,15 +41,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const existing = await db.sellerApplication.findFirst({
-      where: { userId, status: 'pending' },
-    })
+    const existing = await withVerificationColumn(() =>
+      db.sellerApplication.findFirst({
+        where: { userId, status: 'pending' },
+      })
+    )
     if (existing) {
       return NextResponse.json(
         { error: '\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09C7\u09A8\u09CD\u09A1\u09BF\u0982 \u0986\u099B\u09C7', pending: true },
         { status: 400 }
       )
     }
+
+    await ensureVerificationColumn()
+
+    const verificationCode = generateVerificationCode()
 
     await db.sellerApplication.create({
       data: {
@@ -57,11 +64,14 @@ export async function POST(req: NextRequest) {
         email: user.email || '',
         phone: user.phone || '',
         whatsappNumber: wa,
+        verificationCode,
         status: 'pending',
       },
     })
 
-    return NextResponse.json({ success: true })
+    // The code is returned ONLY here (shown once in the code box).
+    // It is never exposed again through user-facing GETs — the admin sends it via WhatsApp.
+    return NextResponse.json({ success: true, verificationCode })
   } catch (err) {
     console.error('Become seller error:', err)
     return NextResponse.json(
@@ -80,6 +90,12 @@ export async function GET(req: NextRequest) {
     const application = await db.sellerApplication.findFirst({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        rejectionReason: true,
+        createdAt: true,
+      },
     })
 
     return NextResponse.json({ application })

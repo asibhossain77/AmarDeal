@@ -127,6 +127,8 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     // PaymentMethod table columns (manual payment instructions + QR)
     ['PaymentMethod', 'instructions', 'TEXT', 'NULL'],
     ['PaymentMethod', 'qrImage', 'TEXT', 'NULL'],
+    // SellerApplication verification code (WhatsApp code verification flow)
+    ['SellerApplication', 'verificationCode', 'TEXT', 'NULL'],
   ]
 
   for (const [table, column, colType, defaultVal] of checks) {

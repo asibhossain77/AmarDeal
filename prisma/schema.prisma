@@ -301,6 +301,7 @@ model SellerApplication {
   email           String
   phone           String
   whatsappNumber  String?
+  verificationCode String?
   status          String   @default("pending")
   rejectionReason String?
   createdAt       DateTime @default(now())

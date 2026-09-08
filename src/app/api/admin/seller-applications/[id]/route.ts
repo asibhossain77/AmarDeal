@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
+import { ensureVerificationColumn, withVerificationColumn } from '@/lib/seller-verify'
 
 export async function PATCH(
   req: NextRequest,
@@ -9,6 +10,8 @@ export async function PATCH(
   try {
     const guard = await requireAdmin()
     if (!guard.ok) return guard.response
+
+    await ensureVerificationColumn()
 
     const { id } = await params
     const body = await req.json()
@@ -19,7 +22,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const application = await db.sellerApplication.findUnique({ where: { id } })
+    const application = await withVerificationColumn(() =>
+      db.sellerApplication.findUnique({ where: { id } })
+    )
     if (!application) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }

@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, Clock, XCircle, Loader2, Ban, Check, MessageCircle } from 'lucide-react';
+import { Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, Copy, ShieldCheck, KeyRound, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -98,6 +98,11 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/user/become-seller')
@@ -133,9 +138,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(t('dashboard.becomeSellerSuccess'));
+        setSubmittedCode(typeof data.verificationCode === 'string' ? data.verificationCode : null);
         setApplication({ id: '', status: 'pending', rejectionReason: null });
-        setOpen(false);
-        onClose?.();
+        // keep dialog open — the verification code box is shown inside
       } else {
         toast.error(data.error || t('dashboard.becomeSellerError'));
       }
@@ -227,14 +232,142 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
     </Button>
   );
 
+  const handleCopyCode = async () => {
+    if (!submittedCode) return;
+    try {
+      await navigator.clipboard.writeText(submittedCode);
+      setCodeCopied(true);
+      toast.success(t('seller.codeCopied'));
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  };
+
+  const handleCodeDone = () => {
+    setSubmittedCode(null);
+    setOpen(false);
+    onClose?.();
+  };
+
+  const normalizeTypedCode = (v: string) => {
+    const bn = '০১২৩৪৫৬৭৮৯';
+    return v.replace(/[০-৯]/g, (d) => String(bn.indexOf(d))).replace(/[^0-9]/g, '').slice(0, 6);
+  };
+
+  const handleVerify = async () => {
+    if (normalizeTypedCode(codeInput).length < 6) return;
+    setVerifying(true);
+    setCodeError(null);
+    try {
+      const res = await fetch('/api/user/become-seller/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codeInput }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const curr = useAppStore.getState().user;
+        if (curr) useAppStore.getState().setUser({ ...curr, isSeller: true });
+        toast.success(t('seller.verifySuccess'));
+        setApplication({ id: application?.id || '', status: 'approved', rejectionReason: null });
+        setOpen(false);
+        onClose?.();
+      } else {
+        setCodeError(data.error || t('seller.verifyWrong'));
+      }
+    } catch {
+      setCodeError(t('seller.verifyWrong'));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const CodeBoxView = () => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-amber-500" />
+          {t('seller.codeBoxTitle')}
+        </DialogTitle>
+        <DialogDescription>{t('seller.codeBoxDesc')}</DialogDescription>
+      </DialogHeader>
+      <div className="flex flex-col items-center gap-4 mt-2">
+        <div className="w-full rounded-2xl border-2 border-dashed border-amber-400/50 bg-amber-500/5 px-4 py-5 text-center">
+          <p className="font-mono text-3xl font-bold tracking-[0.3em] text-foreground" dir="ltr">{submittedCode}</p>
+        </div>
+        <div className="flex w-full gap-2">
+          <Button variant="outline" onClick={handleCopyCode} className="flex-1 gap-1.5">
+            {codeCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+            {codeCopied ? t('seller.codeCopied') : t('seller.codeCopy')}
+          </Button>
+          <Button
+            onClick={handleCodeDone}
+            className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+          >
+            {t('seller.codeOk')}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+
+  const VerifyDialogContent = () => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-amber-500" />
+          {t('seller.verifyTitle')}
+        </DialogTitle>
+        <DialogDescription>{t('seller.verifyDesc')}</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 mt-2">
+        <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-500/5 px-4 py-4">
+          <Input
+            aria-label={t('seller.verifyTitle')}
+            inputMode="numeric"
+            placeholder="······"
+            value={codeInput}
+            onChange={(e) => { setCodeInput(normalizeTypedCode(e.target.value)); setCodeError(null); }}
+            className="h-14 border-none bg-transparent text-center font-mono text-2xl font-bold tracking-[0.45em] shadow-none focus-visible:ring-0"
+            dir="ltr"
+          />
+        </div>
+        {codeError && <p className="text-xs text-destructive text-center">{codeError}</p>}
+        <Button
+          onClick={handleVerify}
+          disabled={verifying || normalizeTypedCode(codeInput).length < 6}
+          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white gap-2 shadow-md shadow-emerald-500/20"
+        >
+          {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          {verifying ? t('seller.verifying') : t('seller.verifySubmit')}
+        </Button>
+        <p className="text-xs text-center text-muted-foreground">{t('seller.verifyNoCode')}</p>
+      </div>
+    </>
+  );
+
   if (loading) return null;
 
-  if (application?.status === 'pending') {
+  if (application?.status === 'pending' && !submittedCode) {
     return (
-      <div className={`flex items-center gap-2.5 rounded-xl px-3 py-3 bg-amber-500/10 border border-amber-500/20`}>
-        <Clock className="h-[18px] w-[18px] text-amber-500" />
-        <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{t('seller.pending')}</span>
-      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <button
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 transition-colors hover:bg-amber-500/15 ${
+              variant === 'mobile' ? 'px-4 py-3' : ''
+            }`}
+          >
+            <KeyRound className="h-[18px] w-[18px] text-amber-500" />
+            <span className="flex-1 text-left leading-tight">
+              <span className="block text-[11px] font-medium opacity-80">{t('seller.pending')}</span>
+              <span className="block text-sm font-bold">{t('seller.verifyTitle')}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 opacity-60" />
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <VerifyDialogContent />
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -317,18 +450,24 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            {t('seller.applyTitle')}
-          </DialogTitle>
-          <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <WhatsAppField />
-          <TermsCheckbox />
-          <SubmitButton />
-        </div>
+        {submittedCode ? (
+          <CodeBoxView />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                {t('seller.applyTitle')}
+              </DialogTitle>
+              <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <WhatsAppField />
+              <TermsCheckbox />
+              <SubmitButton />
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
