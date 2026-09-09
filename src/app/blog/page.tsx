@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   keywords: ['midman blog', 'মিডম্যান ব্লগ', 'এসক্রো ব্লগ', 'নিরাপদ লেনদেন গাইড', 'অনলাইন লেনদেন টিপস', 'midman article'],
   alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: {
-    title: 'ব্লগ | Midman মিডম্যান',
+    title: 'ব্লগ',
     description: 'নিরাপদ অনলাইন লেনদেন ও এসক্রো সম্পর্কে আর্টিকেল - Midman (মিডম্যান)',
     url: `${SITE_URL}/blog`,
     type: 'website',

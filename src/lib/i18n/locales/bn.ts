@@ -1865,6 +1865,13 @@ export const bn = {
   'marketplace.productAdded': 'পণ্য সফলভাবে যোগ হয়েছে!',
   'marketplace.addFailed': 'পণ্য যোগ করতে সমস্যা হয়েছে',
   'marketplace.loginRequired': 'এই ফিচার ব্যবহার করতে লগইন করুন',
+  'marketplace.buyNow': 'এখনই কিনুন',
+  'marketplace.suggestedProducts': 'এই পণ্যগুলোও দেখুন',
+  'marketplace.dealConfirmTitle': 'মিডম্যান ডিল তৈরি করবেন?',
+  'marketplace.dealConfirmDesc': 'এই পণ্যের জন্য একটি মিডম্যান ডিল তৈরি হবে। পরিমাণ: {amount}',
+  'marketplace.dealConfirmYes': 'হ্যাঁ, ডিল তৈরি করুন',
+  'marketplace.cancel': 'বাতিল',
+  'marketplace.productNotFound': 'পণ্য পাওয়া যায়নি বা আর সক্রিয় নেই',
 } as const;
 
 export type TranslationKey = keyof typeof bn;

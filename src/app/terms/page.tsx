@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman terms', 'মিডম্যান শর্তাবলী', 'midman bd terms of service', 'এসক্রো শর্ত'],
   alternates: { canonical: `${SITE_URL}/terms` },
   openGraph: {
-    title: 'শর্তাবলী | Midman মিডম্যান',
+    title: 'শর্তাবলী',
     description: 'সেবার শর্তাবলী ও ব্যবহারের শর্ত - Midman (মিডম্যান)',
     url: `${SITE_URL}/terms`,
     type: 'website',

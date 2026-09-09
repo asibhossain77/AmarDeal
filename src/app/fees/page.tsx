@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman fees', 'মিডম্যান ফি', 'এসক্রো ফি কাঠামো', 'লেনদেন ফি', 'midman fee structure'],
   alternates: { canonical: `${SITE_URL}/fees` },
   openGraph: {
-    title: 'ফি কাঠামো | Midman মিডম্যান',
+    title: 'ফি কাঠামো',
     description: 'স্বচ্ছ ও সাশ্রয়ী ফি স্ট্রাকচার - Midman (মিডম্যান)',
     url: `${SITE_URL}/fees`,
     type: 'website',

@@ -1867,4 +1867,11 @@ export const en: Record<TranslationKey, string> = {
   'marketplace.productAdded': 'Product added successfully!',
   'marketplace.addFailed': 'Failed to add product',
   'marketplace.loginRequired': 'Please login to use this feature',
+  'marketplace.buyNow': 'Buy Now',
+  'marketplace.suggestedProducts': 'You may also like',
+  'marketplace.dealConfirmTitle': 'Create a Midman Deal?',
+  'marketplace.dealConfirmDesc': 'A Midman deal will be created for this product. Amount: {amount}',
+  'marketplace.dealConfirmYes': 'Yes, Create Deal',
+  'marketplace.cancel': 'Cancel',
+  'marketplace.productNotFound': 'Product not found or no longer active',
 } as const;

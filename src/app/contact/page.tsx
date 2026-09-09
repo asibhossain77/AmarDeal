@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman contact', 'মিডম্যান যোগাযোগ', 'midman support', 'এসক্রো সাপোর্ট', 'নিরাপদ লেনদেন সাহায্য'],
   alternates: { canonical: `${SITE_URL}/contact` },
   openGraph: {
-    title: 'যোগাযোগ | Midman মিডম্যান',
+    title: 'যোগাযোগ',
     description: 'আমাদের সাথে যোগাযোগ করুন - Midman (মিডম্যান)',
     url: `${SITE_URL}/contact`,
     type: 'website',

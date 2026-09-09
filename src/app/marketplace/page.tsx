@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch { /* fallback */ }
 
   return {
-    title: 'ডিজিটাল মার্কেটপ্লেস - নিরাপদে ডিজিটাল পণ্য কিনুন ও বিক্রি করুন | Midman মিডম্যান',
+    title: 'ডিজিটাল মার্কেটপ্লেস - নিরাপদে ডিজিটাল পণ্য কিনুন ও বিক্রি করুন',
     description: `Midman মিডম্যান মার্কেটপ্লেসে ${products.length}টিরও বেশি ডিজিটাল পণ্য পাবেন। ${categoryNames || 'ডিজিটাল'} ক্যাটাগরিতে সেরা পণ্য কিনুন। সরাসরি সেলারের সাথে চ্যাট করুন বা মিডম্যান এসক্রো ডিলের মাধ্যমে ১০০% নিরাপদে অর্ডার করুন। বাংলাদেশের সবচেয়ে নিরাপদ ডিজিটাল মার্কেটপ্লেস।`,
     keywords: [
       'digital marketplace Bangladesh',
@@ -112,10 +112,10 @@ function buildJsonLd(products: { id: string; title: string; description: string;
       position: i + 1,
       item: {
         '@type': 'Product',
-        '@id': `${SITE_URL}/marketplace#product-${p.id}`,
+        '@id': `${SITE_URL}/product/${p.id}`,
         name: p.title,
         description: p.description,
-        url: `${SITE_URL}/marketplace`,
+        url: `${SITE_URL}/product/${p.id}`,
         image: p.image ? (p.image.startsWith('http') ? p.image : `${SITE_URL}${p.image}`) : (fallbackImage || `${SITE_URL}/logo.svg`),
         offers: {
           '@type': 'Offer',

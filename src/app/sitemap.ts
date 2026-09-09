@@ -3,6 +3,9 @@ import { db } from '@/lib/db';
 
 const SITE_URL = 'https://midman.bd';
 
+// Regenerate hourly so new products appear without a redeploy
+export const revalidate = 3600;
+
 const CATEGORIES = [
   'design',
   'development',
@@ -108,5 +111,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...categoryPages];
+  // Individual product order pages
+  let productPages: MetadataRoute.Sitemap = [];
+  try {
+    const products = await db.digitalProduct.findMany({
+      where: { status: 'active' },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 200,
+    });
+    productPages = products.map(p => ({
+      url: `${baseUrl}/product/${p.id}`,
+      lastModified: new Date(p.updatedAt),
+      changeFrequency: 'daily' as const,
+      priority: 0.75,
+    }));
+  } catch {
+    // skip products on db error
+  }
+
+  return [...staticPages, ...categoryPages, ...productPages];
 }

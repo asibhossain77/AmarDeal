@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman faq', 'মিডম্যান প্রশ্ন', 'এসক্রো প্রশ্ন', 'midman questions', 'নিরাপদ লেনদেন FAQ'],
   alternates: { canonical: `${SITE_URL}/faq` },
   openGraph: {
-    title: 'FAQ | Midman মিডম্যান',
+    title: 'FAQ',
     description: 'ঘন ঘন জিজ্ঞাসিত প্রশ্নাবলী - Midman (মিডম্যান)',
     url: `${SITE_URL}/faq`,
     type: 'website',

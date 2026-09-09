@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman how it works', 'মিডম্যান কিভাবে কাজ করে', 'এসক্রো প্রক্রিয়া', 'নিরাপদ লেনদেন ধাপ', 'midman process'],
   alternates: { canonical: `${SITE_URL}/how-it-works` },
   openGraph: {
-    title: 'কিভাবে কাজ করে | Midman মিডম্যান',
+    title: 'কিভাবে কাজ করে',
     description: 'মাত্র ৩টি ধাপে নিরাপদ লেনদেন সম্পন্ন করুন - Midman (মিডম্যান)',
     url: `${SITE_URL}/how-it-works`,
     type: 'website',

@@ -43,18 +43,27 @@ const nextConfig: NextConfig = {
     }];
   },
   async rewrites() {
-    return [
-      // Proxy CDN images through same origin (fixes Brave browser Shields blocking)
-      {
-        source: '/cdn/:path*',
-        destination: 'https://cdn.midman.bd/:path*',
-      },
-      // SPA catch-all — skip api, _next, static assets, and cdn proxy
-      {
-        source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|ref/|cdn/).*)',
-        destination: '/',
-      },
-    ];
+    return {
+      // CDN image proxy must run before everything else.
+      beforeFiles: [
+        {
+          source: '/cdn/:path*',
+          destination: 'https://cdn.midman.bd/:path*',
+        },
+      ],
+      afterFiles: [],
+      // SPA catch-all — only for paths with NO matching route (static OR
+      // dynamic). Running this as `fallback` (instead of a plain afterFiles
+      // array) is critical: afterFiles rewrites run BEFORE dynamic route
+      // matching, which hijacked /s/[sellerId] and /product/[id] to the
+      // landing page and broke their SSR metadata.
+      fallback: [
+        {
+          source: '/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|ref/|cdn/).*)',
+          destination: '/',
+        },
+      ],
+    };
   },
 };
 

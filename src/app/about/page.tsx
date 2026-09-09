@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman about', 'মিডম্যান সম্পর্কে', 'midman company', 'এসক্রো প্ল্যাটফর্ম বাংলাদেশ', 'বাংলা এসক্রো'],
   alternates: { canonical: `${SITE_URL}/about` },
   openGraph: {
-    title: 'আমাদের সম্পর্কে | Midman মিডম্যান',
+    title: 'আমাদের সম্পর্কে',
     description: 'নিরাপদ লেনদেনের বিশ্বস্ত ঠিকানা - Midman (মিডম্যান)',
     url: `${SITE_URL}/about`,
     type: 'website',

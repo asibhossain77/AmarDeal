@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman privacy', 'মিডম্যান গোপনীয়তা', 'midman privacy policy', 'ডেটা সুরক্ষা'],
   alternates: { canonical: `${SITE_URL}/privacy` },
   openGraph: {
-    title: 'গোপনীয়তা নীতি | Midman মিডম্যান',
+    title: 'গোপনীয়তা নীতি',
     description: 'আপনার তথ্য কিভাবে সুরক্ষিত আছে - Midman (মিডম্যান)',
     url: `${SITE_URL}/privacy`,
     type: 'website',

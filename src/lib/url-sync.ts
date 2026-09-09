@@ -24,6 +24,7 @@ const VIEW_PATHS: Record<string, string> = {
   'page-contact': 'contact',
   'page-marketplace': 'marketplace',
   'page-seller-profile': 's/__SELLER_ID__',
+  'page-product': 'product/__PRODUCT_ID__',
 };
 
 const PATH_VIEWS: Record<string, AppView> = {
@@ -50,12 +51,18 @@ export function buildUrl(state: {
   adminPanel: AdminPanel;
   activeDeal: { id: string } | null;
   sellerProfileId?: string | null;
+  productDetailId?: string | null;
 }): string {
-  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId } = state;
+  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId } = state;
 
   // Seller public profile
   if (view === 'page-seller-profile' && sellerProfileId) {
     return `/s/${sellerProfileId}`;
+  }
+
+  // Product order page
+  if (view === 'page-product' && productDetailId) {
+    return `/product/${productDetailId}`;
   }
 
   // Static pages
@@ -88,11 +95,12 @@ interface ParsedUrl {
   adminPanel: AdminPanel | null;
   dealId: string | null;
   sellerId: string | null;
+  productId: string | null;
 }
 
 export function parseUrl(pathname: string): ParsedUrl {
   const result: ParsedUrl = {
-    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null,
+    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null, productId: null,
   };
 
   const p = pathname.replace(/\/+$/, '') || '/';
@@ -114,6 +122,13 @@ export function parseUrl(pathname: string): ParsedUrl {
   if (segments.length === 2 && segments[0] === 's') {
     result.view = 'page-seller-profile';
     result.sellerId = segments[1];
+    return result;
+  }
+
+  // /product/[productId] — product order page
+  if (segments.length === 2 && segments[0] === 'product') {
+    result.view = 'page-product';
+    result.productId = segments[1];
     return result;
   }
 
@@ -185,7 +200,7 @@ function pushUrl(url: string) {
 
 /* ── Apply current URL to store (reusable) ── */
 
-const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile']);
+const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product']);
 const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'auth']);
 
 function applyUrlToStore() {
@@ -214,6 +229,7 @@ function applyUrlToStore() {
 
   if (parsed.view && parsed.view !== state.view) updates.view = parsed.view;
   if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
+  if (parsed.productId) updates.productDetailId = parsed.productId;
   if (parsed.dashboardPanel && state.view === 'dashboard' && parsed.dashboardPanel !== state.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
   if (parsed.adminPanel && state.view === 'admin' && parsed.adminPanel !== state.adminPanel) updates.adminPanel = parsed.adminPanel;
 
@@ -260,6 +276,7 @@ export function applyUrlAfterAuth() {
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     updates.view = parsed.view;
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
+    if (parsed.productId) updates.productDetailId = parsed.productId;
   }
 
   if (Object.keys(updates).length > 0) {
@@ -301,7 +318,13 @@ export function initUrlSync() {
       applyUrlToStore();
     }
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
-    store.setState({ view: parsed.view });
+    // Anonymous visitor on a public page (marketplace, seller profile,
+    // product order page…) — apply the view AND its entity id so the
+    // view component can fetch the right data.
+    const updates: Record<string, unknown> = { view: parsed.view };
+    if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
+    if (parsed.productId) updates.productDetailId = parsed.productId;
+    store.setState(updates);
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {
     // Not logged in yet but on a protected URL — page refresh scenario.

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { AppShell } from '@/components/app-shell';
 
 export const metadata: Metadata = {
-  title: 'সেলার প্যানেল | Midman মিডম্যান',
+  title: 'সেলার প্যানেল',
   robots: { index: false, follow: false },
 };
 

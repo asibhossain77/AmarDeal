@@ -27,7 +27,7 @@ export async function GET(
       where: { id },
       include: {
         seller: {
-          select: { name: true, imageLink: true },
+          select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
         },
       },
     })
@@ -52,8 +52,11 @@ export async function GET(
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         seller: {
+          id: product.seller.id,
           name: product.seller.name,
           imageLink: product.seller.imageLink,
+          email: product.seller.email,
+          whatsappNumber: product.seller.whatsappNumber,
         },
       },
     })

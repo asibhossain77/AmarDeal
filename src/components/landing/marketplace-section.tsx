@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Search, MessageCircle, ShieldCheck, ShoppingCart, X, Package, Plus, Loader2, User,
+  Search, X, MessageCircle, Package, Plus, Loader2, User,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Eye, Clock, Star, Upload, ImageIcon, Heart,
+  ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,22 +21,6 @@ interface ProductSeller { id: string; name: string; email?: string; imageLink?: 
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
-}
-
-/**
- * Build a wa.me deep link from a stored WhatsApp number.
- * Handles: 8801712345678, +8801712345678, 01712345678 (BD local), and other
- * country codes stored with/without '+'. Optional prefilled message text.
- */
-function waMeLink(number: string | null | undefined, text?: string): string | null {
-  if (!number) return null;
-  const digits = number.replace(/[^0-9]/g, '');
-  if (digits.length < 10) return null;
-  let full = digits;
-  if (full.startsWith('01') && full.length === 11) full = '88' + full;
-  else if (!full.startsWith('880') && full.length === 10) full = '880' + full;
-  const q = text ? `?text=${encodeURIComponent(text)}` : '';
-  return `https://wa.me/${full}${q}`;
 }
 
 const CATEGORIES = [
@@ -206,145 +190,6 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
   );
 }
 
-// -- ProductDetailDialog --
-function ProductDetailDialog({ product, open, onClose, onBuyNow, buying, showBuyConfirm, onConfirmBuy, onCancelBuy, t, locale }: {
-  product: Product | null; open: boolean; onClose: () => void; onBuyNow: () => void;
-  buying: boolean; showBuyConfirm: boolean; onConfirmBuy: () => void; onCancelBuy: () => void;
-  t: (k: string) => string; locale: string;
-}) {
-  const user = useAppStore((s) => s.user);
-  const [following, setFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
-
-  // Fetch follow status when product changes
-  useEffect(() => {
-    if (!product || !user || user.id === product.seller.id) { setFollowing(false); return; }
-    fetch(`/api/seller/${product.seller.id}/public`)
-      .then(r => r.json()).then(data => setFollowing(!!data.isFollowing)).catch(() => {});
-  }, [product?.seller.id, user?.id]);
-
-  const handleFollow = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) { toast.error(t('marketplace.loginRequired')); useAppStore.getState().setView('auth'); return; }
-    if (!product) return;
-    setFollowLoading(true);
-    try {
-      const res = await fetch(`/api/seller/${product.seller.id}/follow`, { method: 'POST' });
-      const json = await res.json();
-      if (res.ok) { setFollowing(json.following); toast.success(json.following ? t('sellerProfile.following') : t('sellerProfile.follow')); }
-      else toast.error(json.error || 'Failed');
-    } catch { toast.error('Failed'); }
-    finally { setFollowLoading(false); }
-  };
-
-  if (!product || !open) return null;
-  const CatIcon = getCategoryIcon(product.category);
-  const catColor = getCategoryColor(product.category);
-  const gradientBg = CATEGORY_BG[product.category] || CATEGORY_BG.other;
-  const sellerWa = product.seller.whatsappNumber || null;
-  const waHref = waMeLink(sellerWa, locale === 'bn'
-    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি দেখলাম। বিস্তারিত জানতে চাই।`
-    : `Hi! I saw your product "${product.title}" on the Midman marketplace. I'd like to know more about it.`);
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-          <motion.div initial={{ opacity: 0, y: 40, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }} transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }} className="fixed inset-x-4 top-[5%] z-50 mx-auto max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border border-border/40 bg-card p-0 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 dark:border-border/25">
-            <div className={`relative aspect-[16/9] overflow-hidden rounded-t-2xl bg-gradient-to-br ${gradientBg}`}>
-              {product.image ? (<img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-cover" />) : (<div className="flex h-full w-full items-center justify-center"><CatIcon className={`h-16 w-16 ${catColor} opacity-30`} strokeWidth={1.2} /></div>)}
-              <button onClick={onClose} className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-md transition-colors hover:bg-background dark:bg-zinc-900/80"><X className="h-4 w-4" /></button>
-            </div>
-            <div className="p-5 sm:p-6">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1.5 text-[11px] font-semibold"><CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />{CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}</Badge>
-                <span className="text-[11px] text-muted-foreground">{timeAgo(product.createdAt, locale)}</span>
-              </div>
-              <h2 className="mt-3 text-xl font-bold text-foreground sm:text-2xl">{product.title}</h2>
-              <p className="mt-2 text-2xl font-extrabold text-primary">{formatPrice(product.price, locale)}</p>
-              <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
-              <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
-                <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p>
-                    {sellerWa ? (
-                      <p className="flex items-center gap-1 text-[12px] font-medium text-[#25D366]" dir="ltr"><MessageCircle className="h-3 w-3 shrink-0" />{sellerWa}</p>
-                    ) : (
-                      <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
-                  {user && user.id !== product.seller.id && (
-                    <button
-                      onClick={handleFollow}
-                      disabled={followLoading}
-                      className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-all ${following ? 'bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20' : 'bg-primary/10 text-primary hover:bg-primary/15'}`}
-                    >
-                      <Heart className={`h-3.5 w-3.5 ${following ? 'fill-red-500' : ''}`} />
-                      {followLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : (following ? t('sellerProfile.following') : t('sellerProfile.follow'))}
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); useAppStore.getState().setSellerProfileId(product.seller.id); useAppStore.getState().setView('page-seller-profile'); onClose(); }}
-                    className="flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                  >
-                    <Eye className="h-3.5 w-3.5" />{t('sellerProfile.viewProfile')}
-                  </button>
-                  <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
-                </div>
-              </div>
-
-              {/* Confirmation View */}
-              {showBuyConfirm ? (
-                <div className="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground">{locale === 'bn' ? 'ডিল তৈরি করবেন?' : 'Create Deal?'}</p>
-                      <p className="mt-1 text-[13px] text-muted-foreground">
-                        {locale === 'bn'
-                          ? `এই পণ্যের জন্য একটি মিডম্যান ডিল তৈরি হবে। পরিমাণ: ${formatPrice(product.price, locale)}`
-                          : `A Midman deal will be created for this product. Amount: ${formatPrice(product.price, locale)}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={onConfirmBuy} disabled={buying} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
-                      {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                      {buying ? (locale === 'bn' ? 'তৈরি হচ্ছে...' : 'Creating...') : (locale === 'bn' ? 'হ্যাঁ, ডিল তৈরি করুন' : 'Yes, Create Deal')}
-                    </Button>
-                    <Button onClick={onCancelBuy} disabled={buying} variant="outline" className="flex-1 rounded-xl py-5 text-[14px] font-semibold">
-                      {locale === 'bn' ? 'বাতিল' : 'Cancel'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                  {waHref && (
-                    <a
-                      href={waHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] py-5 text-[14px] font-semibold text-white shadow-md shadow-[#25D366]/25 transition-colors hover:bg-[#1fb955]"
-                    >
-                      <MessageCircle className="h-4.5 w-4.5" />
-                      {t('marketplace.contactWhatsApp')}
-                    </a>
-                  )}
-                  <Button onClick={onBuyNow} variant="outline" className="flex-1 gap-2 rounded-xl border-primary/30 py-5 text-[14px] font-semibold text-primary hover:bg-primary/5"><ShoppingCart className="h-4.5 w-4.5" /> {locale === 'bn' ? 'এখনই কিনুন' : 'Buy Now'}</Button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
 // -- AddProductDialog --
 function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: string; onChange: (v: string) => void; t: (k: string) => string; uploading: boolean; onUpload: (f: File) => void }) {
   const [dragOver, setDragOver] = useState(false);
@@ -428,10 +273,9 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
 
 // -- MarketplaceSection --
 export function MarketplaceSection() {
-  const t = useT(); const locale = useAppStore((s) => s.locale); const user = useAppStore((s) => s.user); const setView = useAppStore((s) => s.setView);
+  const t = useT(); const locale = useAppStore((s) => s.locale); const user = useAppStore((s) => s.user);
   const [products, setProducts] = useState<Product[]>([]); const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(''); const [activeCategory, setActiveCategory] = useState('all');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   const fetchProducts = useCallback(async (cat?: string) => {
@@ -442,28 +286,11 @@ export function MarketplaceSection() {
 
   const filtered = products.filter(p => !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase()));
 
-  const [buying, setBuying] = useState(false);
-  const [showBuyConfirm, setShowBuyConfirm] = useState(false);
-
-  const handleBuyNow = async () => {
-    if (!user) { setView('auth'); return; }
-    if (!selectedProduct) return;
-    setShowBuyConfirm(true);
-  };
-
-  const confirmBuy = async () => {
-    if (!selectedProduct) return;
-    setShowBuyConfirm(false);
-    setSelectedProduct(null);
-    // Pre-fill deal form and navigate to deal creation page
+  // Navigate to the product order page (replaces the old popup dialog)
+  const openProductPage = (id: string) => {
     const store = useAppStore.getState();
-    store.setDealPreFill({
-      title: selectedProduct.title,
-      amount: selectedProduct.price,
-      partyEmail: selectedProduct.seller.email || '',
-    });
-    store.setDashboardPanel('new-deal');
-    store.setView('dashboard');
+    store.setProductDetailId(id);
+    store.setView('page-product');
   };
 
   return (
@@ -499,9 +326,8 @@ export function MarketplaceSection() {
           <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => setSelectedProduct(product)} t={t} locale={locale} />))}</div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
       )}
-      <ProductDetailDialog product={selectedProduct} open={!!selectedProduct} onClose={() => { setSelectedProduct(null); setShowBuyConfirm(false); }} onBuyNow={handleBuyNow} buying={buying} showBuyConfirm={showBuyConfirm} onConfirmBuy={confirmBuy} onCancelBuy={() => setShowBuyConfirm(false)} t={t} locale={locale} />
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>
   );

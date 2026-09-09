@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   keywords: ['midman security', 'মিডম্যান নিরাপত্তা', 'এসক্রো সিকিউরিটি', 'নিরাপদ লেনদেন', 'midman secure', 'online fraud protection Bangladesh'],
   alternates: { canonical: `${SITE_URL}/security` },
   openGraph: {
-    title: 'নিরাপত্তা | Midman মিডম্যান',
+    title: 'নিরাপত্তা',
     description: 'আপনার লেনদেন সম্পূর্ণ সুরক্ষিত - Midman (মিডম্যান)',
     url: `${SITE_URL}/security`,
     type: 'website',
