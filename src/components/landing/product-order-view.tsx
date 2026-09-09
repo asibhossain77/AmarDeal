@@ -25,6 +25,9 @@ interface OrderProduct {
   image?: string | null; quantity?: number; status: string; createdAt: string; seller: OrderProductSeller;
 }
 
+// Quantity is an order-time selection only — no stock concept (max 99 per order)
+const MAX_QTY = 99;
+
 const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
   design: { bn: 'ডিজাইন', en: 'Design' },
   development: { bn: 'ডেভেলপমেন্ট', en: 'Development' },
@@ -116,15 +119,12 @@ export function ProductOrderView() {
   };
 
   const waNumber = product?.seller.whatsappNumber || null;
-  const stock = Math.max(0, product?.quantity ?? 0);
-  const outOfStock = stock <= 0;
   const waHref = product ? waMeLink(waNumber, locale === 'bn'
     ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
     : `Hi! I saw your product "${product.title}"${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
 
   const handleBuyNow = () => {
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
-    if (outOfStock) return;
     setShowBuyConfirm(true);
   };
 
@@ -268,7 +268,7 @@ export function ProductOrderView() {
               </div>
             </div>
 
-            {/* Quantity + stock */}
+            {/* Quantity — order-time selection only (no stock) */}
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"><Boxes className="h-4 w-4" />{t('marketplace.quantity')}</span>
@@ -286,21 +286,14 @@ export function ProductOrderView() {
                   <button
                     type="button"
                     aria-label="increase quantity"
-                    onClick={() => setQty((q) => Math.min(stock, q + 1))}
-                    disabled={outOfStock || qty >= stock}
+                    onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}
+                    disabled={qty >= MAX_QTY}
                     className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              {outOfStock ? (
-                <Badge variant="destructive" className="text-[11px] font-semibold">{t('marketplace.outOfStock')}</Badge>
-              ) : (
-                <span className={`text-[12px] font-medium ${stock <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                  {t('marketplace.stockCount', { count: toLocaleNum(stock, locale) })}
-                </span>
-              )}
             </div>
 
             {/* Order actions */}
@@ -325,20 +318,20 @@ export function ProductOrderView() {
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className={waHref ? 'flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3' : 'flex'}>
                   {waHref && (
                     <a
                       href={waHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 py-5 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                      className="flex h-14 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                     >
                       <MessageCircle className="h-4.5 w-4.5" />
                       {t('marketplace.contactWhatsApp')}
                     </a>
                   )}
-                  <Button onClick={handleBuyNow} disabled={outOfStock} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
-                    <ShoppingCart className="h-4.5 w-4.5" /> {outOfStock ? t('marketplace.outOfStock') : t('marketplace.buyNow')}
+                  <Button onClick={handleBuyNow} className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold">
+                    <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
                   </Button>
                 </div>
               )}

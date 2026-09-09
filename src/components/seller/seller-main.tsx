@@ -230,7 +230,6 @@ export function AddProductPanel() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('other');
-  const [quantity, setQuantity] = useState('10');
   const [image, setImage] = useState('');
   const [localPreview, setLocalPreview] = useState('');
   const [imgDimensions, setImgDimensions] = useState<{ w: number; h: number } | null>(null);
@@ -308,12 +307,12 @@ export function AddProductPanel() {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), description: description.trim(), price: Number(price), category, image: image.trim() || null, quantity: Number(quantity) }),
+        body: JSON.stringify({ title: title.trim(), description: description.trim(), price: Number(price), category, image: image.trim() || null }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setShowPendingDialog(true);
-        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setQuantity('10'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
+        setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -348,10 +347,6 @@ export function AddProductPanel() {
           <div className="space-y-2">
             <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
             <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.productQuantity')}</Label>
-            <Input type="number" placeholder="10" value={quantity} onChange={(e) => setQuantity(e.target.value)} min="1" />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
