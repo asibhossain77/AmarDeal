@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError } from '@/lib/prisma-column-safe'
 
 const VALID_CATEGORIES = [
   'design',
@@ -25,15 +26,30 @@ export async function GET(req: NextRequest) {
       where.category = category
     }
 
-    const products = await db.digitalProduct.findMany({
-      where,
-      include: {
-        seller: {
-          select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+    let products
+    try {
+      products = await db.digitalProduct.findMany({
+        where,
+        include: {
+          seller: {
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+          },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: { createdAt: 'desc' },
+      })
+    } catch (err) {
+      if (!isMissingColumnError(err, 'quantity')) throw err
+      // quantity column not migrated yet (production) — fall back without it
+      products = await db.digitalProduct.findMany({
+        where,
+        select: {
+          id: true, title: true, description: true, price: true, category: true, image: true,
+          status: true, createdAt: true, updatedAt: true,
+          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    }
 
     const formatted = products.map((p) => ({
       id: p.id,
@@ -42,6 +58,7 @@ export async function GET(req: NextRequest) {
       price: p.price,
       category: p.category,
       image: p.image,
+      quantity: (p as { quantity?: number }).quantity ?? DEFAULT_PRODUCT_QUANTITY,
       status: p.status,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
@@ -84,7 +101,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { title, description, price, category, image } = await req.json()
+    const { title, description, price, category, image, quantity } = await req.json()
 
     if (!title?.trim() || !description?.trim() || !price) {
       return NextResponse.json(
@@ -104,22 +121,51 @@ export async function POST(req: NextRequest) {
       ? category
       : 'other'
 
-    const product = await db.digitalProduct.create({
-      data: {
-        title: title.trim(),
-        description: description.trim(),
-        price: Number(price),
-        category: validCategory,
-        image: image || null,
-        sellerId: userId,
-        status: 'pending',
-      },
-      include: {
-        seller: {
-          select: { name: true, imageLink: true, whatsappNumber: true },
+    const quantityNum = quantity === undefined || quantity === null || quantity === ''
+      ? DEFAULT_PRODUCT_QUANTITY
+      : Math.floor(Number(quantity))
+    if (Number.isNaN(quantityNum) || quantityNum < 1) {
+      return NextResponse.json(
+        { success: false, error: 'কোয়ান্টিটি অবশ্যই ১ বা তার বেশি হতে হবে' },
+        { status: 400 }
+      )
+    }
+
+    const createData: Record<string, unknown> = {
+      title: title.trim(),
+      description: description.trim(),
+      price: Number(price),
+      category: validCategory,
+      image: image || null,
+      sellerId: userId,
+      status: 'pending',
+      quantity: quantityNum,
+    }
+
+    let product
+    try {
+      product = await db.digitalProduct.create({ data: createData, include: { seller: { select: { name: true, imageLink: true, whatsappNumber: true } } } })
+    } catch (err) {
+      if (!isMissingColumnError(err, 'quantity')) throw err
+      // quantity column not migrated yet — raw INSERT without quantity (new client
+      // always includes schema defaults in CREATE, so Prisma create cannot be used)
+      delete createData.quantity
+      const newId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12)
+      const now = new Date().toISOString()
+      await db.$executeRawUnsafe(
+        'INSERT INTO "DigitalProduct" ("id","title","description","price","category","image","sellerId","status","createdAt","updatedAt") VALUES (?,?,?,?,?,?,?,?,?,?)',
+        newId, createData.title as string, createData.description as string, createData.price as number,
+        createData.category as string, (createData.image as string | null) ?? null, userId, 'pending', now, now
+      )
+      product = await db.digitalProduct.findUnique({
+        where: { id: newId },
+        select: {
+          id: true, title: true, description: true, price: true, category: true, image: true,
+          status: true, createdAt: true, updatedAt: true,
+          seller: { select: { name: true, imageLink: true, whatsappNumber: true } },
         },
-      },
-    })
+      })
+    }
 
     return NextResponse.json(
       {
@@ -131,6 +177,7 @@ export async function POST(req: NextRequest) {
           price: product.price,
           category: product.category,
           image: product.image,
+          quantity: (product as { quantity?: number }).quantity ?? DEFAULT_PRODUCT_QUANTITY,
           status: product.status,
           createdAt: product.createdAt,
           updatedAt: product.updatedAt,

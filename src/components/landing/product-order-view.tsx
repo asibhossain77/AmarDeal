@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Zap, Loader2, User,
-  Eye, Heart, Package,
+  Eye, Heart, Package, Minus, Plus, Boxes,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -22,7 +22,7 @@ interface OrderProductSeller {
 }
 interface OrderProduct {
   id: string; title: string; description: string; price: number; category: string;
-  image?: string | null; status: string; createdAt: string; seller: OrderProductSeller;
+  image?: string | null; quantity?: number; status: string; createdAt: string; seller: OrderProductSeller;
 }
 
 const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
@@ -44,6 +44,10 @@ function formatPrice(price: number, locale: string): string {
     : '৳' + formatted;
 }
 
+function toLocaleNum(n: number, locale: string): string {
+  return locale === 'bn' ? String(n).replace(/[0-9]/g, (d) => '০১২৩৪৫৬৭৮৯'[parseInt(d)]) : String(n);
+}
+
 export function ProductOrderView() {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
@@ -57,12 +61,14 @@ export function ProductOrderView() {
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
+  const [qty, setQty] = useState(1);
 
   useEffect(() => {
     if (!productDetailId) return;
     setLoading(true);
     setShowBuyConfirm(false);
     setProduct(null);
+    setQty(1);
     fetch(`/api/products/${productDetailId}`)
       .then((r) => r.json())
       .then((d) => { setProduct(d.success ? d.product : null); })
@@ -110,12 +116,15 @@ export function ProductOrderView() {
   };
 
   const waNumber = product?.seller.whatsappNumber || null;
+  const stock = Math.max(0, product?.quantity ?? 0);
+  const outOfStock = stock <= 0;
   const waHref = product ? waMeLink(waNumber, locale === 'bn'
-    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি দেখলাম। বিস্তারিত জানতে চাই।`
-    : `Hi! I saw your product "${product.title}" on the Midman marketplace. I'd like to know more about it.`) : null;
+    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
+    : `Hi! I saw your product "${product.title}"${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
 
   const handleBuyNow = () => {
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
+    if (outOfStock) return;
     setShowBuyConfirm(true);
   };
 
@@ -124,8 +133,8 @@ export function ProductOrderView() {
     setShowBuyConfirm(false);
     const store = useAppStore.getState();
     store.setDealPreFill({
-      title: product.title,
-      amount: product.price,
+      title: qty > 1 ? `${product.title} (×${qty})` : product.title,
+      amount: product.price * qty,
       partyEmail: product.seller.email || '',
     });
     store.setDashboardPanel('new-deal');
@@ -218,7 +227,12 @@ export function ProductOrderView() {
               <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
             </div>
             <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{product.title}</h1>
-            <p className="mt-2 text-3xl font-extrabold text-primary">{formatPrice(product.price, locale)}</p>
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="text-3xl font-extrabold text-primary">{formatPrice(product.price * qty, locale)}</p>
+              {qty > 1 && (
+                <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(product.price, locale)} × {toLocaleNum(qty, locale)}</p>
+              )}
+            </div>
             <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
 
             {/* Seller box */}
@@ -254,6 +268,41 @@ export function ProductOrderView() {
               </div>
             </div>
 
+            {/* Quantity + stock */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"><Boxes className="h-4 w-4" />{t('marketplace.quantity')}</span>
+                <div className="flex items-center overflow-hidden rounded-xl border border-border">
+                  <button
+                    type="button"
+                    aria-label="decrease quantity"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    disabled={qty <= 1}
+                    className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="w-12 text-center text-[15px] font-bold text-foreground tabular-nums">{toLocaleNum(qty, locale)}</span>
+                  <button
+                    type="button"
+                    aria-label="increase quantity"
+                    onClick={() => setQty((q) => Math.min(stock, q + 1))}
+                    disabled={outOfStock || qty >= stock}
+                    className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              {outOfStock ? (
+                <Badge variant="destructive" className="text-[11px] font-semibold">{t('marketplace.outOfStock')}</Badge>
+              ) : (
+                <span className={`text-[12px] font-medium ${stock <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                  {t('marketplace.stockCount', { count: toLocaleNum(stock, locale) })}
+                </span>
+              )}
+            </div>
+
             {/* Order actions */}
             <div className="mt-5">
               {showBuyConfirm ? (
@@ -262,7 +311,7 @@ export function ProductOrderView() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground">{t('marketplace.dealConfirmTitle')}</p>
-                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice(product.price, locale) })}</p>
+                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice(product.price * qty, locale) })}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -282,14 +331,14 @@ export function ProductOrderView() {
                       href={waHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl py-5 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 py-5 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                     >
                       <MessageCircle className="h-4.5 w-4.5" />
                       {t('marketplace.contactWhatsApp')}
                     </a>
                   )}
-                  <Button onClick={handleBuyNow} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
-                    <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
+                  <Button onClick={handleBuyNow} disabled={outOfStock} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
+                    <ShoppingCart className="h-4.5 w-4.5" /> {outOfStock ? t('marketplace.outOfStock') : t('marketplace.buyNow')}
                   </Button>
                 </div>
               )}

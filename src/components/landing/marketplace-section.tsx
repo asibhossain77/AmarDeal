@@ -219,6 +219,7 @@ function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: str
 function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boolean; onClose: () => void; onCreated: (product: Product) => void; t: (k: string) => string; locale: string }) {
   const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [price, setPrice] = useState(''); const [category, setCategory] = useState('other'); const [image, setImage] = useState('');
+  const [quantity, setQuantity] = useState('10');
   const [submitting, setSubmitting] = useState(false); const [uploading, setUploading] = useState(false);
   const handleImageUpload = async (file: File) => {
     setUploading(true);
@@ -241,9 +242,9 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
     if (!title.trim() || !description.trim() || !price) return;
     setSubmitting(true);
     try {
-      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, price: Number(price), category, image: image.trim() || undefined }) });
+      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, price: Number(price), category, image: image.trim() || undefined, quantity: Number(quantity) }) });
       const data = await res.json();
-      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); }
+      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setQuantity('10'); }
       else toast.error(data.error || t('marketplace.addFailed'));
     } catch { toast.error(t('marketplace.addFailed')); } finally { setSubmitting(false); }
   };
@@ -260,6 +261,7 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
+                <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formQuantity')}</label><Input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="10" required /></div>
               </div>
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formImage')} <span className="text-muted-foreground">({t('marketplace.optional')})</span></label><ImageUploader image={image} onChange={setImage} t={t} uploading={uploading} onUpload={handleImageUpload} /></div>
               <Button type="submit" disabled={submitting} className="w-full gap-2 rounded-xl py-5 text-[14px] font-semibold">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{t('marketplace.submitProduct')}</Button>

@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { getAdminFromRequest } from '@/lib/admin-guard'
+import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError } from '@/lib/prisma-column-safe'
 
 const VALID_CATEGORIES = [
   'design',
@@ -23,14 +24,28 @@ export async function GET(
   try {
     const { id } = await params
 
-    const product = await db.digitalProduct.findUnique({
-      where: { id },
-      include: {
-        seller: {
-          select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+    let product
+    try {
+      product = await db.digitalProduct.findUnique({
+        where: { id },
+        include: {
+          seller: {
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+          },
         },
-      },
-    })
+      })
+    } catch (err) {
+      if (!isMissingColumnError(err, 'quantity')) throw err
+      // quantity column not migrated yet (production) — fall back without it
+      product = await db.digitalProduct.findUnique({
+        where: { id },
+        select: {
+          id: true, title: true, description: true, price: true, category: true, image: true,
+          status: true, createdAt: true, updatedAt: true,
+          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true } },
+        },
+      })
+    }
 
     if (!product) {
       return NextResponse.json(
@@ -48,6 +63,7 @@ export async function GET(
         price: product.price,
         category: product.category,
         image: product.image,
+        quantity: (product as { quantity?: number }).quantity ?? DEFAULT_PRODUCT_QUANTITY,
         status: product.status,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
@@ -101,7 +117,7 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const { title, description, price, category, image, status } = body
+    const { title, description, price, category, image, status, quantity } = body
 
     // Build update data with only provided fields
     const data: Record<string, unknown> = {}
@@ -166,15 +182,45 @@ export async function PATCH(
       data.status = status
     }
 
-    const product = await db.digitalProduct.update({
-      where: { id },
-      data,
-      include: {
-        seller: {
-          select: { name: true, imageLink: true },
+    if (quantity !== undefined) {
+      const quantityNum = Math.floor(Number(quantity))
+      if (Number.isNaN(quantityNum) || quantityNum < 1) {
+        return NextResponse.json(
+          { success: false, error: 'কোয়ান্টিটি অবশ্যই ১ বা তার বেশি হতে হবে' },
+          { status: 400 }
+        )
+      }
+      data.quantity = quantityNum
+    }
+
+    let product
+    try {
+      product = await db.digitalProduct.update({
+        where: { id },
+        data,
+        include: {
+          seller: {
+            select: { name: true, imageLink: true },
+          },
         },
-      },
-    })
+      })
+    } catch (err) {
+      if (!isMissingColumnError(err, 'quantity')) throw err
+      // quantity column not migrated yet — updateMany (no RETURNING clause),
+      // then read back with a quantity-free select
+      delete data.quantity
+      if (Object.keys(data).length > 0) {
+        await db.digitalProduct.updateMany({ where: { id }, data })
+      }
+      product = await db.digitalProduct.findUnique({
+        where: { id },
+        select: {
+          id: true, title: true, description: true, price: true, category: true, image: true,
+          status: true, createdAt: true, updatedAt: true,
+          seller: { select: { name: true, imageLink: true } },
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -185,6 +231,7 @@ export async function PATCH(
         price: product.price,
         category: product.category,
         image: product.image,
+        quantity: (product as { quantity?: number }).quantity ?? DEFAULT_PRODUCT_QUANTITY,
         status: product.status,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,

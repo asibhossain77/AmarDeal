@@ -254,6 +254,7 @@ model DigitalProduct {
   price       Float
   category    String   @default("other")
   image       String?
+  quantity    Int      @default(10)
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id])
   status      String   @default("active")
