@@ -211,12 +211,12 @@ export function ProductOrderView() {
           transition={{ duration: 0.35 }}
           className="grid gap-6 lg:grid-cols-2 lg:gap-10"
         >
-          {/* Product image */}
-          <div className="overflow-hidden rounded-2xl border border-border/40 bg-muted/30 shadow-sm">
+          {/* Product image — fills full column height on desktop (no blank below) */}
+          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-muted/30 shadow-sm">
             {product.image ? (
-              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full object-cover" />
+              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" />
             ) : (
-              <div className="flex aspect-[16/10] w-full items-center justify-center"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
+              <div className="flex aspect-[16/10] w-full items-center justify-center lg:absolute lg:inset-0 lg:aspect-auto"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
             )}
           </div>
 
