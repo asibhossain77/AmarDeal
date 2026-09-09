@@ -60,7 +60,8 @@ export async function GET(
         },
       },
     })
-  } catch {
+  } catch (err) {
+    console.error('[products:GET:id] Failed:', err instanceof Error ? err.message : err)
     return NextResponse.json(
       { success: false, error: 'পণ্য লোড করতে সমস্যা' },
       { status: 500 }

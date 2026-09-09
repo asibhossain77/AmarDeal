@@ -282,13 +282,13 @@ export function ProductOrderView() {
                       href={waHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] py-5 text-[14px] font-semibold text-white shadow-md shadow-[#25D366]/25 transition-colors hover:bg-[#1fb955]"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl py-5 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
                     >
                       <MessageCircle className="h-4.5 w-4.5" />
                       {t('marketplace.contactWhatsApp')}
                     </a>
                   )}
-                  <Button onClick={handleBuyNow} variant="outline" className="flex-1 gap-2 rounded-xl border-primary/30 py-5 text-[14px] font-semibold text-primary hover:bg-primary/5">
+                  <Button onClick={handleBuyNow} className="flex-1 gap-2 rounded-xl py-5 text-[14px] font-semibold">
                     <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
                   </Button>
                 </div>

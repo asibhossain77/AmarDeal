@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
     }))
 
     return NextResponse.json({ success: true, products: formatted })
-  } catch {
+  } catch (err) {
+    console.error('[products:GET] Failed:', err instanceof Error ? err.message : err)
     return NextResponse.json(
       { success: false, error: 'পণ্য লোড করতে সমস্যা হয়েছে' },
       { status: 500 }
