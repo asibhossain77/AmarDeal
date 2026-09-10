@@ -104,7 +104,7 @@ function DashboardLoadingShell() {
   );
 }
 
-/* ── Landing with Hero + Marketplace + Reviews + Trust ── */
+/* ── Landing with Hero + Marketplace + Reviews ── */
 function LandingView() {
   const locale = useAppStore((s) => s.locale);
   return (
@@ -129,7 +129,6 @@ function LandingView() {
           <MarketplaceSection />
         </section>
         <ReviewSection />
-        <TrustSecurity />
       </main>
       <Footer />
     </>

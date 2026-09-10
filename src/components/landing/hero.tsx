@@ -127,8 +127,8 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
   ];
 
   const stats = [
-    { label: t('hero.stat.held'), value: locale === 'bn' ? '৳২৫,০০০' : '৳25,000' },
-    { label: t('hero.stat.completedDeals'), value: locale === 'bn' ? '১২৮' : '128' },
+    { label: t('hero.stat.held'), value: '৳25,000' },
+    { label: t('hero.stat.completedDeals'), value: '128' },
     { label: t('hero.stat.successRate'), value: '99.8%' },
   ];
 
@@ -169,7 +169,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
             <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-5 py-2.5 sm:px-6 sm:py-3 ring-1 ring-primary/10">
               <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/[0.05] blur-xl" />
               <span className="relative text-2xl font-extrabold tracking-tight text-primary sm:text-3xl lg:text-4xl">
-                {locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
+                ৳25,000
               </span>
             </div>
           </div>
@@ -279,7 +279,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         <FloatingMiniCard
           icon={Shield}
           title={t('hero.float.paymentSecured')}
-          value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
+          value="৳25,000"
           floatClass="float-card-1"
           delay={0.8}
           variant="light"
@@ -287,7 +287,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
         <FloatingMiniCard
           icon={CheckCircle2}
           title={t('hero.float.dealCompleted')}
-          value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
+          value="+৳8,500"
           floatClass="float-card-3"
           delay={1.2}
           variant="highlight"
@@ -299,7 +299,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
       <FloatingMiniCard
         icon={Shield}
         title={t('hero.float.paymentSecured')}
-        value={locale === 'bn' ? '৳২৫,০০০' : '৳25,000'}
+        value="৳25,000"
         floatClass="hidden sm:block absolute float-card-1 top-[6%] -left-[100px] sm:top-[7%] sm:-left-[110px] lg:top-[8%] lg:-left-[120px] xl:top-[8%] xl:-left-[130px]"
         delay={0.8}
         variant="light"
@@ -317,7 +317,7 @@ function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => st
       <FloatingMiniCard
         icon={CheckCircle2}
         title={t('hero.float.dealCompleted')}
-        value={locale === 'bn' ? '+৳৮,৫০০' : '+৳8,500'}
+        value="+৳8,500"
         floatClass="hidden sm:block absolute float-card-3 bottom-[14%] -left-[100px] sm:bottom-[13%] sm:-left-[110px] lg:bottom-[14%] lg:-left-[120px] xl:bottom-[14%] xl:-left-[130px]"
         delay={1.2}
         variant="highlight"

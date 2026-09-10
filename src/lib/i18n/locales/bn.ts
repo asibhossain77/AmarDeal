@@ -87,7 +87,7 @@ export const bn = {
   'hero.float.trusted': 'বিশ্বস্ত',
   'hero.float.dealCompleted': 'ডিল সম্পন্ন',
   'hero.float.dealProtected': 'ডিল সুরক্ষিত',
-  'hero.float.hundredSecure': '১০০% নিরাপদ',
+  'hero.float.hundredSecure': '100% নিরাপদ',
   'hero.trust.paymentSecured': 'পেমেন্ট সুরক্ষিত',
   'hero.trust.verifiedUser': 'ভেরিফাইড ইউজার',
   'hero.trust.dealProtection': 'ডিল প্রোটেকশন',
