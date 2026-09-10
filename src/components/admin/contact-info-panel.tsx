@@ -27,6 +27,10 @@ interface ProfileData {
   adminImageUrl: string;
 }
 
+interface ExtraSettings {
+  mapUrl: string;
+}
+
 export function ContactInfoPanel() {
   const t = useT();
   const [data, setData] = useState<ContactData>({
@@ -34,6 +38,7 @@ export function ContactInfoPanel() {
     facebook: '', facebookPage: '', facebookGroup: '', telegramGroup: '', address: '',
   });
   const [profile, setProfile] = useState<ProfileData>({ adminName: '', adminImageUrl: '' });
+  const [extra, setExtra] = useState<ExtraSettings>({ mapUrl: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,6 +64,7 @@ export function ContactInfoPanel() {
         adminName: settings.platform_name ? '' : (settings.admin_display_name || ''),
         adminImageUrl: settings.admin_image_url || '',
       });
+      setExtra({ mapUrl: settings.contact_map_url || '' });
     }).catch(() => {
       toast.error(t('admin.contact.loadError'));
     }).finally(() => setLoading(false));
@@ -78,6 +84,7 @@ export function ContactInfoPanel() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             admin_display_name: profile.adminName,
+            contact_map_url: extra.mapUrl,
           }),
         }),
       ]);
@@ -223,6 +230,11 @@ export function ContactInfoPanel() {
           <div className="space-y-1.5 sm:col-span-2">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.address')}</Label>
             <Input placeholder={t('admin.contact.addressPlaceholder')} value={data.address || ''} onChange={e => updateField('address', e.target.value)} className="rounded-xl border-border/60" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-muted-foreground" /> {t('admin.contact.mapUrl')}</Label>
+            <Input type="url" placeholder="https://maps.app.goo.gl/..." value={extra.mapUrl || ''} onChange={e => setExtra(p => ({ ...p, mapUrl: e.target.value }))} className="rounded-xl border-border/60" />
+            <p className="text-[11px] text-muted-foreground">{t('admin.contact.mapUrlDesc')}</p>
           </div>
         </div>
       </div>

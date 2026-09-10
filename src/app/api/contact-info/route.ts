@@ -6,7 +6,7 @@ export async function GET() {
     const info = await db.contactInfo.findFirst();
 
     const settings = await db.platformSetting.findMany({
-      where: { key: { in: ['admin_display_name', 'admin_image_url'] } },
+      where: { key: { in: ['admin_display_name', 'admin_image_url', 'contact_map_url'] } },
     });
     const settingMap: Record<string, string> = {};
     for (const s of settings) {
@@ -23,6 +23,7 @@ export async function GET() {
       facebookGroup: null,
       telegramGroup: null,
       address: null,
+      mapUrl: settingMap['contact_map_url'] || '',
       adminName: settingMap['admin_display_name'] || '',
       adminImageUrl: settingMap['admin_image_url'] || '',
     };
@@ -31,6 +32,7 @@ export async function GET() {
 
     return NextResponse.json({
       ...info,
+      mapUrl: settingMap['contact_map_url'] || '',
       adminName: settingMap['admin_display_name'] || '',
       adminImageUrl: settingMap['admin_image_url'] || '',
     });

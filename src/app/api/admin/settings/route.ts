@@ -17,6 +17,7 @@ const settingKeys = [
   'footer_made_in',
   'admin_display_name',
   'admin_image_url',
+  'contact_map_url',
 ]
 
 export async function GET() {
@@ -45,6 +46,7 @@ export async function GET() {
       footer_made_in: map.footer_made_in || '',
       admin_display_name: map.admin_display_name || '',
       admin_image_url: map.admin_image_url || '',
+      contact_map_url: map.contact_map_url || '',
     })
   } catch {
     return NextResponse.json(
