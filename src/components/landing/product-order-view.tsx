@@ -40,15 +40,13 @@ const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
   other: { bn: 'অন্যান্য', en: 'Other' },
 };
 
-function formatPrice(price: number, locale: string): string {
-  const formatted = price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  return locale === 'bn'
-    ? '৳' + formatted.replace(/[0-9]/g, (d) => '০১২৩৪৫৬৭৮৯'[parseInt(d)])
-    : '৳' + formatted;
+// English digits everywhere — even in Bangla locale (user request)
+function formatPrice(price: number, _locale: string): string {
+  return '৳' + price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function toLocaleNum(n: number, locale: string): string {
-  return locale === 'bn' ? String(n).replace(/[0-9]/g, (d) => '০১২৩৪৫৬৭৮৯'[parseInt(d)]) : String(n);
+function toLocaleNum(n: number, _locale: string): string {
+  return String(n);
 }
 
 export function ProductOrderView() {

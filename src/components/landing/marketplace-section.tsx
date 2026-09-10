@@ -58,11 +58,9 @@ const cardVariant = {
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } }),
 };
 
-function formatPrice(price: number, locale: string): string {
-  const formatted = price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  return locale === 'bn'
-    ? '৳' + formatted.replace(/[0-9]/g, (d) => '\u09E6\u09E7\u09E8\u09E9\u09EA\u09EB\u09EC\u09ED\u09EE\u09EF\u09E7\u09E8\u09E9'[parseInt(d)])
-    : '৳' + formatted;
+// English digits everywhere — even in Bangla locale (user request)
+function formatPrice(price: number, _locale: string): string {
+  return '৳' + price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function timeAgo(dateStr: string, locale: string): string {
