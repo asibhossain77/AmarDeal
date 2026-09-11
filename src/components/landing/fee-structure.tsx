@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check, Percent } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 
 
@@ -27,6 +27,8 @@ function formatRange(min: number, max: number, t: (key: string) => string): stri
 export function FeeStructure() {
   const t = useT();
   const [rules, setRules] = useState<FeeRule[]>([]);
+  const [freeBelow, setFreeBelow] = useState<number>(50);
+  const [feePercent, setFeePercent] = useState<number>(3);
   const [loading, setLoading] = useState(true);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const setView = useAppStore((s) => s.setView);
@@ -36,7 +38,13 @@ export function FeeStructure() {
       const res = await fetch('/api/fee-structure');
       if (res.ok) {
         const data = await res.json();
-        setRules(data);
+        // Response: { rules, freeBelow, defaultFeePercent } (backward-compatible with plain array)
+        const list = Array.isArray(data) ? data : (data.rules ?? []);
+        setRules(list);
+        if (!Array.isArray(data)) {
+          if (typeof data.freeBelow === 'number') setFreeBelow(data.freeBelow);
+          if (typeof data.defaultFeePercent === 'number') setFeePercent(data.defaultFeePercent);
+        }
       }
     } catch {
       // silently fail
@@ -168,6 +176,28 @@ export function FeeStructure() {
             )}
           </div>
         </div>
+
+        {/* Fee Notes: free threshold + percentage fallback */}
+        {!loading && (freeBelow > 0 || feePercent > 0) && (
+          <div className="mt-4 rounded-2xl bg-primary/5 border border-primary/20 px-5 py-4 space-y-2">
+            {freeBelow > 0 && (
+              <p className="flex items-start gap-2 text-sm text-foreground">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Check className="h-3 w-3" />
+                </span>
+                <span>{t('fee.freeNote', { amount: freeBelow.toLocaleString('en') })}</span>
+              </p>
+            )}
+            {feePercent > 0 && (
+              <p className="flex items-start gap-2 text-sm text-foreground">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Percent className="h-3 w-3" />
+                </span>
+                <span>{t('fee.fallbackNote', { percent: String(feePercent) })}</span>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* CTA Button */}
         <div className="mt-10 text-center">

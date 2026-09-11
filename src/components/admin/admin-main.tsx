@@ -184,6 +184,7 @@ interface PlatformSettings {
   site_title: string;
   site_logo: string;
   fee_percentage: string;
+  fee_free_below: string;
   min_deal_amount: string;
   max_deal_amount: string;
   support_number: string;
@@ -2278,6 +2279,7 @@ function SettingsPanel() {
     site_title: '',
     site_logo: '',
     fee_percentage: '',
+    fee_free_below: '',
     min_deal_amount: '',
     max_deal_amount: '',
     support_number: '',
@@ -2365,6 +2367,12 @@ function SettingsPanel() {
       label: t('admin.settings.feePercent'),
       type: 'number',
       placeholder: '3',
+    },
+    {
+      key: 'fee_free_below',
+      label: t('admin.settings.feeFreeBelow'),
+      type: 'number',
+      placeholder: '50',
     },
     {
       key: 'min_deal_amount',

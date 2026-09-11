@@ -708,6 +708,8 @@ export const bn = {
   'fee.unlimited': 'সীমাহীন',
   'fee.noRules': 'কোনো ফি নিয়ম পাওয়া যায়নি',
   'fee.startDeal': 'এখনই ডিল শুরু করুন',
+  'fee.freeNote': 'প্রতিটি ডিলে ৳0 – ৳{amount} পর্যন্ত ফি সম্পূর্ণ ফ্রি।',
+  'fee.fallbackNote': 'কোনো ফি রুল প্রযোজ্য না হলে ডিল পরিমাণের {percent}% ফি ধরা হবে।',
 
   // ── How It Works ──
   'how.sectionLabel': 'কিভাবে কাজ করে',
@@ -1190,6 +1192,7 @@ export const bn = {
   // ── Admin Fee Rules (extended) ──
   'admin.fees.management': 'ফি কাঠামো ম্যানেজমেন্ট',
   'admin.fees.managementDesc': 'লেনদেনের পরিসর অনুযায়ী ফি নিয়ম তৈরি, সম্পাদনা ও মুছে ফেলুন',
+  'admin.fees.fallbackHint': 'এই মানগুলো পরিবর্তন করতে Website Settings প্যানেলে যান।',
   'admin.fees.refresh': 'রিফ্রেশ',
   'admin.fees.newRule': 'নতুন নিয়ম',
   'admin.fees.editRuleTitle': 'নিয়ম সম্পাদনা করুন',
@@ -1531,7 +1534,8 @@ export const bn = {
   'admin.users.staffPerm.grantAccess': 'নিচের প্যানেলগুলোতে অ্যাক্সেস দিন',
   'admin.users.staffPerm.selectedCount': '{count}টি নির্বাচিত',
 
-  'admin.settings.feePercent': 'ফি শতাংশ (%)',
+  'admin.settings.feePercent': 'ফি শতাংশ (%) — রুল না মিললে প্রযোজ্য',
+  'admin.settings.feeFreeBelow': 'ফি-ফ্রি সীমা (৳) — এই পরিমাণ পর্যন্ত ডিল ফ্রি',
   'admin.settings.minDealAmount': 'ন্যূনতম ডিল পরিমাণ (৳)',
   'admin.settings.maxDealAmount': 'সর্বোচ্চ ডিল পরিমাণ (৳)',
   'admin.settings.supportNumber': 'সাপোর্ট নাম্বার',

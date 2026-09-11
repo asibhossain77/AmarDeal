@@ -710,6 +710,8 @@ export const en: Record<TranslationKey, string> = {
   'fee.unlimited': 'Unlimited',
   'fee.noRules': 'No fee rules found',
   'fee.startDeal': 'Start a Deal Now',
+  'fee.freeNote': 'Every deal up to ৳{amount} is completely fee-free.',
+  'fee.fallbackNote': 'If no fee rule matches, a {percent}% fee on the deal amount applies.',
 
   // ── How It Works ──
   'how.sectionLabel': 'How It Works',
@@ -1192,6 +1194,7 @@ export const en: Record<TranslationKey, string> = {
   // ── Admin Fee Rules (extended) ──
   'admin.fees.management': 'Fee Structure Management',
   'admin.fees.managementDesc': 'Create, edit and delete fee rules based on transaction range',
+  'admin.fees.fallbackHint': 'Change these values in the Website Settings panel.',
   'admin.fees.refresh': 'Refresh',
   'admin.fees.newRule': 'New Rule',
   'admin.fees.editRuleTitle': 'Edit Rule',
@@ -1533,7 +1536,8 @@ export const en: Record<TranslationKey, string> = {
   'admin.users.staffPerm.grantAccess': 'Grant access to the panels below',
   'admin.users.staffPerm.selectedCount': '{count} selected',
 
-  'admin.settings.feePercent': 'Fee Percentage (%)',
+  'admin.settings.feePercent': 'Fee Percentage (%) — fallback when no rule matches',
+  'admin.settings.feeFreeBelow': 'Fee-Free Limit (৳) — deals up to this are free',
   'admin.settings.minDealAmount': 'Min Deal Amount (৳)',
   'admin.settings.maxDealAmount': 'Max Deal Amount (৳)',
   'admin.settings.supportNumber': 'Support Number',

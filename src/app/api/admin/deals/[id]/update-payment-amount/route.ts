@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
+import { calculateDealFee } from '@/lib/fee'
 
 export async function POST(
   req: NextRequest,
@@ -33,21 +34,10 @@ export async function POST(
 
     const newAmount = Number(paymentAmount)
 
-    // Recalculate platform fee based on the new payment amount
+    // Recalculate platform fee based on the deal amount (shared logic)
     let platformFee = deal.platformFee
     if (deal.amount) {
-      const rules = await db.feeRule.findMany({
-        where: { is_active: true },
-        orderBy: { minimum_amount: 'asc' },
-      })
-      for (const rule of rules) {
-        if (deal.amount >= rule.minimum_amount) {
-          if (rule.maximum_amount === 0 || deal.amount <= rule.maximum_amount) {
-            platformFee = rule.fee
-            break
-          }
-        }
-      }
+      platformFee = (await calculateDealFee(deal.amount)).fee
     }
 
     const updated = await db.deal.update({

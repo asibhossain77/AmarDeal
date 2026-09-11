@@ -147,6 +147,7 @@ function FeeRuleForm({
 export function FeeRulesPanel() {
   const t = useT();
   const [rules, setRules] = useState<FeeRule[]>([]);
+  const [fallbackInfo, setFallbackInfo] = useState<{ freeBelow: number; defaultFeePercent: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<FeeRule | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -159,6 +160,14 @@ export function FeeRulesPanel() {
       if (res.ok) {
         const data = await res.json();
         setRules(data);
+      }
+      // Fallback config (public endpoint): free threshold + default percentage
+      const cfgRes = await fetch('/api/fee-structure');
+      if (cfgRes.ok) {
+        const cfg = await cfgRes.json();
+        if (!Array.isArray(cfg)) {
+          setFallbackInfo({ freeBelow: cfg.freeBelow ?? 50, defaultFeePercent: cfg.defaultFeePercent ?? 3 });
+        }
       }
     } catch {
       // silent
@@ -292,6 +301,23 @@ export function FeeRulesPanel() {
           )}
         </div>
       </div>
+
+      {/* Fallback behavior info */}
+      {fallbackInfo && (
+        <div className="rounded-2xl bg-primary/5 border border-primary/20 px-4 py-3 space-y-1">
+          {fallbackInfo.freeBelow > 0 && (
+            <p className="text-xs sm:text-sm text-foreground">
+              {t('fee.freeNote', { amount: fallbackInfo.freeBelow.toLocaleString('en') })}
+            </p>
+          )}
+          {fallbackInfo.defaultFeePercent > 0 && (
+            <p className="text-xs sm:text-sm text-foreground">
+              {t('fee.fallbackNote', { percent: String(fallbackInfo.defaultFeePercent) })}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">{t('admin.fees.fallbackHint')}</p>
+        </div>
+      )}
 
       {/* Add / Edit Form */}
       {(showForm || editing) && (

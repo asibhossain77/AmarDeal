@@ -1,5 +1,5 @@
-import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { calculateDealFee } from '@/lib/fee'
 
 export async function GET(request: Request) {
   try {
@@ -15,39 +15,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'সঠিক পরিমাণ প্রদান করুন' }, { status: 400 })
     }
 
-    // Find the matching fee rule for this amount
-    const rules = await db.feeRule.findMany({
-      where: { is_active: true },
-      orderBy: { minimum_amount: 'asc' },
-    })
+    // Single source of truth: free threshold -> tier rules -> percentage fallback
+    const result = await calculateDealFee(amount)
 
-    let fee = 0
-    let matchedRule = null
-
-    for (const rule of rules) {
-      if (amount >= rule.minimum_amount) {
-        if (rule.maximum_amount === 0 || amount <= rule.maximum_amount) {
-          fee = rule.fee
-          matchedRule = {
-            minimum_amount: rule.minimum_amount,
-            maximum_amount: rule.maximum_amount,
-            fee: rule.fee,
-          }
-          break
-        }
-      }
-    }
-
-    // If no rule matched, use a fallback (no fee)
-    const total = amount + fee
-    const feePercentage = amount > 0 ? ((fee / amount) * 100).toFixed(2) : '0.00'
+    const total = amount + result.fee
+    const feePercentage = amount > 0 ? ((result.fee / amount) * 100).toFixed(2) : '0.00'
 
     return NextResponse.json({
       amount,
-      fee,
+      fee: result.fee,
       total,
       feePercentage: parseFloat(feePercentage),
-      matchedRule,
+      matchedRule: result.matchedRule,
+      source: result.source,
+      freeBelow: result.config.freeBelow,
+      defaultFeePercent: result.config.feePercentage,
     })
   } catch {
     return NextResponse.json({ error: 'ফি হিসাব করতে ব্যর্থ' }, { status: 500 })

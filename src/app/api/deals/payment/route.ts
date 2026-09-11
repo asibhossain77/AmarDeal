@@ -4,6 +4,7 @@ import { sendEmail, paymentSubmittedEmail } from '@/lib/email'
 import { sendWhatsApp, paymentSubmittedWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
 import { notifyUser, notifyAdmins } from '@/lib/push'
+import { calculateDealFee } from '@/lib/fee'
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,21 +48,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Calculate fee from tiered structure if not provided
+    // Calculate fee from shared logic (free threshold -> tier rules -> % fallback) if not provided
     let platformFee = fee ?? null
     if (platformFee === null && existing.amount) {
-      const rules = await db.feeRule.findMany({
-        where: { is_active: true },
-        orderBy: { minimum_amount: 'asc' },
-      })
-      for (const rule of rules) {
-        if (existing.amount >= rule.minimum_amount) {
-          if (rule.maximum_amount === 0 || existing.amount <= rule.maximum_amount) {
-            platformFee = rule.fee
-            break
-          }
-        }
-      }
+      platformFee = (await calculateDealFee(existing.amount)).fee
     }
 
     // Update deal status and store payment details
