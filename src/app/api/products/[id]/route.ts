@@ -99,7 +99,7 @@ export async function PATCH(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true, image: true },
+      select: { sellerId: true, image: true, title: true },
     })
 
     if (!existing) {
@@ -118,6 +118,15 @@ export async function PATCH(
 
     const body = await req.json()
     const { title, description, price, category, image, status, quantity } = body
+
+    // Title is locked after creation — sellers may only edit description,
+    // price, category, image, status and quantity
+    if (title !== undefined && title.trim() !== existing.title) {
+      return NextResponse.json(
+        { success: false, error: 'পণ্যের শিরোনাম পরিবর্তন করা যায় না' },
+        { status: 400 }
+      )
+    }
 
     // Build update data with only provided fields
     const data: Record<string, unknown> = {}

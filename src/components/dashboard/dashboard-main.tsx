@@ -27,7 +27,7 @@ import { AffiliatePanel } from './affiliate-panel';
 import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
-import { AddProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
+import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
 
 
 const emptySubscribe = () => () => {};
@@ -529,7 +529,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail';
 
   // Show seller disabled message
-  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile'].includes(dashboardPanel)) {
+  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile'].includes(dashboardPanel)) {
     return (
       <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
@@ -575,6 +575,7 @@ export function DashboardMain() {
       {dashboardPanel === 'seller-orders' && <ActiveDealsPanel />}
       {dashboardPanel === 'seller-products' && <MyProductsPanel />}
       {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
+      {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}
       {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
     </div>
   );

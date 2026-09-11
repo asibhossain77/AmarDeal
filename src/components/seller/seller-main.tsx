@@ -16,7 +16,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
   Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -440,6 +440,235 @@ export function AddProductPanel() {
 }
 
 /* ================================================
+   Panel: Edit Product (title locked)
+   ================================================ */
+
+export function EditProductPanel() {
+  const t = useT();
+  const locale = useAppStore((s) => s.locale);
+  const editingProductId = useAppStore((s) => s.editingProductId);
+  const setEditingProductId = useAppStore((s) => s.setEditingProductId);
+  const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('other');
+  const [image, setImage] = useState('');
+  const [localPreview, setLocalPreview] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editingProductId) { setNotFound(true); setLoading(false); return; }
+    let cancelled = false;
+    fetch(`/api/products/${editingProductId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.success && data.product) {
+          const p = data.product;
+          setTitle(p.title);
+          setDescription(p.description);
+          setPrice(String(p.price));
+          setCategory(p.category || 'other');
+          setImage(p.image || '');
+        } else {
+          setNotFound(true);
+        }
+      })
+      .catch(() => { if (!cancelled) setNotFound(true); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [editingProductId]);
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    setUploadError(false);
+    const objectUrl = URL.createObjectURL(file);
+    setLocalPreview(objectUrl);
+    setImage('');
+    try {
+      // NOTE: old image is NOT deleted here — the PATCH endpoint removes the
+      // replaced R2 file only when the change is actually saved
+      const fd = new FormData(); fd.append('image', file);
+      const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: 'Server error' }));
+        toast.error(errData.error || `Upload failed (${res.status})`);
+        URL.revokeObjectURL(objectUrl);
+        setLocalPreview('');
+        setUploadError(true);
+        return;
+      }
+      const data = await res.json();
+      if (data.success && data.url) {
+        setImage(data.url);
+        setUploadError(false);
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        toast.error(data.error || 'Upload failed');
+        URL.revokeObjectURL(objectUrl);
+        setLocalPreview('');
+        setUploadError(true);
+      }
+    } catch {
+      toast.error('Upload failed');
+      URL.revokeObjectURL(objectUrl);
+      setLocalPreview('');
+      setUploadError(true);
+    } finally { setUploading(false); }
+  };
+
+  const handleSave = async () => {
+    if (uploading) { toast.error(t('seller.imageUploading')); return; }
+    if (uploadError) { toast.error(t('seller.imageUploadFailed')); return; }
+    if (!description.trim() || !price || Number(price) <= 0) {
+      toast.error(t('seller.fillAllFields'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      // Title intentionally not sent — locked after creation
+      const res = await fetch('/api/products/' + editingProductId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: description.trim(), price: Number(price), category, image: image.trim() || null }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('seller.productUpdated'));
+        setEditingProductId(null);
+        setDashboardPanel('seller-products');
+      } else {
+        toast.error(data.error || t('seller.productUpdateError'));
+      }
+    } catch {
+      toast.error(t('seller.productUpdateError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const goBack = () => { setEditingProductId(null); setDashboardPanel('seller-products'); };
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (notFound) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <SolidCard className="text-center py-12">
+          <PackageCheck className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+          <p className="text-sm text-muted-foreground">{t('seller.productNotFound')}</p>
+          <Button variant="outline" onClick={goBack} className="mt-4 gap-2"><ArrowLeft className="h-4 w-4" /> {t('seller.backToProducts')}</Button>
+        </SolidCard>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.editProduct')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('seller.editProductDesc')}</p>
+        </div>
+        <Button variant="outline" onClick={goBack} className="rounded-xl text-sm gap-2 sm:self-start">
+          <ArrowLeft className="h-4 w-4" />
+          {t('seller.backToProducts')}
+        </Button>
+      </div>
+
+      <SolidCard className="space-y-5">
+        {/* Title — locked after creation */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold flex items-center gap-1.5">
+            {t('seller.productTitle')}
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+              <Lock className="h-3 w-3" />
+              {t('seller.titleNotEditable')}
+            </span>
+          </Label>
+          <Input value={title} disabled readOnly className="opacity-70 cursor-not-allowed bg-muted/50" />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.productDesc')}</Label>
+          <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  onClick={() => setCategory(cat.key)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    category === cat.key
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  }`}
+                >
+                  {locale === 'en' ? cat.en : cat.bn}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
+          {(image || localPreview) ? (
+            <div className="relative group">
+              <img src={localPreview || cdnUrl(image) || ''} alt={title} className="w-full h-44 object-cover rounded-xl border border-border/40" />
+              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+            </div>
+          ) : (
+            <div
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
+              onClick={() => fileRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+            >
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
+              {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
+              <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
+              <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
+              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
+            </div>
+          )}
+          {uploadError && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+              <span>⚠</span>
+              <span>{t('seller.imageUploadFailedHint')}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button onClick={handleSave} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {submitting ? t('seller.saving') : uploading ? t('seller.imageUploading') : t('seller.saveChanges')}
+          </Button>
+        </div>
+      </SolidCard>
+    </motion.div>
+  );
+}
+
+/* ================================================
    Panel: My Products (Real)
    ================================================ */
 
@@ -449,6 +678,7 @@ export function MyProductsPanel() {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
+  const setEditingProductId = useAppStore((s) => s.setEditingProductId);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -503,12 +733,22 @@ export function MyProductsPanel() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {products.map((p) => (
             <SolidCard key={p.id} className="space-y-3 relative group">
-              <button
-                onClick={() => setDeleteId(p.id)}
-                className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <div className="absolute top-3 right-3 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
+                <button
+                  onClick={() => { setEditingProductId(p.id); setDashboardPanel('seller-edit-product'); }}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  title={t('seller.editProduct')}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => setDeleteId(p.id)}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                  title={t('seller.deleteProductConfirm')}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
               {p.image ? (
                 <div className="h-32 rounded-xl bg-muted overflow-hidden">
                   <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-32 w-full object-cover" />
