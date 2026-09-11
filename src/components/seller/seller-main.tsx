@@ -16,7 +16,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import {
   Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -677,6 +677,7 @@ export function MyProductsPanel() {
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
   const setEditingProductId = useAppStore((s) => s.setEditingProductId);
 
@@ -693,6 +694,19 @@ export function MyProductsPanel() {
   }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
+  const filteredProducts = isSearching
+    ? products.filter((p) => {
+        const cat = CATEGORIES.find((c) => c.key === p.category);
+        return (
+          p.title.toLowerCase().includes(normalizedQuery) ||
+          p.description.toLowerCase().includes(normalizedQuery) ||
+          (cat ? `${cat.bn} ${cat.en}`.toLowerCase().includes(normalizedQuery) : false)
+        );
+      })
+    : products;
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -711,13 +725,40 @@ export function MyProductsPanel() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.myProducts')}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{t('seller.myProductsCount', { count: products.length })}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isSearching
+              ? t('seller.searchResultsCount', { count: filteredProducts.length, query: normalizedQuery })
+              : t('seller.myProductsCount', { count: products.length })}
+          </p>
         </div>
         <Button onClick={() => setDashboardPanel('seller-add-product')} className="rounded-xl text-sm font-semibold shadow-lg shadow-primary/25 gap-2 sm:self-start">
           <Plus className="h-4 w-4" />
           {t('seller.addProduct')}
         </Button>
       </div>
+
+      {!loading && products.length > 0 && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('seller.searchPlaceholder')}
+            className="h-11 rounded-xl pl-9 pr-9"
+            type="text"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+              title={t('seller.searchClear')}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -729,9 +770,15 @@ export function MyProductsPanel() {
             <Plus className="h-4 w-4" /> {t('seller.addFirstProduct')}
           </Button>
         </SolidCard>
+      ) : isSearching && filteredProducts.length === 0 ? (
+        <SolidCard className="text-center py-12">
+          <Search className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
+          <p className="text-sm font-medium text-foreground">{t('seller.searchNoResults')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('seller.searchNoResultsDesc')}</p>
+        </SolidCard>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {products.map((p) => (
+          {filteredProducts.map((p) => (
             <SolidCard key={p.id} className="space-y-3 relative group">
               <div className="absolute top-3 right-3 flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
                 <button
