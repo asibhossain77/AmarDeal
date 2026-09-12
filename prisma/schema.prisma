@@ -49,6 +49,8 @@ model User {
   sellerReviews      SellerReview[]   @relation("SellerReviews")
   userSellerReviews  SellerReview[]   @relation("UserSellerReviews")
   pushSubscriptions  PushSubscription[]
+  payoutAccounts     PayoutAccount[]
+  sellerWithdrawals  SellerWithdrawal[]
 }
 
 model Admin {
@@ -389,4 +391,43 @@ model SellerReview {
   @@unique([sellerId, userId])
   @@index([sellerId])
   @@index([userId])
+}
+
+// Saved withdrawal accounts (bkash/nagad/rocket/bank) for sellers.
+// NOTE: /api/user/payout-accounts + payout-accounts-panel existed before this
+// model did — adding it fixes that long-broken feature.
+model PayoutAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  accountType  String
+  accountName  String
+  accountNumber String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Seller balance withdrawals — pool-based (NOT per-deal).
+// Balance = Σ completed deal amounts − Σ legacy per-deal seller_payouts − Σ withdrawals
+// (pending + approved + completed). Computed server-side in src/lib/seller-balance.ts.
+model SellerWithdrawal {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  accountType   String
+  accountName   String
+  accountNumber String
+  status        String   @default("pending") // pending | approved | completed | rejected
+  adminNote     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status])
 }

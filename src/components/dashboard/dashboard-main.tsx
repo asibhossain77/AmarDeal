@@ -28,6 +28,7 @@ import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
+import { WithdrawPanel } from '@/components/seller/withdraw-panel';
 
 
 const emptySubscribe = () => () => {};
@@ -577,6 +578,7 @@ export function DashboardMain() {
       {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
       {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}
       {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
+      {dashboardPanel === 'seller-withdraw' && <WithdrawPanel />}
     </div>
   );
 }

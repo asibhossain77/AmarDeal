@@ -45,6 +45,7 @@ const GoogleOAuthPanel = dynamic(() => import('./google-oauth-panel').then(m => 
 const PipraPayPanel = dynamic(() => import('./piprapay-panel').then(m => ({ default: m.PipraPayPanel })), { loading: () => <PanelLoader /> });
 const AdminAffiliatePanel = dynamic(() => import('./affiliate-panel').then(m => ({ default: m.AdminAffiliatePanel })), { loading: () => <PanelLoader /> });
 const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payouts-panel').then(m => ({ default: m.AdminAffiliatePayoutsPanel })), { loading: () => <PanelLoader /> });
+const AdminSellerWithdrawalsPanel = dynamic(() => import('./admin-seller-withdrawals-panel').then(m => ({ default: m.AdminSellerWithdrawalsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 import {
@@ -408,7 +409,7 @@ function DashboardStatsPanel() {
   const role = user?.adminRole;
   const staffPerms = new Set(user?.permissions ?? []);
   const ALWAYS = new Set(['dashboard', 'profile']);
-  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
 
   const canAccess = (target: string) => {
     if (role === 'super_admin') return true;
@@ -3785,6 +3786,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <PaymentVerifyPanel />;
     case 'payouts':
       return <PayoutsPanel />;
+    case 'seller-withdrawals':
+      return <AdminSellerWithdrawalsPanel />;
     case 'payment-methods':
       return <PaymentMethodsPanel />;
     case 'fee-rules':
@@ -3857,7 +3860,7 @@ export function AdminMain() {
 
   // ── Role-based permission guard ──
   const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile']);
-  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
 
   const hasPanelAccess = (panel: string): boolean => {
     if (!user || user.adminRole === 'super_admin') return true;

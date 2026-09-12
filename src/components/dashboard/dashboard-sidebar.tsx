@@ -17,6 +17,7 @@ import {
   Package,
   ClipboardCheck,
   Briefcase,
+  Banknote,
   SeparatorHorizontal,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
@@ -47,6 +48,7 @@ export const sellerNavItems: NavItem[] = [
   { labelKey: 'seller.myProducts', icon: Package, panel: 'seller-products', sellerOnly: true },
   { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },
   { labelKey: 'seller.businessProfile', icon: Briefcase, panel: 'seller-business-profile', sellerOnly: true },
+  { labelKey: 'nav.withdraw', icon: Banknote, panel: 'seller-withdraw', sellerOnly: true },
 ];
 
 export function DashboardSidebar() {

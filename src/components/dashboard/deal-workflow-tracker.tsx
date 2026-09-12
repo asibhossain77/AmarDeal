@@ -2426,14 +2426,22 @@ export function DealWorkflowTracker() {
                       </div>
                     ) : !payoutSubmitted ? (
                       <div className="space-y-3">
-                        <p className="text-xs text-muted-foreground font-medium">আপনার পেমেন্ট পেতে পেআউট অনুরোধ করুন</p>
+                        <div className="flex items-center gap-2 rounded-xl bg-emerald-100/70 dark:bg-emerald-500/15 px-4 py-3">
+                          <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            ৳{Math.round(dealData?.paymentAmount || dealData?.amount || 0).toLocaleString('en')} আপনার উত্তোলনযোগ্য ব্যালেন্সে যোগ হয়েছে।
+                          </p>
+                        </div>
                         <ActionButton
-                          onClick={() => setPayoutDialogOpen(true)}
+                          onClick={() => useAppStore.getState().setDashboardPanel('seller-withdraw')}
                           variant="primary"
                         >
                           <Banknote className="h-5 w-5" />
-                          পেআউট অনুরোধ করুন
+                          উত্তোলন পেজে যান
                         </ActionButton>
+                        <p className="text-[11px] text-muted-foreground">
+                          সম্পন্ন হওয়া সব ডিলের টাকা একসাথে উত্তোলন করতে ড্যাশবোর্ডের "উত্তোলন" পেজ ব্যবহার করুন।
+                        </p>
                       </div>
                     ) : payoutPaid ? (
                       <div className="space-y-3">
