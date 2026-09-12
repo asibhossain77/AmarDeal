@@ -80,6 +80,7 @@ model Deal {
   platformFee      Float?
   rejectionReason  String?
   productId         String?
+  productOptionId  String?
   adminCalled      Boolean  @default(false)
   adminCalledAt    DateTime?
   createdAt        DateTime @default(now())
@@ -90,6 +91,7 @@ model Deal {
   creator       User           @relation("DealCreator", fields: [creatorId], references: [id])
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   product       DigitalProduct? @relation(fields: [productId], references: [id])
+  productOption ProductOption?  @relation(fields: [productOptionId], references: [id], onDelete: SetNull)
 }
 
 model PaymentMethod {
@@ -258,14 +260,34 @@ model DigitalProduct {
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id])
   status      String   @default("active")
+  // "single" = one fixed price, "multi" = multiple priced options.
+  // Existing products default to "single" so old listings keep working.
+  productType String   @default("single")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   chatMessages ProductChatMessage[]
   deals         Deal[]
+  options       ProductOption[]
 
   @@index([sellerId, status])
   @@index([status, createdAt])
+}
+
+model ProductOption {
+  id          String   @id @default(cuid())
+  productId   String
+  product     DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String
+  price       Float
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deals Deal[]
+
+  @@index([productId, sortOrder])
 }
 
 model ProductChatMessage {

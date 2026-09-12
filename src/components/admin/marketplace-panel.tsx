@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Save, Plus, Trash2, Pencil, Eye, EyeOff, Image, Link2, GripVertical,
-  Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown,
+  Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown, Layers,
   Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw, Users, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,14 @@ interface Banner {
   createdAt: string;
 }
 
+interface AdminProductOption {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface AdminProduct {
   id: string;
   title: string;
@@ -50,6 +58,8 @@ interface AdminProduct {
   image: string | null;
   status: string;
   createdAt: string;
+  productType?: string;
+  options?: AdminProductOption[];
   seller: { name: string };
 }
 
@@ -797,9 +807,28 @@ function ProductsTab() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{p.seller.name}</td>
-                    <td className="px-4 py-3 font-semibold text-foreground">৳{p.price.toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-[10px]">{p.category}</Badge>
+                      {p.productType === 'multi' && p.options && p.options.length > 0 ? (
+                        <div className="space-y-0.5">
+                          <p className="font-semibold text-foreground whitespace-nowrap">
+                            ৳{Math.min(...p.options.map(o => o.price)).toLocaleString()} – ৳{Math.max(...p.options.map(o => o.price)).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{t('seller.optionsCount', { count: p.options.length })}</p>
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-foreground whitespace-nowrap">৳{p.price.toLocaleString()}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant="outline" className="text-[10px]">{p.category}</Badge>
+                        {p.productType === 'multi' && (
+                          <Badge className="gap-1 bg-primary/10 text-primary border-0 text-[9px] font-semibold">
+                            <Layers className="h-2.5 w-2.5" />
+                            {t('admin.marketplace.typeMulti')}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={`text-[10px] border ${statusColor(p.status)}`}>
@@ -872,8 +901,24 @@ function ProductsTab() {
                       </Badge>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{p.seller.name}</p>
+                    {/* Options summary for multi-price products */}
+                    {p.productType === 'multi' && p.options && p.options.length > 0 && (
+                      <div className="mt-1.5 rounded-lg bg-muted/40 px-2 py-1.5 space-y-0.5">
+                        <p className="text-[10px] font-semibold text-primary">{t('admin.marketplace.typeMulti')} · {t('seller.optionsCount', { count: p.options.length })}</p>
+                        {p.options.map((o) => (
+                          <p key={o.id} className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span className="truncate max-w-[110px]">{o.name}{!o.isAvailable ? ' ·' : ''}</span>
+                            <span className="font-semibold text-foreground">৳{o.price.toLocaleString()}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-2">
-                      <p className="text-sm font-bold text-foreground">৳{p.price.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-foreground">
+                        {p.productType === 'multi' && p.options && p.options.length > 0 && Math.min(...p.options.map(o => o.price)) !== Math.max(...p.options.map(o => o.price))
+                          ? `৳${Math.min(...p.options.map(o => o.price)).toLocaleString()} – ৳${Math.max(...p.options.map(o => o.price)).toLocaleString()}`
+                          : `৳${p.price.toLocaleString()}`}
+                      </p>
                       <div className="flex items-center gap-1">
                         {p.status === 'active' ? (
                           <button onClick={() => changeStatus(p.id, 'inactive')} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600">

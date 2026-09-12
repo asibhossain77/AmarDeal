@@ -1,19 +1,36 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
+import { isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 
 export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdmin(req)
     if (!guard.ok) return guard.response
 
-    const products = await db.digitalProduct.findMany({
-      where: { status: 'pending' },
-      include: {
-        seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    let products
+    try {
+      products = await db.digitalProduct.findMany({
+        where: { status: 'pending' },
+        include: {
+          seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
+          options: {
+            select: { id: true, name: true, price: true, isAvailable: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    } catch (err) {
+      if (!isMissingProductOptionsSupportError(err)) throw err
+      products = await db.digitalProduct.findMany({
+        where: { status: 'pending' },
+        include: {
+          seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    }
 
     // Flatten for frontend
     const flat = products.map(p => ({
@@ -23,6 +40,8 @@ export async function GET(req: NextRequest) {
       price: p.price,
       category: p.category,
       image: p.image,
+      productType: (p as { productType?: string }).productType || 'single',
+      options: ((p as { options?: { id: string; name: string; price: number; isAvailable: boolean; sortOrder: number }[] }).options) || [],
       sellerName: p.seller?.name || '',
       createdAt: p.createdAt,
     }))

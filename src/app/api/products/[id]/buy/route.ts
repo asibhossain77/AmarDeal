@@ -14,6 +14,8 @@ export async function POST(
     const userId = guard.userId
 
     const { id: productId } = await params
+    const body = await req.json().catch(() => ({}))
+    const { optionId } = body as { optionId?: string }
 
     // Fetch the product with seller info
     const product = await db.digitalProduct.findUnique({
@@ -35,17 +37,48 @@ export async function POST(
       )
     }
 
+    // Multi-price products: verify the option server-side and use ITS price —
+    // never the product-level fallback price.
+    let unitPrice = product.price
+    let verifiedOptionId: string | null = null
+    let dealTitle = product.title
+    if (product.productType === 'multi') {
+      if (!optionId || typeof optionId !== 'string') {
+        return NextResponse.json(
+          { error: 'অনুগ্রহ করে একটি অপশন/প্যাকেজ নির্বাচন করুন' },
+          { status: 400 },
+        )
+      }
+      const option = await db.productOption.findUnique({ where: { id: optionId } })
+      if (!option || option.productId !== product.id) {
+        return NextResponse.json(
+          { error: 'অবৈধ অপশন — এটি এই পণ্যের কোনো অপশন নয়' },
+          { status: 400 },
+        )
+      }
+      if (!option.isAvailable || !(option.price > 0)) {
+        return NextResponse.json(
+          { error: 'এই অপশনটি বর্তমানে অর্ডারযোগ্য নয়' },
+          { status: 400 },
+        )
+      }
+      unitPrice = option.price
+      verifiedOptionId = option.id
+      dealTitle = `${product.title} — ${option.name}`
+    }
+
     // Create the deal automatically
     const deal = await db.deal.create({
       data: {
-        title: product.title,
-        amount: product.price,
+        title: dealTitle,
+        amount: unitPrice,
         status: 'created',
         buyerId: userId,
         sellerId: product.sellerId,
         creatorId: userId,
         terms: product.description || null,
         productId: product.id,
+        productOptionId: verifiedOptionId,
       },
       include: {
         buyer: { select: { id: true, name: true, email: true } },

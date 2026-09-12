@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Zap, Loader2, User,
-  Eye, Heart, Package, Minus, Plus, Boxes,
+  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,9 +20,17 @@ import { Footer } from './footer';
 interface OrderProductSeller {
   id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null;
 }
+interface OrderProductOption {
+  id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
+}
 interface OrderProduct {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; quantity?: number; status: string; createdAt: string; seller: OrderProductSeller;
+  productType?: string;
+  options?: OrderProductOption[];
+  optionsCount?: number;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 // Quantity is an order-time selection only — no stock concept (max 99 per order)
@@ -63,6 +71,21 @@ export function ProductOrderView() {
   const [followLoading, setFollowLoading] = useState(false);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [qty, setQty] = useState(1);
+  /* Multi-price products: the buyer must pick an option before ordering */
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+
+  const isMulti = product?.productType === 'multi' && (product.options?.length ?? 0) > 0;
+  const availableOptions = useMemo(
+    () => (product?.options ?? []).filter((o) => o.isAvailable),
+    [product?.options]
+  );
+  const selectedOption = useMemo(
+    () => (isMulti ? product?.options?.find((o) => o.id === selectedOptionId) ?? null : null),
+    [isMulti, product?.options, selectedOptionId]
+  );
+  /* The unit price the buyer sees — always from the selected option (multi)
+     or the product price (single). Never editable by hand. */
+  const unitPrice = isMulti ? (selectedOption?.price ?? null) : (product?.price ?? 0);
 
   useEffect(() => {
     if (!productDetailId) return;
@@ -70,9 +93,18 @@ export function ProductOrderView() {
     setShowBuyConfirm(false);
     setProduct(null);
     setQty(1);
+    setSelectedOptionId(null);
     fetch(`/api/products/${productDetailId}`)
       .then((r) => r.json())
-      .then((d) => { setProduct(d.success ? d.product : null); })
+      .then((d) => {
+        setProduct(d.success ? d.product : null);
+        // If exactly one option is available, preselect it so the buyer sees
+        // a single clear price instead of an empty "select a package" state.
+        const opts = d.success && d.product?.options ? d.product.options.filter((o: OrderProductOption) => o.isAvailable) : [];
+        if (d.success && d.product?.productType === 'multi' && opts.length === 1) {
+          setSelectedOptionId(opts[0].id);
+        }
+      })
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -118,11 +150,13 @@ export function ProductOrderView() {
 
   const waNumber = product?.seller.whatsappNumber || null;
   const waHref = product ? waMeLink(waNumber, locale === 'bn'
-    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
-    : `Hi! I saw your product "${product.title}"${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
+    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''} পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
+    : `Hi! I saw your product "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''}${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
 
   const handleBuyNow = () => {
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
+    /* Multi-price: an option MUST be selected before ordering */
+    if (isMulti && !selectedOption) { toast.error(t('marketplace.selectPackageHint')); return; }
     setShowBuyConfirm(true);
   };
 
@@ -130,10 +164,16 @@ export function ProductOrderView() {
     if (!product) return;
     setShowBuyConfirm(false);
     const store = useAppStore.getState();
+    const optionSuffix = selectedOption ? ` — ${selectedOption.name}` : '';
     store.setDealPreFill({
-      title: qty > 1 ? `${product.title} (×${qty})` : product.title,
-      amount: product.price * qty,
+      title: qty > 1 ? `${product.title}${optionSuffix} (×${qty})` : `${product.title}${optionSuffix}`,
+      amount: (unitPrice ?? product.price) * qty,
       partyEmail: product.seller.email || '',
+      /* Server re-verifies the product/option and computes the real price —
+         these values are what makes the order product-verified. */
+      productId: product.id,
+      optionId: selectedOption?.id,
+      quantity: qty,
     });
     store.setDashboardPanel('new-deal');
     store.setView('dashboard');
@@ -226,11 +266,28 @@ export function ProductOrderView() {
             </div>
             <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="text-3xl font-extrabold text-primary">{formatPrice(product.price * qty, locale)}</p>
-              {qty > 1 && (
-                <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(product.price, locale)} × {toLocaleNum(qty, locale)}</p>
+              {/* Dynamic price — multi: range until an option is picked, then that option's price */}
+              {isMulti && !selectedOption ? (
+                <p className="text-3xl font-extrabold text-primary">
+                  {product.minPrice === product.maxPrice
+                    ? formatPrice(product.price, locale)
+                    : `${formatPrice(product.minPrice ?? product.price, locale)} – ${formatPrice(product.maxPrice ?? product.price, locale)}`}
+                </p>
+              ) : (
+                <p className="text-3xl font-extrabold text-primary">{formatPrice((unitPrice ?? product.price) * qty, locale)}</p>
+              )}
+              {isMulti && selectedOption && (
+                <p className="text-[13px] font-semibold text-foreground">{selectedOption.name}</p>
+              )}
+              {qty > 1 && unitPrice !== null && (
+                <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(unitPrice, locale)} × {toLocaleNum(qty, locale)}</p>
               )}
             </div>
+            {!isMulti && (product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice) && (
+              <p className="mt-1 text-[12px] font-medium text-muted-foreground">
+                {formatPrice(product.minPrice, locale)} – {formatPrice(product.maxPrice, locale)}
+              </p>
+            )}
             <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
 
             {/* Seller box */}
@@ -265,6 +322,59 @@ export function ProductOrderView() {
                 </button>
               </div>
             </div>
+
+            {/* Option selector — multi-price products only.
+                Touch-friendly rounded cards; price updates instantly on change. */}
+            {isMulti && (
+              <div className="mt-5">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <p className="text-[13px] font-bold text-foreground">{t('marketplace.selectPackage')}</p>
+                </div>
+                <p className="mt-1 text-[12px] text-muted-foreground">{t('marketplace.selectPackageHint')}</p>
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {product.options!.map((opt) => {
+                    const selected = opt.id === selectedOptionId;
+                    const unavailable = !opt.isAvailable;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        disabled={unavailable}
+                        onClick={() => setSelectedOptionId(opt.id)}
+                        aria-pressed={selected}
+                        className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
+                          selected
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
+                            : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
+                        } ${unavailable ? 'opacity-45' : ''}`}
+                      >
+                        <span className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                              selected ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                            }`}
+                          >
+                            {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                          </span>
+                          <span className={`truncate text-[13px] font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{opt.name}</span>
+                        </span>
+                        <span className="shrink-0 text-[14px] font-extrabold tabular-nums text-foreground">
+                          {unavailable ? (
+                            <span className="text-[11px] font-medium text-muted-foreground">{t('seller.optionUnavailable')}</span>
+                          ) : (
+                            formatPrice(opt.price, locale)
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {availableOptions.length === 0 && (
+                  <p className="mt-2 text-[12px] font-medium text-destructive">{t('seller.optionUnavailable')}</p>
+                )}
+              </div>
+            )}
 
             {/* Quantity — order-time selection only (no stock) */}
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -302,7 +412,12 @@ export function ProductOrderView() {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground">{t('marketplace.dealConfirmTitle')}</p>
-                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice(product.price * qty, locale) })}</p>
+                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice((unitPrice ?? product.price) * qty, locale) })}</p>
+                      {selectedOption && (
+                        <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                          {selectedOption.name} · {formatPrice(selectedOption.price, locale)}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -328,8 +443,16 @@ export function ProductOrderView() {
                       {t('marketplace.contactWhatsApp')}
                     </a>
                   )}
-                  <Button onClick={handleBuyNow} className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold">
-                    <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
+                  <Button
+                    onClick={handleBuyNow}
+                    disabled={isMulti && !selectedOption}
+                    className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold"
+                  >
+                    <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
+                    <span className="truncate">
+                      {t('marketplace.buyNow')}
+                      {isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty, locale)}` : ''}
+                    </span>
                   </Button>
                 </div>
               )}
@@ -362,7 +485,11 @@ export function ProductOrderView() {
                   <div className="flex flex-1 flex-col gap-1 p-4">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{CATEGORY_NAMES[p.category]?.[locale === 'bn' ? 'bn' : 'en'] || p.category}</span>
                     <span className="line-clamp-2 text-[14px] font-semibold text-foreground">{p.title}</span>
-                    <span className="mt-auto pt-1.5 text-base font-extrabold text-primary">{formatPrice(p.price, locale)}</span>
+                    <span className="mt-auto pt-1.5 text-base font-extrabold text-primary">
+                      {p.productType === 'multi' && p.minPrice !== undefined && p.maxPrice !== undefined && p.minPrice !== p.maxPrice
+                        ? `${formatPrice(p.minPrice, locale)} – ${formatPrice(p.maxPrice, locale)}`
+                        : formatPrice(p.price, locale)}
+                    </span>
                   </div>
                 </button>
               ))}

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Search, X, MessageCircle, Package, Plus, Loader2, User,
+  Search, X, MessageCircle, Package, Plus, Loader2, User, Layers,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
   ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon,
 } from 'lucide-react';
@@ -16,11 +16,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
+import { ProductTypeSelector } from '@/components/shared/product-type-selector';
+import {
+  ProductOptionsEditor, createEmptyOption, validateOptionRows, optionRowsToPayload,
+  type OptionRow,
+} from '@/components/shared/product-options-editor';
 
 interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; }
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
+  productType?: string;
+  optionsCount?: number;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 const CATEGORIES = [
@@ -149,6 +158,8 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
   const CatIcon = getCategoryIcon(product.category);
   const catColor = getCategoryColor(product.category);
   const gradientBg = CATEGORY_BG[product.category] || CATEGORY_BG.other;
+  const isMulti = product.productType === 'multi' && (product.optionsCount ?? 0) > 0;
+  const hasRange = isMulti && product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice;
   return (
     <motion.article role="listitem" custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
       <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientBg}`}>
@@ -160,18 +171,28 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
           </div>
         )}
         <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />
-        <div className="absolute left-3 top-3">
+        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
           <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
             <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
             {CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}
           </Badge>
+          {isMulti && (
+            <Badge variant="secondary" className="gap-1 bg-primary/90 text-primary-foreground text-[10px] font-semibold shadow-sm backdrop-blur-lg">
+              <Layers className="h-3 w-3" strokeWidth={2.5} />
+              {t('seller.multipleOptions')}
+            </Badge>
+          )}
         </div>
       </div>
       <div className="p-3.5 sm:p-4">
         <h3 className="line-clamp-1 text-[14px] font-semibold text-foreground transition-colors group-hover:text-primary sm:text-[15px]">{product.title}</h3>
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">{product.description}</p>
         <div className="mt-3 flex items-end justify-between gap-2">
-          <span className="text-lg font-extrabold text-primary sm:text-xl">{formatPrice(product.price, locale)}</span>
+          <span className="text-lg font-extrabold text-primary sm:text-xl">
+            {hasRange
+              ? `${formatPrice(product.minPrice!, locale)} – ${formatPrice(product.maxPrice!, locale)}`
+              : formatPrice(product.price, locale)}
+          </span>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Avatar className="h-4 w-4"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
@@ -218,6 +239,9 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
   const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [price, setPrice] = useState(''); const [category, setCategory] = useState('other'); const [image, setImage] = useState('');
   const [submitting, setSubmitting] = useState(false); const [uploading, setUploading] = useState(false);
+  /* Multi-price support */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -236,12 +260,22 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim() || !price) return;
+    if (!title.trim() || !description.trim()) return;
+    /* Type-specific validation (server re-validates) */
+    let body: Record<string, unknown>;
+    if (productType === 'multi') {
+      const errorKey = validateOptionRows(options);
+      if (errorKey) { toast.error(t(errorKey)); return; }
+      body = { title, description, productType, options: optionRowsToPayload(options), category, image: image.trim() || undefined };
+    } else {
+      if (!price) return;
+      body = { title, description, productType, price: Number(price), category, image: image.trim() || undefined };
+    }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, price: Number(price), category, image: image.trim() || undefined }) });
+      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); }
+      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setProductType('single'); setOptions([createEmptyOption()]); }
       else toast.error(data.error || t('marketplace.addFailed'));
     } catch { toast.error(t('marketplace.addFailed')); } finally { setSubmitting(false); }
   };
@@ -253,12 +287,20 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
           <motion.div initial={{ opacity: 0, y: 40, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }} transition={{ duration: 0.3 }} className="fixed inset-x-4 top-[8%] z-50 mx-auto max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25">
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-foreground">{t('marketplace.addProduct')}</h2><button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button></div>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formTitle')}</label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('marketplace.formTitlePh')} required /></div>
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formDesc')}</label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('marketplace.formDescPh')} rows={3} required /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
+              {productType === 'multi' ? (
+                <ProductOptionsEditor options={options} onChange={setOptions} />
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
+                  <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
+                </div>
+              )}
+              {productType === 'multi' && (
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
-              </div>
+              )}
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formImage')} <span className="text-muted-foreground">({t('marketplace.optional')})</span></label><ImageUploader image={image} onChange={setImage} t={t} uploading={uploading} onUpload={handleImageUpload} /></div>
               <Button type="submit" disabled={submitting} className="w-full gap-2 rounded-xl py-5 text-[14px] font-semibold">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{t('marketplace.submitProduct')}</Button>
             </form>

@@ -13,9 +13,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { SellerDealTracker } from './seller-deal-tracker';
 import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
+import { ProductTypeSelector } from '@/components/shared/product-type-selector';
+import {
+  ProductOptionsEditor, createEmptyOption, validateOptionRows, optionRowsToPayload,
+  type OptionRow,
+} from '@/components/shared/product-options-editor';
 import { useT } from '@/lib/i18n';
 import {
-  Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
+  Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye, Layers,
   UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -48,8 +53,14 @@ interface DealRow {
   product?: { id: string; title: string; image: string | null } | null;
 }
 
+interface SellerProductOption {
+  id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
+}
+
 interface SellerProduct {
   id: string; title: string; description: string; price: number; category: string; image: string | null; status: string; createdAt: string;
+  productType?: string;
+  options?: SellerProductOption[];
 }
 
 function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -237,6 +248,9 @@ export function AddProductPanel() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
+  /* Multi-price support: product type decides which fields show below */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
@@ -298,21 +312,47 @@ export function AddProductPanel() {
       toast.error(t('seller.imageUploadFailed'));
       return;
     }
-    if (!title.trim() || !description.trim() || !price || Number(price) <= 0) {
+    if (!title.trim() || !description.trim()) {
       toast.error(t('seller.fillAllFields'));
       return;
     }
+
+    /* ── Type-specific client validation (server re-validates everything) ── */
+    let payloadOptions: OptionRow[] | undefined;
+    if (productType === 'multi') {
+      const errorKey = validateOptionRows(options);
+      if (errorKey) {
+        toast.error(t(errorKey));
+        return;
+      }
+      payloadOptions = options;
+    } else {
+      if (!price || Number(price) <= 0) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), description: description.trim(), price: Number(price), category, image: image.trim() || null }),
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          ...(productType === 'multi'
+            ? { productType, options: optionRowsToPayload(payloadOptions!) }
+            : { productType, price: Number(price) }),
+          category,
+          image: image.trim() || null,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setShowPendingDialog(true);
         setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
+        setProductType('single'); setOptions([createEmptyOption()]);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -333,6 +373,9 @@ export function AddProductPanel() {
       </div>
 
       <SolidCard className="space-y-5">
+        {/* Step 1: Product type — decides which fields appear below */}
+        <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
+
         <div className="space-y-2">
           <Label className="text-sm font-semibold">{t('seller.productTitle')}</Label>
           <Input placeholder={t('seller.productTitlePh')} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -343,28 +386,32 @@ export function AddProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Step 2: type-specific pricing fields */}
+        {productType === 'single' ? (
           <div className="space-y-2">
             <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
             <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setCategory(cat.key)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    category === cat.key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                  }`}
-                >
-                  {locale === 'en' ? cat.en : cat.bn}
-                </button>
-              ))}
-            </div>
+        ) : (
+          <ProductOptionsEditor options={options} onChange={setOptions} />
+        )}
+
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setCategory(cat.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  category === cat.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {locale === 'en' ? cat.en : cat.bn}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -461,6 +508,9 @@ export function EditProductPanel() {
   const [uploadError, setUploadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /* Multi-price support — type is locked after creation, options are editable */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -477,6 +527,15 @@ export function EditProductPanel() {
           setPrice(String(p.price));
           setCategory(p.category || 'other');
           setImage(p.image || '');
+          const type: 'single' | 'multi' = p.productType === 'multi' ? 'multi' : 'single';
+          setProductType(type);
+          setOptions(
+            type === 'multi' && Array.isArray(p.options) && p.options.length > 0
+              ? p.options.map((o: { id: string; name: string; price: number; isAvailable: boolean }) => ({
+                  id: o.id, name: o.name, price: String(o.price), isAvailable: o.isAvailable,
+                }))
+              : [createEmptyOption()]
+          );
         } else {
           setNotFound(true);
         }
@@ -527,17 +586,46 @@ export function EditProductPanel() {
   const handleSave = async () => {
     if (uploading) { toast.error(t('seller.imageUploading')); return; }
     if (uploadError) { toast.error(t('seller.imageUploadFailed')); return; }
-    if (!description.trim() || !price || Number(price) <= 0) {
+    if (!description.trim()) {
       toast.error(t('seller.fillAllFields'));
       return;
     }
+
+    /* Multi: validate options — price is derived from them server-side.
+       Single: price field as before. */
+    let payload: Record<string, unknown>;
+    if (productType === 'multi') {
+      const errorKey = validateOptionRows(options);
+      if (errorKey) {
+        toast.error(t(errorKey));
+        return;
+      }
+      payload = {
+        description: description.trim(),
+        category,
+        image: image.trim() || null,
+        options: optionRowsToPayload(options),
+      };
+    } else {
+      if (!price || Number(price) <= 0) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+      payload = {
+        description: description.trim(),
+        price: Number(price),
+        category,
+        image: image.trim() || null,
+      };
+    }
+
     setSubmitting(true);
     try {
       // Title intentionally not sent — locked after creation
       const res = await fetch('/api/products/' + editingProductId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: description.trim(), price: Number(price), category, image: image.trim() || null }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -603,28 +691,52 @@ export function EditProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Product type — locked after creation (shown read-only) */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold flex items-center gap-1.5">
+            {t('seller.productType')}
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+              <Lock className="h-3 w-3" />
+              {t('seller.titleNotEditable')}
+            </span>
+          </Label>
+          <div className="flex items-center gap-2">
+            <Badge className={productType === 'multi' ? 'gap-1.5 bg-primary/10 text-primary border-0' : 'gap-1.5 bg-muted text-muted-foreground border-0'}>
+              {productType === 'multi' ? <Layers className="h-3 w-3" /> : null}
+              {productType === 'multi' ? t('seller.typeMulti') : t('seller.typeSingle')}
+            </Badge>
+            {productType === 'multi' && (
+              <span className="text-xs text-muted-foreground">{t('seller.optionsCount', { count: options.length })}</span>
+            )}
+          </div>
+        </div>
+
+        {productType === 'multi' ? (
+          /* Multi: options editor — price derived from options server-side */
+          <ProductOptionsEditor options={options} onChange={setOptions} />
+        ) : (
           <div className="space-y-2">
             <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
             <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setCategory(cat.key)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    category === cat.key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                  }`}
-                >
-                  {locale === 'en' ? cat.en : cat.bn}
-                </button>
-              ))}
-            </div>
+        )}
+
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setCategory(cat.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  category === cat.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {locale === 'en' ? cat.en : cat.bn}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -806,10 +918,29 @@ export function MyProductsPanel() {
                 </div>
               )}
               <div>
-                <h3 className="font-semibold text-sm text-foreground truncate">{p.title}</h3>
+                <h3 className="font-semibold text-sm text-foreground truncate pr-14">{p.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{p.description}</p>
+                {/* Product type line */}
+                {p.productType === 'multi' && p.options && p.options.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Badge className="gap-1 bg-primary/10 text-primary border-0 text-[10px] font-semibold">
+                      <Layers className="h-3 w-3" />
+                      {t('seller.multipleOptions')}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{t('seller.optionsCount', { count: p.options.length })}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold text-primary">{formatTaka(p.price)}</span>
+                  <span className="text-sm font-bold text-primary">
+                    {p.productType === 'multi' && p.options && p.options.length > 0
+                      ? (() => {
+                          const prices = p.options.map((o) => o.price);
+                          const min = Math.min(...prices);
+                          const max = Math.max(...prices);
+                          return min === max ? formatTaka(min) : `${formatTaka(min)} – ${formatTaka(max)}`;
+                        })()
+                      : formatTaka(p.price)}
+                  </span>
                   <Badge className={p.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0'}>
                     {p.status === 'active' ? t('seller.active') : p.status}
                   </Badge>

@@ -35,6 +35,11 @@ export interface DealPreFill {
   title: string
   amount: number
   partyEmail: string
+  /* Product-verified order fields — the server re-verifies product/option and
+     recomputes the amount from the database; client values are only a preview. */
+  productId?: string
+  optionId?: string
+  quantity?: number
 }
 
 export interface DealInfo {
