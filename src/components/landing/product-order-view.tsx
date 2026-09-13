@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Zap, Loader2, User,
-  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check,
+  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2, Facebook,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -83,6 +83,9 @@ export function ProductOrderView() {
   const [qty, setQty] = useState(1);
   /* Multi-price products: the buyer must pick an option before ordering */
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  /* Share: native share sheet on mobile, popover fallback (copy/WhatsApp/Facebook) on desktop */
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
 
   const isMulti = product?.productType === 'multi' && (product.options?.length ?? 0) > 0;
   const availableOptions = useMemo(
@@ -200,6 +203,77 @@ export function ProductOrderView() {
     store.setView('page-seller-profile');
   };
 
+  /* ── Share ────────────────────────────────────────────────────────────
+     Mobile: native share sheet (any installed app).
+     Desktop / unsupported: popover with Copy Link, WhatsApp, Facebook.
+     The shared URL always points at the SEO route /product/{id}. */
+  const getProductUrl = () =>
+    `${window.location.origin}/product/${product?.id ?? productDetailId ?? ''}`;
+
+  const toggleShare = async () => {
+    if (!product) return;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: product.title,
+          text: t('marketplace.shareText', { title: product.title }),
+          url: getProductUrl(),
+        });
+        return;
+      } catch (err) {
+        // User closed the native sheet — do not open the fallback popover
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      }
+    }
+    setShareOpen((o) => !o);
+  };
+
+  const copyShareLink = async () => {
+    const url = getProductUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API blocked (http / iframe) — legacy fallback
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    toast.success(t('marketplace.shareCopied'));
+    setShareOpen(false);
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = `${t('marketplace.shareText', { title: product?.title ?? '' })} ${getProductUrl()}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    setShareOpen(false);
+  };
+
+  const shareOnFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getProductUrl())}`,
+      '_blank', 'noopener,noreferrer,width=620,height=540'
+    );
+    setShareOpen(false);
+  };
+
+  // Close the share popover on outside click / Escape
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShareOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [shareOpen]);
+
   if (loading) {
     return (
       <div className="flex flex-1 flex-col">
@@ -273,6 +347,39 @@ export function ProductOrderView() {
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1.5 text-[11px] font-semibold">{catName}</Badge>
               <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
+              {/* Share — native sheet on mobile, popover fallback on desktop */}
+              <div className="relative ml-auto" ref={shareRef}>
+                <button
+                  type="button"
+                  onClick={toggleShare}
+                  aria-label={t('marketplace.share')}
+                  title={t('marketplace.share')}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+                {shareOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-9 z-50 w-52 overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+                  >
+                    <button type="button" onClick={copyShareLink} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
+                      {t('marketplace.shareCopy')}
+                    </button>
+                    <button type="button" onClick={shareOnWhatsApp} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                      {t('marketplace.shareWhatsApp')}
+                    </button>
+                    <button type="button" onClick={shareOnFacebook} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <Facebook className="h-4 w-4 text-[#1877F2]" />
+                      {t('marketplace.shareFacebook')}
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </div>
             <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">

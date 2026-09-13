@@ -2008,6 +2008,12 @@ export const en: Record<TranslationKey, string> = {
   'marketplace.dealConfirmYes': 'Yes, Create Deal',
   'marketplace.cancel': 'Cancel',
   'marketplace.productNotFound': 'Product not found or no longer active',
+  'marketplace.share': 'Share',
+  'marketplace.shareText': '"{title}" — see it on Midman marketplace',
+  'marketplace.shareCopied': 'Link copied',
+  'marketplace.shareCopy': 'Copy Link',
+  'marketplace.shareWhatsApp': 'Share on WhatsApp',
+  'marketplace.shareFacebook': 'Share on Facebook',
   // ── Product types (single / multi-price) ──
   'seller.productType': 'Product Type',
   'seller.productTypeDesc': 'Choose what kind of product you are selling',

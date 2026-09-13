@@ -2006,6 +2006,12 @@ export const bn = {
   'marketplace.dealConfirmYes': 'হ্যাঁ, ডিল তৈরি করুন',
   'marketplace.cancel': 'বাতিল',
   'marketplace.productNotFound': 'পণ্য পাওয়া যায়নি বা আর সক্রিয় নেই',
+  'marketplace.share': 'শেয়ার করুন',
+  'marketplace.shareText': '"{title}" — Midman মার্কেটপ্লেসে দেখুন',
+  'marketplace.shareCopied': 'লিংক কপি হয়েছে',
+  'marketplace.shareCopy': 'লিংক কপি করুন',
+  'marketplace.shareWhatsApp': 'হোয়াটসঅ্যাপে শেয়ার',
+  'marketplace.shareFacebook': 'ফেসবুকে শেয়ার',
   // ── Product types (single / multi-price) ──
   'seller.productType': 'প্রোডাক্ট টাইপ',
   'seller.productTypeDesc': 'আপনি কী ধরনের পণ্য বিক্রি করছেন তা নির্বাচন করুন',
