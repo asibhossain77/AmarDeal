@@ -25,6 +25,8 @@ export const bn = {
   'nav.faq': 'FAQ',
   'nav.user': 'ইউজার',
   'nav.adminLabel': 'অ্যাডমিন',
+  'nav.asBuyer': 'বায়ার হিসেবে',
+  'nav.sellerMode': 'সেলার',
   'nav.marketplace': 'মার্কেটপ্লেস',
 
   // ── Admin Nav ──
@@ -37,6 +39,8 @@ export const bn = {
   'adminNav.userManagement': 'ইউজার ম্যানেজমেন্ট',
   'adminNav.pendingProducts': 'পেন্ডিং প্রোডাক্ট',
   'adminNav.sellerRequests': 'সেলার রিকোয়েস্ট',
+  'adminNav.google-oauth': 'Google OAuth',
+  'adminNav.push': 'পুশ নোটিফিকেশন',
   'adminNav.contact': 'যোগাযোগ',
   'adminNav.websiteSettings': 'ওয়েবসাইট সেটিংস',
   'adminNav.contract': 'চুক্তি পেজ',
@@ -978,6 +982,7 @@ export const bn = {
   'admin.users.removeAdmin': 'অ্যাডমিন থেকে সরান',
   'admin.users.banUser': 'ইউজার ব্যান করুন',
   'admin.users.unbanUser': 'ব্যান তুলুন',
+  'admin.users.status': 'স্ট্যাটাস',
 
   // ── Admin Blog ──
   'admin.blog.title': 'শিরোনাম',
@@ -1013,6 +1018,7 @@ export const bn = {
 
   // ── Admin Popup ──
   'admin.popup.notification': 'ঘোষণা',
+  'admin.popup.previewAlt': 'পপআপ প্রিভিউ',
   'admin.popup.popupContent': 'পপআপ কন্টেন্ট',
   'admin.popup.imageLink': 'ছবির লিংক',
   'admin.popup.buttonLink': 'বাটন লিংক',
@@ -1040,6 +1046,8 @@ export const bn = {
 
   // ── Admin Email Settings ──
   'admin.email.title': 'ইমেইল সেটিংস',
+  'admin.email.templateToggles': 'ইমেইল টেমপ্লেট অন/অফ',
+  'admin.email.templateTogglesDesc': 'প্রতিটি টেমপ্লেট আলাদাভাবে চালু বা বন্ধ করুন',
   'admin.email.smtpKey': 'SMTP Key',
   'admin.email.fromEmail': 'ফ্রম ইমেইল',
   'admin.email.fromName': 'ফ্রম নাম',
@@ -2030,6 +2038,7 @@ export const bn = {
   'seller.optionUnavailable': 'অপলভেইলেবল',
   'seller.priceRange': 'মূল্য পরিসর',
   'seller.multipleOptions': 'মাল্টিপল অপশন',
+  'seller.myPurchases': 'আমার কেনাকাটা',
   'seller.optionMinOne': 'অন্তত একটি অপশন যোগ করুন',
   'seller.optionNameRequired': 'প্রতিটি অপশনের নাম দিন',
   'seller.optionPriceInvalid': 'প্রতিটি অপশনের সঠিক মূল্য দিন — ০ এর বেশি',
@@ -2043,6 +2052,7 @@ export const bn = {
   'deal.lockedProductOrder': 'এই অর্ডারটি মার্কেটপ্লেস পণ্যের জন্য — শিরোনাম ও মূল্য নির্দিষ্ট, পরিবর্তন করা যাবে না।',
   'admin.marketplace.ptypeSingle': 'সিঙ্গেল',
   'admin.marketplace.ptypeMulti': 'মাল্টিপল',
+  'admin.marketplace.typeMulti': 'মাল্টিপল',
   'pending_products_title': 'পেন্ডিং প্রোডাক্ট',
   'pending_products_subtitle': 'সেলারদের জমা দেওয়া পণ্য অনুমোদন করুন',
   'no_pending_products': 'কোনো পেন্ডিং প্রোডাক্ট নেই',

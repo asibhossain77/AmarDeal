@@ -27,6 +27,8 @@ export const en: Record<TranslationKey, string> = {
   'nav.faq': 'FAQ',
   'nav.user': 'User',
   'nav.adminLabel': 'Admin',
+  'nav.asBuyer': 'As Buyer',
+  'nav.sellerMode': 'Seller',
   'nav.marketplace': 'Marketplace',
 
   // ── Admin Nav ──
@@ -39,6 +41,8 @@ export const en: Record<TranslationKey, string> = {
   'adminNav.userManagement': 'User Management',
   'adminNav.pendingProducts': 'Pending Products',
   'adminNav.sellerRequests': 'Seller Requests',
+  'adminNav.google-oauth': 'Google OAuth',
+  'adminNav.push': 'Push Notifications',
   'adminNav.contact': 'Contact',
   'adminNav.websiteSettings': 'Website Settings',
   'adminNav.contract': 'Contract Page',
@@ -980,6 +984,7 @@ export const en: Record<TranslationKey, string> = {
   'admin.users.removeAdmin': 'Remove from Admin',
   'admin.users.banUser': 'Ban User',
   'admin.users.unbanUser': 'Unban User',
+  'admin.users.status': 'Status',
 
   // ── Admin Blog ──
   'admin.blog.title': 'Title',
@@ -1015,6 +1020,7 @@ export const en: Record<TranslationKey, string> = {
 
   // ── Admin Popup ──
   'admin.popup.notification': 'Announcement',
+  'admin.popup.previewAlt': 'Popup preview',
   'admin.popup.popupContent': 'Popup Content',
   'admin.popup.imageLink': 'Image Link',
   'admin.popup.buttonLink': 'Button Link',
@@ -1042,6 +1048,8 @@ export const en: Record<TranslationKey, string> = {
 
   // ── Admin Email Settings ──
   'admin.email.title': 'Email Settings',
+  'admin.email.templateToggles': 'Email template on/off',
+  'admin.email.templateTogglesDesc': 'Enable or disable each template separately',
   'admin.email.smtpKey': 'SMTP Key',
   'admin.email.fromEmail': 'From Email',
   'admin.email.fromName': 'From Name',
@@ -2032,6 +2040,7 @@ export const en: Record<TranslationKey, string> = {
   'seller.optionUnavailable': 'Unavailable',
   'seller.priceRange': 'Price range',
   'seller.multipleOptions': 'Multiple Options',
+  'seller.myPurchases': 'My Purchases',
   'seller.optionMinOne': 'Add at least one option',
   'seller.optionNameRequired': 'Every option needs a name',
   'seller.optionPriceInvalid': 'Every option needs a valid price — greater than 0',
@@ -2045,6 +2054,7 @@ export const en: Record<TranslationKey, string> = {
   'deal.lockedProductOrder': 'This order is for a marketplace product — title and price are fixed and cannot be changed.',
   'admin.marketplace.ptypeSingle': 'Single',
   'admin.marketplace.ptypeMulti': 'Multi',
+  'admin.marketplace.typeMulti': 'Multi',
   'pending_products_title': 'Pending Products',
   'pending_products_subtitle': 'Review and approve products submitted by sellers',
   'no_pending_products': 'No pending products',
