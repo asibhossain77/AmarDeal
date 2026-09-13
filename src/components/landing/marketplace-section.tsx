@@ -171,7 +171,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
           </div>
         )}
         <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />
-        <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5 sm:left-3 sm:top-3">
           <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
             <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
             {CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}
@@ -187,18 +187,18 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
       <div className="p-3.5 sm:p-4">
         <h3 className="line-clamp-1 text-[14px] font-semibold text-foreground transition-colors group-hover:text-primary sm:text-[15px]">{product.title}</h3>
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">{product.description}</p>
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <span className="text-lg font-extrabold text-primary sm:text-xl">
+        <div className="mt-3 flex items-end justify-between gap-1.5 sm:gap-2">
+          <span className="text-base font-extrabold text-primary sm:text-xl">
             {hasRange
               ? `${formatPrice(product.minPrice!, locale)} – ${formatPrice(product.maxPrice!, locale)}`
               : formatPrice(product.price, locale)}
           </span>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Avatar className="h-4 w-4"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
-              <span className="max-w-[70px] truncate text-[10px] font-medium sm:text-[11px]">{product.seller.name}</span>
+              <Avatar className="h-4 w-4 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
+              <span className="max-w-[52px] truncate text-[10px] font-medium sm:max-w-[70px] sm:text-[11px]">{product.seller.name}</span>
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground/60">
+            <div className="hidden items-center gap-1 text-muted-foreground/60 sm:flex">
               <Clock className="h-2.5 w-2.5" />
               <span className="text-[9px] sm:text-[10px]">{timeAgo(product.createdAt, locale)}</span>
             </div>
@@ -353,7 +353,7 @@ export function MarketplaceSection() {
         <h2 className="text-[15px] font-bold text-foreground sm:text-base">{locale === 'bn' ? '\u09B8\u0995\u09B2 \u09AA\u09A3\u09CD\u09AF' : 'All Products'} {!loading && <span className="ml-2 text-[13px] font-normal text-muted-foreground">({filtered.length})</span>}</h2>
       </div>
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">{[...Array(6)].map((_, i) => (
           <div key={i} className="animate-pulse overflow-hidden rounded-2xl border border-border/30 bg-card">
             <div className="aspect-[16/10] bg-muted/50" />
             <div className="space-y-2.5 p-4"><div className="h-4 w-3/4 rounded bg-muted" /><div className="h-3 w-full rounded bg-muted" /><div className="flex justify-between pt-2"><div className="h-5 w-20 rounded bg-muted" /><div className="h-4 w-16 rounded bg-muted" /></div></div>
@@ -366,7 +366,7 @@ export function MarketplaceSection() {
           <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
       )}
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>

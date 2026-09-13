@@ -580,7 +580,7 @@ export function ProductOrderView() {
               <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
               <h2 className="text-[15px] font-bold text-foreground sm:text-base">{t('marketplace.suggestedProducts')}</h2>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">
               {suggested.map((p) => (
                 <button
                   key={p.id}
@@ -595,7 +595,7 @@ export function ProductOrderView() {
                       <div className="flex h-full w-full items-center justify-center"><Package className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.2} /></div>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col gap-1 p-4">
+                  <div className="flex flex-1 flex-col gap-1 p-3 sm:p-4">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{CATEGORY_NAMES[p.category]?.[locale === 'bn' ? 'bn' : 'en'] || p.category}</span>
                     <span className="line-clamp-2 text-[14px] font-semibold text-foreground">{p.title}</span>
                     <span className="mt-auto pt-1.5 text-base font-extrabold text-primary">
