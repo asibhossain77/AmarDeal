@@ -306,11 +306,7 @@ export function ProductOrderView() {
                 <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p>
-                  {waNumber ? (
-                    <p className="flex items-center gap-1 text-[12px] font-medium text-[#25D366]" dir="ltr"><MessageCircle className="h-3 w-3 shrink-0" />{waNumber}</p>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
-                  )}
+                  <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
