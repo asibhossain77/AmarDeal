@@ -265,7 +265,7 @@ export function SellerProfileView() {
                   </div>
                   <div className="p-3">
                     <h3 className="text-sm font-semibold text-foreground truncate">{p.title}</h3>
-                    <p className="text-sm font-bold text-primary mt-1">৳{p.price.toLocaleString('bn-BD')}</p>
+                    <p className="text-sm font-bold text-primary mt-1">৳{p.price.toLocaleString('en-BD')}</p>
                   </div>
                 </a>
               ))}
@@ -361,7 +361,7 @@ export function SellerProfileView() {
                         </div>
                         <p className="text-sm text-muted-foreground">{r.comment}</p>
                         <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-                          {new Date(r.createdAt).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                     </div>
