@@ -625,6 +625,7 @@ export const en: Record<TranslationKey, string> = {
   // ── Seller Public Profile ──
   'sellerProfile.notFound': 'Seller not found',
   'sellerProfile.backToMarketplace': 'Back to Marketplace',
+  'sellerProfile.backToSeller': 'Back to Seller Profile',
   'sellerProfile.follow': 'Follow',
   'sellerProfile.following': 'Following',
   'sellerProfile.followers': 'Followers',

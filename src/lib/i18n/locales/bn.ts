@@ -623,6 +623,7 @@ export const bn = {
   // ── Seller Public Profile ──
   'sellerProfile.notFound': 'সেলার পাওয়া যায়নি',
   'sellerProfile.backToMarketplace': 'মার্কেটপ্লেসে ফিরুন',
+  'sellerProfile.backToSeller': 'সেলার প্রোফাইলে ফিরুন',
   'sellerProfile.follow': 'ফলো',
   'sellerProfile.following': 'ফলোয়িং',
   'sellerProfile.followers': 'ফলোয়ার',

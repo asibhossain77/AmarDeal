@@ -46,6 +46,13 @@ export function SellerProfileView() {
   const user = useAppStore((s) => s.user);
   const sellerId = useAppStore((s) => s.sellerProfileId);
   const setView = useAppStore((s) => s.setView);
+  const setProductDetailId = useAppStore((s) => s.setProductDetailId);
+
+  /* Open the product's buy page — same flow as the marketplace grid */
+  const openProductPage = (id: string) => {
+    setProductDetailId(id);
+    setView('page-product');
+  };
 
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -236,10 +243,10 @@ export function SellerProfileView() {
               {products.map((p) => (
                 <a
                   key={p.id}
-                  href="/marketplace"
+                  href={`/product/${p.id}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    setView('page-marketplace');
+                    openProductPage(p.id);
                   }}
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/20"
                 >

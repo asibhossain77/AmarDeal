@@ -63,6 +63,16 @@ export function ProductOrderView() {
   const user = useAppStore((s) => s.user);
   const productDetailId = useAppStore((s) => s.productDetailId);
   const setView = useAppStore((s) => s.setView);
+  const prevView = useAppStore((s) => s._prevView);
+  const goBack = useAppStore((s) => s.goBack);
+
+  /* Smart back: return to where the user came from (e.g. seller profile);
+     fallback to the marketplace when there is no in-app history (direct URL). */
+  const backTargetProfile = prevView === 'page-seller-profile';
+  const handleBack = () => {
+    if (backTargetProfile) goBack();
+    else setView('page-marketplace');
+  };
 
   const [product, setProduct] = useState<OrderProduct | null>(null);
   const [loading, setLoading] = useState(true);
@@ -233,11 +243,11 @@ export function ProductOrderView() {
         <div className="flex items-center gap-3">
           <a
             href="/marketplace"
-            onClick={(e) => { e.preventDefault(); setView('page-marketplace'); }}
+            onClick={(e) => { e.preventDefault(); handleBack(); }}
             className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4" />
-            {t('sellerProfile.backToMarketplace')}
+            {backTargetProfile ? t('sellerProfile.backToSeller') : t('sellerProfile.backToMarketplace')}
           </a>
         </div>
       </div>
