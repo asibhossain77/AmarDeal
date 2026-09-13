@@ -36,6 +36,18 @@ const nextConfig: NextConfig = {
       'react-syntax-highlighter',
     ],
   },
+  // Shrink the traced function bundle: Vercel Functions Storage keeps every
+  // deployment's bundle (~was 134MB each → 11GB across retained deployments,
+  // exceeding the 10GB free limit). Typescript and musl/Alpine native
+  // binaries are never needed at runtime (Vercel runs glibc linux x64).
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/typescript/**',
+      'node_modules/@img/sharp-libvips-linuxmusl-*/**',
+      'node_modules/@img/sharp-linuxmusl-*/**',
+      'node_modules/@libsql/*musl*/**',
+    ],
+  },
   async headers() {
     return [
       {
