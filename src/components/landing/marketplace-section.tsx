@@ -172,14 +172,14 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
         )}
         <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />
         <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5 sm:left-3 sm:top-3">
-          <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
-            <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
-            {CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}
+          <Badge variant="secondary" className="gap-1 bg-background/80 px-1.5 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
+            <CatIcon className={`h-3.5 w-3.5 ${catColor}`} strokeWidth={2.5} />
+            <span className="hidden sm:inline">{CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}</span>
           </Badge>
           {isMulti && (
-            <Badge variant="secondary" className="gap-1 bg-primary/90 text-primary-foreground text-[10px] font-semibold shadow-sm backdrop-blur-lg">
-              <Layers className="h-3 w-3" strokeWidth={2.5} />
-              {t('seller.multipleOptions')}
+            <Badge variant="secondary" className="gap-1 bg-primary/90 px-1.5 text-primary-foreground text-[10px] font-semibold shadow-sm backdrop-blur-lg">
+              <Layers className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span className="hidden sm:inline">{t('seller.multipleOptions')}</span>
             </Badge>
           )}
         </div>
