@@ -58,6 +58,11 @@ export async function uploadToR2(
     Key: key,
     Body: buffer,
     ContentType: file.type,
+    // Immutable forever: keys are unique per upload (timestamp-random), so a
+    // URL's content never changes. This lets Cloudflare edge-cache the object
+    // (cf-cache-status: HIT) and browsers keep it for a year — repeat views
+    // stop re-downloading through the Vercel /cdn/ proxy, cutting transfer.
+    CacheControl: 'public, max-age=31536000, immutable',
   }))
 
   if (!R2_PUBLIC_URL) {

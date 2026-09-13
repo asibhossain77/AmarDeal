@@ -37,20 +37,23 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    return [{
-      source: '/(.*)',
-      headers: securityHeaders,
-    }];
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+      // NOTE: /cdn/* cache headers are set by the route handler at
+      // src/app/cdn/[...path]/route.ts — next.config headers() does not
+      // merge into rewrite responses, which is why the handler exists.
+    ];
   },
   async rewrites() {
     return {
-      // CDN image proxy must run before everything else.
-      beforeFiles: [
-        {
-          source: '/cdn/:path*',
-          destination: 'https://cdn.midman.bd/:path*',
-        },
-      ],
+      // NOTE: /cdn/:path* is NO LONGER an external rewrite — it moved to a
+      // real route handler (src/app/cdn/[...path]/route.ts) so responses
+      // carry immutable Cache-Control and stop re-downloading every image
+      // through Vercel on every page view.
+      beforeFiles: [],
       afterFiles: [],
       // SPA catch-all — only for paths with NO matching route (static OR
       // dynamic). Running this as `fallback` (instead of a plain afterFiles
