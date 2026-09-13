@@ -6,6 +6,8 @@ export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
 export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
+/* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
+export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 
 /** All possible deal statuses in the escrow flow */
 export type DealStatus =
@@ -63,6 +65,7 @@ interface AppState {
   dashboardPanel: DashboardPanel
   sellerPanel: SellerPanel
   adminPanel: AdminPanel
+  adminMarketplaceTab: AdminMarketplaceTab
   activeDeal: DealInfo | null
   dealPreFill: DealPreFill | null
   locale: Locale
@@ -81,6 +84,7 @@ interface AppState {
   setDashboardPanel: (panel: DashboardPanel) => void
   setSellerPanel: (panel: SellerPanel) => void /* kept for compat */
   setAdminPanel: (panel: AdminPanel) => void
+  setAdminMarketplaceTab: (tab: AdminMarketplaceTab) => void
   setActiveDeal: (deal: DealInfo | null) => void
   setDealPreFill: (preFill: DealPreFill | null) => void
   setLocale: (locale: Locale) => void
@@ -106,6 +110,7 @@ export const useAppStore = create<AppState>((set) => ({
   dashboardPanel: 'overview',
   sellerPanel: 'overview',
   adminPanel: 'dashboard',
+  adminMarketplaceTab: 'settings',
   activeDeal: null,
   dealPreFill: null,
   locale: getSavedLocale(),
@@ -147,6 +152,7 @@ export const useAppStore = create<AppState>((set) => ({
     sellerPanel,
   })),
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
+  setAdminMarketplaceTab: (adminMarketplaceTab) => set({ adminMarketplaceTab }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
   setDealPreFill: (dealPreFill) => set({ dealPreFill }),
   setLocale: (locale) => {

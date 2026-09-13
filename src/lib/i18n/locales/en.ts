@@ -38,6 +38,7 @@ export const en: Record<TranslationKey, string> = {
   'adminNav.allDeals': 'All Deals',
   'adminNav.userManagement': 'User Management',
   'adminNav.pendingProducts': 'Pending Products',
+  'adminNav.sellerRequests': 'Seller Requests',
   'adminNav.contact': 'Contact',
   'adminNav.websiteSettings': 'Website Settings',
   'adminNav.contract': 'Contract Page',

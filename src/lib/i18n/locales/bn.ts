@@ -36,6 +36,7 @@ export const bn = {
   'adminNav.allDeals': 'সকল ডিল',
   'adminNav.userManagement': 'ইউজার ম্যানেজমেন্ট',
   'adminNav.pendingProducts': 'পেন্ডিং প্রোডাক্ট',
+  'adminNav.sellerRequests': 'সেলার রিকোয়েস্ট',
   'adminNav.contact': 'যোগাযোগ',
   'adminNav.websiteSettings': 'ওয়েবসাইট সেটিংস',
   'adminNav.contract': 'চুক্তি পেজ',

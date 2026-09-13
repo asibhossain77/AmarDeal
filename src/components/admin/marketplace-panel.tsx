@@ -20,6 +20,7 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useT } from '@/lib/i18n';
+import { useAppStore, type AdminMarketplaceTab } from '@/lib/store';
 import { SellerAppsTab } from './seller-apps-tab';
 import { cdnUrl } from '@/lib/cdn-url';
 
@@ -103,6 +104,8 @@ export function SolidCard({ children, className = '' }: { children: React.ReactN
 
 export function AdminMarketplacePanel() {
   const t = useT();
+  const tab = useAppStore((s) => s.adminMarketplaceTab);
+  const setTab = useAppStore((s) => s.setAdminMarketplaceTab);
 
   return (
     <div className="space-y-6">
@@ -116,7 +119,7 @@ export function AdminMarketplacePanel() {
         </p>
       </div>
 
-      <Tabs defaultValue="settings" className="w-full">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as AdminMarketplaceTab)} className="w-full">
         <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-11 rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm rounded-lg">
             <Settings className="h-4 w-4" />

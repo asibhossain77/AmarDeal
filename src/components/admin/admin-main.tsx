@@ -86,6 +86,7 @@ import {
   User,
   Trash2,
   PackageCheck,
+  UserPlus,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -177,6 +178,7 @@ interface AdminStats {
   adminCalls: number;
   disputedCount: number;
   pendingProducts: number;
+  pendingSellerApps?: number;
 }
 
 interface PlatformSettings {
@@ -418,7 +420,7 @@ function DashboardStatsPanel() {
     return true;
   };
 
-  const allCards = stats
+  const allCards: Array<{ label: string; value: string; icon: React.ElementType; color: string; bg: string; target: AdminPanel; preClick?: () => void }> = stats
     ? [
         {
           label: t('adminNav.userManagement'),
@@ -477,6 +479,15 @@ function DashboardStatsPanel() {
           target: 'pending-products' as const,
         },
         {
+          label: t('adminNav.sellerRequests'),
+          value: (stats.pendingSellerApps ?? 0).toLocaleString('en'),
+          icon: UserPlus,
+          color: 'text-sky-500 dark:text-sky-400',
+          bg: 'bg-sky-500/10',
+          target: 'marketplace' as const,
+          preClick: () => useAppStore.getState().setAdminMarketplaceTab('applications'),
+        },
+        {
           label: `${t('admin.verify.totalTransactions')} (৳)`,
           value: stats.completedAmount.toLocaleString('en'),
           icon: Wallet,
@@ -521,7 +532,7 @@ function DashboardStatsPanel() {
           >
             <SolidCard
               className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-              onClick={() => setAdminPanel(stat.target)}
+              onClick={() => { stat.preClick?.(); setAdminPanel(stat.target); }}
             >
               <div className="flex items-center justify-between text-center sm:text-left">
                 <div className="flex-1 min-w-0">
