@@ -407,3 +407,21 @@ Stage Summary:
 - Free product: any logged-in user downloads instantly, no deal; Paid digital: download page unlocks exactly when admin verifies payment
 - Files live in R2 bucket under files/ prefix; buyer gets 10-min presigned attachment URL — bytes never flow through Vercel
 - Production migration is self-healing on first page load; /api/health also autofixes
+
+---
+Task ID: 1
+Agent: main
+Task: Fix duplicate Buy Now button on product buy page
+
+Work Log:
+- User reported: "Product buy page e buy button 2 ta show kore" (two buy buttons visible)
+- Pulled latest origin/main first (local was 3 commits behind: digital product system 8706c10 + bundle shrink 719b480)
+- Reproduced locally: fresh sandbox — installed deps (+ new @aws-sdk/s3-request-presigner), prisma db push + generate, seeded single/multi/free test products, dev server + agent-browser screenshots
+- Root cause: commit c5a45ef (multi-option feature) added a SECOND "এখনই কিনুন" button (with option price suffix + disabled-until-option logic) inside the order actions block but the ORIGINAL plain Buy Now button was never removed — both rendered for every paid product
+- Fix in src/components/landing/product-order-view.tsx: removed the old plain Buy Now, kept the newer one merged INTO the WhatsApp row (flex row with WhatsApp on desktop, stacked mobile) — preserves price suffix "এখনই কিনুন — ৳1,000" and disabled state for multi-option until option selected
+- Verified via agent-browser: single paid = 1 Buy Now; multi = disabled → "এখনই কিনুন — ৳1,000" after option click; free digital = single "ফ্রি ডাউনলোড করুন" (unchanged)
+- tsc --noEmit: 0 errors in product-order-view.tsx (remaining errors are pre-existing in unrelated mini-services/scripts/routes)
+
+Stage Summary:
+- commit 017bb2b pushed to origin/main (079f761..017bb2b)
+- Buy page now shows exactly ONE Buy Now button for paid products (single + multi types), WhatsApp row layout restored
