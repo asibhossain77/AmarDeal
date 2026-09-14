@@ -633,8 +633,16 @@ export function ProductOrderView() {
                         {t('marketplace.contactWhatsApp')}
                       </a>
                     )}
-                    <Button onClick={handleBuyNow} className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold">
-                      <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
+                    <Button
+                      onClick={handleBuyNow}
+                      disabled={isMulti && !selectedOption}
+                      className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold"
+                    >
+                      <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
+                      <span className="truncate">
+                        {t('marketplace.buyNow')}
+                        {isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty, locale)}` : ''}
+                      </span>
                     </Button>
                   </div>
                   {isDigital && (
@@ -643,17 +651,6 @@ export function ProductOrderView() {
                       {t('marketplace.digitalHint')}
                     </p>
                   )}
-                  <Button
-                    onClick={handleBuyNow}
-                    disabled={isMulti && !selectedOption}
-                    className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold"
-                  >
-                    <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
-                    <span className="truncate">
-                      {t('marketplace.buyNow')}
-                      {isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty, locale)}` : ''}
-                    </span>
-                  </Button>
                 </div>
               )}
             </div>
