@@ -383,3 +383,27 @@ Stage Summary:
 - Users can enable/disable push from Settings panel
 - Auto-cleanup of expired push subscriptions
 - All integrated with existing deal flow (create, payment, approve, complete)
+
+---
+Task ID: 1
+Agent: Main
+Task: Digital product file system — R2 file upload on Add Product, auto download page after payment verification, free products without deals
+
+Work Log:
+- Restored working tree first (4 upload routes were deleted uncommitted + mode-only changes)
+- Schema: DigitalProduct += isFree/fileKey/fileName/fileSize/fileType; new ProductDownload model (unique productId+userId); merged cleanly with remote's ProductOption/PayoutAccount/SellerWithdrawal systems
+- r2.ts: validateDigitalFile (ext whitelist PDF/ZIP/DOC/MP4…, max 100MB), digitalFileKey (files/<userId>/<ts>-<16hex>.<ext> — secret URL), ownsFileKey, presignUpload/presignDownload (10-min, RFC5987 attachment filename), deleteFileByKey, ensureBucketCors (PutBucketCors once per process for browser PUTs)
+- New APIs: POST/DELETE /api/upload/product-file (presigned upload, seller-only, key-ownership enforced), POST /api/products/[id]/claim (free grant + seller notification), GET /api/download/[id] (302 presigned redirect, entitlement = free | owner | grant | deal payment_verified+), GET /api/download/[id]/info
+- products POST/GET/PATCH/DELETE extended: isFree (price forced 0), file attach/replace/remove with old-object cleanup, fileKey never exposed in any public response
+- Deal GET includes product file meta → deal tracker shows "ডিজিটাল পণ্য ডাউনলোড করুন" for buyers once payment_verified
+- UI: AddProductPanel + EditProductPanel get digital file uploader (XHR progress, presigned PUT direct to R2) + free toggle; ProductCard + product order page show ফ্রি/ডিজিটাল badges, instant free download button, entitled buyers get Download button; new /download/[id] download-center page (SPA view + route, noindex) with auto-download + manual fallback
+- Security: /cdn/files/* blocked at proxy middleware AND cdn route handler (defense-in-depth); fileKey secret never leaves server; delete/attach ownership enforced
+- Deploy safety: schema self-healing in /api/auth/me (once per process) + health autofix entries + graceful fallbacks for pre-migration queries
+- Rebased onto origin/main (b6da4f2 cdn caching + 719b480 bundle shrink + multi-option system); resolved conflicts keeping both feature sets
+- E2E: scripts/digital-e2e.sh + scripts/digital-seed.ts (one-shot standalone server on :3122, fake R2 creds, offline presign signing) — 36/36 PASS
+
+Stage Summary:
+- commit 8706c10 pushed to origin/main
+- Free product: any logged-in user downloads instantly, no deal; Paid digital: download page unlocks exactly when admin verifies payment
+- Files live in R2 bucket under files/ prefix; buyer gets 10-min presigned attachment URL — bytes never flow through Vercel
+- Production migration is self-healing on first page load; /api/health also autofixes
