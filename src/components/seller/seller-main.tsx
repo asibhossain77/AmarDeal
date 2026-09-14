@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { SellerDealTracker } from './seller-deal-tracker';
 import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { BackButton } from '@/components/shared/back-button';
@@ -21,7 +22,7 @@ import {
 import { useT } from '@/lib/i18n';
 import {
   Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye, Layers,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -32,6 +33,152 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const emptySubscribe = () => () => {};
+
+/* ═══════════════════════════════════════════════════════════
+   Digital product file uploader (PDF / ZIP / DOC … → R2)
+   Upload goes DIRECTLY to R2 with a presigned URL (XHR for
+   progress) — no serverless body-size limit.
+   ═══════════════════════════════════════════════════════════ */
+
+export interface DigitalFileInfo {
+  /** R2 key for NEW uploads; for an already-saved file we only know it exists (`existing: true`) */
+  key: string | null;
+  name: string;
+  size: number | null;
+  type: string | null;
+  /** true when this is the product's current server-side file (key unknown client-side) */
+  existing?: boolean;
+}
+
+const FILE_INPUT_ACCEPT = '.pdf,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.epub,.mobi,.mp3,.mp4,.wav,.psd,.ai,.fig,.sketch,.apk,.png,.jpg,.jpeg,.webp';
+
+function formatBytes(bytes: number | null): string {
+  if (!bytes) return '';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function DigitalFileUploader({ value, onChange, onUploading, t }: {
+  value: DigitalFileInfo | null;
+  onChange: (f: DigitalFileInfo | null) => void;
+  onUploading?: (busy: boolean) => void;
+  t: (k: string) => string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const setBusyState = (b: boolean) => { setBusy(b); onUploading?.(b); };
+
+  const handlePick = async (file: File) => {
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(t('seller.fileTooLarge'));
+      return;
+    }
+    setBusyState(true);
+    setProgress(0);
+    try {
+      // 1. Ask the server for a presigned R2 upload URL
+      const res = await fetch('/api/upload/product-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileSize: file.size, fileType: file.type || null }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.error || `Upload failed (${res.status})`);
+        setBusyState(false);
+        return;
+      }
+      const { key, uploadUrl }: { key: string; uploadUrl: string } = data;
+
+      // 2. Upload directly to R2 (with progress)
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 ${xhr.status}`)));
+        xhr.onerror = () => reject(new Error('network'));
+        xhr.send(file);
+      });
+
+      onChange({ key, name: file.name, size: file.size, type: file.type || null });
+      toast.success(t('seller.fileUploaded'));
+    } catch {
+      toast.error(t('seller.fileUploadFailed'));
+    } finally {
+      setBusyState(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handleRemove = () => {
+    // Best-effort server delete for freshly uploaded (not yet saved) files
+    if (value?.key) {
+      fetch('/api/upload/product-file', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: value.key }),
+      }).catch(() => {});
+    }
+    onChange(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/30 p-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <FileText className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold text-foreground" dir="ltr">{value.name}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {value.size ? formatBytes(value.size) : ''}{value.existing ? ` · ${t('seller.fileAttached')}` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          aria-label={t('seller.fileRemove')}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handlePick(f); }}
+      onClick={() => inputRef.current?.click()}
+      className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-[12px] font-medium text-primary">{t('seller.fileUploading')} {progress}%</p>
+          <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </>
+      ) : (
+        <>
+          <Upload className="h-7 w-7 text-muted-foreground" />
+          <p className="text-[13px] text-muted-foreground">{t('seller.fileDragDrop')}</p>
+          <p className="text-[11px] text-muted-foreground/60">{t('seller.fileMaxSize')}</p>
+        </>
+      )}
+      <input ref={inputRef} type="file" accept={FILE_INPUT_ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePick(f); }} />
+    </div>
+  );
+}
+
 
 const CATEGORIES = [
   { key: 'design', bn: '\u09A1\u09BF\u099C\u09BE\u0987\u09A8', en: 'Design' },
@@ -252,6 +399,10 @@ export function AddProductPanel() {
   const [productType, setProductType] = useState<'single' | 'multi'>('single');
   const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
   const fileRef = useRef<HTMLInputElement>(null);
+  /* Digital product file + free toggle */
+  const [isFree, setIsFree] = useState(false);
+  const [fileInfo, setFileInfo] = useState<DigitalFileInfo | null>(null);
+  const [fileBusy, setFileBusy] = useState(false);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
@@ -307,6 +458,10 @@ export function AddProductPanel() {
       toast.error(t('seller.imageUploading'));
       return;
     }
+    if (fileBusy) {
+      toast.error(t('seller.fileUploading'));
+      return;
+    }
     // Block if upload failed (localPreview was shown but image CDN URL never set)
     if (uploadError) {
       toast.error(t('seller.imageUploadFailed'));
@@ -317,9 +472,12 @@ export function AddProductPanel() {
       return;
     }
 
-    /* ── Type-specific client validation (server re-validates everything) ── */
+    /* ── Type-specific client validation (server re-validates everything) ──
+       Free products are always single + price 0 — no options, no price needed. */
     let payloadOptions: OptionRow[] | undefined;
-    if (productType === 'multi') {
+    if (isFree) {
+      // free product — nothing else to validate
+    } else if (productType === 'multi') {
       const errorKey = validateOptionRows(options);
       if (errorKey) {
         toast.error(t(errorKey));
@@ -341,11 +499,18 @@ export function AddProductPanel() {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
-          ...(productType === 'multi'
-            ? { productType, options: optionRowsToPayload(payloadOptions!) }
-            : { productType, price: Number(price) }),
+          ...(isFree
+            ? { productType: 'single', price: 0 }
+            : productType === 'multi'
+              ? { productType, options: optionRowsToPayload(payloadOptions!) }
+              : { productType, price: Number(price) }),
           category,
           image: image.trim() || null,
+          isFree,
+          fileKey: fileInfo?.key || null,
+          fileName: fileInfo?.name || null,
+          fileSize: fileInfo?.size || null,
+          fileType: fileInfo?.type || null,
         }),
       });
       const data = await res.json();
@@ -353,6 +518,7 @@ export function AddProductPanel() {
         setShowPendingDialog(true);
         setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
         setProductType('single'); setOptions([createEmptyOption()]);
+        setIsFree(false); setFileInfo(null);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -389,8 +555,15 @@ export function AddProductPanel() {
         {/* Step 2: type-specific pricing fields */}
         {productType === 'single' ? (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
-            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
+              <div className="flex items-center gap-2">
+                <Switch id="free-toggle" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
+                <Label htmlFor="free-toggle" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+              </div>
+            </div>
+            <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
+            {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
           </div>
         ) : (
           <ProductOptionsEditor options={options} onChange={setOptions} />
@@ -451,8 +624,15 @@ export function AddProductPanel() {
           <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
         </div>
 
+        {/* Digital product file — buyers download it after payment verification (or free) */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+        </div>
+
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSubmit} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+          <Button onClick={handleSubmit} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {submitting ? t('seller.adding') : uploading ? t('seller.imageUploading') : t('seller.addProductBtn')}
           </Button>
@@ -512,6 +692,12 @@ export function EditProductPanel() {
   const [productType, setProductType] = useState<'single' | 'multi'>('single');
   const [options, setOptions] = useState<OptionRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  /* Digital product file + free toggle */
+  const [isFree, setIsFree] = useState(false);
+  const [fileInfo, setFileInfo] = useState<DigitalFileInfo | null>(null);
+  const [fileBusy, setFileBusy] = useState(false);
+  /** Snapshot of the file state as loaded from the server — to know if it changed */
+  const [originalHadFile, setOriginalHadFile] = useState(false);
 
   useEffect(() => {
     if (!editingProductId) { setNotFound(true); setLoading(false); return; }
@@ -536,6 +722,14 @@ export function EditProductPanel() {
                 }))
               : [createEmptyOption()]
           );
+          setIsFree(!!p.isFree);
+          if (p.hasFile && p.fileName) {
+            setFileInfo({ key: null, name: p.fileName, size: p.fileSize ?? null, type: p.fileType ?? null, existing: true });
+            setOriginalHadFile(true);
+          } else {
+            setFileInfo(null);
+            setOriginalHadFile(false);
+          }
         } else {
           setNotFound(true);
         }
@@ -585,16 +779,21 @@ export function EditProductPanel() {
 
   const handleSave = async () => {
     if (uploading) { toast.error(t('seller.imageUploading')); return; }
+    if (fileBusy) { toast.error(t('seller.fileUploading')); return; }
     if (uploadError) { toast.error(t('seller.imageUploadFailed')); return; }
     if (!description.trim()) {
       toast.error(t('seller.fillAllFields'));
       return;
     }
 
-    /* Multi: validate options — price is derived from them server-side.
-       Single: price field as before. */
+    /* Multi: validate options — price is derived from them server-side (free not allowed).
+       Single: free toggle wins over price; paid needs price > 0. */
     let payload: Record<string, unknown>;
     if (productType === 'multi') {
+      if (isFree) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
       const errorKey = validateOptionRows(options);
       if (errorKey) {
         toast.error(t(errorKey));
@@ -607,16 +806,27 @@ export function EditProductPanel() {
         options: optionRowsToPayload(options),
       };
     } else {
-      if (!price || Number(price) <= 0) {
+      payload = {
+        description: description.trim(),
+        category,
+        image: image.trim() || null,
+        isFree,
+        ...(isFree ? { price: 0 } : { price: Number(price) }),
+      };
+      if (!isFree && (!price || Number(price) <= 0)) {
         toast.error(t('seller.fillAllFields'));
         return;
       }
-      payload = {
-        description: description.trim(),
-        price: Number(price),
-        category,
-        image: image.trim() || null,
-      };
+    }
+
+    // File changed? (new upload → key set; removed → null; untouched existing → omit)
+    if (fileInfo?.key) {
+      payload.fileKey = fileInfo.key;
+      payload.fileName = fileInfo.name;
+      payload.fileSize = fileInfo.size;
+      payload.fileType = fileInfo.type;
+    } else if (fileInfo === null && originalHadFile) {
+      payload.fileKey = null; // removal — server deletes the old object
     }
 
     setSubmitting(true);
@@ -716,8 +926,15 @@ export function EditProductPanel() {
           <ProductOptionsEditor options={options} onChange={setOptions} />
         ) : (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
-            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+              <div className="flex items-center gap-2">
+                <Switch id="free-toggle-edit" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
+                <Label htmlFor="free-toggle-edit" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+              </div>
+            </div>
+            <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
+            {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
           </div>
         )}
 
@@ -769,8 +986,15 @@ export function EditProductPanel() {
           )}
         </div>
 
+        {/* Digital product file */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+        </div>
+
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+          <Button onClick={handleSave} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {submitting ? t('seller.saving') : uploading ? t('seller.imageUploading') : t('seller.saveChanges')}
           </Button>

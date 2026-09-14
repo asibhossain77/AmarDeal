@@ -129,6 +129,12 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     ['PaymentMethod', 'qrImage', 'TEXT', 'NULL'],
     // SellerApplication verification code (WhatsApp code verification flow)
     ['SellerApplication', 'verificationCode', 'TEXT', 'NULL'],
+    // Digital product file columns (file upload + free download system)
+    ['DigitalProduct', 'isFree', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
+    ['DigitalProduct', 'fileKey', 'TEXT', 'NULL'],
+    ['DigitalProduct', 'fileName', 'TEXT', 'NULL'],
+    ['DigitalProduct', 'fileSize', 'INTEGER', 'NULL'],
+    ['DigitalProduct', 'fileType', 'TEXT', 'NULL'],
   ]
 
   for (const [table, column, colType, defaultVal] of checks) {
@@ -221,6 +227,18 @@ CREATE TABLE IF NOT EXISTS "SellerApplication" (
 );
 CREATE INDEX IF NOT EXISTS "SellerApplication_status_idx" ON "SellerApplication"("status");
 CREATE INDEX IF NOT EXISTS "SellerApplication_userId_idx" ON "SellerApplication"("userId");`,
+    'ProductDownload': `
+CREATE TABLE IF NOT EXISTS "ProductDownload" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "productId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "dealId" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ProductDownload_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ProductDownload_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductDownload_productId_userId_key" ON "ProductDownload"("productId", "userId");
+CREATE INDEX IF NOT EXISTS "ProductDownload_userId_idx" ON "ProductDownload"("userId");`,
     'AffiliateEarning': `
 CREATE TABLE IF NOT EXISTS "AffiliateEarning" (
   "id" TEXT NOT NULL PRIMARY KEY,

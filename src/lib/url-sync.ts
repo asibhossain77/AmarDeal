@@ -25,6 +25,7 @@ const VIEW_PATHS: Record<string, string> = {
   'page-marketplace': 'marketplace',
   'page-seller-profile': 's/__SELLER_ID__',
   'page-product': 'product/__PRODUCT_ID__',
+  'page-download': 'download/__PRODUCT_ID__',
 };
 
 const PATH_VIEWS: Record<string, AppView> = {
@@ -52,8 +53,9 @@ export function buildUrl(state: {
   activeDeal: { id: string } | null;
   sellerProfileId?: string | null;
   productDetailId?: string | null;
+  downloadProductId?: string | null;
 }): string {
-  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId } = state;
+  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId, downloadProductId } = state;
 
   // Seller public profile
   if (view === 'page-seller-profile' && sellerProfileId) {
@@ -63,6 +65,11 @@ export function buildUrl(state: {
   // Product order page
   if (view === 'page-product' && productDetailId) {
     return `/product/${productDetailId}`;
+  }
+
+  // Digital product download page
+  if (view === 'page-download' && downloadProductId) {
+    return `/download/${downloadProductId}`;
   }
 
   // Static pages
@@ -128,6 +135,13 @@ export function parseUrl(pathname: string): ParsedUrl {
   // /product/[productId] — product order page
   if (segments.length === 2 && segments[0] === 'product') {
     result.view = 'page-product';
+    result.productId = segments[1];
+    return result;
+  }
+
+  // /download/[productId] — digital product download page
+  if (segments.length === 2 && segments[0] === 'download') {
+    result.view = 'page-download';
     result.productId = segments[1];
     return result;
   }
@@ -200,7 +214,7 @@ function pushUrl(url: string) {
 
 /* ── Apply current URL to store (reusable) ── */
 
-const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product']);
+const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product', 'page-download']);
 const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'auth']);
 
 function applyUrlToStore() {
@@ -229,7 +243,10 @@ function applyUrlToStore() {
 
   if (parsed.view && parsed.view !== state.view) updates.view = parsed.view;
   if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-  if (parsed.productId) updates.productDetailId = parsed.productId;
+  if (parsed.productId) {
+    if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+    else updates.productDetailId = parsed.productId;
+  }
   if (parsed.dashboardPanel && state.view === 'dashboard' && parsed.dashboardPanel !== state.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
   if (parsed.adminPanel && state.view === 'admin' && parsed.adminPanel !== state.adminPanel) updates.adminPanel = parsed.adminPanel;
 
@@ -276,7 +293,10 @@ export function applyUrlAfterAuth() {
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     updates.view = parsed.view;
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-    if (parsed.productId) updates.productDetailId = parsed.productId;
+    if (parsed.productId) {
+      if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+      else updates.productDetailId = parsed.productId;
+    }
   }
 
   if (Object.keys(updates).length > 0) {
@@ -323,7 +343,10 @@ export function initUrlSync() {
     // view component can fetch the right data.
     const updates: Record<string, unknown> = { view: parsed.view };
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-    if (parsed.productId) updates.productDetailId = parsed.productId;
+    if (parsed.productId) {
+      if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+      else updates.productDetailId = parsed.productId;
+    }
     store.setState(updates);
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {

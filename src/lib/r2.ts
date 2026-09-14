@@ -1,4 +1,11 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutBucketCorsCommand,
+} from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 const r2 = new S3Client({
   region: 'auto',
@@ -99,5 +106,110 @@ export async function deleteFromR2(url: string): Promise<void> {
     await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }))
   } catch {
     // ignore — DB cleanup is the source of truth
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Digital product files (PDF / ZIP / DOC …)
+   — stored under `files/<userId>/…` and served ONLY through
+   time-limited presigned URLs (never the public CDN domain).
+   ═══════════════════════════════════════════════════════════ */
+
+const ALLOWED_FILE_EXTS = new Set([
+  'pdf', 'zip', 'rar', '7z',
+  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv',
+  'epub', 'mobi',
+  'mp3', 'mp4', 'wav',
+  'psd', 'ai', 'fig', 'sketch',
+  'apk',
+  'png', 'jpg', 'jpeg', 'webp',
+])
+
+export const MAX_DIGITAL_FILE_SIZE = 100 * 1024 * 1024 // 100MB
+
+/** Validate a digital file's name/extension + size. Returns the safe extension. */
+export function validateDigitalFile(fileName: string, fileSize: number): { ext: string } {
+  const ext = fileName.split('.').pop()?.toLowerCase() || ''
+  if (!ext || !ALLOWED_FILE_EXTS.has(ext)) {
+    throw new Error('এই ফাইল ফরম্যাট সাপোর্ট করা হয় না (PDF, ZIP, DOC, MP4 ইত্যাদি ব্যবহার করুন)')
+  }
+  if (fileSize <= 0) throw new Error('ফাইল খালি হতে পারবে না')
+  if (fileSize > MAX_DIGITAL_FILE_SIZE) throw new Error('ফাইল সর্বোচ্চ 100MB হতে পারবে')
+  return { ext }
+}
+
+/** Build the R2 key for a digital file — embeds the uploader's id so ownership is verifiable. */
+export function digitalFileKey(userId: string, ext: string): string {
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map(b => b.toString(16).padStart(2, '0')).join('') // 16-char secret
+  return `files/${userId}/${Date.now()}-${rand}.${ext}`
+}
+
+/** True when the given R2 key belongs to the given uploader (`files/<userId>/…`). */
+export function ownsFileKey(key: string, userId: string): boolean {
+  return key.startsWith(`files/${userId}/`) && /^[\w./-]+$/.test(key) && !key.includes('..')
+}
+
+/**
+ * Presigned PUT URL — the browser uploads the file DIRECTLY to R2,
+ * bypassing the 4.5MB serverless body limit.
+ */
+export async function presignUpload(key: string): Promise<string> {
+  assertR2Configured()
+  const cmd = new PutObjectCommand({ Bucket: R2_BUCKET, Key: key })
+  return getSignedUrl(r2, cmd, { expiresIn: 600 })
+}
+
+/**
+ * Presigned GET URL that forces an attachment download with the
+ * buyer-friendly filename. Only issued after an entitlement check.
+ */
+export async function presignDownload(key: string, fileName: string, fileType?: string | null): Promise<string> {
+  assertR2Configured()
+  // Content-Disposition safe filename (ASCII fallback + RFC 5987 for unicode)
+  const safe = fileName.replace(/[\r\n"\\/\u0000-\u001f]/g, '_').trim() || 'download'
+  const ascii = safe.replace(/[^\x20-\x7e]/g, '_')
+  const encoded = encodeURIComponent(safe)
+  const cmd = new GetObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`,
+    ...(fileType ? { ResponseContentType: fileType } : {}),
+  })
+  return getSignedUrl(r2, cmd, { expiresIn: 600 })
+}
+
+/** Delete a digital file by its R2 key (best-effort). */
+export async function deleteFileByKey(key: string): Promise<void> {
+  try {
+    await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }))
+  } catch {
+    // ignore
+  }
+}
+
+let _corsEnsured = false
+/**
+ * Allow the browser to PUT files straight to R2 (presigned upload).
+ * R2 supports CORS via the S3 API — applied once per server process.
+ */
+export async function ensureBucketCors(): Promise<void> {
+  if (_corsEnsured) return
+  try {
+    await r2.send(new PutBucketCorsCommand({
+      Bucket: R2_BUCKET,
+      CORSConfiguration: {
+        CORSRules: [{
+          AllowedOrigins: ['*'],
+          AllowedMethods: ['PUT', 'GET', 'HEAD'],
+          AllowedHeaders: ['*'],
+          ExposeHeaders: ['ETag'],
+          MaxAgeSeconds: 3600,
+        }],
+      },
+    }))
+    _corsEnsured = true
+  } catch (err) {
+    console.error('[R2] PutBucketCors failed (uploads may fail in browser):', err instanceof Error ? err.message : err)
   }
 }

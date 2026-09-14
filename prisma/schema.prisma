@@ -51,6 +51,7 @@ model User {
   pushSubscriptions  PushSubscription[]
   payoutAccounts     PayoutAccount[]
   sellerWithdrawals  SellerWithdrawal[]
+  productDownloads   ProductDownload[]
 }
 
 model Admin {
@@ -265,12 +266,19 @@ model DigitalProduct {
   // "single" = one fixed price, "multi" = multiple priced options.
   // Existing products default to "single" so old listings keep working.
   productType String   @default("single")
+  // Digital product file (uploaded to R2 `files/` prefix) — null = physical/service product
+  isFree      Boolean  @default(false) // free products: anyone can download without a deal
+  fileKey     String?  // R2 object key — NEVER exposed to clients (secret URL)
+  fileName    String?  // original display filename
+  fileSize    Int?     // bytes
+  fileType    String?  // mime type
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   chatMessages ProductChatMessage[]
   deals         Deal[]
   options       ProductOption[]
+  downloads     ProductDownload[]
 
   @@index([sellerId, status])
   @@index([status, createdAt])
@@ -290,6 +298,19 @@ model ProductOption {
   deals Deal[]
 
   @@index([productId, sortOrder])
+}
+
+model ProductDownload {
+  id        String   @id @default(cuid())
+  productId String
+  product   DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealId    String? // set when granted via a paid deal, null for free claims
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([userId])
 }
 
 model ProductChatMessage {

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download'
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
@@ -71,6 +71,8 @@ interface AppState {
   locale: Locale
   sellerProfileId: string | null
   productDetailId: string | null
+  /* Digital product download page (/download/[id]) */
+  downloadProductId: string | null
   /* Product being edited in the seller dashboard edit panel */
   editingProductId: string | null
   /* Navigation history (single-level) */
@@ -91,6 +93,7 @@ interface AppState {
   setSellerProfileId: (id: string | null) => void
   setEditingProductId: (id: string | null) => void
   setProductDetailId: (id: string | null) => void
+  setDownloadProductId: (id: string | null) => void
   /** Go back to previous page/panel */
   goBack: () => void
   /** Navigate to the user's main view (dashboard, seller, or admin) */
@@ -116,6 +119,7 @@ export const useAppStore = create<AppState>((set) => ({
   locale: getSavedLocale(),
   sellerProfileId: null,
   productDetailId: null,
+  downloadProductId: null,
   editingProductId: null,
   _prevView: null,
   _prevDashPanel: null,
@@ -163,6 +167,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSellerProfileId: (sellerProfileId) => set({ sellerProfileId }),
   setEditingProductId: (editingProductId) => set({ editingProductId }),
   setProductDetailId: (productDetailId) => set({ productDetailId }),
+  setDownloadProductId: (downloadProductId) => set({ downloadProductId }),
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {

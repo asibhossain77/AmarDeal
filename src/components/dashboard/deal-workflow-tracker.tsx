@@ -48,6 +48,8 @@ import {
   ArrowRight,
   RotateCcw,
   CircleCheckBig,
+  FileDown,
+  Download,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -1124,6 +1126,8 @@ interface DealData {
   seller: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   creator: { id: string; name: string; email: string } | null;
   paymentMethod?: { id: string; name: string; accountType: string } | null;
+  /* Digital product attached to this deal (fileName presence ⇒ downloadable) */
+  product?: { id: string; title: string; fileName?: string | null; fileSize?: number | null; isFree?: boolean } | null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2396,6 +2400,34 @@ export function DealWorkflowTracker() {
                     <p className="text-xs md:text-sm font-medium text-foreground">
                       পেমেন্ট ভেরিফাইড
                     </p>
+                  </div>
+                )}
+
+                {/* Buyer: digital file download — payment verified & product has a file */}
+                {isBuyer && dealData?.product?.fileName && ['payment_verified', 'in_delivery', 'completed'].includes(status) && (
+                  <div className="space-y-2 md:space-y-3">
+                    <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+                      <FileDown className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+                      <div className="min-w-0">
+                        <p className="text-xs md:text-sm font-bold text-foreground">
+                          ডিজিটাল পণ্য ডাউনলোড করুন
+                        </p>
+                        <p className="truncate text-[11px] md:text-xs text-muted-foreground" dir="ltr">
+                          {dealData.product.fileName}
+                        </p>
+                      </div>
+                    </div>
+                    <ActionButton
+                      onClick={() => {
+                        const s = useAppStore.getState();
+                        s.setDownloadProductId(dealData.product!.id);
+                        s.setView('page-download');
+                      }}
+                      variant="primary"
+                    >
+                      <Download className="h-5 w-5" />
+                      ডাউনলোড পেজ খুলুন
+                    </ActionButton>
                   </div>
                 )}
 

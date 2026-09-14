@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   Search, X, MessageCircle, Package, Plus, Loader2, User, Layers,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon,
+  ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon, FileDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,7 @@ interface Product {
   optionsCount?: number;
   minPrice?: number;
   maxPrice?: number;
+  isFree?: boolean; hasFile?: boolean;
 }
 
 const CATEGORIES = [
@@ -182,6 +183,12 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
               <span className="hidden sm:inline">{t('seller.multipleOptions')}</span>
             </Badge>
           )}
+          {product.hasFile && (
+            <Badge variant="secondary" className="gap-1 bg-background/80 px-1.5 text-[10px] font-bold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
+              <FileDown className="h-3 w-3 text-primary" strokeWidth={2.5} />
+              <span className="hidden sm:inline">{t('marketplace.digitalProduct')}</span>
+            </Badge>
+          )}
         </div>
       </div>
       <div className="p-3.5 sm:p-4">
@@ -189,9 +196,11 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">{product.description}</p>
         <div className="mt-3 flex items-end justify-between gap-1.5 sm:gap-2">
           <span className="text-base font-extrabold text-primary sm:text-xl">
-            {hasRange
-              ? `${formatPrice(product.minPrice!, locale)} – ${formatPrice(product.maxPrice!, locale)}`
-              : formatPrice(product.price, locale)}
+            {product.isFree
+              ? <span className="text-emerald-600 dark:text-emerald-400">{t('marketplace.free')}</span>
+              : hasRange
+                ? `${formatPrice(product.minPrice!, locale)} – ${formatPrice(product.maxPrice!, locale)}`
+                : formatPrice(product.price, locale)}
           </span>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 text-muted-foreground">

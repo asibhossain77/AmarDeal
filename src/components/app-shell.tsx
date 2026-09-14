@@ -29,6 +29,7 @@ const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m =
 const MarketplaceSection = dynamic(() => import('@/components/landing/marketplace-section').then(m => ({ default: m.MarketplaceSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 const SellerProfileView = dynamic(() => import('@/components/landing/seller-profile-view').then(m => ({ default: m.SellerProfileView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const ProductOrderView = dynamic(() => import('@/components/landing/product-order-view').then(m => ({ default: m.ProductOrderView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const DownloadView = dynamic(() => import('@/components/landing/download-view').then(m => ({ default: m.DownloadView })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -395,6 +396,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-marketplace' && <PageMarketplace />}
       {view === 'page-seller-profile' && <SellerProfileView />}
       {view === 'page-product' && <ProductOrderView />}
+      {view === 'page-download' && <DownloadView />}
       <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />

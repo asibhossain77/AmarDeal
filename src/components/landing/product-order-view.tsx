@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Zap, Loader2, User,
-  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2, Facebook,
+  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2, Facebook, FileDown, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,6 +31,7 @@ interface OrderProduct {
   optionsCount?: number;
   minPrice?: number;
   maxPrice?: number;
+  isFree?: boolean; hasFile?: boolean; fileName?: string | null; fileSize?: number | null;
 }
 
 // Quantity is an order-time selection only — no stock concept (max 99 per order)
@@ -99,6 +100,20 @@ export function ProductOrderView() {
   /* The unit price the buyer sees — always from the selected option (multi)
      or the product price (single). Never editable by hand. */
   const unitPrice = isMulti ? (selectedOption?.price ?? null) : (product?.price ?? 0);
+  /* Digital product state */
+  const [entitled, setEntitled] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
+  // Is the logged-in user already entitled to the digital file?
+  useEffect(() => {
+    if (!product || !user || !product.hasFile) { setEntitled(false); return; }
+    let cancelled = false;
+    fetch(`/api/download/${product.id}/info`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setEntitled(!!d.entitled); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [product?.id, product?.hasFile, user?.id]);
 
   useEffect(() => {
     if (!productDetailId) return;
@@ -191,6 +206,41 @@ export function ProductOrderView() {
     store.setDashboardPanel('new-deal');
     store.setView('dashboard');
   };
+
+  /** Free product → claim + open the download page */
+  const claimFreeDownload = async () => {
+    if (!product) return;
+    setClaiming(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}/claim`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const store = useAppStore.getState();
+        store.setDownloadProductId(product.id);
+        store.setView('page-download');
+      } else if (res.status === 401) {
+        toast.error(t('download.loginRequired'));
+        setView('auth');
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch {
+      toast.error('Failed');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  /** Open the download page (already entitled) */
+  const openDownload = () => {
+    if (!product) return;
+    const store = useAppStore.getState();
+    store.setDownloadProductId(product.id);
+    store.setView('page-download');
+  };
+
+  const isDigital = !!product?.hasFile;
+  const isFreeDigital = isDigital && !!product?.isFree;
 
   const openProduct = (id: string) => {
     useAppStore.getState().setProductDetailId(id);
@@ -346,6 +396,11 @@ export function ProductOrderView() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1.5 text-[11px] font-semibold">{catName}</Badge>
+              {product.hasFile && (
+                <Badge variant="secondary" className="gap-1 text-[10px] font-bold">
+                  <FileDown className="h-3 w-3 text-primary" />{t('marketplace.digitalProduct')}
+                </Badge>
+              )}
               <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
               {/* Share — native sheet on mobile, popover fallback on desktop */}
               <div className="relative ml-auto" ref={shareRef}>
@@ -383,21 +438,27 @@ export function ProductOrderView() {
             </div>
             <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              {/* Dynamic price — multi: range until an option is picked, then that option's price */}
-              {isMulti && !selectedOption ? (
-                <p className="text-3xl font-extrabold text-primary">
-                  {product.minPrice === product.maxPrice
-                    ? formatPrice(product.price, locale)
-                    : `${formatPrice(product.minPrice ?? product.price, locale)} – ${formatPrice(product.maxPrice ?? product.price, locale)}`}
-                </p>
+              {product.isFree ? (
+                <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{t('marketplace.free')}</p>
+              ) : isMulti && !selectedOption ? (
+                <>
+                  {/* Dynamic price — multi: range until an option is picked */}
+                  <p className="text-3xl font-extrabold text-primary">
+                    {product.minPrice === product.maxPrice
+                      ? formatPrice(product.price, locale)
+                      : `${formatPrice(product.minPrice ?? product.price, locale)} – ${formatPrice(product.maxPrice ?? product.price, locale)}`}
+                  </p>
+                </>
               ) : (
-                <p className="text-3xl font-extrabold text-primary">{formatPrice((unitPrice ?? product.price) * qty, locale)}</p>
-              )}
-              {isMulti && selectedOption && (
-                <p className="text-[13px] font-semibold text-foreground">{selectedOption.name}</p>
-              )}
-              {qty > 1 && unitPrice !== null && (
-                <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(unitPrice, locale)} × {toLocaleNum(qty, locale)}</p>
+                <>
+                  <p className="text-3xl font-extrabold text-primary">{formatPrice((unitPrice ?? product.price) * qty, locale)}</p>
+                  {isMulti && selectedOption && (
+                    <p className="text-[13px] font-semibold text-foreground">{selectedOption.name}</p>
+                  )}
+                  {qty > 1 && unitPrice !== null && (
+                    <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(unitPrice, locale)} × {toLocaleNum(qty, locale)}</p>
+                  )}
+                </>
               )}
             </div>
             {!isMulti && (product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice) && (
@@ -489,8 +550,9 @@ export function ProductOrderView() {
               </div>
             )}
 
-            {/* Quantity — order-time selection only (no stock) */}
-            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* Quantity — order-time selection only (no stock); hidden for digital files */}
+            {!isDigital && (
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"><Boxes className="h-4 w-4" />{t('marketplace.quantity')}</span>
                 <div className="flex items-center overflow-hidden rounded-xl border border-border">
@@ -516,10 +578,24 @@ export function ProductOrderView() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Order actions */}
             <div className="mt-5">
-              {showBuyConfirm ? (
+              {entitled ? (
+                <Button onClick={openDownload} className="h-14 w-full gap-2 rounded-xl text-[15px] font-semibold shadow-lg shadow-primary/25">
+                  <Download className="h-5 w-5" />
+                  {t('marketplace.downloadNow')}
+                </Button>
+              ) : isFreeDigital ? (
+                <div className="space-y-2">
+                  <Button onClick={claimFreeDownload} disabled={claiming} className="h-14 w-full gap-2 rounded-xl text-[15px] font-semibold shadow-lg shadow-primary/25">
+                    {claiming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                    {claiming ? t('download.claiming') : t('marketplace.freeDownload')}
+                  </Button>
+                  <p className="text-center text-[12px] text-muted-foreground">{t('marketplace.freeDownloadHint')}</p>
+                </div>
+              ) : showBuyConfirm ? (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
@@ -544,17 +620,28 @@ export function ProductOrderView() {
                   </div>
                 </div>
               ) : (
-                <div className={waHref ? 'flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3' : 'flex'}>
-                  {waHref && (
-                    <a
-                      href={waHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-14 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
-                    >
-                      <MessageCircle className="h-4.5 w-4.5" />
-                      {t('marketplace.contactWhatsApp')}
-                    </a>
+                <div className="space-y-2">
+                  <div className={waHref ? 'flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3' : 'flex'}>
+                    {waHref && (
+                      <a
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-14 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                      >
+                        <MessageCircle className="h-4.5 w-4.5" />
+                        {t('marketplace.contactWhatsApp')}
+                      </a>
+                    )}
+                    <Button onClick={handleBuyNow} className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold">
+                      <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
+                    </Button>
+                  </div>
+                  {isDigital && (
+                    <p className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground">
+                      <FileDown className="h-3.5 w-3.5 text-primary" />
+                      {t('marketplace.digitalHint')}
+                    </p>
                   )}
                   <Button
                     onClick={handleBuyNow}

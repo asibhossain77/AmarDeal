@@ -34,7 +34,23 @@ async function getProduct(id: string): Promise<ProductWithOptions | null> {
         },
       },
     });
-  } catch {
+  } catch (err) {
+    // New digital-file columns not migrated yet — retry without them (SEO safety)
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('does not exist') && (msg.includes('fileKey') || msg.includes('isFree'))) {
+      try {
+        return await db.digitalProduct.findUnique({
+          where: { id },
+          select: {
+            id: true, title: true, description: true, price: true, category: true, image: true,
+            status: true, createdAt: true, updatedAt: true,
+            seller: { select: { id: true, name: true, imageLink: true } },
+          },
+        });
+      } catch {
+        return null;
+      }
+    }
     return null;
   }
 }

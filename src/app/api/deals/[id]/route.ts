@@ -33,6 +33,8 @@ export async function GET(
         seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
         creator: { select: { id: true, name: true, email: true } },
         paymentMethod: { select: { id: true, name: true, accountType: true } },
+        // Digital file meta for the buyer's download button (fileKey is NOT exposed here)
+        product: { select: { id: true, title: true, fileName: true, fileSize: true, isFree: true } },
       },
     })
 

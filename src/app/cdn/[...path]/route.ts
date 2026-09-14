@@ -43,6 +43,13 @@ export async function GET(
 ) {
   const { path: segments } = await ctx.params
 
+  // Paid digital files are NEVER publicly proxied — they are served only via
+  // short-lived presigned URLs from /api/download/[id] after an entitlement
+  // check. (The proxy middleware blocks this too; this is defense-in-depth.)
+  if (segments[0] === 'files') {
+    return new Response('Not found', { status: 404 })
+  }
+
   // Path traversal guard — R2 keys never contain ".." or null bytes
   if (!segments.length || segments.some((s) => s === '..' || s.includes('\0') || s.includes('\\'))) {
     return new Response('Bad request', { status: 400 })

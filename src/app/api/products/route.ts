@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 import { normalizeProductType, validateOptions, priceRangeFromPrices } from '@/lib/product-options'
+import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
 
 const VALID_CATEGORIES = [
   'design',
@@ -43,8 +44,8 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
       })
     } catch (err) {
-      if (!isMissingColumnError(err, 'quantity') && !isMissingProductOptionsSupportError(err)) throw err
-      // quantity/productType/ProductOption not migrated yet (production) — fall back without them
+      if (!isMissingColumnError(err, 'quantity') && !isMissingProductOptionsSupportError(err) && !isMissingColumnError(err, 'fileKey')) throw err
+      // quantity/productType/ProductOption/file columns not migrated yet (production) — fall back without them
       products = await db.digitalProduct.findMany({
         where,
         select: {
@@ -76,6 +77,12 @@ export async function GET(req: NextRequest) {
         optionsCount: options.length,
         minPrice: isMulti ? range.min : p.price,
         maxPrice: isMulti ? range.max : p.price,
+        isFree: (p as { isFree?: boolean }).isFree ?? false,
+        // NOTE: fileKey is intentionally NOT exposed — only its metadata
+        hasFile: !!(p as { fileName?: string | null }).fileName,
+        fileName: (p as { fileName?: string | null }).fileName ?? null,
+        fileSize: (p as { fileSize?: number | null }).fileSize ?? null,
+        fileType: (p as { fileType?: string | null }).fileType ?? null,
         seller: {
           id: p.seller.id,
           name: p.seller.name,
@@ -116,7 +123,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { title, description, price, category, image, quantity, productType, options } = await req.json()
+    const { title, description, price, category, image, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType } = await req.json()
+
+    const freeProduct = !!isFree
 
     if (!title?.trim() || !description?.trim()) {
       return NextResponse.json(
@@ -125,22 +134,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const type = normalizeProductType(productType)
+    // Free products are always single-price with price 0 — anyone can download them
+    const type = freeProduct ? 'single' : normalizeProductType(productType)
 
     // ── Type-specific validation ──
     // single: one fixed price → price is required
     // multi:  price comes from options; DB price column stores the minimum option price
     let validatedOptions: { name: string; price: number; isAvailable: boolean; sortOrder: number }[] = []
-    let effectivePrice = Number(price)
+    let effectivePrice = freeProduct ? 0 : Number(price)
 
-    if (type === 'multi') {
+    if (!freeProduct && type === 'multi') {
       const result = validateOptions(options)
       if (!result.ok) {
         return NextResponse.json({ success: false, error: result.error }, { status: 400 })
       }
       validatedOptions = result.options
       effectivePrice = Math.min(...validatedOptions.map((o) => o.price))
-    } else {
+    } else if (!freeProduct) {
       if (price === undefined || price === null || price === '') {
         return NextResponse.json(
           { success: false, error: 'শিরোনাম, বিবরণ এবং মূল্য প্রদান করুন' },
@@ -179,6 +189,35 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       quantity: quantityNum,
       productType: type,
+      isFree: freeProduct,
+    }
+
+    // Digital file attachment — key must belong to this uploader
+    if (fileKey) {
+      if (typeof fileKey !== 'string' || !ownsFileKey(fileKey, userId)) {
+        return NextResponse.json(
+          { success: false, error: 'অবৈধ ফাইল কী' },
+          { status: 400 }
+        )
+      }
+      if (typeof fileName !== 'string' || typeof fileSize !== 'number') {
+        return NextResponse.json(
+          { success: false, error: 'ফাইলের মেটাডেটা প্রয়োজন' },
+          { status: 400 }
+        )
+      }
+      try {
+        validateDigitalFile(fileName, fileSize)
+      } catch (err) {
+        return NextResponse.json(
+          { success: false, error: err instanceof Error ? err.message : 'অবৈধ ফাইল' },
+          { status: 400 }
+        )
+      }
+      createData.fileKey = fileKey
+      createData.fileName = fileName.slice(0, 255)
+      createData.fileSize = Math.min(Math.floor(fileSize), MAX_DIGITAL_FILE_SIZE)
+      createData.fileType = typeof fileType === 'string' ? fileType.slice(0, 100) : null
     }
 
     let product
@@ -195,9 +234,14 @@ export async function POST(req: NextRequest) {
       })
     } catch (err) {
       if (!isMissingColumnError(err, 'quantity') && !isMissingProductOptionsSupportError(err)) throw err
-      // quantity/productType/ProductOption not migrated yet — raw INSERT without them
+      // quantity/productType/ProductOption/file columns not migrated yet — raw INSERT without them
       delete createData.quantity
       delete createData.productType
+      delete createData.isFree
+      delete createData.fileKey
+      delete createData.fileName
+      delete createData.fileSize
+      delete createData.fileType
       const optionsToInsert = validatedOptions
       delete createData.options
       const newId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12)
@@ -250,6 +294,11 @@ export async function POST(req: NextRequest) {
           optionsCount: createdOptions.length,
           minPrice: isMulti ? range.min : product.price,
           maxPrice: isMulti ? range.max : product.price,
+          isFree: (product as { isFree?: boolean }).isFree ?? false,
+          hasFile: !!(product as { fileName?: string | null }).fileName,
+          fileName: (product as { fileName?: string | null }).fileName ?? null,
+          fileSize: (product as { fileSize?: number | null }).fileSize ?? null,
+          fileType: (product as { fileType?: string | null }).fileType ?? null,
           seller: {
             name: product.seller.name,
             imageLink: product.seller.imageLink,
