@@ -70,3 +70,4 @@ tool-results/
 prisma/dummy.db
 *.db-journal
 prisma/*.db
+package-lock.json
