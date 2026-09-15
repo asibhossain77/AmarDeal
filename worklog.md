@@ -425,3 +425,22 @@ Work Log:
 Stage Summary:
 - commit 017bb2b pushed to origin/main (079f761..017bb2b)
 - Buy page now shows exactly ONE Buy Now button for paid products (single + multi types), WhatsApp row layout restored
+
+---
+Task ID: 1
+Agent: main
+Task: Fix digital product file (PDF) upload failing on Add Product
+
+Work Log:
+- User reported: "product add korar somoy digital product like pdf ei gulo upload hocche na"
+- Sandbox had reset to pre-pull state — re-synced to origin/main (87086ee), reinstalled deps (incl. @aws-sdk/s3-request-presigner), prisma push/generate, re-seeded local DB
+- Root cause analysis: presign flow (POST /api/upload/product-file) is fine — R2 creds exist on Vercel (image uploads work). The browser→R2 presigned PUT requires the bucket to serve CORS preflights; ensureBucketCors's PutBucketCors is a BUCKET-level op that Object Read & Write R2 tokens CANNOT call (AccessDenied swallowed by catch) → bucket has no CORS rule → every browser PUT blocked client-side → generic "ফাইল আপলোড ব্যর্থ" toast. Server→R2 PUTs (images) are unaffected — matches "images ok, PDFs fail"
+- Fixes: ensureBucketCors verifies with GetBucketCors + returns boolean; new server-direct fallback route /api/upload/product-file/direct (multipart, seller-only, ≤4MB, validateDigitalFile + digitalFileKey + putDigitalFile — no bucket CORS needed); DigitalFileUploader: ≤4MB direct, >4MB presigned, actionable large-file error (new i18n key seller.fileUploadFailedLarge bn+en); presign response includes corsOk
+- r2 client: forcePathStyle: true + R2_ENDPOINT env override; dev-only E2E aids: proxy connect-src += 127.0.0.1:*/localhost:* (dev only), next.config /fake-s3 rewrite gated by E2E_FAKE_S3=1 (headless Chrome 152 blocks cross-port loopback → LNA)
+- E2E (fake S3 on :3199 + agent-browser as seller): presign 200 (offline signing), direct upload of real PDF 200 + key, security (no-session 401, .exe 400), full UI flow: small PDF via direct → success toast → product saved with fileKey/fileName/fileSize in DB; 5MB PDF via presigned PUT → success toast + chip (presigned PUT also verified manually via curl: 200 + bytes stored)
+- tsc: 0 new errors (4 pre-existing in unrelated code)
+- Removed accidental package-lock.json commit (project uses bun; keeps Vercel on bun)
+
+Stage Summary:
+- commits ea33e24 + ff9652a pushed to origin/main
+- ≤4MB digital files now upload REGARDLESS of bucket CORS state; >4MB needs admin to either create an R2 token with Admin Read & Write (app then auto-sets CORS on first upload attempt) or set the CORS policy manually in the Cloudflare dashboard (R2 → midman-storage → Settings → CORS policy: AllowedOrigins *, AllowedMethods PUT/GET/HEAD, AllowedHeaders *, ExposeHeaders ETag)
