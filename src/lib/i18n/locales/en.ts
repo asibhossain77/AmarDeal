@@ -586,6 +586,7 @@ export const en: Record<TranslationKey, string> = {
   'seller.fileUploading': 'Uploading file',
   'seller.fileUploaded': 'File uploaded',
   'seller.fileUploadFailed': 'File upload failed',
+  'seller.fileUploadFailedLarge': 'Large file upload failed — try a file under 4MB, or ask the admin to fix Cloudflare R2 CORS',
   'seller.fileTooLarge': 'File can be at most 100MB',
   'seller.fileAttached': 'attached',
   'seller.fileRemove': 'Remove file',

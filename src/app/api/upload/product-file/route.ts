@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
 
     const key = digitalFileKey(userId, fileName.split('.').pop()!.toLowerCase())
 
-    // Make sure the bucket allows browser PUTs (idempotent, once per process)
-    await ensureBucketCors()
+    // Make sure the bucket allows browser PUTs (idempotent, once per process).
+    // corsOk=false ⇒ the presigned PUT will likely be CORS-blocked in the
+    // browser; the UI falls back to the direct server route for ≤4MB files.
+    const corsOk = await ensureBucketCors()
 
     const uploadUrl = await presignUpload(key)
 
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
       success: true,
       key,
       uploadUrl,
+      corsOk,
       expiresIn: 600,
       fileType: typeof fileType === 'string' ? fileType.slice(0, 100) : null,
     })

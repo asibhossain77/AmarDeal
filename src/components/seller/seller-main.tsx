@@ -78,8 +78,28 @@ function DigitalFileUploader({ value, onChange, onUploading, t }: {
     }
     setBusyState(true);
     setProgress(0);
+    // Serverless request bodies cap at ~4.5MB — files up to 4MB go THROUGH
+    // the server (no R2 bucket CORS needed). Larger files use the presigned
+    // browser→R2 PUT, which requires the bucket to serve CORS preflights.
+    const DIRECT_MAX = 4 * 1024 * 1024;
     try {
-      // 1. Ask the server for a presigned R2 upload URL
+      if (file.size <= DIRECT_MAX) {
+        // 1. Direct server upload (works even when bucket CORS is broken)
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/upload/product-file/direct', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          toast.error(data.error || t('seller.fileUploadFailed'));
+          return;
+        }
+        onChange({ key: data.key, name: file.name, size: file.size, type: file.type || null });
+        setProgress(100);
+        toast.success(t('seller.fileUploaded'));
+        return;
+      }
+
+      // 2. Presigned browser→R2 upload (with progress) for large files
       const res = await fetch('/api/upload/product-file', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -88,12 +108,10 @@ function DigitalFileUploader({ value, onChange, onUploading, t }: {
       const data = await res.json();
       if (!res.ok || !data.success) {
         toast.error(data.error || `Upload failed (${res.status})`);
-        setBusyState(false);
         return;
       }
       const { key, uploadUrl }: { key: string; uploadUrl: string } = data;
 
-      // 2. Upload directly to R2 (with progress)
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('PUT', uploadUrl);
@@ -108,7 +126,7 @@ function DigitalFileUploader({ value, onChange, onUploading, t }: {
       onChange({ key, name: file.name, size: file.size, type: file.type || null });
       toast.success(t('seller.fileUploaded'));
     } catch {
-      toast.error(t('seller.fileUploadFailed'));
+      toast.error(t('seller.fileUploadFailedLarge'));
     } finally {
       setBusyState(false);
       if (inputRef.current) inputRef.current.value = '';

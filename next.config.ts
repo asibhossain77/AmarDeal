@@ -65,7 +65,14 @@ const nextConfig: NextConfig = {
       // real route handler (src/app/cdn/[...path]/route.ts) so responses
       // carry immutable Cache-Control and stop re-downloading every image
       // through Vercel on every page view.
-      beforeFiles: [],
+      beforeFiles: [
+        // Dev-only: proxy a local fake S3/R2 server for E2E of presigned
+        // uploads (headless Chrome blocks cross-port loopback requests).
+        // Same-origin /fake-s3/* → 127.0.0.1:3199 keeps the browser happy.
+        ...(process.env.NODE_ENV === 'development' && process.env.E2E_FAKE_S3
+          ? [{ source: '/fake-s3/:path*', destination: 'http://127.0.0.1:3199/:path*' }]
+          : []),
+      ],
       afterFiles: [],
       // SPA catch-all — only for paths with NO matching route (static OR
       // dynamic). Running this as `fallback` (instead of a plain afterFiles

@@ -584,6 +584,7 @@ export const bn = {
   'seller.fileUploading': 'ফাইল আপলোড হচ্ছে',
   'seller.fileUploaded': 'ফাইল আপলোড হয়েছে',
   'seller.fileUploadFailed': 'ফাইল আপলোড ব্যর্থ হয়েছে',
+  'seller.fileUploadFailedLarge': 'বড় ফাইল আপলোড ব্যর্থ হয়েছে — ৪MB এর ছোট ফাইল দিয়ে চেষ্টা করুন অথবা অ্যাডমিনকে Cloudflare R2 CORS ঠিক করতে বলুন',
   'seller.fileTooLarge': 'ফাইল সর্বোচ্চ 100MB হতে পারবে',
   'seller.fileAttached': 'সংযুক্ত',
   'seller.fileRemove': 'ফাইল সরান',

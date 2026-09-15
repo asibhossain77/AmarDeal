@@ -4,12 +4,18 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   PutBucketCorsCommand,
+  GetBucketCorsCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 const r2 = new S3Client({
   region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  // R2_ENDPOINT override exists for local E2E against a fake S3 server;
+  // production always uses the standard R2 endpoint.
+  endpoint: process.env.R2_ENDPOINT || `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  // Path-style addressing (bucket in the path) — deterministic presigned URLs
+  // and Cloudflare R2's recommended style.
+  forcePathStyle: true,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
@@ -191,10 +197,28 @@ export async function deleteFileByKey(key: string): Promise<void> {
 let _corsEnsured = false
 /**
  * Allow the browser to PUT files straight to R2 (presigned upload).
- * R2 supports CORS via the S3 API — applied once per server process.
+ *
+ * ⚠️ PutBucketCors is a BUCKET-level operation — it needs an R2 token with
+ * "Admin Read & Write" permission. With an "Object Read & Write" token it
+ * returns AccessDenied, the bucket keeps NO CORS rule and every browser
+ * presigned PUT is blocked by the missing preflight response. Server-side
+ * PUTs (image upload, direct digital upload) are NOT affected.
+ *
+ * Returns true when the bucket is confirmed to serve CORS preflights.
+ * Idempotent — checked once per server process.
  */
-export async function ensureBucketCors(): Promise<void> {
-  if (_corsEnsured) return
+export async function ensureBucketCors(): Promise<boolean> {
+  if (_corsEnsured) return true
+  // Already configured (e.g. set manually from the Cloudflare dashboard)?
+  try {
+    const existing = await r2.send(new GetBucketCorsCommand({ Bucket: R2_BUCKET }))
+    if (existing?.CORSRules?.length) {
+      _corsEnsured = true
+      return true
+    }
+  } catch {
+    // No CORS rule (or token lacks read permission) — try to set it below
+  }
   try {
     await r2.send(new PutBucketCorsCommand({
       Bucket: R2_BUCKET,
@@ -208,8 +232,31 @@ export async function ensureBucketCors(): Promise<void> {
         }],
       },
     }))
-    _corsEnsured = true
+    // Verify it actually stuck
+    const check = await r2.send(new GetBucketCorsCommand({ Bucket: R2_BUCKET }))
+    if (check?.CORSRules?.length) {
+      _corsEnsured = true
+      return true
+    }
+    return false
   } catch (err) {
-    console.error('[R2] PutBucketCors failed (uploads may fail in browser):', err instanceof Error ? err.message : err)
+    console.error('[R2] PutBucketCors failed — presigned BROWSER uploads will fail (server-side uploads still work). Fix: create an R2 token with Admin Read & Write, or set the CORS policy manually in the Cloudflare dashboard:', err instanceof Error ? err.message : err)
+    return false
   }
+}
+
+/**
+ * Server-side digital file PUT — no bucket CORS involvement (server → R2).
+ * Used by the direct upload fallback for files that fit the serverless body limit.
+ */
+export async function putDigitalFile(buffer: Buffer, key: string, contentType: string | null): Promise<void> {
+  assertR2Configured()
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType || 'application/octet-stream',
+    // Keys are unique per upload (timestamp + 16-char secret) — immutable caching is safe
+    CacheControl: 'public, max-age=31536000, immutable',
+  }))
 }
