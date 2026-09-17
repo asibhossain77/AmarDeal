@@ -30,6 +30,8 @@ const MarketplaceSection = dynamic(() => import('@/components/landing/marketplac
 const SellerProfileView = dynamic(() => import('@/components/landing/seller-profile-view').then(m => ({ default: m.SellerProfileView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const ProductOrderView = dynamic(() => import('@/components/landing/product-order-view').then(m => ({ default: m.ProductOrderView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const DownloadView = dynamic(() => import('@/components/landing/download-view').then(m => ({ default: m.DownloadView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const AuctionListView = dynamic(() => import('@/components/landing/auction-list-view').then(m => ({ default: m.AuctionListView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const AuctionDetailView = dynamic(() => import('@/components/landing/auction-detail-view').then(m => ({ default: m.AuctionDetailView })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -235,6 +237,20 @@ function PageMarketplace() {
   );
 }
 
+function PageAuctionList() {
+  const locale = useAppStore((s) => s.locale);
+  const { t } = useTranslation(locale);
+  return (
+    <PageWrapper title={t('page.auction.title')} subtitle={t('page.auction.subtitle')}>
+      <AuctionListView />
+    </PageWrapper>
+  );
+}
+
+function PageAuctionDetail() {
+  return <AuctionDetailView />;
+}
+
 export function AppShell({ initialView }: { initialView?: AppView }) {
   const view = useAppStore((s) => s.view);
   const user = useAppStore((s) => s.user);
@@ -397,6 +413,8 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-seller-profile' && <SellerProfileView />}
       {view === 'page-product' && <ProductOrderView />}
       {view === 'page-download' && <DownloadView />}
+      {view === 'page-auction' && <PageAuctionList />}
+      {view === 'page-auction-detail' && <PageAuctionDetail />}
       <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />

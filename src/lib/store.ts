@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download'
-export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail'
+export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
 export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
@@ -71,6 +71,8 @@ interface AppState {
   locale: Locale
   sellerProfileId: string | null
   productDetailId: string | null
+  /* Auction detail page (/nilam/[id]) */
+  auctionDetailId: string | null
   /* Digital product download page (/download/[id]) */
   downloadProductId: string | null
   /* Product being edited in the seller dashboard edit panel */
@@ -93,6 +95,7 @@ interface AppState {
   setSellerProfileId: (id: string | null) => void
   setEditingProductId: (id: string | null) => void
   setProductDetailId: (id: string | null) => void
+  setAuctionDetailId: (id: string | null) => void
   setDownloadProductId: (id: string | null) => void
   /** Go back to previous page/panel */
   goBack: () => void
@@ -119,6 +122,7 @@ export const useAppStore = create<AppState>((set) => ({
   locale: getSavedLocale(),
   sellerProfileId: null,
   productDetailId: null,
+  auctionDetailId: null,
   downloadProductId: null,
   editingProductId: null,
   _prevView: null,
@@ -167,6 +171,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSellerProfileId: (sellerProfileId) => set({ sellerProfileId }),
   setEditingProductId: (editingProductId) => set({ editingProductId }),
   setProductDetailId: (productDetailId) => set({ productDetailId }),
+  setAuctionDetailId: (auctionDetailId) => set({ auctionDetailId }),
   setDownloadProductId: (downloadProductId) => set({ downloadProductId }),
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back

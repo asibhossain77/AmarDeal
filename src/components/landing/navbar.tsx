@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
-import { useAppStore, type DashboardPanel, type AdminPanel } from '@/lib/store';
+import { useAppStore, type DashboardPanel, type AdminPanel, type AppView } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
@@ -36,6 +36,7 @@ import {
   MessageSquare,
   Bell,
   Store,
+  Gavel,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/shared/notification-bell';
 import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
@@ -302,6 +303,7 @@ export function Navbar() {
               { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
               { href: '/how-it-works', viewKey: 'page-how-it-works', label: t('nav.howItWorks'), Icon: ListChecks },
               { href: '/marketplace', viewKey: 'page-marketplace', label: t('nav.marketplace'), Icon: Store },
+              { href: '/nilam', viewKey: 'page-auction', label: t('nav.auction'), Icon: Gavel },
               { href: '/faq', viewKey: 'page-faq', label: t('nav.faq'), Icon: CircleHelp },
               { href: '/blog', viewKey: 'blog', label: t('nav.blog'), Icon: BookOpen },
               { href: '/about', viewKey: 'page-about', label: t('nav.about'), Icon: Users },
@@ -311,7 +313,7 @@ export function Navbar() {
                 <TooltipTrigger asChild>
                   <a
                     href={item.href}
-                    onClick={(e) => { e.preventDefault(); setView(item.viewKey); }}
+                    onClick={(e) => { e.preventDefault(); setView(item.viewKey as AppView); }}
                     aria-label={item.label}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-primary hover:bg-background/80 hover:scale-105 hover:shadow-sm"
                   >
@@ -501,6 +503,9 @@ export function Navbar() {
                       </a>
                       <a href="/marketplace" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-marketplace'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <Store className="h-[18px] w-[18px] shrink-0" /> {t('nav.marketplace')}
+                      </a>
+                      <a href="/nilam" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-auction'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                        <Gavel className="h-[18px] w-[18px] shrink-0" /> {t('nav.auction')}
                       </a>
                       <a href="/faq" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-faq'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <CircleHelp className="h-[18px] w-[18px] shrink-0" /> {t('nav.faq')}

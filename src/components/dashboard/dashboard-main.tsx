@@ -29,6 +29,7 @@ import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
 import { WithdrawPanel } from '@/components/seller/withdraw-panel';
+import { AuctionsPanel } from '@/components/seller/auctions-panel';
 
 
 const emptySubscribe = () => () => {};
@@ -530,7 +531,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail';
 
   // Show seller disabled message
-  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile'].includes(dashboardPanel)) {
+  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-auctions'].includes(dashboardPanel)) {
     return (
       <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
@@ -579,6 +580,7 @@ export function DashboardMain() {
       {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}
       {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
       {dashboardPanel === 'seller-withdraw' && <WithdrawPanel />}
+      {dashboardPanel === 'seller-auctions' && <AuctionsPanel />}
     </div>
   );
 }

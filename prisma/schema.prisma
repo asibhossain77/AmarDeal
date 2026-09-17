@@ -52,6 +52,10 @@ model User {
   payoutAccounts     PayoutAccount[]
   sellerWithdrawals  SellerWithdrawal[]
   productDownloads   ProductDownload[]
+  auctionsSold       Auction[] @relation("AuctionSeller")
+  auctionBids        Bid[]     @relation("AuctionBids")
+  auctionsWon        Auction[] @relation("AuctionWinner")
+  topBidAuctions     Auction[] @relation("AuctionTopBidder")
 }
 
 model Admin {
@@ -430,6 +434,53 @@ model PayoutAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ── Nilam (Auction) ──────────────────────────────────────────────────
+// Sellers list a product for auction (starting price + end time).
+// Buyers bid; when the timer expires the highest bidder automatically
+// gets an escrow Deal created with the seller (status 'created').
+// Finalization is LAZY — any read/bid on an expired auction finalizes it.
+model Auction {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String   @default("other")
+  image           String?
+  sellerId        String
+  seller          User     @relation("AuctionSeller", fields: [sellerId], references: [id])
+  startPrice      Float
+  currentPrice    Float?   // highest bid so far — null until first bid
+  highestBidderId String?
+  highestBidder   User?    @relation("AuctionTopBidder", fields: [highestBidderId], references: [id])
+  bidCount        Int      @default(0)
+  // active → bids open | sold → winner + deal created | ended → expired, no bids | cancelled → seller cancelled (no bids)
+  status          String   @default("active")
+  endsAt          DateTime
+  winnerId        String?
+  winner          User?    @relation("AuctionWinner", fields: [winnerId], references: [id])
+  dealId          String?  // escrow deal created for the winner
+  finalPrice      Float?   // winning amount at close (audit copy of currentPrice)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bids            Bid[]
+
+  @@index([status, endsAt])
+  @@index([sellerId])
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidderId  String
+  bidder    User     @relation("AuctionBids", fields: [bidderId], references: [id])
+  amount    Float
+  createdAt DateTime @default(now())
+
+  @@index([auctionId, createdAt])
+  @@index([bidderId])
 }
 
 // Seller balance withdrawals — pool-based (NOT per-deal).
