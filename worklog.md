@@ -483,3 +483,20 @@ Stage Summary:
 - Root cause: production DB migration gap, not app logic — auction tables now self-create on first nilam use in ANY environment (prod Turso heals on the first /nilam visit or post attempt after this deploy; no manual step needed)
 - f82012d pushed to origin/main (user should retry posting the nilam on midman.bd after Vercel redeploys; first attempt may take a moment longer while tables are created, then everything is normal)
 - db/custom.db left intentionally uncommitted (local test data only)
+
+---
+Task ID: 1
+Agent: main
+Task: User supplied prod Turso URL+token — apply auction tables to production DB directly
+
+Work Log:
+- Connected to libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io (token via env var only, never stored/committed)
+- Pre-state: 27 tables, Auction/Bid ABSENT — confirmed the diagnosed root cause of "Nilam post korle error ase"
+- Ran scripts/turso-auction-heal.mjs: CREATE TABLE IF NOT EXISTS Auction + Bid (+4 indexes); checked 17 known columns (User/Deal/DigitalProduct) — all already present, no ALTERs needed
+- Post-state: 29 tables; Auction exists (0 rows), Bid exists (0 rows), User count 82 intact
+- scripts/turso-auction-smoke.mjs end-to-end write test on prod: INSERT Auction + Bid (FK ok) → read back → UPDATE currentPrice/highestBidderId/bidCount → DELETE cleanup → 0 rows left; PASSED
+- Committed both ops scripts (no secrets — credentials read from TURSO_URL/TURSO_TOKEN env vars)
+
+Stage Summary:
+- Production Turso is NOW ready for Nilam without waiting for the f82012d lazy self-heal; both mechanisms in place (immediate manual heal + permanent lazy heal for any future fresh DB)
+- ADVISED USER: revoke/regenerate this Turso token (it was shared in chat); create a new one via `turso db tokens create amardeal` and update Vercel env TURSO_AUTH_TOKEN if rotated
