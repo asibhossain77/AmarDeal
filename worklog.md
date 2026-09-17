@@ -444,3 +444,26 @@ Work Log:
 Stage Summary:
 - commits ea33e24 + ff9652a pushed to origin/main
 - ≤4MB digital files now upload REGARDLESS of bucket CORS state; >4MB needs admin to either create an R2 token with Admin Read & Write (app then auto-sets CORS on first upload attempt) or set the CORS policy manually in the Cloudflare dashboard (R2 → midman-storage → Settings → CORS policy: AllowedOrigins *, AllowedMethods PUT/GET/HEAD, AllowedHeaders *, ExposeHeaders ETag)
+
+---
+Task ID: 1
+Agent: main
+Task: Auction/Nilam feature — sellers list products for auction, buyers bid, winner gets an escrow deal
+
+Work Log:
+- Fresh sandbox: re-synced to origin/main (1460b52), bun install, local DB (file:/home/z/my-project/amardeal/db/custom.db via new .env), prisma db push + generate
+- Schema: new Auction model (embedded product fields title/desc/category/image so it never touches the marketplace approval flow, startPrice, currentPrice, highestBidderId, bidCount, status active|sold|ended|cancelled, endsAt, winnerId, dealId, finalPrice) + Bid model; User relations auctionsSold/auctionBids/auctionsWon/topBidAuctions
+- lib/auction.ts: lazy finalization — finalizeExpiredAuctions() on every read (list/detail/bid/seller-list); finalizeAuctionIfExpired is transactional + idempotent (in-tx status guard → no double deal under concurrent reads): winner → auto escrow Deal (buyer=winner, seller=seller, amount=winning bid, status 'created', auto terms) + notifyUser/notifyAdmins (auction_won/auction_sold/auction_ended); no bids → 'ended' + seller notice. Tiered bid increments (<500:10, <5k:50, <50k:100, else 500), maskName (first name only for public)
+- APIs: POST /api/auctions (seller-only, title/desc/category/startPrice validation, endsAt 10min–30days), GET /api/auctions?status=active|ended, GET /api/auctions/[id] (soft viewer → isOwner/isWinner/isHighestBidder + dealId only for parties), POST /api/auctions/[id]/bids (requireAuth, not-seller, ≥minNextBid, 5s per-user anti-spam, transactional in-tx recheck, outbid + new-bid notifications), POST /api/auctions/[id]/cancel (zero-bid only), GET /api/seller/auctions
+- SPA wiring: store AppView +='page-auction'/'page-auction-detail' + auctionDetailId; url-sync /nilam + /nilam/[id] maps/parse/build (3 apply points); app-shell dynamic AuctionListView/AuctionDetailView; navbar desktop+mobile নিলাম links (Gavel); sitemap /nilam
+- Public UI: auction-list-view (tabs চলমান/শেষ হওয়া, 20s polling, per-card ticking countdown chips red <1h, category chip, current bid vs starting price, how-it-works 3-step strip); auction-detail-view (big countdown দিন/ঘণ্টা/মিনিট/সেকেন্ড, quick-bid chips min/+50/+200, bid input, winning badge, winner banner + ডিল ট্র্যাক করুন → dashboard deal-detail, masked bid history, escrow note, seller profile link, 15s polling + auto-refresh at T-0)
+- Seller dashboard: 'seller-auctions' DashboardPanel + sidebar item + AuctionsPanel (create form with image upload via existing /api/upload/product-image, datetime-local min=now+11min, validation toasts; my-auctions list with status badges, winner, ডিল দেখুন jump, cancel for zero-bid) — gated by sellerDisabled like other seller panels
+- i18n: ~90 new keys bn+en (auction.*, seller.auction.*, nav.auction, page.auction.*)
+- Production migration safety: /api/health autoFixSchema missingTableSQLs += Auction/Bid CREATE TABLE IF NOT EXISTS DDLs (self-heals Turso on first health hit); all auction queries wrapped with isAuctionMigrationError graceful fallback for pre-migration DBs
+- E2E (agent-browser): seller login → dashboard নিলাম panel → created auction via UI form (React controlled datetime needed native-setter trick — automation quirk, not app bug) → bidder1 bid ৳310 via quick chip → chips recomputed 320/370/520 → bidder2 typed ৳550 → outbid notification in DB → backdated endsAt → reload → status sold + winner banner + ডিল ট্র্যাক করুন → dashboard deal page with পেমেন্ট করুন → seller panel shows sold + ডিল দেখুন jump works; anonymous: winner masked, login CTA on active auctions; mobile 390px screenshots clean; zero console/dev.log errors
+- tsc: 181 errors (was 182 — fixed pre-existing navbar setView(string) while touching it); lint: my files clean, remaining errors pre-existing (db.ts require, seller-main, marketplace-section etc.)
+
+Stage Summary:
+- commit b8b23f1 pushed (1460b52..b8b23f1)
+- Full auction lifecycle works end-to-end: create → bid → outbid → expire → sold → auto escrow deal → normal Midman payment flow; no cron needed (lazy finalize), production Turso self-migrates via /api/health
+- scripts/seed-auction-test.ts seeds 0xSELLER/0xBIDDER1/0xBIDDER2 (test1234) for local E2E
