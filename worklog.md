@@ -467,3 +467,19 @@ Stage Summary:
 - commit b8b23f1 pushed (1460b52..b8b23f1)
 - Full auction lifecycle works end-to-end: create → bid → outbid → expire → sold → auto escrow deal → normal Midman payment flow; no cron needed (lazy finalize), production Turso self-migrates via /api/health
 - scripts/seed-auction-test.ts seeds 0xSELLER/0xBIDDER1/0xBIDDER2 (test1234) for local E2E
+
+---
+Task ID: 1
+Agent: main
+Task: "Nilam post korle error ase" — nilam creation failing for the user
+
+Work Log:
+- Diagnosis: Auction/Bid tables never existed on the DB that POST /api/auctions hits. Production Turso got the code deploy (b8b23f1) but no schema push (prisma db push never runs on Vercel); the only self-heal path was /api/health's autoFixSchema, which normal users never trigger. Result: db.auction.create threw "table does not exist" → isAuctionMigrationError → 503 'নিলাম সিস্টেম এখনো প্রস্তুত হয়নি' toast on every post attempt. Locally the bug was masked because a stale shell-exported DATABASE_URL pointed the dev server at the outer /home/z/my-project/db/custom.db (which HAS the tables from the b8b23f1 E2E) instead of amardeal/db/custom.db from .env
+- Fix (commit f82012d): lib/auction.ts now owns AUCTION_TABLE_DDL (canonical CREATE TABLE IF NOT EXISTS for Auction+Bid+indexes) and ensureAuctionTables() — lazy self-heal via @libsql/client that creates missing tables, VERIFIES both exist via sqlite_master, then memoizes per process (never memoizes on swallowed errors). Wired ensureAuctionTables() as the first statement of all 6 auction routes (POST/GET /api/auctions, GET /[id], POST /[id]/bids, POST /[id]/cancel, GET /api/seller/auctions). /api/health autoFixSchema now reuses AUCTION_TABLE_DDL (no duplicate DDL drift). Gotcha recorded: @libsql/client close() is synchronous — never chain .catch
+- E2E on a genuinely tableless DB (fresh dev server, clean env): first POST /api/auctions auto-created both tables → 201; below-min bid 400 (minBid 260 tier correct), seller self-bid 400, valid bid 201 (currentPrice 260, bidCount 1, minNext 270); /nilam list renders with ticking countdown; /nilam/[id] detail renders active badge + current bid; dashboard নিলাম panel form post via browser → POST 201 + 'নিলাম তৈরি হয়েছে!' toast + entry in my-auctions; dev.log clean, zero console errors
+- tsc: no errors in any touched file (181 total errors, all pre-existing in unrelated files)
+
+Stage Summary:
+- Root cause: production DB migration gap, not app logic — auction tables now self-create on first nilam use in ANY environment (prod Turso heals on the first /nilam visit or post attempt after this deploy; no manual step needed)
+- f82012d pushed to origin/main (user should retry posting the nilam on midman.bd after Vercel redeploys; first attempt may take a moment longer while tables are created, then everything is normal)
+- db/custom.db left intentionally uncommitted (local test data only)
