@@ -19,6 +19,96 @@
 
 import { db } from '@/lib/db'
 import { notifyUser, notifyAdmins } from '@/lib/push'
+import { createClient } from '@libsql/client'
+
+/* ── Canonical DDL for the auction tables ──
+   Single source of truth: used by the lazy self-heal below AND by
+   /api/health's autoFixSchema. CREATE IF NOT EXISTS = idempotent. */
+export const AUCTION_TABLE_DDL: Record<string, string> = {
+  Auction: `
+CREATE TABLE IF NOT EXISTS "Auction" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "title" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "category" TEXT NOT NULL DEFAULT 'other',
+  "image" TEXT,
+  "sellerId" TEXT NOT NULL,
+  "startPrice" REAL NOT NULL,
+  "currentPrice" REAL,
+  "highestBidderId" TEXT,
+  "bidCount" INTEGER NOT NULL DEFAULT 0,
+  "status" TEXT NOT NULL DEFAULT 'active',
+  "endsAt" DATETIME NOT NULL,
+  "winnerId" TEXT,
+  "dealId" TEXT,
+  "finalPrice" REAL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  CONSTRAINT "Auction_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "Auction_highestBidderId_fkey" FOREIGN KEY ("highestBidderId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT "Auction_winnerId_fkey" FOREIGN KEY ("winnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "Auction_status_endsAt_idx" ON "Auction"("status", "endsAt");
+CREATE INDEX IF NOT EXISTS "Auction_sellerId_idx" ON "Auction"("sellerId");`,
+  Bid: `
+CREATE TABLE IF NOT EXISTS "Bid" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "auctionId" TEXT NOT NULL,
+  "bidderId" TEXT NOT NULL,
+  "amount" REAL NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Bid_auctionId_fkey" FOREIGN KEY ("auctionId") REFERENCES "Auction"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "Bid_bidderId_fkey" FOREIGN KEY ("bidderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "Bid_auctionId_createdAt_idx" ON "Bid"("auctionId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Bid_bidderId_idx" ON "Bid"("bidderId");`,
+}
+
+/* ── Lazy self-heal ──
+   Fresh databases (e.g. production Turso right after a deploy that
+   introduces the auction feature, before any migration runs) lack the
+   Auction/Bid tables. Every auction route calls this first, so the
+   FIRST nilam visit after a deploy creates the tables automatically —
+   no cron, no manual migration, no /api/health visit needed.
+   Memoized per process after a verified success. */
+let auctionTablesVerified = false
+
+export async function ensureAuctionTables(): Promise<void> {
+  if (auctionTablesVerified) return
+  const url = process.env.DATABASE_URL ?? ''
+  if (!url) return
+  try {
+    const client = createClient({
+      url,
+      authToken: url.startsWith('libsql://') ? process.env.TURSO_AUTH_TOKEN : undefined,
+    })
+    try {
+      for (const sql of Object.values(AUCTION_TABLE_DDL)) {
+        for (const stmt of sql.split(';').map((s) => s.trim()).filter(Boolean)) {
+          try {
+            await client.execute(stmt)
+          } catch {
+            // Individual statement failures are non-fatal (e.g. index exists)
+          }
+        }
+      }
+      // Verify before memoizing — never trust swallowed errors
+      const check = await client.execute(
+        "SELECT COUNT(*) AS c FROM sqlite_master WHERE type='table' AND name IN ('Auction','Bid')"
+      )
+      if (Number(check.rows[0]?.c ?? 0) === 2) auctionTablesVerified = true
+    } finally {
+      // @libsql/client's close() is synchronous (returns void) — never chain .catch
+      try {
+        client.close()
+      } catch {
+        /* ignore close errors */
+      }
+    }
+  } catch (e) {
+    console.error('[AUCTION DDL] self-heal failed:', e)
+  }
+}
 
 /* ── Min bid increment (tiered) ── */
 export function bidIncrementFor(base: number): number {

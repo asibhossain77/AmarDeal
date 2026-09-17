@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/deal-guard'
 import {
   finalizeExpiredAuctions,
   maskName,
+  ensureAuctionTables,
 } from '@/lib/auction'
 import { isAuctionMigrationError } from '@/lib/auction'
 
@@ -29,6 +30,8 @@ const MAX_START_PRICE = 10_000_000
    ═══════════════════════════════════════════════════════════════ */
 export async function POST(req: NextRequest) {
   try {
+    await ensureAuctionTables()
+
     const guard = await requireAuth(req)
     if (!guard.ok) return guard.response
 
@@ -105,6 +108,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status') === 'ended' ? 'ended' : 'active'
 
+    await ensureAuctionTables()
     await finalizeExpiredAuctions()
 
     const where =

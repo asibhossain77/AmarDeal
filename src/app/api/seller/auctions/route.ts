@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { finalizeExpiredAuctions, maskName } from '@/lib/auction'
+import { finalizeExpiredAuctions, maskName, ensureAuctionTables } from '@/lib/auction'
 import { isAuctionMigrationError } from '@/lib/auction'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const guard = await requireAuth(req)
     if (!guard.ok) return guard.response
 
+    await ensureAuctionTables()
     await finalizeExpiredAuctions()
 
     let auctions

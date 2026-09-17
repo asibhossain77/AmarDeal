@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { ensureAuctionTables } from '@/lib/auction'
 
 /* ═══════════════════════════════════════════════════════════════
    POST /api/auctions/[id]/cancel — seller cancels their auction.
@@ -12,6 +13,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureAuctionTables()
+
     const guard = await requireAuth(req)
     if (!guard.ok) return guard.response
 

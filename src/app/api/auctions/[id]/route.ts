@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
-import { finalizeAuctionIfExpired, maskName, minNextBid } from '@/lib/auction'
+import { finalizeAuctionIfExpired, maskName, minNextBid, ensureAuctionTables } from '@/lib/auction'
 import { isAuctionMigrationError } from '@/lib/auction'
 
 const SESSION_COOKIE = 'midman_session'
@@ -17,6 +17,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+
+    await ensureAuctionTables()
 
     // Lazy finalize — the detail page must never show a stale "active" state
     await finalizeAuctionIfExpired(id)

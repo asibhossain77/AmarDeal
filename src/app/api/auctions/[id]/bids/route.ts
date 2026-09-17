@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { finalizeAuctionIfExpired, minNextBid, round2 } from '@/lib/auction'
+import { finalizeAuctionIfExpired, minNextBid, round2, ensureAuctionTables } from '@/lib/auction'
 import { notifyUser } from '@/lib/push'
 import { isAuctionMigrationError } from '@/lib/auction'
 
@@ -20,6 +20,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureAuctionTables()
+
     const guard = await requireAuth(req)
     if (!guard.ok) return guard.response
     const bidderId = guard.userId

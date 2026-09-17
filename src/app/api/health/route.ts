@@ -1,5 +1,6 @@
 import { createClient } from '@libsql/client'
 import { NextResponse } from 'next/server'
+import { AUCTION_TABLE_DDL } from '@/lib/auction'
 
 /**
  * Health + DB diagnostic + auto-setup endpoint.
@@ -332,43 +333,8 @@ CREATE TABLE IF NOT EXISTS "SellerReview" (
 CREATE UNIQUE INDEX IF NOT EXISTS "SellerReview_sellerId_userId_key" ON "SellerReview"("sellerId", "userId");
 CREATE INDEX IF NOT EXISTS "SellerReview_sellerId_idx" ON "SellerReview"("sellerId");
 CREATE INDEX IF NOT EXISTS "SellerReview_userId_idx" ON "SellerReview"("userId");`,
-    'Auction': `
-CREATE TABLE IF NOT EXISTS "Auction" (
-  "id" TEXT NOT NULL PRIMARY KEY,
-  "title" TEXT NOT NULL,
-  "description" TEXT NOT NULL,
-  "category" TEXT NOT NULL DEFAULT 'other',
-  "image" TEXT,
-  "sellerId" TEXT NOT NULL,
-  "startPrice" REAL NOT NULL,
-  "currentPrice" REAL,
-  "highestBidderId" TEXT,
-  "bidCount" INTEGER NOT NULL DEFAULT 0,
-  "status" TEXT NOT NULL DEFAULT 'active',
-  "endsAt" DATETIME NOT NULL,
-  "winnerId" TEXT,
-  "dealId" TEXT,
-  "finalPrice" REAL,
-  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updatedAt" DATETIME NOT NULL,
-  CONSTRAINT "Auction_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-  CONSTRAINT "Auction_highestBidderId_fkey" FOREIGN KEY ("highestBidderId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT "Auction_winnerId_fkey" FOREIGN KEY ("winnerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
-);
-CREATE INDEX IF NOT EXISTS "Auction_status_endsAt_idx" ON "Auction"("status", "endsAt");
-CREATE INDEX IF NOT EXISTS "Auction_sellerId_idx" ON "Auction"("sellerId");`,
-    'Bid': `
-CREATE TABLE IF NOT EXISTS "Bid" (
-  "id" TEXT NOT NULL PRIMARY KEY,
-  "auctionId" TEXT NOT NULL,
-  "bidderId" TEXT NOT NULL,
-  "amount" REAL NOT NULL,
-  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "Bid_auctionId_fkey" FOREIGN KEY ("auctionId") REFERENCES "Auction"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "Bid_bidderId_fkey" FOREIGN KEY ("bidderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-CREATE INDEX IF NOT EXISTS "Bid_auctionId_createdAt_idx" ON "Bid"("auctionId", "createdAt");
-CREATE INDEX IF NOT EXISTS "Bid_bidderId_idx" ON "Bid"("bidderId");`,
+    'Auction': AUCTION_TABLE_DDL.Auction,
+    'Bid': AUCTION_TABLE_DDL.Bid,
   }
 
   for (const [tableName, sql] of Object.entries(missingTableSQLs)) {
