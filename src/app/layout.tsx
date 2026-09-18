@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri, Baloo_Da_2 } from "next/font/google";
+import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
@@ -29,9 +29,9 @@ const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
-/* Display face for hero headlines / brand marks — rounded Bengali letterforms */
-const balooDa2 = Baloo_Da_2({
-  variable: "--font-baloo-da-2",
+/* Display face for hero headlines / brand marks — standard clean Bangla Google font */
+const notoSansBengali = Noto_Sans_Bengali({
+  variable: "--font-noto-bengali",
   subsets: ["bengali", "latin"],
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
@@ -296,7 +296,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(await buildJsonLd()) }}
         />
       </head>
-      <body className={`${hindSiliguri.variable} ${balooDa2.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${hindSiliguri.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

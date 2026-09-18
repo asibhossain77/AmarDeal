@@ -105,7 +105,7 @@ export const en: Record<TranslationKey, string> = {
   'hero2.headingLine1': 'Your money,',
   'hero2.headingLine2': 'our responsibility',
   'hero2.description':
-    "Buy and sell products or services safely with AmarDeal's escrow and mediation. From deposit to deal completion — everything transparent and reliable.",
+    "Buy and sell products or services safely with Midman's escrow and mediation. From deposit to deal completion — everything transparent and reliable.",
   'hero2.ctaPrimary': 'Start a Deal',
   'hero2.ctaSecondary': 'Learn more',
   'hero2.statusLabel': 'Escrow status',

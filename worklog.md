@@ -533,3 +533,18 @@ Work Log:
 
 Stage Summary:
 - Hero is now 100% theme-driven — any future brand color change in globals.css automatically recolors the hero; commit pushed to origin/main
+
+---
+Task ID: 1
+Agent: main
+Task: "Hero ta আমার ডিল lekha ache মিডম্যান হবে আর বাংলা google font use koro"
+
+Work Log:
+- Brand text: hero2.description had the old brand — bn "আমার ডিল-এর এস্ক্রো..." → "মিডম্যান-এর এস্ক্রো...", en "AmarDeal's escrow..." → "Midman's escrow..."; scanned all locales for remaining AmarDeal/আমার ডিল brand mentions — none left (other আমার ডিল hits are the legit "My Deals" feature labels)
+- Font: hero display face was Baloo Da 2 (overly rounded/comic); swapped to Noto Sans Bengali (standard clean Bangla Google font, per user's original hero spec) — layout.tsx import + var --font-noto-bengali, globals.css --font-display remap; body font stays Hind Siliguri (also Bangla Google font)
+- Gotcha: dev server served a STALE compile after the font swap (body still carried baloo_da_2 variable class, --font-noto-bengali undefined) — full dev restart fixed it; verified h1 computed font = "Noto Sans Bengali"
+- Verified agent-browser light+dark desktop: headline renders in Noto Sans Bengali, description shows মিডম্যান-এর, lime theme intact, zero console errors
+- tsc: clean in touched files
+
+Stage Summary:
+- Hero copy now brand-correct (মিডম্যান) and hero headline uses Noto Sans Bengali; commit pushed to origin/main — Vercel redeploys automatically
