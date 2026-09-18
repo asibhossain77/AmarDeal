@@ -518,3 +518,18 @@ Work Log:
 Stage Summary:
 - commit 733973d pushed (7dcfb57..733973d); hero closely matches reference in both themes, mobile-first, a11y (semantic h1, aria-hidden decorations, focus-visible, motion-reduce)
 - Hero design tokens are component-local; no global color/typography changes beyond adding the display font
+
+---
+Task ID: 1
+Agent: main
+Task: "Hero section ar amar websiter e theme color er sathe mill nai" — hero colors don't match the site theme
+
+Work Log:
+- Sandbox had reset again to old 04c6757 with partial-tree artifacts (same hazard as before): verified 04c6757 is an ancestor of origin/main, stashed artifacts as backup, reset --hard origin/main (1a490e0 = hero redesign state), recreated .env, npm install --legacy-peer-deps, prisma generate + db push (Auction/Bid restored locally)
+- Root cause: hero v2 used hero-LOCAL color families (green-600 #16a34a / emerald / teal, hardcoded bg-white section + #F6F7F4 tiles) while the site brand is lime #84CC16 (--primary oklch(0.768 0.189 131), light bg #F2F4F7, dark "zinc-950 + glowing lime") — visibly different greens on the primary CTA, badge, headline gradient, pills and tiles
+- Fix: rewired ALL hero colors to the global theme tokens, matching the site's own conventions (navbar pill = bg-primary/10 text-primary; site buttons = bg-primary text-primary-foreground hover:bg-primary/90): CTA bg-primary/text-primary-foreground + shadow-primary/25; badge + সুরক্ষিত pill bg-primary/10 text-primary ring-primary/25; headline line2 gradient from-primary to-chart-2 (both theme vars, dark variant no longer needed); step tiles unified bg-primary/10 text-primary; step rows bg-muted/70; card bg-card border-border/60; section bg-white removed (body #F2F4F7 shows through, matches other sections); radial glows bg-primary + chart-2 tints
+- Verified agent-browser: desktop 1360 light+dark, mobile 390 light — CTA/badge/gradient/tiles now identical in hue to navbar and site buttons; scrollWidth 390=390 no overflow; zero console errors; home+health 200
+- tsc: zero errors in hero.tsx (pre-existing baseline elsewhere)
+
+Stage Summary:
+- Hero is now 100% theme-driven — any future brand color change in globals.css automatically recolors the hero; commit pushed to origin/main

@@ -6,9 +6,9 @@
  * Layout (desktop): escrow process card LEFT · headline/CTA RIGHT
  * Layout (mobile):  content first, card below, single column.
  *
- * Design tokens are hero-local greens (green/teal/emerald families) so the
- * rest of the site keeps its own palette. Both themes supported via the
- * existing next-themes class strategy.
+ * Colors are 100% theme-driven (bg-primary / text-primary / bg-card / muted
+ * etc.) so the hero always matches the site's brand palette (--primary lime
+ * #84CC16) in both light and dark modes — no hero-local color families.
  */
 
 import { motion } from 'framer-motion';
@@ -37,12 +37,8 @@ const STEPS = [
   { icon: HandCoins, titleKey: 'hero2.step3Title', subKey: 'hero2.step3Sub' },
 ] as const;
 
-/* Per-step tinted icon tiles — subtle green/teal variation */
-const STEP_TILE = [
-  'bg-green-100/80 text-green-700 dark:bg-green-500/[0.14] dark:text-green-400',
-  'bg-teal-100/80 text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300',
-  'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/[0.14] dark:text-emerald-300',
-];
+/* Icon tiles — same idiom as navbar/how-it-works: bg-primary/10 + text-primary */
+const STEP_TILE = 'bg-primary/10 text-primary';
 
 type TKey = Parameters<ReturnType<typeof useTranslation>['t']>[0];
 
@@ -52,14 +48,14 @@ function EscrowProcessCard({ t }: { t: (k: TKey) => string }) {
       {/* soft glow behind the card */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-8 rounded-[40px] bg-green-500/[0.05] blur-2xl dark:bg-green-400/[0.06]"
+        className="pointer-events-none absolute -inset-8 rounded-[40px] bg-primary/[0.06] blur-2xl dark:bg-primary/[0.08]"
       />
 
-      <div className="main-card-float relative rounded-[22px] border border-black/[0.06] bg-white p-7 shadow-[0_16px_50px_-16px_rgba(16,24,40,0.12)] motion-reduce:[animation:none] dark:border-white/[0.07] dark:bg-card dark:shadow-black/40 sm:p-7">
+      <div className="main-card-float relative rounded-[22px] border border-border/60 bg-card p-7 shadow-[0_16px_50px_-16px_rgba(16,24,40,0.12)] motion-reduce:[animation:none] dark:shadow-black/40 sm:p-7">
         {/* ── Header row ── */}
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-medium text-muted-foreground">{t('hero2.statusLabel')}</p>
-          <span className="rounded-full bg-green-600/10 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-600/15 dark:bg-green-500/15 dark:text-green-400 dark:ring-green-400/25">
+          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary ring-1 ring-primary/25">
             {t('hero2.secure')}
           </span>
         </div>
@@ -73,11 +69,11 @@ function EscrowProcessCard({ t }: { t: (k: TKey) => string }) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.45 + i * 0.12, duration: 0.45, ease: 'easeOut' }}
-              className="flex items-center gap-3.5 rounded-[14px] bg-[#F6F7F4] p-3.5 dark:bg-white/[0.04]"
+              className="flex items-center gap-3.5 rounded-[14px] bg-muted/70 p-3.5 dark:bg-white/[0.04]"
             >
               <div
                 aria-hidden
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${STEP_TILE[i]}`}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${STEP_TILE}`}
               >
                 <step.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
               </div>
@@ -118,12 +114,12 @@ export function Hero() {
   const learnMore = () => useAppStore.getState().setView('page-how-it-works');
 
   return (
-    <section className="relative overflow-hidden bg-white dark:bg-transparent">
-      {/* ── Background: subtle pale-green radial glows, clean center ── */}
+    <section className="relative overflow-hidden">
+      {/* ── Background: subtle brand-tinted radial glows, clean center ── */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 right-[8%] h-[480px] w-[480px] rounded-full bg-green-400/[0.10] blur-[130px] dark:bg-green-500/[0.07]" />
-        <div className="absolute bottom-[-120px] left-[4%] h-[420px] w-[420px] rounded-full bg-green-300/[0.10] blur-[120px] dark:bg-green-500/[0.05]" />
-        <div className="absolute left-1/2 top-1/3 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-teal-300/[0.07] blur-[110px] dark:bg-teal-400/[0.04]" />
+        <div className="absolute -top-24 right-[8%] h-[480px] w-[480px] rounded-full bg-primary/10 blur-[130px] dark:bg-primary/[0.08]" />
+        <div className="absolute bottom-[-120px] left-[4%] h-[420px] w-[420px] rounded-full bg-primary/[0.08] blur-[120px] dark:bg-primary/[0.05]" />
+        <div className="absolute left-1/2 top-1/3 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-chart-2/[0.06] blur-[110px] dark:bg-chart-2/[0.04]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -145,7 +141,7 @@ export function Hero() {
             >
               {/* Badge */}
               <motion.div variants={fadeUp}>
-                <span className="inline-flex items-center rounded-full border border-green-600/25 bg-green-100/70 px-4 py-1.5 text-[13px] font-bold text-green-700 dark:border-green-400/25 dark:bg-green-500/[0.08] dark:text-green-400">
+                <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-[13px] font-bold text-primary">
                   {t('hero2.badge')}
                 </span>
               </motion.div>
@@ -157,7 +153,7 @@ export function Hero() {
               >
                 {t('hero2.headingLine1')}
                 <br />
-                <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-300 dark:via-emerald-300 dark:to-teal-300">
+                <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
                   {t('hero2.headingLine2')}
                 </span>
               </motion.h1>
@@ -177,13 +173,13 @@ export function Hero() {
               >
                 <button
                   onClick={startDeal}
-                  className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[13px] bg-green-600 px-7 text-[15px] font-semibold text-white shadow-lg shadow-green-600/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-xl hover:shadow-green-600/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 active:translate-y-0 active:scale-[0.98] sm:flex-none dark:bg-green-600 dark:shadow-green-500/20 dark:hover:bg-green-500 dark:focus-visible:outline-green-400"
+                  className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[13px] bg-primary px-7 text-[15px] font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 focus-visible:outline-2 focus-visible:outline-offset-2 active:translate-y-0 active:scale-[0.98] sm:flex-none"
                 >
                   {t('hero2.ctaPrimary')}
                 </button>
                 <button
                   onClick={learnMore}
-                  className="inline-flex h-12 flex-1 items-center justify-center rounded-[13px] border border-border bg-white px-7 text-[15px] font-semibold text-foreground transition-all duration-200 hover:border-green-600/40 hover:text-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 active:scale-[0.98] sm:flex-none dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-green-400/40 dark:hover:text-green-400 dark:focus-visible:outline-green-400"
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-[13px] border border-border bg-card px-7 text-[15px] font-semibold text-foreground transition-all duration-200 hover:border-primary/40 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98] sm:flex-none dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-primary/40 dark:hover:text-primary"
                 >
                   {t('hero2.ctaSecondary')}
                 </button>
