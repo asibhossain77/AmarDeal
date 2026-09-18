@@ -500,3 +500,21 @@ Work Log:
 Stage Summary:
 - Production Turso is NOW ready for Nilam without waiting for the f82012d lazy self-heal; both mechanisms in place (immediate manual heal + permanent lazy heal for any future fresh DB)
 - ADVISED USER: revoke/regenerate this Turso token (it was shared in chat); create a new one via `turso db tokens create amardeal` and update Vercel env TURSO_AUTH_TOKEN if rotated
+
+---
+Task ID: 1
+Agent: main
+Task: Hero section redesign per reference screenshots (dark + light) — minimal premium fintech/escrow style
+
+Work Log:
+- Analyzed both reference screenshots (dark/light) — layout: escrow card LEFT, content RIGHT; clean header with bottom border; rounded Bengali display type; subtle green radial glows; card with status pill + 3 step rows + ৳50,000.00 amount block
+- ENV RECOVERY mid-task: sandbox had been re-cloned from an OLD commit (04c6757) with tree partially reverted (node_modules wiped, .env deleted, upload routes missing, db/custom.db stale) — verified via reflog that 04c6757 is simply an ancestor of origin/main (no divergence), reset --hard origin/main (7dcfb57), backed up + re-applied all hero edits, recreated .env, npm install --legacy-peer-deps, prisma generate + db push (restores Auction/Bid locally), restarted dev with env -u DATABASE_URL (shell pollution kept pointing at a deleted outer db → /api/products 500; fixed)
+- layout.tsx: added Baloo_Da_2 (rounded Bengali display face) as --font-baloo-da-2; globals.css: --font-display theme var → font-display utility
+- hero.tsx FULL rewrite: desktop grid card-left/content-right, mobile single column content-first; escrow card (rounded-[22px], p-7, thin border, soft shadow, subtle float) with এস্ক্রো স্ট্যাটাস label + সুরক্ষিত pill, 3 step rows (Wallet/ShieldCheck/HandCoins in green/teal/emerald tinted tiles), divider + ৳50,000.00 (English digits) + caption; right: green badge, headline line1 foreground / line2 green (gradient green→teal in dark), description, primary green CTA (white text, hover lift, press scale) + secondary surface button; existing behaviors preserved (auth/dashboard routing, how-it-works); hero-local greens so global palette untouched
+- navbar.tsx landing branch: floating pill → clean bar (border-b, bg-background/85, h-16); all items/language/theme-toggle preserved
+- i18n: hero2.* keys added to bn + en (bn = spec copy verbatim)
+- Verified: agent-browser desktop 1360 light+dark, mobile 390 light+dark, scrollWidth check (no overflow), zero console errors; tsc — zero new errors (175 total, all pre-existing incl. 52 legacy duplicate i18n keys); all APIs 200 (home/products/auctions/health)
+
+Stage Summary:
+- commit 733973d pushed (7dcfb57..733973d); hero closely matches reference in both themes, mobile-first, a11y (semantic h1, aria-hidden decorations, focus-visible, motion-reduce)
+- Hero design tokens are component-local; no global color/typography changes beyond adding the display font
