@@ -1,489 +1,193 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+/**
+ * Hero (v2) — minimal premium fintech/escrow design.
+ *
+ * Layout (desktop): escrow process card LEFT · headline/CTA RIGHT
+ * Layout (mobile):  content first, card below, single column.
+ *
+ * Design tokens are hero-local greens (green/teal/emerald families) so the
+ * rest of the site keeps its own palette. Both themes supported via the
+ * existing next-themes class strategy.
+ */
+
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import {
-  ArrowRight,
-  LayoutDashboard,
-  ShieldCheck,
-  Shield,
-  UserCheck,
-  CircleCheck,
-  CheckCircle2,
-  Wallet,
-} from 'lucide-react';
+import { Wallet, ShieldCheck, HandCoins } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
 
-const emptySubscribe = () => () => {};
-
-// Animation Variants
+/* ── Subtle, premium entrance animations ── */
 const stagger = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.25 } },
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
 };
 const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } },
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
-const fadeIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: 'easeOut' } },
+const cardIn = {
+  hidden: { opacity: 0, y: 26 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, delay: 0.15, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 
-// Floating Mini Card - icon always protrudes from LEFT side of card body
-function FloatingMiniCard({
-  icon: Icon,
-  title,
-  value,
-  floatClass,
-  delay,
-  variant = 'light',
-}: {
-  icon: React.ElementType;
-  title: string;
-  value: string;
-  floatClass: string;
-  delay: number;
-  variant?: 'highlight' | 'light';
-}) {
-  const isHighlight = variant === 'highlight';
+/* ── Escrow process steps (icons: Lucide only, no emojis) ── */
+const STEPS = [
+  { icon: Wallet, titleKey: 'hero2.step1Title', subKey: 'hero2.step1Sub' },
+  { icon: ShieldCheck, titleKey: 'hero2.step2Title', subKey: 'hero2.step2Sub' },
+  { icon: HandCoins, titleKey: 'hero2.step3Title', subKey: 'hero2.step3Sub' },
+] as const;
 
+/* Per-step tinted icon tiles — subtle green/teal variation */
+const STEP_TILE = [
+  'bg-green-100/80 text-green-700 dark:bg-green-500/[0.14] dark:text-green-400',
+  'bg-teal-100/80 text-teal-700 dark:bg-teal-500/[0.14] dark:text-teal-300',
+  'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/[0.14] dark:text-emerald-300',
+];
+
+type TKey = Parameters<ReturnType<typeof useTranslation>['t']>[0];
+
+function EscrowProcessCard({ t }: { t: (k: TKey) => string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={`pointer-events-none ${floatClass}`}
-    >
-      <div className="relative">
-        {/* Card body */}
-        <div
-          className={[
-            'relative overflow-hidden',
-            'w-[115px] h-[50px] sm:w-[130px] sm:h-[55px] lg:w-[150px] lg:h-[62px] xl:w-[165px] xl:h-[68px]',
-            'rounded-[14px] sm:rounded-[16px] lg:rounded-[18px] xl:rounded-[19px]',
-            'pl-[30px] pr-2.5 sm:pl-[34px] sm:pr-3 lg:pl-[38px] lg:pr-3 xl:pl-[42px] xl:pr-3',
-            'py-1.5 sm:py-2 lg:py-2.5 xl:py-2.5',
-            isHighlight
-              ? 'bg-primary/90 shadow-md shadow-primary/20 dark:shadow-primary/12'
-              : 'border border-border/30 bg-white/60 shadow-sm shadow-black/[0.04] backdrop-blur-md dark:border-border/20 dark:bg-zinc-900/50 dark:shadow-black/[0.15]',
-          ].join(' ')}
-        >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.08]" />
+    <motion.div variants={cardIn} className="relative w-full max-w-[400px] lg:max-w-none">
+      {/* soft glow behind the card */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-8 rounded-[40px] bg-green-500/[0.05] blur-2xl dark:bg-green-400/[0.06]"
+      />
 
-          <p
-            className={[
-              'text-[9px] font-medium leading-tight sm:text-[10px] lg:text-[10px] xl:text-[10px]',
-              isHighlight ? 'text-primary-foreground/70' : 'text-muted-foreground',
-            ].join(' ')}
-          >
-            {title}
-          </p>
-          <p
-            className={[
-              'mt-0.5 text-[11px] font-bold leading-tight sm:text-[12px] lg:text-[13px] xl:text-[14px]',
-              isHighlight ? 'text-primary-foreground' : 'text-foreground',
-            ].join(' ')}
-          >
-            {value}
-          </p>
+      <div className="main-card-float relative rounded-[22px] border border-black/[0.06] bg-white p-7 shadow-[0_16px_50px_-16px_rgba(16,24,40,0.12)] motion-reduce:[animation:none] dark:border-white/[0.07] dark:bg-card dark:shadow-black/40 sm:p-7">
+        {/* ── Header row ── */}
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-medium text-muted-foreground">{t('hero2.statusLabel')}</p>
+          <span className="rounded-full bg-green-600/10 px-3 py-1 text-xs font-bold text-green-700 ring-1 ring-green-600/15 dark:bg-green-500/15 dark:text-green-400 dark:ring-green-400/25">
+            {t('hero2.secure')}
+          </span>
         </div>
 
-        {/* Icon container - protrudes from LEFT edge */}
-        <div
-          className={[
-            'absolute top-1/2 -translate-y-1/2 z-10 flex items-center justify-center',
-            'w-[30px] h-[30px] sm:w-[34px] sm:h-[34px] lg:w-[38px] lg:h-[38px] xl:w-[42px] xl:h-[42px]',
-            'rounded-[9px] sm:rounded-[10px] lg:rounded-[11px] xl:rounded-[12px]',
-            '-left-[15px]',
-            'shadow-sm',
-            isHighlight
-              ? 'bg-primary/90 shadow-primary/25 dark:shadow-primary/15'
-              : 'bg-primary/12 dark:bg-primary/15',
-          ].join(' ')}
-        >
-          <Icon
-            className={[
-              'w-[15px] h-[15px] sm:w-[17px] sm:h-[17px] lg:w-[19px] lg:h-[19px] xl:w-[21px] xl:h-[21px]',
-              isHighlight ? 'text-primary-foreground' : 'text-primary',
-            ].join(' ')}
-            strokeWidth={2.2}
-          />
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Main Escrow Dashboard Card
-function EscrowDashboard({ locale, t }: { locale: string; t: (key: string) => string }) {
-  const progressSteps = [
-    { label: t('hero.status.paymentSecured'), active: true, done: true },
-    { label: t('hero.status.workProgress'), active: true, done: false },
-    { label: t('hero.status.dealCompleted'), active: false, done: false },
-  ];
-
-  const stats = [
-    { label: t('hero.stat.held'), value: '৳25,000' },
-    { label: t('hero.stat.completedDeals'), value: '128' },
-    { label: t('hero.stat.successRate'), value: '99.8%' },
-  ];
-
-  return (
-    <motion.div variants={fadeIn} className="relative">
-      {/* Subtle green glow behind card */}
-      <div className="pointer-events-none absolute -inset-10 rounded-[40px] bg-primary/[0.05] blur-3xl dark:bg-primary/[0.06]" />
-
-      <div className="main-card-float relative mx-auto w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[400px] xl:max-w-[440px]">
-        {/* Glass card body - very rounded 32-44px */}
-        <div className="card-body-glass relative overflow-hidden rounded-[28px] sm:rounded-[32px] lg:rounded-[36px] xl:rounded-[40px] border border-border/50 bg-white/85 p-4 shadow-2xl shadow-primary/[0.06] backdrop-blur-xl dark:border-border/30 dark:bg-zinc-900/75 dark:shadow-primary/[0.04] sm:p-5 lg:p-6">
-
-          {/* Floating decorative blobs */}
-          <div className="blob-float-1 pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/[0.07] blur-2xl dark:bg-primary/[0.05]" />
-          <div className="blob-float-2 pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/[0.05] blur-2xl dark:bg-primary/[0.04]" />
-
-          {/* Inner light reflection */}
-          <div className="pointer-events-none absolute -inset-px rounded-[28px] sm:rounded-[32px] lg:rounded-[36px] xl:rounded-[40px] bg-gradient-to-br from-white/50 via-transparent to-transparent dark:from-white/[0.03]" />
-
-          {/* Card Header */}
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-primary/15">
-                <Wallet className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-primary" strokeWidth={2} />
-              </div>
-              <div>
-                <p className="text-[12px] sm:text-[13px] font-semibold text-foreground">{t('hero.totalBalance')}</p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground">{t('hero.dealId')}</p>
-              </div>
-            </div>
-            <span className="badge-shimmer relative overflow-hidden rounded-full bg-primary/15 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-primary">
-              {t('hero.status.paymentSecured')}
-            </span>
-          </div>
-
-          {/* Escrow Amount Display */}
-          <div className="relative my-3 sm:my-4 text-center">
-            <div className="relative inline-flex items-baseline rounded-2xl bg-gradient-to-br from-primary/[0.08] via-primary/[0.04] to-primary/[0.08] px-5 py-2.5 sm:px-6 sm:py-3 ring-1 ring-primary/10">
-              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-primary/[0.05] blur-xl" />
-              <span className="relative text-2xl font-extrabold tracking-tight text-primary sm:text-3xl lg:text-4xl">
-                ৳25,000
-              </span>
-            </div>
-          </div>
-
-          {/* Buyer - Midman - Seller Flow */}
-          <div className="relative flex items-center justify-center gap-1.5 sm:gap-2">
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
-                <span className="text-[10px] sm:text-[11px] font-bold text-foreground">{locale === 'bn' ? 'ক্রেতা' : 'B'}</span>
-              </div>
-              <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">{t('hero.flow.buyer')}</span>
-            </div>
-
-            <div className="flex items-center">
-              <div className="h-px w-3 sm:w-4 bg-primary/40" />
-              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
-            </div>
-
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25">
-                <span className="text-[10px] sm:text-[11px] font-bold">M</span>
-              </div>
-              <span className="text-[9px] sm:text-[10px] font-bold text-primary">{t('hero.flow.midman')}</span>
-            </div>
-
-            <div className="flex items-center">
-              <div className="h-px w-3 sm:w-4 bg-primary/40" />
-              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
-            </div>
-
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-secondary/80 ring-1 ring-border">
-                <span className="text-[10px] sm:text-[11px] font-bold text-foreground">{locale === 'bn' ? 'বিক্রেতা' : 'S'}</span>
-              </div>
-              <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">{t('hero.flow.seller')}</span>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="my-3 sm:my-4 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + i * 0.1, duration: 0.4 }}
-                className="rounded-xl bg-muted/50 p-2 sm:p-2.5 text-center dark:bg-zinc-800/40"
+        {/* ── Steps ── */}
+        <div className="mt-5 space-y-3" role="list">
+          {STEPS.map((step, i) => (
+            <motion.div
+              key={step.titleKey}
+              role="listitem"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.45 + i * 0.12, duration: 0.45, ease: 'easeOut' }}
+              className="flex items-center gap-3.5 rounded-[14px] bg-[#F6F7F4] p-3.5 dark:bg-white/[0.04]"
+            >
+              <div
+                aria-hidden
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${STEP_TILE[i]}`}
               >
-                <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground leading-tight">{stat.label}</p>
-                <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-bold text-foreground">{stat.value}</p>
-              </motion.div>
-            ))}
-          </div>
+                <step.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-[15px] font-bold leading-snug text-foreground">
+                  {t(step.titleKey)}
+                </p>
+                <p className="truncate text-[13px] leading-snug text-muted-foreground">
+                  {t(step.subKey)}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
 
-          {/* Progress Indicator */}
-          <div className="mt-3 sm:mt-4 rounded-xl bg-muted/40 p-2.5 sm:p-3 dark:bg-zinc-800/30">
-            <div className="flex items-center justify-between">
-              {progressSteps.map((step, i) => (
-                <div key={step.label} className="flex items-center">
-                  <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-                    <div
-                      className={`flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full transition-all duration-300 ${
-                        step.done
-                          ? 'bg-primary text-primary-foreground'
-                          : step.active
-                            ? 'bg-primary/20 text-primary ring-2 ring-primary/40'
-                            : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      {step.done ? (
-                        <CheckCircle2 className="h-3 sm:h-3.5 w-3 sm:w-3.5" strokeWidth={2.5} />
-                      ) : step.active ? (
-                        <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-primary progress-pulse" />
-                      ) : (
-                        <CircleCheck className="h-3 sm:h-3.5 w-3 sm:w-3.5" strokeWidth={2} />
-                      )}
-                    </div>
-                    <span
-                      className={`text-[8px] sm:text-[9px] font-medium leading-tight text-center max-w-[48px] sm:max-w-[56px] ${
-                        step.done ? 'text-primary' : step.active ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                  {i < progressSteps.length - 1 && (
-                    <div className="mx-1 sm:mx-1.5 mb-3 sm:mb-4 h-px w-4 sm:w-6 lg:w-8">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          step.done ? 'bg-primary/60' : 'bg-border'
-                        }`}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* ── Amount ── */}
+        <div className="mt-6 border-t border-border/70 pt-5 dark:border-white/[0.06]">
+          <p className="flex items-baseline gap-0.5 font-display text-[26px] font-extrabold leading-none tracking-tight text-foreground">
+            ৳50,000
+            <span className="text-[13px] font-bold text-muted-foreground">.00</span>
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground">{t('hero2.amountCaption')}</p>
         </div>
       </div>
-
-      {/* Mobile: 2 floating cards above main card */}
-      <div className="flex sm:hidden items-center justify-center gap-4 mb-4 px-6">
-        <FloatingMiniCard
-          icon={Shield}
-          title={t('hero.float.paymentSecured')}
-          value="৳25,000"
-          floatClass="float-card-1"
-          delay={0.8}
-          variant="light"
-        />
-        <FloatingMiniCard
-          icon={CheckCircle2}
-          title={t('hero.float.dealCompleted')}
-          value="+৳8,500"
-          floatClass="float-card-3"
-          delay={1.2}
-          variant="highlight"
-        />
-      </div>
-
-      {/* Desktop (sm+): 4 floating cards at corners around the dashboard */}
-      {/* Card 1: Payment Secured - TOP LEFT */}
-      <FloatingMiniCard
-        icon={Shield}
-        title={t('hero.float.paymentSecured')}
-        value="৳25,000"
-        floatClass="hidden sm:block absolute float-card-1 top-[6%] -left-[100px] sm:top-[7%] sm:-left-[110px] lg:top-[8%] lg:-left-[120px] xl:top-[8%] xl:-left-[130px]"
-        delay={0.8}
-        variant="light"
-      />
-      {/* Card 2: Verified User - TOP RIGHT */}
-      <FloatingMiniCard
-        icon={UserCheck}
-        title={t('hero.float.verifiedUser')}
-        value={t('hero.float.trusted')}
-        floatClass="hidden sm:block absolute float-card-2 top-[4%] -right-[100px] sm:top-[5%] sm:-right-[110px] lg:top-[5%] lg:-right-[120px] xl:top-[5%] xl:-right-[130px]"
-        delay={1.0}
-        variant="light"
-      />
-      {/* Card 3: Deal Completed - BOTTOM LEFT, HIGHLIGHT */}
-      <FloatingMiniCard
-        icon={CheckCircle2}
-        title={t('hero.float.dealCompleted')}
-        value="+৳8,500"
-        floatClass="hidden sm:block absolute float-card-3 bottom-[14%] -left-[100px] sm:bottom-[13%] sm:-left-[110px] lg:bottom-[14%] lg:-left-[120px] xl:bottom-[14%] xl:-left-[130px]"
-        delay={1.2}
-        variant="highlight"
-      />
-      {/* Card 4: Deal Protected - BOTTOM RIGHT */}
-      <FloatingMiniCard
-        icon={ShieldCheck}
-        title={t('hero.float.dealProtected')}
-        value={t('hero.float.hundredSecure')}
-        floatClass="hidden sm:block absolute float-card-4 bottom-[8%] -right-[100px] sm:bottom-[7%] sm:-right-[110px] lg:bottom-[9%] lg:-right-[120px] xl:bottom-[9%] xl:-right-[130px]"
-        delay={1.4}
-        variant="light"
-      />
     </motion.div>
   );
 }
 
-// Trust Indicators below CTA buttons
-function TrustIndicators({ t }: { t: (key: string) => string }) {
-  const items = [
-    { icon: Shield, label: t('hero.trust.paymentSecured') },
-    { icon: UserCheck, label: t('hero.trust.verifiedUser') },
-    { icon: ShieldCheck, label: t('hero.trust.dealProtection') },
-  ];
-
-  return (
-    <div className="mt-7 flex flex-wrap items-center justify-center gap-4 sm:gap-6 lg:justify-start">
-      {items.map((item, i) => (
-        <motion.div
-          key={item.label}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 + i * 0.1, duration: 0.4 }}
-          className="flex items-center gap-1.5"
-        >
-          <item.icon className="h-4 w-4 text-primary" strokeWidth={2} />
-          <span className="text-xs sm:text-[13px] font-medium text-muted-foreground">{item.label}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// Main Hero Component
 export function Hero() {
-  const { siteName, siteNameEn } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const { t } = useTranslation(locale);
+  const { t } = useTranslation(useAppStore((s) => s.locale));
   const user = useAppStore((s) => s.user);
   const navigateToDashboard = useAppStore((s) => s.navigateToDashboard);
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  const startDeal = () => {
+    if (user) navigateToDashboard();
+    else useAppStore.getState().setView('auth');
+  };
+  const learnMore = () => useAppStore.getState().setView('page-how-it-works');
 
   return (
-    <section className="relative overflow-hidden">
-      {/* Background aura */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-1/4 right-1/4 h-[500px] w-[500px] rounded-full bg-primary/[0.06] blur-[120px] dark:bg-primary/[0.05]" />
-        <div className="absolute bottom-0 left-1/3 h-[400px] w-[400px] rounded-full bg-primary/[0.03] blur-[100px] dark:bg-primary/[0.03]" />
-      </div>
-
-      {/* Subtle background grid (light mode only) */}
-      <div className="pointer-events-none absolute inset-0 dark:hidden">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(circle, oklch(0.768 0.189 131) 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
+    <section className="relative overflow-hidden bg-white dark:bg-transparent">
+      {/* ── Background: subtle pale-green radial glows, clean center ── */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 right-[8%] h-[480px] w-[480px] rounded-full bg-green-400/[0.10] blur-[130px] dark:bg-green-500/[0.07]" />
+        <div className="absolute bottom-[-120px] left-[4%] h-[420px] w-[420px] rounded-full bg-green-300/[0.10] blur-[120px] dark:bg-green-500/[0.05]" />
+        <div className="absolute left-1/2 top-1/3 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-teal-300/[0.07] blur-[110px] dark:bg-teal-400/[0.04]" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex min-h-[calc(100vh-4rem)] items-center py-10 sm:py-14 lg:py-20">
-          <div className="grid w-full items-center gap-8 lg:grid-cols-2 lg:gap-14 xl:gap-20">
-            {/* Left Side: Text Content */}
+        <div className="flex min-h-[calc(100svh-4rem)] items-center py-14 lg:py-10">
+          <div className="grid w-full items-center gap-12 lg:grid-cols-2 lg:gap-10 xl:gap-16">
+            {/* ── Escrow card — left on desktop, below content on mobile ── */}
+            <div className="order-2 lg:order-1">
+              <div className="mx-auto w-full max-w-[400px] lg:max-w-[420px]">
+                <EscrowProcessCard t={t} />
+              </div>
+            </div>
+
+            {/* ── Content — right on desktop, first on mobile ── */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-              className="order-1 flex flex-col items-center text-center lg:items-start lg:text-left"
+              variants={stagger}
+              initial="hidden"
+              animate="visible"
+              className="order-1 flex flex-col items-center text-center lg:order-2 lg:items-start lg:text-left"
             >
-              {/* Premium Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, duration: 0.4 }}
-                className="mb-5 inline-flex items-center justify-center gap-2 self-center lg:self-auto rounded-full border border-primary/20 bg-primary/[0.08] px-4 py-1.5"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 text-primary" strokeWidth={2} />
-                <span className="text-xs font-semibold tracking-wide text-primary">
-                  {t('hero.badge')}
+              {/* Badge */}
+              <motion.div variants={fadeUp}>
+                <span className="inline-flex items-center rounded-full border border-green-600/25 bg-green-100/70 px-4 py-1.5 text-[13px] font-bold text-green-700 dark:border-green-400/25 dark:bg-green-500/[0.08] dark:text-green-400">
+                  {t('hero2.badge')}
                 </span>
               </motion.div>
 
-              {/* Main Heading - 3 lines */}
-              <h1 className="mb-4 text-center text-3xl font-bold leading-[1.25] tracking-tight sm:text-4xl lg:text-left lg:text-[2.75rem] xl:text-5xl">
-                {t('hero.heading.line1')}
-                <br />
-                {t('hero.heading.line2')}
-                <br />
-                <span className="glow-text-lime text-primary">{t('hero.heading.highlight')}</span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="mx-auto mb-7 max-w-lg text-center text-base leading-relaxed text-muted-foreground lg:mx-0 lg:text-left lg:text-[17px]">
-                {t('hero.subtitle')}
-              </p>
-
-              {/* CTA Buttons */}
-              <motion.div
-                variants={stagger}
-                initial="hidden"
-                animate="visible"
-                className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:items-start lg:justify-start"
+              {/* Headline */}
+              <motion.h1
+                variants={fadeUp}
+                className="mt-6 font-display text-[38px] font-bold leading-[1.18] tracking-tight text-foreground min-[400px]:text-[42px] sm:text-[46px] lg:text-[56px] xl:text-[62px]"
               >
-                {user ? (
-                  <motion.div variants={fadeUp}>
-                    <Button
-                      size="lg"
-                      onClick={() => navigateToDashboard()}
-                      className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
-                    >
-                      <LayoutDashboard className="h-5 w-5" />
-                      {t('hero.startDeal')}
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <>
-                    <motion.div variants={fadeUp}>
-                      <Button
-                        size="lg"
-                        onClick={() => useAppStore.getState().setView('auth')}
-                        className="gap-2.5 rounded-xl px-7 text-[15px] font-semibold shadow-lg shadow-primary/25 active:scale-[0.97] transition-all duration-200 hover:shadow-xl hover:shadow-primary/30"
-                      >
-                        {t('hero.startDeal')}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                    <motion.div variants={fadeUp}>
-                      <button
-                        onClick={() => useAppStore.getState().setView('page-how-it-works')}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-border/60 bg-background/50 px-7 py-3 text-[15px] font-medium text-muted-foreground backdrop-blur-sm transition-all duration-200 hover:border-primary/30 hover:text-foreground"
-                      >
-                        {t('hero.howWorks')}
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </motion.div>
-                  </>
-                )}
+                {t('hero2.headingLine1')}
+                <br />
+                <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent dark:from-green-300 dark:via-emerald-300 dark:to-teal-300">
+                  {t('hero2.headingLine2')}
+                </span>
+              </motion.h1>
+
+              {/* Description */}
+              <motion.p
+                variants={fadeUp}
+                className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-muted-foreground sm:text-base"
+              >
+                {t('hero2.description')}
+              </motion.p>
+
+              {/* CTA buttons */}
+              <motion.div
+                variants={fadeUp}
+                className="mt-8 flex w-full flex-col gap-3 min-[360px]:flex-row sm:w-auto"
+              >
+                <button
+                  onClick={startDeal}
+                  className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[13px] bg-green-600 px-7 text-[15px] font-semibold text-white shadow-lg shadow-green-600/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-xl hover:shadow-green-600/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 active:translate-y-0 active:scale-[0.98] sm:flex-none dark:bg-green-600 dark:shadow-green-500/20 dark:hover:bg-green-500 dark:focus-visible:outline-green-400"
+                >
+                  {t('hero2.ctaPrimary')}
+                </button>
+                <button
+                  onClick={learnMore}
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-[13px] border border-border bg-white px-7 text-[15px] font-semibold text-foreground transition-all duration-200 hover:border-green-600/40 hover:text-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 active:scale-[0.98] sm:flex-none dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-green-400/40 dark:hover:text-green-400 dark:focus-visible:outline-green-400"
+                >
+                  {t('hero2.ctaSecondary')}
+                </button>
               </motion.div>
-
-              {/* Trust Indicators */}
-              <TrustIndicators t={t} />
-            </motion.div>
-
-            {/* Right Side: Escrow Dashboard */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-              className="order-2"
-            >
-              <div className="relative mx-auto w-full max-w-[380px] sm:max-w-[440px] lg:max-w-[560px] xl:max-w-[650px]">
-                <EscrowDashboard locale={locale} t={t} />
-              </div>
             </motion.div>
           </div>
         </div>

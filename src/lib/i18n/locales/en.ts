@@ -100,6 +100,24 @@ export const en: Record<TranslationKey, string> = {
   'hero.trust.verifiedUser': 'Verified User',
   'hero.trust.dealProtection': 'Deal Protection',
 
+  // ── Hero (v2 — escrow process card) ──
+  'hero2.badge': 'Secure online transactions',
+  'hero2.headingLine1': 'Your money,',
+  'hero2.headingLine2': 'our responsibility',
+  'hero2.description':
+    "Buy and sell products or services safely with AmarDeal's escrow and mediation. From deposit to deal completion — everything transparent and reliable.",
+  'hero2.ctaPrimary': 'Start a Deal',
+  'hero2.ctaSecondary': 'Learn more',
+  'hero2.statusLabel': 'Escrow status',
+  'hero2.secure': 'Secured',
+  'hero2.step1Title': 'Deposit funds',
+  'hero2.step1Sub': 'bKash / Nagad / Bank',
+  'hero2.step2Title': 'Mediation',
+  'hero2.step2Sub': 'Verification in progress',
+  'hero2.step3Title': 'Release funds',
+  'hero2.step3Sub': 'Safely to the seller',
+  'hero2.amountCaption': 'Example escrow amount',
+
   // ── Footer ──
   'footer.defaultDescription': "Bangladesh's most trusted escrow platform. We ensure safe online transactions so you can buy and sell with confidence.",
   'footer.defaultMadeIn': 'Made in Bangladesh',

@@ -98,6 +98,23 @@ export const bn = {
   'hero.trust.verifiedUser': 'ভেরিফাইড ইউজার',
   'hero.trust.dealProtection': 'ডিল প্রোটেকশন',
 
+  // ── Hero (v2 — escrow process card) ──
+  'hero2.badge': 'নিরাপদ অনলাইন লেনদেন',
+  'hero2.headingLine1': 'আপনার টাকা,',
+  'hero2.headingLine2': 'আমাদের দায়িত্ব',
+  'hero2.description': 'আমার ডিল-এর এস্ক্রো ও মধ্যস্থতার মাধ্যমে নিরাপদে পণ্য বা সেবা কেনাবেচা করুন। টাকা জমা থেকে ডিল সম্পন্ন — সবকিছু স্বচ্ছ ও নির্ভরযোগ্য।',
+  'hero2.ctaPrimary': 'ডিল শুরু করুন',
+  'hero2.ctaSecondary': 'আরও জানুন',
+  'hero2.statusLabel': 'এস্ক্রো স্ট্যাটাস',
+  'hero2.secure': 'সুরক্ষিত',
+  'hero2.step1Title': 'টাকা জমা',
+  'hero2.step1Sub': 'bKash / Nagad / Bank',
+  'hero2.step2Title': 'মধ্যস্থতা',
+  'hero2.step2Sub': 'আমাদের যাচাই চলবে',
+  'hero2.step3Title': 'টাকা রিলিজ',
+  'hero2.step3Sub': 'নিরাপদে টাকা বিক্রেতার কাছে',
+  'hero2.amountCaption': 'উদাহরণস্বরূপ এসক্রো পরিমাণ',
+
   // ── Footer ──
   'footer.defaultDescription': 'বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করি যাতে আপনি নিশ্চিন্তে কেনাবেচা করতে পারেন।',
   'footer.defaultMadeIn': 'বাংলাদেশে তৈরি',

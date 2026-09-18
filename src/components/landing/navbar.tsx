@@ -201,14 +201,14 @@ export function Navbar() {
       className={
         isSidebarView
           ? 'sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl'
-          : 'sticky top-0 z-50 w-full pt-3 pb-1 px-3 sm:px-6 lg:px-8 transition-all'
+          : 'sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl transition-all'
       }
     >
       <nav
         className={
           isSidebarView
             ? 'relative flex h-16 items-center justify-between px-4 sm:px-6 md:pl-0'
-            : 'relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 rounded-2xl sm:rounded-full bg-gradient-to-r from-background/80 via-primary/5 to-background/80 dark:from-zinc-900/85 dark:via-primary/10 dark:to-zinc-900/85 backdrop-blur-xl backdrop-saturate-150 border border-white/40 dark:border-white/10 shadow-xl shadow-primary/5 dark:shadow-primary/10 transition-all duration-300 hover:border-primary/30'
+            : 'relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 transition-all'
         }
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
