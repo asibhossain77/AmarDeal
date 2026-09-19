@@ -583,3 +583,24 @@ Stage Summary:
 - Token rotation verified end-to-end; ops scripts no longer carry secrets
 - USER TODO: update TURSO_AUTH_TOKEN in Vercel env vars (new token value) + redeploy; invalidate the chat-leaked old token in Turso if possible
 - Meta Pixel + CAPI (a1718eb) unchanged — still awaiting user's Pixel ID + CAPI token in Vercel env
+
+---
+Task ID: 19
+Agent: main
+Task: Activate Meta Pixel with user's real Pixel/Dataset ID 966267646515236; guarantee correct PageView; strictly ONE pixel
+
+Work Log:
+- Sandbox reset again at turn start (04c6757, 31 commits behind) — stashed artifacts, reset --hard origin/main (f0fbec1), rebuilt .env/node_modules/prisma
+- Root cause found: the pixel could never have fired in production — the env-gated ID was never configured on Vercel, so MetaPixel rendered nothing (silently inactive despite the full pipeline from a1718eb)
+- Baked the user's Pixel ID as DEFAULT_META_PIXEL_ID (new src/lib/meta-pixel-id.ts), used by meta-pixel.tsx (browser) and meta-capi.ts (server fallback chain META_PIXEL_ID → NEXT_PUBLIC_META_PIXEL_ID → default); env vars still override. CAPI remains gated on META_CAPI_ACCESS_TOKEN
+- Replaced next/script inline injection with a plain SSR'd <script nonce> — next/script never injected the inline script (verified live in dev); the plain script executes at HTML parse time, independent of hydration
+- CSP: pass the layout's x-nonce into the script; added https://www.facebook.com + https://connect.facebook.net to proxy.ts connect-src (script-src already had connect.facebook.net); noscript img covered by img-src https:
+- Live-debugged PageView: fbevents does NOT auto-fire PageView on init (init-only base code → zero /tr beacons, no _fbp); signals/config fetch returned 200 (pixel ID valid); manual img beacon 200 (egress OK)
+- Fix: base code fires fbq('track','PageView') inline right after init (Meta's own snippet pattern); the SPA tracker anchors on mount (no double-count) and fires only on subsequent composite-key changes
+- Verified in browser: fbq installed, fbevents.js loads, config fetched, _fbp freshly generated on a clean-cookie load (event processed), exactly one PageView on initial load, no console/CSP errors
+- tsc: only pre-existing baseline error in touched files (proxy.ts req.ip, predates change)
+
+Stage Summary:
+- commit 5749f56 pushed → Vercel auto-deploys; browser pixel (PageView / ViewContent / InitiateCheckout) goes LIVE with zero env setup
+- USER TODO: only META_CAPI_ACCESS_TOKEN still needed in Vercel for server events (Purchase / CompleteRegistration / InitiateCheckout CAPI pair); verify in Events Manager → Test Events after deploy
+- Exactly ONE pixel: single fbq('init') in meta-pixel.tsx (contract documented in code)
