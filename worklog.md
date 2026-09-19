@@ -566,3 +566,20 @@ Work Log:
 
 Stage Summary:
 - commit pushed: full Meta Pixel + CAPI pipeline with dedup. USER SETUP: (1) Events Manager → create/get Pixel ID; (2) Vercel env: NEXT_PUBLIC_META_PIXEL_ID + META_PIXEL_ID (digits) + META_CAPI_ACCESS_TOKEN (system-user token, ads_management); (3) redeploy; (4) Events Manager → Test Events (optional META_CAPI_TEST_EVENT_CODE) to verify traffic; ad campaigns can then optimize for Purchase/InitiateCheckout with CAPI-backed reliability
+
+---
+Task ID: 18
+Agent: main
+Task: Verify user-rotated production Turso token; scrub expired hardcoded tokens from ops scripts
+
+Work Log:
+- Verified new TURSO_AUTH_TOKEN (rw, exp ≈ 2026-10-19) against prod Turso via HTTP v2/pipeline — 200 OK, 29 tables intact (User/Deal/Auction/Bid/DigitalProduct/ProductDownload/...)
+- Found expired (2026-07, 1-day tokens) hardcoded tokens in scripts/seed-popup.ts + scripts/seed-site-name.ts — leaked into git but already dead, low risk
+- Refactored both seeders + check-turso.ts to env-driven creds: shell env → /home/z/my-project/.env → amardeal/.env; scripts require a libsql:// URL + token or exit with a clear message; check-turso now prefers TURSO_DATABASE_URL (it previously fell back to a local file db silently)
+- Stored the new token ONLY in /home/z/my-project/.env (outside the repo; repo .env stays dev-only — app runtime unaffected since db.ts reads TURSO_AUTH_TOKEN only when DATABASE_URL is libsql://)
+- E2E: `bun scripts/seed-site-name.ts` against prod — upsert OK (platform_name = মিডম্যান / Midman) via Prisma adapter with the new token
+
+Stage Summary:
+- Token rotation verified end-to-end; ops scripts no longer carry secrets
+- USER TODO: update TURSO_AUTH_TOKEN in Vercel env vars (new token value) + redeploy; invalidate the chat-leaked old token in Turso if possible
+- Meta Pixel + CAPI (a1718eb) unchanged — still awaiting user's Pixel ID + CAPI token in Vercel env
