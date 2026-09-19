@@ -3,9 +3,10 @@
 /**
  * Meta Pixel — base code + PageView routing.
  *
- * Rendered once in the root layout. Inactive (renders nothing, loads no
- * scripts) unless NEXT_PUBLIC_META_PIXEL_ID is configured, so zero cost for
- * environments without ads.
+ * Rendered once in the root layout (with the CSP nonce). Active by default
+ * via DEFAULT_META_PIXEL_ID (src/lib/meta-pixel-id.ts); the
+ * NEXT_PUBLIC_META_PIXEL_ID env var overrides when set. There must be
+ * exactly ONE pixel on the site — do not add another fbq('init') anywhere.
  *
  * PageView coverage: the site is a Zustand-driven SPA whose views sync to
  * the URL via lib/url-sync — Next's usePathname does NOT reliably see those
@@ -13,16 +14,17 @@
  * unpredictable moment AFTER the view changes, which double-fires naive
  * view+pathname trackers). The stable page identity is therefore the store
  * composite: view + detail ids (product / auction / seller / download),
- * which url-sync sets atomically. The pixel base code fires the first
- * PageView on init; the tracker anchors on mount and fires only on
- * subsequent composite-key changes.
+ * which url-sync sets atomically. The initial PageView is fired INLINE in the
+ * base code (parse time — Meta's own snippet pattern, zero hydration
+ * dependency); the tracker anchors on mount and fires only on subsequent
+ * composite-key changes, so the first load produces exactly one PageView.
  */
 
-import Script from 'next/script';
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
+import { DEFAULT_META_PIXEL_ID } from '@/lib/meta-pixel-id';
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '';
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
 
 const BASE_CODE = `
 !function(f,b,e,v,n,t,s)
@@ -34,6 +36,7 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '${PIXEL_ID}');
+fbq('track', 'PageView');
 `;
 
 /** fbclid landing param → _fbc cookie (Conversions API also reads it server-side) */
@@ -61,7 +64,7 @@ function selectPageKey(s: {
   return [s.view, s.productDetailId, s.auctionDetailId, s.sellerProfileId, s.downloadProductId].join('|');
 }
 
-export function MetaPixel() {
+export function MetaPixel({ nonce }: { nonce?: string }) {
   const pageKey = useAppStore(selectPageKey);
   const lastTrackedRef = useRef<string | null>(null);
   const mountedRef = useRef(false);
@@ -71,7 +74,8 @@ export function MetaPixel() {
   }, []);
 
   useEffect(() => {
-    // First run: the pixel init already emitted PageView — just anchor.
+    // First run: anchor only — the initial PageView was already fired inline
+    // by the base code above (parse time). Firing here too would double-count.
     if (!mountedRef.current) {
       mountedRef.current = true;
       lastTrackedRef.current = pageKey;
@@ -90,9 +94,15 @@ export function MetaPixel() {
 
   return (
     <>
-      <Script id="meta-pixel-base" strategy="afterInteractive">
-        {BASE_CODE}
-      </Script>
+      {/* Plain SSR'd inline script (NOT next/script): executes at HTML parse
+          time with the CSP nonce — independent of hydration, so the pixel
+          loads even before React hydrates. The base code itself injects
+          fbevents.js, which 'strict-dynamic' allows. */}
+      <script
+        id="meta-pixel-base"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: BASE_CODE }}
+      />
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

@@ -42,12 +42,12 @@ function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development'
   const directives: string[] = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://connect.facebook.net${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
     // Dev-only: allow presigned PUTs to a local fake S3/R2 server (E2E tests)
-    "connect-src 'self' wss: ws: https://www.googletagmanager.com https://*.r2.cloudflarestorage.com" + (isDev ? ' http://127.0.0.1:* http://localhost:*' : ''),
+    "connect-src 'self' wss: ws: https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net https://*.r2.cloudflarestorage.com" + (isDev ? ' http://127.0.0.1:* http://localhost:*' : ''),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

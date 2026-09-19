@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import type { NextRequest } from 'next/server';
+import { DEFAULT_META_PIXEL_ID } from './meta-pixel-id';
 
 /**
  * Meta Conversions API (CAPI) — server-side event sender.
@@ -21,7 +22,10 @@ import type { NextRequest } from 'next/server';
  *    (lowercased + trimmed) — this module does it for you.
  */
 
-const PIXEL_ID = process.env.META_PIXEL_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID || '';
+const PIXEL_ID =
+  process.env.META_PIXEL_ID?.trim() ||
+  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() ||
+  DEFAULT_META_PIXEL_ID;
 const ACCESS_TOKEN = process.env.META_CAPI_ACCESS_TOKEN || '';
 const TEST_EVENT_CODE = process.env.META_CAPI_TEST_EVENT_CODE || '';
 const GRAPH_BASE = process.env.META_CAPI_URL || 'https://graph.facebook.com/v21.0';

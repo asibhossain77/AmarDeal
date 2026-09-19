@@ -298,7 +298,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${hindSiliguri.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning>
-        <MetaPixel />
+        <MetaPixel nonce={nonce} />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
