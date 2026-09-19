@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileText, PlusCircle, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
+import { takeMetaIcEventId } from '@/lib/meta-client';
 
 const emptySubscribe = () => () => {};
 
@@ -98,6 +99,9 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
           partyEmail: partyEmail.trim(),
           terms: terms.trim(),
           userId: user?.id,
+          /* Meta CAPI dedup: the InitiateCheckout event_id fired by the
+             browser at Buy Now — undefined for manual deals */
+          metaEventId: takeMetaIcEventId(),
           ...productFields,
         }),
       });

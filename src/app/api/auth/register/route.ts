@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { sendOtpEmail, emailVerificationOtpEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
+import { sendMetaEvent, metaUserDataFromRequest, metaHashIdentity } from '@/lib/meta-capi'
 
 const REFERRAL_COOKIE_NAME = 'midman_ref'
 
@@ -94,6 +95,18 @@ export async function POST(req: NextRequest) {
         // Ignore cookie deletion errors
       }
     }
+
+    // Meta Conversions API — CompleteRegistration (server-side; no browser twin)
+    await sendMetaEvent({
+      eventName: 'CompleteRegistration',
+      eventId: `reg-${user.id}`,
+      userData: {
+        ...metaUserDataFromRequest(req),
+        ...metaHashIdentity({ email: user.email, phone: user.phone, userId: user.id }),
+      },
+      customData: { content_name: 'complete_registration', status: true },
+      eventSourceUrl: req.headers.get('referer') || undefined,
+    })
 
     // Send verification OTP email (fire-and-forget)
     sendOtpEmail(user.email, () => emailVerificationOtpEmail(user.name, otp)).catch((err) => {

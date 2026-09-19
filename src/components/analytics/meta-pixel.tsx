@@ -1,0 +1,108 @@
+'use client';
+
+/**
+ * Meta Pixel — base code + PageView routing.
+ *
+ * Rendered once in the root layout. Inactive (renders nothing, loads no
+ * scripts) unless NEXT_PUBLIC_META_PIXEL_ID is configured, so zero cost for
+ * environments without ads.
+ *
+ * PageView coverage: the site is a Zustand-driven SPA whose views sync to
+ * the URL via lib/url-sync — Next's usePathname does NOT reliably see those
+ * changes (and Next's patched history makes the pathname update at an
+ * unpredictable moment AFTER the view changes, which double-fires naive
+ * view+pathname trackers). The stable page identity is therefore the store
+ * composite: view + detail ids (product / auction / seller / download),
+ * which url-sync sets atomically. The pixel base code fires the first
+ * PageView on init; the tracker anchors on mount and fires only on
+ * subsequent composite-key changes.
+ */
+
+import Script from 'next/script';
+import { useEffect, useRef } from 'react';
+import { useAppStore } from '@/lib/store';
+
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID ?? '';
+
+const BASE_CODE = `
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window,document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${PIXEL_ID}');
+`;
+
+/** fbclid landing param → _fbc cookie (Conversions API also reads it server-side) */
+function captureFbclid(): void {
+  try {
+    const fbclid = new URLSearchParams(window.location.search).get('fbclid');
+    if (!fbclid) return;
+    if (document.cookie.split(';').some((c) => c.trim().startsWith('_fbc='))) return;
+    const fbc = `fb.1.${Date.now()}.${fbclid}`;
+    const maxAge = 90 * 24 * 60 * 60;
+    document.cookie = `_fbc=${fbc};max-age=${maxAge};path=/`;
+  } catch {
+    /* never break the page for analytics */
+  }
+}
+
+/** Composite key identifying the current logical page (SPA-safe) */
+function selectPageKey(s: {
+  view: string;
+  productDetailId: string | null;
+  auctionDetailId: string | null;
+  sellerProfileId: string | null;
+  downloadProductId: string | null;
+}): string {
+  return [s.view, s.productDetailId, s.auctionDetailId, s.sellerProfileId, s.downloadProductId].join('|');
+}
+
+export function MetaPixel() {
+  const pageKey = useAppStore(selectPageKey);
+  const lastTrackedRef = useRef<string | null>(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    captureFbclid();
+  }, []);
+
+  useEffect(() => {
+    // First run: the pixel init already emitted PageView — just anchor.
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      lastTrackedRef.current = pageKey;
+      return;
+    }
+    if (lastTrackedRef.current === pageKey) return;
+    lastTrackedRef.current = pageKey;
+    try {
+      window.fbq?.('track', 'PageView');
+    } catch {
+      /* ignore */
+    }
+  }, [pageKey]);
+
+  if (!PIXEL_ID) return null;
+
+  return (
+    <>
+      <Script id="meta-pixel-base" strategy="afterInteractive">
+        {BASE_CODE}
+      </Script>
+      <noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          height="1"
+          width="1"
+          style={{ display: 'none' }}
+          alt=""
+          src={`https://www.facebook.com/tr?id=${PIXEL_ID}&ev=PageView&noscript=1`}
+        />
+      </noscript>
+    </>
+  );
+}

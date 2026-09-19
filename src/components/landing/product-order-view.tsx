@@ -14,6 +14,7 @@ import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 import { waMeLink } from '@/lib/wa-me';
+import { fbqTrack, genMetaEventId, META_IC_EVENT_ID_KEY } from '@/lib/meta-client';
 import { PageWrapper } from './page-wrapper';
 import { Footer } from './footer';
 
@@ -104,6 +105,20 @@ export function ProductOrderView() {
   const [entitled, setEntitled] = useState(false);
   const [claiming, setClaiming] = useState(false);
 
+  /* Meta Pixel — ViewContent (browser-only; fires once per loaded product) */
+  useEffect(() => {
+    if (!product) return;
+    const value = isMulti ? (selectedOption?.price ?? product.minPrice ?? product.price) : product.price;
+    fbqTrack('ViewContent', {
+      content_type: 'product',
+      content_ids: [product.id],
+      content_name: product.title,
+      value,
+      currency: 'BDT',
+    }, genMetaEventId('vc'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
   // Is the logged-in user already entitled to the digital file?
   useEffect(() => {
     if (!product || !user || !product.hasFile) { setEntitled(false); return; }
@@ -191,6 +206,17 @@ export function ProductOrderView() {
   const confirmBuy = () => {
     if (!product) return;
     setShowBuyConfirm(false);
+    /* Meta Pixel — InitiateCheckout; the event_id rides to POST /api/deals/create
+       via sessionStorage so the server CAPI event deduplicates against this one */
+    const icEventId = genMetaEventId('ic');
+    fbqTrack('InitiateCheckout', {
+      content_type: 'product',
+      content_ids: [product.id],
+      value: (unitPrice ?? product.price) * qty,
+      currency: 'BDT',
+      num_items: qty,
+    }, icEventId);
+    try { sessionStorage.setItem(META_IC_EVENT_ID_KEY, icEventId); } catch { /* private mode */ }
     const store = useAppStore.getState();
     const optionSuffix = selectedOption ? ` — ${selectedOption.name}` : '';
     store.setDealPreFill({

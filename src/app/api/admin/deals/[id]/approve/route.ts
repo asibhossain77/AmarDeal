@@ -4,6 +4,7 @@ import { sendEmail, paymentVerifiedEmail } from '@/lib/email'
 import { sendWhatsApp, paymentVerifiedWa } from '@/lib/whatsapp'
 import { requireAdmin } from '@/lib/admin-guard'
 import { notifyUser } from '@/lib/push'
+import { sendMetaEvent, metaHashIdentity } from '@/lib/meta-capi'
 
 export async function POST(
   req: NextRequest,
@@ -36,6 +37,26 @@ export async function POST(
     const updatedDeal = await db.deal.update({
       where: { id },
       data: { status: 'payment_verified' },
+    })
+
+    // Meta Conversions API — Purchase (the money event). Buyer identity comes
+    // from the deal record; event_id is deterministic (`purchase-<dealId>`)
+    // so an accidental admin retry cannot double-count on Meta's side.
+    await sendMetaEvent({
+      eventName: 'Purchase',
+      eventId: `purchase-${deal.id}`,
+      userData: metaHashIdentity({
+        email: deal.buyer?.email,
+        phone: deal.buyer?.phone,
+        userId: deal.buyerId,
+      }),
+      customData: {
+        currency: 'BDT',
+        value: deal.amount ?? 0,
+        content_type: 'product',
+        ...(deal.productId ? { content_ids: [deal.productId] } : {}),
+        order_id: deal.id,
+      },
     })
 
     // Notify both parties

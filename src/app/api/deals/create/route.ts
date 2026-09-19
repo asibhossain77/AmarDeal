@@ -4,6 +4,7 @@ import { sendEmail, dealCreatedEmail, adminNewDealEmail } from '@/lib/email'
 import { sendWhatsApp, dealCreatedWa, adminNewDealWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
 import { notifyUser, notifyAdmins } from '@/lib/push'
+import { sendMetaEvent, metaUserDataFromRequest, metaHashIdentity } from '@/lib/meta-capi'
 
 const MAX_ORDER_QTY = 99
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     const userId = guard.userId
 
     const body = await req.json()
-    const { title, role, amount, partyEmail, terms, productId, optionId, quantity } = body
+    const { title, role, amount, partyEmail, terms, productId, optionId, quantity, metaEventId } = body
 
     // ────────────────────────────────────────────────────────────────────
     // Product-verified order path (marketplace Buy Now flow).
@@ -123,6 +124,27 @@ export async function POST(req: NextRequest) {
           seller: { select: { id: true, name: true, email: true } },
           creator: { select: { id: true, name: true, email: true } },
         },
+      })
+
+      // Meta Conversions API — InitiateCheckout. Uses the SAME event_id the
+      // browser pixel fired at Buy Now (via sessionStorage handoff) so Meta
+      // deduplicates the pair; falls back to a server-only id if absent.
+      await sendMetaEvent({
+        eventName: 'InitiateCheckout',
+        eventId: (typeof metaEventId === 'string' && metaEventId) || `ic-server-${deal.id}`,
+        userData: {
+          ...metaUserDataFromRequest(req),
+          ...metaHashIdentity({ email: deal.buyer?.email, userId }),
+        },
+        customData: {
+          currency: 'BDT',
+          value: finalAmount,
+          content_type: 'product',
+          content_ids: [product.id],
+          num_items: qty,
+          order_id: deal.id,
+        },
+        eventSourceUrl: req.headers.get('referer') || undefined,
       })
 
       // ── Post-creation tasks (notifications, emails) are fire-and-forget ──

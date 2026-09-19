@@ -8,6 +8,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
 import { LocaleEffect } from "@/components/shared/locale-effect";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
@@ -297,6 +298,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${hindSiliguri.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning>
+        <MetaPixel />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

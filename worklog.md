@@ -548,3 +548,21 @@ Work Log:
 
 Stage Summary:
 - Hero copy now brand-correct (মিডম্যান) and hero headline uses Noto Sans Bengali; commit pushed to origin/main — Vercel redeploys automatically
+
+---
+Task ID: 1
+Agent: main
+Task: Meta Pixel + Conversions API system so the user can run Facebook/Instagram ads
+
+Work Log:
+- Sandbox reset again mid-task (same pattern): stashed artifacts, reset --hard origin/main, rebuilt .env/node_modules; ALSO hit the shell-residue DATABASE_URL trap while seeding (users landed in the outer db) — re-seeded with explicit repo db path
+- Client pixel: components/analytics/meta-pixel.tsx — env-gated (renders nothing + loads nothing without NEXT_PUBLIC_META_PIXEL_ID); standard base code via next/script afterInteractive + noscript img; fbclid → _fbc cookie capture; PageView on SPA navigation
+- PageView correctness (the hard part): the app is a Zustand SPA whose URL syncs via history patching — usePathname updates at an unpredictable moment AFTER view changes, so view+pathname trackers double-fire (verified: 2 PageViews per nav). Fix: composite key = view|productDetailId|auctionDetailId|sellerProfileId|downloadProductId (store fields set atomically by url-sync) → exactly 1 PageView per logical page, dashboard panel switches don't spam, product→product navs detected; initial load anchored to the pixel-init PageView
+- lib/meta-client.ts: safe fbq wrapper, event-id generator, sessionStorage handoff (META_IC_EVENT_ID_KEY)
+- lib/meta-capi.ts (server): Meta v21.0 /events sender — SHA-256 hashing (trim+lowercase) for em/ph/external_id, fbp/fbc/IP/UA extraction from NextRequest, optional test_event_code, META_CAPI_URL override for mock testing, 5s timeout, never throws
+- Events wired: ViewContent (browser, product view mount, value+BDT+content_ids); InitiateCheckout — browser at Buy Now confirm + CAPI in POST /api/deals/create with the SAME event_id (sessionStorage handoff via new-deal-form) = deduplicated pair, server-computed amount; Purchase — CAPI in admin approve route (payment_verified moment) with buyer hashed email/phone/external_id, deterministic event_id purchase-<dealId> so admin retries can't double-count; CompleteRegistration — CAPI in auth register
+- E2E with a local mock CAPI collector (META_CAPI_URL override): register → CompleteRegistration (em/ph hashed correctly — verified against sha256, fbp+fbc passthrough); deal create with metaEventId → InitiateCheckout (event_id matches client id, value=1000=2×500 server-verified, fbp, IP, UA, order_id); admin approve → Purchase (hashed buyer identity, order_id); browser: window.fbq loads (fbevents.js 200), SPA navs = 1 PageView each, ViewContent on product view
+- tsc: zero errors in all new/modified meta files (2 pre-existing seller-null in approve route at shifted lines, verified identical in HEAD)
+
+Stage Summary:
+- commit pushed: full Meta Pixel + CAPI pipeline with dedup. USER SETUP: (1) Events Manager → create/get Pixel ID; (2) Vercel env: NEXT_PUBLIC_META_PIXEL_ID + META_PIXEL_ID (digits) + META_CAPI_ACCESS_TOKEN (system-user token, ads_management); (3) redeploy; (4) Events Manager → Test Events (optional META_CAPI_TEST_EVENT_CODE) to verify traffic; ad campaigns can then optimize for Purchase/InitiateCheckout with CAPI-backed reliability
