@@ -604,3 +604,20 @@ Stage Summary:
 - commit 5749f56 pushed → Vercel auto-deploys; browser pixel (PageView / ViewContent / InitiateCheckout) goes LIVE with zero env setup
 - USER TODO: only META_CAPI_ACCESS_TOKEN still needed in Vercel for server events (Purchase / CompleteRegistration / InitiateCheckout CAPI pair); verify in Events Manager → Test Events after deploy
 - Exactly ONE pixel: single fbq('init') in meta-pixel.tsx (contract documented in code)
+
+---
+Task ID: 20
+Agent: main
+Task: Diagnose "Meta Test Events kaj korche na" — user pasted the official Meta Pixel snippet
+
+Work Log:
+- Read meta-capi.ts / meta-pixel.tsx / proxy.ts — confirmed exactly ONE fbq('init') (meta-pixel.tsx:38); CSP allows connect.facebook.net (script-src) + www.facebook.com (connect-src)
+- curl prod → 429 Vercel Security Checkpoint (x-vercel-mitigated: challenge); headless browser could NOT pass the challenge (2 sessions, 60s wait) — prod HTML not verifiable from sandbox; r.jina.ai proxy also blocked (IP reputation)
+- Local dev verification PASSED: served HTML contains fbq('init', '966267646515236') + inline fbq('track','PageView') + fbevents.js loader + noscript fallback with correct nonce/CSP
+- Timeline analysis: pixel activation (5749f56) pushed 2026-09-19 15:34:36 UTC (21:34 BST); user's report came ~15:50 UTC — user almost certainly tested before the deploy propagated; ALL pre-5749f56 deploys had no active pixel (env-only ID, never set on Vercel)
+- No code changes needed — nothing was broken in the repo
+
+Stage Summary:
+- Code verified correct: single pixel, correct baked ID, inline initial PageView, CSP clean
+- Advised user: hard refresh → view-source check for 966267646515236 → disable adblock / use incognito or phone → keep Test Events tab open (real-time only) → Meta Pixel Helper extension for definitive proof
+- Warned user NOT to paste the official snippet manually (would create a forbidden second pixel)
