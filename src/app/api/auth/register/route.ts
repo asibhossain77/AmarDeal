@@ -5,6 +5,7 @@ import { sendOtpEmail, emailVerificationOtpEmail } from '@/lib/email'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
 import { sendMetaEvent, metaUserDataFromRequest, metaHashIdentity } from '@/lib/meta-capi'
+import { notifyAdmins } from '@/lib/push'
 
 const REFERRAL_COOKIE_NAME = 'midman_ref'
 
@@ -85,6 +86,15 @@ export async function POST(req: NextRequest) {
         ...(referredBy ? { referredBy } : {}),
       },
     })
+
+    // Notify admins about the new user registration (fire-and-forget)
+    notifyAdmins({
+      type: 'system_update',
+      title: 'নতুন ইউজার রেজিস্ট্রেশন',
+      message: `${user.name || 'একজন ইউজার'} (${user.phone || user.email}) নতুন একাউন্ট খুলেছেন।`,
+      relatedType: 'user',
+      relatedId: user.id,
+    }).catch(() => {})
 
     // Clear referral cookie after successful registration
     if (referredBy) {

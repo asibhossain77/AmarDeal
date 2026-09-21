@@ -1,38 +1,34 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/deal-guard'
 
+/**
+ * Mark ONE notification as read.
+ * SECURITY: session-authenticated; the notification must belong to the
+ * session user — a user can never mutate another user's notification.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const guard = await requireAuth(req)
+    if (!guard.ok) return guard.response
     const { id } = await params
 
-    await db.notification.update({
+    const existing = await db.notification.findUnique({
       where: { id },
-      data: { read: true },
+      // Explicit select — keeps working on pre-migration databases without
+      // the relatedType/relatedId columns (no P2022).
+      select: { id: true, userId: true, read: true },
     })
-
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'আপডেট করতে সমস্যা' }, { status: 500 })
-  }
-}
-
-// Mark all as read
-export async function PUT(
-  req: NextRequest,
-) {
-  try {
-    const { userId } = await req.json()
-    if (!userId) {
-      return NextResponse.json({ error: 'userId প্রয়োজন' }, { status: 400 })
+    if (!existing || existing.userId !== guard.userId) {
+      return NextResponse.json({ error: 'নোটিফিকেশন পাওয়া যায়নি' }, { status: 404 })
     }
 
-    await db.notification.updateMany({
-      where: { userId, read: false },
-      data: { read: true },
-    })
+    if (!existing.read) {
+      await db.notification.update({ where: { id }, data: { read: true } })
+    }
 
     return NextResponse.json({ success: true })
   } catch {

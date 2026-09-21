@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { ensureVerificationColumn, generateVerificationCode, withVerificationColumn } from '@/lib/seller-verify'
+import { notifyAdmins } from '@/lib/push'
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +69,14 @@ export async function POST(req: NextRequest) {
         status: 'pending',
       },
     })
+
+    // Notify all admins about the new seller request (fire-and-forget)
+    notifyAdmins({
+      type: 'seller_request',
+      title: 'নতুন সেলার রিকোয়েস্ট',
+      message: `${user.name || 'একজন ইউজার'} সেলার রিকোয়েস্ট জমা দিয়েছেন।`,
+      relatedType: 'seller_application',
+    }).catch(() => {})
 
     // SECURITY: the code is NEVER returned to the user and never appears in any
     // user-facing response. Only the admin can see it in the Admin Panel and

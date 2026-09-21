@@ -131,15 +131,58 @@ export interface NotifyOptions {
   type: string
   title: string
   message: string
+  relatedType?: string
+  relatedId?: string
   pushUrl?: string
 }
 
+/**
+ * Create a notification row. Tries WITH the relatedType/relatedId columns
+ * first; if the production database hasn't received the related-columns
+ * migration yet (P2022 column not found), retries without them so
+ * notifications never silently disappear.
+ */
+async function createNotificationRow(data: {
+  userId: string
+  type: string
+  title: string
+  message: string
+  dealId?: string
+  relatedType?: string
+  relatedId?: string
+}): Promise<void> {
+  try {
+    await db.notification.create({ data })
+  } catch (err: any) {
+    // P2022 = column does not exist (pre-migration database) — retry minimal
+    if (err?.code === 'P2022') {
+      await db.notification.create({
+        data: {
+          userId: data.userId,
+          type: data.type,
+          title: data.title,
+          message: data.message,
+          dealId: data.dealId,
+        },
+      })
+      return
+    }
+    throw err
+  }
+}
+
 export async function notifyUser(opts: NotifyOptions): Promise<void> {
-  const { userId, dealId, type, title, message, pushUrl } = opts
+  const { userId, dealId, type, title, message, relatedType, relatedId, pushUrl } = opts
 
   // 1. Save to DB
-  await db.notification.create({
-    data: { userId, type, title, message, dealId },
+  await createNotificationRow({
+    userId,
+    type,
+    title,
+    message,
+    dealId,
+    relatedType: relatedType ?? (dealId ? 'deal' : undefined),
+    relatedId: relatedId ?? (dealId ? dealId : undefined),
   }).catch(() => {})
 
   // 2. Send WebSocket notification
@@ -168,7 +211,35 @@ export async function notifyUser(opts: NotifyOptions): Promise<void> {
  * Notify admins — same unified function.
  */
 export async function notifyAdmins(opts: Omit<NotifyOptions, 'userId'>): Promise<void> {
-  // WebSocket to admin room
+  // 1. Persist a DB notification for EVERY admin so the admin bell/list has
+  //    history. (Previously only WebSocket + push were sent — admin
+  //    notification lists stayed empty.) Admin-only visibility is guaranteed
+  //    because rows are created only for users that have an Admin record.
+  try {
+    const admins = await db.user.findMany({
+      where: { admin: { isNot: null } },
+      select: { id: true },
+    })
+    if (admins.length > 0) {
+      await Promise.allSettled(
+        admins.map((a) =>
+          createNotificationRow({
+            userId: a.id,
+            type: opts.type,
+            title: opts.title,
+            message: opts.message,
+            dealId: opts.dealId,
+            relatedType: opts.relatedType ?? (opts.dealId ? 'deal' : undefined),
+            relatedId: opts.relatedId ?? (opts.dealId ? opts.dealId : undefined),
+          })
+        )
+      )
+    }
+  } catch (err) {
+    console.error('[PUSH] Error persisting admin notifications:', err)
+  }
+
+  // 2. WebSocket to admin room
   try {
     await fetch('http://localhost:3004/notify-admin', {
       method: 'POST',
@@ -185,7 +256,7 @@ export async function notifyAdmins(opts: Omit<NotifyOptions, 'userId'>): Promise
     })
   } catch { /* ws not available */ }
 
-  // Push to all admins
+  // 3. Push to all admins
   await sendPushToAdmins({
     title: opts.title,
     body: opts.message,

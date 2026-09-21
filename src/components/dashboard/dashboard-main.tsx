@@ -27,6 +27,7 @@ import { AffiliatePanel } from './affiliate-panel';
 import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
+import { RecentNotifications } from './recent-notifications';
 import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
 import { WithdrawPanel } from '@/components/seller/withdraw-panel';
 import { AuctionsPanel } from '@/components/seller/auctions-panel';
@@ -515,6 +516,9 @@ function OverviewPanel() {
           )}
         </motion.div>
       </div>
+
+      {/* Recent Notifications (latest 5) */}
+      <RecentNotifications />
     </>
   );
 }

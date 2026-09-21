@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, disputeRaisedEmail, adminDisputeEmail } from '@/lib/email'
 import { sendWhatsApp, disputeRaisedWa, adminDisputeWa } from '@/lib/whatsapp'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { notifyAdmins } from '@/lib/push'
 
 export async function POST(
   req: NextRequest,
@@ -71,6 +72,14 @@ export async function POST(
         })
       } catch { /* silent */ }
     }
+
+    // Notify admins about the dispute (DB + WS + push)
+    await notifyAdmins({
+      dealId: deal.id,
+      type: 'dispute_opened',
+      title: 'নতুন বিরোধ',
+      message: `ডিল #${deal.id}-এ ("${deal.title}") ক্রেতা একটি বিরোধ দায়ের করেছেন।`,
+    }).catch(() => {})
 
     // Email: dispute raised — notify seller
     if (deal.seller?.email) {

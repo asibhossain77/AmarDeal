@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess, requireAuth } from '@/lib/deal-guard'
+import { notifyUser } from '@/lib/push'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -80,6 +81,19 @@ export async function POST(
       text: message.text,
       createdAt: message.createdAt.toISOString(),
     })
+
+    // Notify the other deal participant about the new message (fire-and-forget)
+    const otherPartyId = deal.buyerId === guard.userId ? deal.sellerId : deal.buyerId
+    if (otherPartyId) {
+      notifyUser({
+        userId: otherPartyId,
+        dealId: id,
+        type: 'new_message',
+        title: 'নতুন মেসেজ',
+        message: `ডিল #${id}-এ আপনার একটি নতুন মেসেজ আছে।`,
+        pushUrl: `/dashboard/deals/${id}`,
+      }).catch(() => {})
+    }
 
     // Auto-insert system message on first user chat (once per deal)
     const systemText = 'অ্যাডমিন ডাকতে নিচের 🔴 লাল বাটনে ক্লিক করুন — "অ্যাডমিন ডাকুন"।'

@@ -167,6 +167,16 @@ export async function POST(req: NextRequest) {
             message: `মার্কেটপ্লেসে নতুন অর্ডার: ${deal.title} (৳${deal.amount.toLocaleString('en')})`,
           }).catch(() => {})
 
+          // Order confirmation for the buyer (creator)
+          await notifyUser({
+            userId: deal.creatorId,
+            dealId: deal.id,
+            type: 'deal_created',
+            title: 'অর্ডার সফল হয়েছে',
+            message: `আপনার অর্ডার (ডিল #${deal.id}) সফলভাবে তৈরি হয়েছে।`,
+            pushUrl: '/dashboard',
+          }).catch(() => {})
+
           if (sellerUser.email) {
             sendEmail(sellerUser.email, () => dealCreatedEmail(
               sellerUser.name || 'ইউজার',
@@ -285,6 +295,18 @@ export async function POST(req: NextRequest) {
           title: 'নতুন ডিল',
           message: `${deal.creator?.name || 'একজন ইউজার'} একটি নতুন ডিল তৈরি করেছে: ${deal.title} (৳${deal.amount.toLocaleString('en')})`,
         }).catch(() => {})
+
+        // Notify the creator as well ("Your deal #ID has been created successfully")
+        if (deal.creator?.id) {
+          await notifyUser({
+            userId: deal.creator.id,
+            dealId: deal.id,
+            type: 'deal_created',
+            title: 'নতুন ডিল তৈরি হয়েছে',
+            message: `আপনার ডিল #${deal.id} সফলভাবে তৈরি হয়েছে।`,
+            pushUrl: '/dashboard',
+          }).catch(() => {})
+        }
 
         // Email + WhatsApp to counterparty
         if (counterparty.email) {

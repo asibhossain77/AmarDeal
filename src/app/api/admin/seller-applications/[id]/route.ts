@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
 import { ensureVerificationColumn, withVerificationColumn } from '@/lib/seller-verify'
+import { notifyUser } from '@/lib/push'
 
 export async function PATCH(
   req: NextRequest,
@@ -67,6 +68,30 @@ export async function PATCH(
         where: { id: application.userId },
         data: { isSeller: true, whatsappNumber: application.whatsappNumber || null },
       })
+
+      // Notify the applicant that their seller request was approved
+      notifyUser({
+        userId: application.userId,
+        type: 'seller_approved',
+        title: 'সেলার রিকোয়েস্ট অনুমোদিত',
+        message: 'আপনার সেলার রিকোয়েস্ট অনুমোদিত হয়েছে। এখন আপনি পণ্য বিক্রি করতে পারবেন।',
+        relatedType: 'seller_application',
+        relatedId: application.id,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
+    } else if (status === 'rejected') {
+      // Notify the applicant that their seller request was rejected
+      notifyUser({
+        userId: application.userId,
+        type: 'seller_rejected',
+        title: 'সেলার রিকোয়েস্ট বাতিল',
+        message: rejectionReason
+          ? `আপনার সেলার রিকোয়েস্ট বাতিল করা হয়েছে। কারণ: ${rejectionReason}`
+          : 'আপনার সেলার রিকোয়েস্ট বাতিল করা হয়েছে।',
+        relatedType: 'seller_application',
+        relatedId: application.id,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
     } else if (status === 'disabled') {
       await db.user.update({
         where: { id: application.userId },

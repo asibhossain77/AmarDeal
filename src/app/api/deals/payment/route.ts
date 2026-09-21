@@ -92,17 +92,17 @@ export async function POST(req: NextRequest) {
       await notifyUser({
         userId: deal.sellerId,
         dealId: deal.id,
-        type: 'payment_verified',
+        type: 'payment_submitted',
         title: 'পেমেন্ট জমা হয়েছে',
-        message: `"${deal.title}" ডিলে পেমেন্ট জমা হয়েছে। অ্যাডমিন ভেরিফিকেশনের অপেক্ষায়।`,
+        message: `ডিল #${deal.id}-এ ক্রেতা পেমেন্ট জমা দিয়েছেন। অ্যাডমিন ভেরিফিকেশনের অপেক্ষায়।`,
         pushUrl: '/dashboard',
       }).catch(() => {})
     }
     await notifyAdmins({
       dealId: deal.id,
-      type: 'payment_pending',
+      type: 'payment_submitted',
       title: 'নতুন পেমেন্ট',
-      message: `"${deal.title}" ডিলে ৳${deal.amount?.toLocaleString('en')} পেমেন্ট জমা হয়েছে। ভেরিফিকেশন প্রয়োজন।`,
+      message: `ডিল #${deal.id}-এ ৳${deal.amount?.toLocaleString('en')} পেমেন্ট জমা হয়েছে। ভেরিফিকেশন প্রয়োজন।`,
     }).catch(() => {})
 
     return NextResponse.json({

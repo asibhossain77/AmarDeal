@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, Menu, Sun, Moon, Globe, Home, ShoppingCart } from 'lucide-react';
 import { SellerApplyButton } from './seller-apply-dialog';
+import { NotificationBell } from '@/components/shared/notification-bell';
 
 const emptySubscribe = () => () => {};
 
@@ -165,6 +166,9 @@ export function DashboardView() {
             >
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
+
+            {/* Notification bell with unread badge */}
+            <NotificationBell />
 
             <button
               onClick={() => setView('landing')}
