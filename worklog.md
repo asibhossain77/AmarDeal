@@ -621,3 +621,24 @@ Stage Summary:
 - Code verified correct: single pixel, correct baked ID, inline initial PageView, CSP clean
 - Advised user: hard refresh → view-source check for 966267646515236 → disable adblock / use incognito or phone → keep Test Events tab open (real-time only) → Meta Pixel Helper extension for definitive proof
 - Warned user NOT to paste the official snippet manually (would create a forbidden second pixel)
+
+---
+Task ID: 21
+Agent: main
+Task: User sent fresh Turso token + DB URL — verify, sync prod schema for notification system, run E2E
+
+Work Log:
+- Context: f2f8039 (complete notification system) was already pushed+deployed by the previous session tail; prod Turso Notification table was MISSING relatedType/relatedId + composite index → live site P2022 on every notification query
+- Verified user's new token: HTTP 200 SELECT 1 against libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io (rw, exp 2026-10-21)
+- migrate-notification-related.ts had 2 fatal parsing bugs (r.result instead of results[].response.result; no {type,value} cell unwrap) → script had NEVER run successfully on prod; fixed both (firstCol helper)
+- Ran fixed migration on PROD: ALTER + relatedType + relatedId, CREATE INDEX Notification_userId_read_idx — verified; 24 existing rows intact; PushSubscription columns match schema
+- Persisted creds to /home/z/my-project/.env (outside app dir); created amardeal/.env (DATABASE_URL=file:/home/z/my-project/amardeal/db/custom.db, gitignored)
+- bun install: restored incomplete node_modules after sandbox reset (@aws-sdk/s3-request-presigner was missing → r2.ts 500s)
+- Sandbox dev-server instability root-caused: Turbopack panic from duplicate-lockfile workspace-root inference (outer bun.lock) + npm|tee wrapper + per-toolcall shell reaping. Working recipe: mv outer bun.lock aside + setsid ./node_modules/.bin/next dev with pinned DATABASE_URL
+- E2E scripts/e2e-notifications.ts: 18/18 PASSED (401 unauth, IDOR 404, deal_created→creator+admin, new_message→counterparty, deal_completed→seller, non-buyer complete 403, disjoint buyer/admin lists, count=1 mode, mark single/all read); seller_request flow skipped (test buyer already seller — covered when suite authored)
+- Reverted db/custom.db to HEAD (E2E artifacts cleaned); outer bun.lock kept as bun.lock.sandbox-backup (restore NOT needed — it re-triggers the Turbopack bug)
+
+Stage Summary:
+- PROD SCHEMA FIXED — deployed f2f8039 now matches prod DB; notifications live once Vercel token is current
+- USER TODO: ensure Vercel TURSO_AUTH_TOKEN = the token sent this session (+ TURSO_DATABASE_URL=libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io); redeploy if changed
+- Optional: NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT on Vercel to activate web push (gracefully skipped without)

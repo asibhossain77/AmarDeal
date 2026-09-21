@@ -54,7 +54,19 @@ async function pipeline(stmts: { sql: string; args?: any[] }[]) {
     throw new Error(`pipeline HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`)
   }
   const json = await res.json()
-  return json.results.map((r: any) => r.result)
+  // Turso HRAI shape: results[].response.result (guard against error entries)
+  return json.results.map((r: any) => r?.response?.result ?? r?.result)
+}
+
+/** Unwrap HRAI cells ({type, value} objects) into plain values. */
+function firstCol(result: any): string[] {
+  const rows: any[] = result?.rows || []
+  return rows
+    .map((row: any) => (Array.isArray(row) ? row[0] : row))
+    .map((cell: any) =>
+      cell && typeof cell === 'object' && 'value' in cell ? cell.value : cell
+    )
+    .filter((v) => v !== null && v !== undefined)
 }
 
 async function main() {
@@ -64,7 +76,7 @@ async function main() {
   const [colsRes] = await pipeline([
     { sql: "SELECT name FROM pragma_table_info('Notification')" },
   ])
-  const cols: string[] = colsRes?.rows?.map((r: any) => r.name) || []
+  const cols: string[] = firstCol(colsRes)
   console.log('existing columns:', cols.join(', '))
   if (cols.length === 0) {
     console.error('❌ Notification table not found in production db!')
@@ -78,7 +90,7 @@ async function main() {
   const [idxRes] = await pipeline([
     { sql: "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='Notification'" },
   ])
-  const idxNames: string[] = idxRes?.rows?.map((r: any) => r.name) || []
+  const idxNames: string[] = firstCol(idxRes)
   if (!idxNames.includes('Notification_userId_read_idx')) {
     statements.push({ sql: `CREATE INDEX IF NOT EXISTS "Notification_userId_read_idx" ON "Notification"("userId", "read")` })
   }
@@ -97,7 +109,7 @@ async function main() {
 
   // 3. Verify
   const [vCols] = await pipeline([{ sql: "SELECT name FROM pragma_table_info('Notification')" }])
-  const finalCols: string[] = vCols?.rows?.map((r: any) => r.name) || []
+  const finalCols: string[] = firstCol(vCols)
   console.log('final columns:', finalCols.join(', '))
   if (!finalCols.includes('relatedType') || !finalCols.includes('relatedId')) {
     console.error('❌ Verification FAILED — columns missing after migration')
