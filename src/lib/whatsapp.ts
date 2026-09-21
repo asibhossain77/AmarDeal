@@ -1,3 +1,5 @@
+import { keepAlive } from '@/lib/server-keepalive';
+
 /* ═══════════════════════════════════════════════════════════════
    WhatsApp Cloud API Notification System — মিডম্যান
    Same pattern as email.ts: PlatformSetting DB values,
@@ -331,7 +333,7 @@ function resolvePayload(input: WaInput): WaPayload {
  * @param input - Message payload (string or function returning it)
  * @param templateType - Type key for disable-check (e.g. 'deal_created')
  */
-export async function sendWhatsApp(to: string, input: WaInput, templateType?: string): Promise<void> {
+async function sendWhatsAppImpl(to: string, input: WaInput, templateType?: string): Promise<void> {
   // Check if template is disabled
   if (templateType) {
     const enabled = await isWaTemplateEnabled(templateType);
@@ -390,6 +392,17 @@ export async function sendWhatsApp(to: string, input: WaInput, templateType?: st
   } catch (err) {
     console.error(`[WA ERROR] → ${recipientPhone}:`, err);
   }
+}
+
+/**
+ * Vercel-safe send: the promise is registered with after() (see
+ * server-keepalive.ts) so fire-and-forget call sites (`sendWhatsApp(...).catch()`
+ * without await) complete even after the route returns its response.
+ */
+export function sendWhatsApp(to: string, input: WaInput, templateType?: string): Promise<void> {
+  const p = sendWhatsAppImpl(to, input, templateType);
+  keepAlive(p);
+  return p;
 }
 
 /**

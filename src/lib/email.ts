@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { keepAlive } from '@/lib/server-keepalive';
 
 /* ═══════════════════════════════════════════════════════════════
    DEFAULTS — overridden by PlatformSetting DB values
@@ -581,7 +582,7 @@ export async function isTemplateEnabled(type: string): Promise<boolean> {
   return !disabled.has(type);
 }
 
-export async function sendEmail(to: string, input: EmailInput, templateType?: string): Promise<void> {
+async function sendEmailImpl(to: string, input: EmailInput, templateType?: string): Promise<void> {
   // Check if template is disabled
   if (templateType) {
     const enabled = await isTemplateEnabled(templateType);
@@ -606,10 +607,22 @@ export async function sendEmail(to: string, input: EmailInput, templateType?: st
 }
 
 /**
+ * Vercel-safe send: the promise is registered with after() (see
+ * server-keepalive.ts) so fire-and-forget call sites (`sendEmail(...).catch()`
+ * without await) complete even after the route returns its response.
+ * Returned promise semantics are unchanged — callers' .catch still works.
+ */
+export function sendEmail(to: string, input: EmailInput, templateType?: string): Promise<void> {
+  const p = sendEmailImpl(to, input, templateType);
+  keepAlive(p);
+  return p;
+}
+
+/**
  * Fast-track email for OTP/critical emails — skips disabled-template DB check
  * and uses env vars directly to avoid DB round-trip on cold start.
  */
-export async function sendOtpEmail(to: string, input: EmailInput): Promise<void> {
+async function sendOtpEmailImpl(to: string, input: EmailInput): Promise<void> {
   // Use env vars directly — skip DB query for settings
   const smtpKey = process.env.BREVO_SMTP_KEY;
   if (!smtpKey) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
@@ -628,6 +641,13 @@ export async function sendOtpEmail(to: string, input: EmailInput): Promise<void>
     html: payload.html,
   });
   console.log(`[OTP EMAIL SENT] → ${to}: ${payload.subject}`);
+}
+
+/** Vercel-safe OTP send — see sendEmail wrapper note above. */
+export function sendOtpEmail(to: string, input: EmailInput): Promise<void> {
+  const p = sendOtpEmailImpl(to, input);
+  keepAlive(p);
+  return p;
 }
 
 export function fireEmails(emails: Array<{ to: string; payload: EmailInput; type?: string }>) {
