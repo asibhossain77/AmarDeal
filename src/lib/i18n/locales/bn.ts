@@ -116,12 +116,12 @@ export const bn = {
   'hero2.amountCaption': 'উদাহরণস্বরূপ এসক্রো পরিমাণ',
 
   // ── Footer ──
-  'footer.defaultDescription': 'বাংলাদেশের সবচেয়ে বিশ্বস্ত এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করি যাতে আপনি নিশ্চিন্তে কেনাবেচা করতে পারেন।',
+  'footer.defaultDescription': 'বাংলাদেশের একটি নিরাপদ এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করতে সাহায্য করি।',
   'footer.defaultMadeIn': 'বাংলাদেশে তৈরি',
   'footer.cat.services': 'সেবা',
   'footer.cat.company': 'কোম্পানি',
   'footer.allRightsReserved': 'সর্বস্বত্ব সংরক্ষিত।',
-  'footer.payments': 'নিরাপদ পেমেন্ট মাধ্যম',
+  'footer.payments': 'নিরাপদ পেমেন্টের মাধ্যম',
   'admin.settings.gatewaysTitle': 'পেমেন্ট গেটওয়ে আইকন',
   'admin.settings.gatewaysDesc': 'ফুটারে দেখানো পেমেন্ট ব্যাজ — আপলোড না করলে ডিফল্ট আইকন ব্যবহার হবে',
   'admin.settings.gatewayAdd': 'নতুন গেটওয়ে',
