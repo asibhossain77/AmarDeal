@@ -1,12 +1,15 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { pruneUserNotifications } from '@/lib/push'
 
 /**
  * GET /api/notifications
  *   ?count=1   → lightweight poll: returns ONLY { unreadCount }
- *   ?limit=N   → number of notifications (default 50, max 100)
+ *   ?limit=N   → number of notifications (default 100 = retention cap)
  * Always scoped to the authenticated session user.
+ * Retention: only the newest 100 notifications per user are kept — older
+ * rows are deleted from the database whenever the list is loaded.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -24,8 +27,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ unreadCount })
     }
 
-    const limit = Math.min(Math.max(Number(searchParams.get('limit')) || 50, 1), 100)
+    const limit = Math.min(Math.max(Number(searchParams.get('limit')) || 100, 1), 100)
     const offset = Math.max(Number(searchParams.get('offset')) || 0, 0)
+
+    // Retention: keep newest 100 per user, delete older rows (self-healing)
+    await pruneUserNotifications(userId)
 
     // Explicit select WITHOUT the new relatedType/relatedId columns so this
     // endpoint keeps working on databases that haven't received the

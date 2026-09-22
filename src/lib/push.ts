@@ -142,6 +142,29 @@ export interface NotifyOptions {
  * migration yet (P2022 column not found), retries without them so
  * notifications never silently disappear.
  */
+/**
+ * Retention policy — keep only the NEWEST 100 notifications per user and
+ * delete everything older from the database. Called best-effort after every
+ * new notification and whenever the notifications list is fetched.
+ */
+export async function pruneUserNotifications(userId: string): Promise<void> {
+  try {
+    const keep = await db.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: { id: true },
+    })
+    // Nothing to prune while the user is at/below the retention limit
+    if (keep.length < 100) return
+    await db.notification.deleteMany({
+      where: { userId, id: { notIn: keep.map((n) => n.id) } },
+    })
+  } catch {
+    // Retention must never break the calling flow
+  }
+}
+
 async function createNotificationRow(data: {
   userId: string
   type: string
@@ -169,6 +192,8 @@ async function createNotificationRow(data: {
     }
     throw err
   }
+  // Retention — trim to newest 100 per user (best-effort, non-blocking)
+  pruneUserNotifications(data.userId).catch(() => {})
 }
 
 export async function notifyUser(opts: NotifyOptions): Promise<void> {
