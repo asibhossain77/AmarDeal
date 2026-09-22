@@ -678,3 +678,23 @@ Work Log:
 Stage Summary:
 - ARD discovery manifests live at 3 paths, valid per official schema; pushed to origin/main; deploy via Vercel auto-deploy
 - USER ACTION NEEDED: check Vercel Firewall / Attack Challenge Mode — 429 challenge pages to agents/audits must be disabled or auditors will still see HTML
+
+---
+Task ID: 23
+Agent: Super Z (main)
+Task: Footer payment gateway badges (bKash + Nagad default) + admin settings management
+
+Work Log:
+- User request: footer-e payment gateway icons (default bKash + Nagad), updatable from admin settings; uploaded logos -> public/payment/bkash.png (256px) + nagad.png
+- New src/lib/payment-gateways.ts: PaymentGateway type, DEFAULT_GATEWAYS, BUILTIN_ICONS, parseGatewayList (never-throw JSON validation), resolveGatewayIcon; storage = platformSetting key payment_gateway_icons (JSON array, no schema migration)
+- Footer: badge strip (label + white rounded chips, dark-mode safe) between link columns and separator; renders enabled gateways with resolved icons
+- Public /api/site-settings returns paymentGateways; useSiteSettings interface extended + normalize() for old localStorage caches
+- Admin: Website Settings panel got 'পেমেন্ট গেটওয়ে আইকন' card — per-gateway icon upload (new /api/admin/upload-payment-icon, R2 payment-icons prefix, deletes replaced object), name edit, enable/disable Switch, reorder arrows, add custom gateway (e.g. Rocket), delete, save with validation (custom gateway without icon blocked)
+- /api/admin/settings: added payment_gateway_icons key to GET + upsert whitelist
+- bn/en i18n: footer.payments + admin.settings.gateways* keys
+- Browser-verified (agent-browser): footer shows both badges; disabling nagad in DB hides it; admin card renders rows with icon previews + toggles; unauth admin POST -> 401
+- Sandbox reset rolled local repo to old base mid-task; re-rebased payment-gateways commit onto origin/main (conflict: lucide imports only)
+
+Stage Summary:
+- Commit 868481d pushed to origin/main; Vercel auto-deploys
+- Footer now shows bKash + Nagad badges by default; admin can upload/replace/reorder/toggle/add gateways without code changes
