@@ -1,0 +1,206 @@
+{
+  "entries": [
+    {
+      "identifier": "urn:air:midman.bd:site:home",
+      "displayName": "Midman — Escrow Service for Bangladesh",
+      "type": "text/html",
+      "url": "https://midman.bd/",
+      "description": "Midman is Bangladesh's escrow and P2P transaction platform. Money is held securely until both buyer and seller confirm the deal, protecting both sides of online transactions with bKash, Nagad and Rocket payment support.",
+      "tags": [
+        "escrow",
+        "p2p",
+        "bangladesh",
+        "secure payments",
+        "marketplace"
+      ],
+      "representativeQueries": [
+        "what is Midman and how does escrow work in Bangladesh?",
+        "is there a safe way to get paid when selling online in Bangladesh?",
+        "how do I complete a secure P2P transaction with a stranger?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:llms-txt",
+      "displayName": "Midman AI Resource Guide (llms.txt)",
+      "type": "text/plain",
+      "url": "https://midman.bd/llms.txt",
+      "description": "Machine-readable llms.txt guide listing every Midman resource relevant to AI agents and assistants: pages, features, fees, security model and support channels, in a compact plain-text format.",
+      "tags": [
+        "llms-txt",
+        "ai-guide",
+        "documentation",
+        "agent-resources"
+      ],
+      "representativeQueries": [
+        "give me a machine-readable summary of the Midman escrow platform",
+        "which Midman pages should an AI assistant read to answer user questions?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:docs:how-it-works",
+      "displayName": "How Midman Escrow Works",
+      "type": "text/html",
+      "url": "https://midman.bd/how-it-works",
+      "description": "Step-by-step guide to the Midman escrow flow: buyer and seller agree on a deal, the buyer pays into escrow, the seller delivers, funds are released after confirmation, and disputes are handled by admin arbitration.",
+      "tags": [
+        "escrow",
+        "process",
+        "buyer protection",
+        "seller protection"
+      ],
+      "representativeQueries": [
+        "what are the steps of an escrow transaction on Midman?",
+        "when does the seller receive the money on Midman?",
+        "what happens if the buyer never confirms delivery?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:docs:fees",
+      "displayName": "Midman Escrow Fees & Pricing",
+      "type": "text/html",
+      "url": "https://midman.bd/fees",
+      "description": "Complete fee structure for Midman escrow transactions: service charges by deal amount, payment method costs for bKash, Nagad and Rocket, and payout timing, with worked examples.",
+      "tags": [
+        "fees",
+        "pricing",
+        "escrow charges",
+        "bKash",
+        "Nagad"
+      ],
+      "representativeQueries": [
+        "how much does Midman charge in escrow fees?",
+        "what are the transaction costs for bKash payments on Midman?",
+        "is there a minimum fee for small deals?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:docs:security",
+      "displayName": "Midman Security & Data Protection",
+      "type": "text/html",
+      "url": "https://midman.bd/security",
+      "description": "How Midman protects funds and data: escrow account controls, verification requirements, fraud detection, dispute resolution and the measures taken to keep payment credentials private.",
+      "tags": [
+        "security",
+        "fraud prevention",
+        "data protection",
+        "escrow safety"
+      ],
+      "representativeQueries": [
+        "is Midman safe to use for large transactions?",
+        "how does Midman prevent scams and fraud?",
+        "what security measures protect my money in escrow?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:docs:faq",
+      "displayName": "Midman Frequently Asked Questions",
+      "type": "text/html",
+      "url": "https://midman.bd/faq",
+      "description": "Answers to the most common questions about Midman escrow: account setup, deal creation, payment methods, delivery confirmation, refunds, disputes, withdrawals and seller requirements.",
+      "tags": [
+        "faq",
+        "support",
+        "escrow questions"
+      ],
+      "representativeQueries": [
+        "how do I create my first deal on Midman?",
+        "can I get a refund through Midman escrow?",
+        "how long do escrow withdrawals take?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:marketplace",
+      "displayName": "Midman Marketplace",
+      "type": "text/html",
+      "url": "https://midman.bd/marketplace",
+      "description": "Browse products and services listed on the Midman marketplace, where every purchase is protected by escrow until the buyer confirms delivery.",
+      "tags": [
+        "marketplace",
+        "products",
+        "escrow shopping",
+        "bangladesh"
+      ],
+      "representativeQueries": [
+        "what can I buy on the Midman marketplace?",
+        "show me escrow-protected listings in Bangladesh"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:blog",
+      "displayName": "Midman Blog & Updates",
+      "type": "text/html",
+      "url": "https://midman.bd/blog",
+      "description": "Announcements, product updates, safety guides and news from the Midman escrow team, including tips for safe online trading in Bangladesh.",
+      "tags": [
+        "blog",
+        "updates",
+        "news",
+        "trading tips"
+      ],
+      "representativeQueries": [
+        "what new features has Midman released recently?",
+        "where can I read Midman safety guides?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:about",
+      "displayName": "About Midman",
+      "type": "text/html",
+      "url": "https://midman.bd/about",
+      "description": "Background and mission of Midman: why escrow matters for online trade in Bangladesh, who builds the platform, and how the buyer and seller protection model works.",
+      "tags": [
+        "about",
+        "company",
+        "mission"
+      ],
+      "representativeQueries": [
+        "who operates the Midman escrow platform?",
+        "what is Midman's mission for online trade in Bangladesh?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:contact",
+      "displayName": "Contact Midman Support",
+      "type": "text/html",
+      "url": "https://midman.bd/contact",
+      "description": "Contact channels for Midman customer support, dispute help, seller onboarding and partnership inquiries.",
+      "tags": [
+        "contact",
+        "support",
+        "customer service"
+      ],
+      "representativeQueries": [
+        "how do I contact Midman support?",
+        "where do I report a scam attempt to Midman?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    },
+    {
+      "identifier": "urn:air:midman.bd:site:terms",
+      "displayName": "Midman Terms & Privacy",
+      "type": "text/html",
+      "url": "https://midman.bd/terms",
+      "description": "Terms of service and privacy policy for the Midman escrow platform: user obligations, escrow agreement, prohibited goods, and how personal and transaction data is collected and stored.",
+      "tags": [
+        "terms",
+        "privacy",
+        "legal",
+        "policy"
+      ],
+      "representativeQueries": [
+        "what are the rules for using Midman escrow?",
+        "how does Midman handle my personal data?"
+      ],
+      "updatedAt": "2026-09-22T00:00:00+06:00"
+    }
+  ]
+}

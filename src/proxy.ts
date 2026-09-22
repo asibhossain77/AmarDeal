@@ -30,11 +30,13 @@ const SESSION_COOKIE = 'midman_session'
  */
 
 export const config = {
-  // Run on everything except true static assets. `cdn/(?!files/)` keeps the
-  // image proxy fast-path excluded EXCEPT for /cdn/files/* which must never
-  // be publicly proxied (paid digital files are not public content).
+  // Run on everything except true static assets and discovery manifests
+  // (ARD ai-catalog / ard.json must serve raw JSON to agents with zero
+  // overhead). `cdn/(?!files/)` keeps the image proxy fast-path excluded
+  // EXCEPT for /cdn/files/* which must never be publicly proxied (paid
+  // digital files are not public content).
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|uploads|cdn/(?!files/)).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|\\.well-known/|ai-catalog\\.json|ard\\.json|uploads|cdn/(?!files/)).*)',
   ],
 }
 

@@ -290,6 +290,8 @@ export default async function RootLayout({
         <meta name="geo.placename" content="Dhaka" />
         <meta name="language" content="bn-BD" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        {/* ARD (Agentic Resource Discovery) — spec §5.1: publishers emit rel="ard" */}
+        <link rel="ard" href="/.well-known/ard.json" />
         {/* JSON-LD: CSP script-src does NOT apply to application/ld+json
             (non-JS MIME type), so no nonce is needed here. */}
         <script

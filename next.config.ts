@@ -72,6 +72,17 @@ const nextConfig: NextConfig = {
         ...(process.env.NODE_ENV === 'development' && process.env.E2E_FAKE_S3
           ? [{ source: '/fake-s3/:path*', destination: 'http://127.0.0.1:3199/:path*' }]
           : []),
+        // ARD / ai-catalog discovery manifests (agenticresourcediscovery.org):
+        // static JSON lives in public/ard.json + public/ai-catalog.json — the
+        // App Router cannot serve dot-folders (src/app/.well-known) as routes.
+        {
+          source: '/.well-known/ard.json',
+          destination: '/ard.json',
+        },
+        {
+          source: '/.well-known/ai-catalog.json',
+          destination: '/ai-catalog.json',
+        },
       ],
       afterFiles: [],
       // SPA catch-all — only for paths with NO matching route (static OR

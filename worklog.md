@@ -658,3 +658,23 @@ Work Log:
 Stage Summary:
 - First OTP now completes right after the register response; duplicate-on-resend eliminated; ALL 55+ email/WhatsApp fire-and-forget sites (deal lifecycle, payouts, login notify, forgot-password) fixed by the same 3-file change
 - Pushed → Vercel auto-deploy; no env changes needed
+
+---
+Task ID: 22
+Agent: Super Z (main)
+Task: Fix "Agent discoverability — ai-catalog.json schema is invalid" audit error (Midman.bd)
+
+Work Log:
+- Diagnosed: no ai-catalog.json existed anywhere -> validator received Next.js HTML (404/SPA-fallback) -> "Unexpected token '<'" parse error
+- Identified spec: ARD = Agentic Resource Discovery (agenticresourcediscovery.org, Google/Microsoft 2026); fetched authoritative JSON Schema from ards-project/ard-spec (ard-entry.schema.json, Draft 2020-12)
+- Key spec facts: normative manifest path /.well-known/ard.json (entries[]); predecessor path /.well-known/ai-catalog.json (still probed by audits); entry requires identifier (URN urn:air:<publisher>:<ns>:<name>), displayName, type (IANA media type), exactly one of url/data; representativeQueries 2-5 SHOULD
+- Found extra risk: midman.bd currently returns HTTP 429 Vercel challenge HTML (x-vercel-challenge-token) to non-browser agents -> would ALSO break the audit; flagged to user (Vercel dashboard setting, not code)
+- Implemented src/lib/ard-catalog.ts: 11 entries (home, llms.txt, how-it-works, fees, security, faq, marketplace, blog, about, contact, terms) with URNs, descriptions, tags, representativeQueries
+- Learned App Router CANNOT serve src/app/.well-known dot-folder routes (dot dirs ignored by router; stale dev server on :3000 caused first false test) -> static public/ard.json + public/ai-catalog.json + beforeFiles rewrites in next.config.ts
+- Excluded discovery paths from proxy.ts matcher (kept remote's cdn/(?!files/) logic); added <link rel="ard"> to layout.tsx; Agentmap directive in robots.txt
+- Validated manifest against OFFICIAL schema with Ajv2020 + ajv-formats: MANIFEST VALID, all entries conformance-clean
+- Live local test (fresh dev server): all 4 paths (/.well-known/ard.json, /.well-known/ai-catalog.json, /ard.json, /ai-catalog.json) return 200 application/json with 11 entries; pages unaffected; <link rel="ard"> present in HTML
+
+Stage Summary:
+- ARD discovery manifests live at 3 paths, valid per official schema; pushed to origin/main; deploy via Vercel auto-deploy
+- USER ACTION NEEDED: check Vercel Firewall / Attack Challenge Mode — 429 challenge pages to agents/audits must be disabled or auditors will still see HTML
