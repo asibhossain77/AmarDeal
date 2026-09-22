@@ -2,6 +2,10 @@
 
 import { useEffect } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  DEFAULT_GATEWAYS,
+  type PaymentGateway,
+} from '@/lib/payment-gateways';
 
 interface SiteSettings {
   siteName: string;
@@ -11,6 +15,8 @@ interface SiteSettings {
   footerDescription: string;
   footerCopyrightText: string;
   footerMadeIn: string;
+  /** Footer payment gateway badges (bKash/Nagad by default, admin-managed) */
+  paymentGateways: PaymentGateway[];
 }
 
 const FALLBACK: SiteSettings = {
@@ -21,7 +27,17 @@ const FALLBACK: SiteSettings = {
   footerDescription: '',
   footerCopyrightText: '',
   footerMadeIn: '',
+  paymentGateways: DEFAULT_GATEWAYS,
 };
+
+/** Old localStorage caches predate paymentGateways — normalize on read. */
+function normalize(raw: SiteSettings | null): SiteSettings | null {
+  if (!raw) return null;
+  return {
+    ...raw,
+    paymentGateways: raw.paymentGateways ?? DEFAULT_GATEWAYS,
+  };
+}
 
 const STORAGE_KEY = 'midman-site-settings';
 
@@ -30,7 +46,7 @@ function readFromStorage(): SiteSettings | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as SiteSettings;
+    return normalize(JSON.parse(raw) as SiteSettings);
   } catch {
     return null;
   }
@@ -63,9 +79,10 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
       .then((r) => (r.ok ? r.json() : FALLBACK))
       .catch(() => FALLBACK)
       .then((data) => {
-        cachedSettings = data;
-        writeToStorage(data); // Persist to localStorage for instant reload
-        return data;
+        const normalized = normalize(data);
+        cachedSettings = normalized;
+        writeToStorage(normalized as SiteSettings); // Persist to localStorage for instant reload
+        return normalized;
       });
   }
   return fetchPromise;

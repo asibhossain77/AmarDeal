@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { PAYMENT_ICONS_SETTING_KEY, parseGatewayList } from '@/lib/payment-gateways'
 
 export async function GET() {
   try {
     const rows = await db.platformSetting.findMany({
-      where: { key: { in: ['platform_name', 'platform_name_en', 'site_title', 'site_logo', 'footer_description', 'footer_copyright_text', 'footer_made_in'] } },
+      where: { key: { in: ['platform_name', 'platform_name_en', 'site_title', 'site_logo', 'footer_description', 'footer_copyright_text', 'footer_made_in', PAYMENT_ICONS_SETTING_KEY] } },
     })
 
     const map: Record<string, string> = {}
@@ -20,6 +21,7 @@ export async function GET() {
       footerDescription: map.footer_description || '',
       footerCopyrightText: map.footer_copyright_text || '',
       footerMadeIn: map.footer_made_in || '',
+      paymentGateways: parseGatewayList(map[PAYMENT_ICONS_SETTING_KEY]),
     })
   } catch {
     return NextResponse.json(
@@ -31,6 +33,7 @@ export async function GET() {
         footerDescription: '',
         footerCopyrightText: '',
         footerMadeIn: '',
+        paymentGateways: parseGatewayList(null),
       },
       { status: 200 }
     )

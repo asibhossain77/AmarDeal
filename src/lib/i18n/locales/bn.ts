@@ -121,6 +121,14 @@ export const bn = {
   'footer.cat.services': 'সেবা',
   'footer.cat.company': 'কোম্পানি',
   'footer.allRightsReserved': 'সর্বস্বত্ব সংরক্ষিত।',
+  'footer.payments': 'নিরাপদ পেমেন্ট মাধ্যম',
+  'admin.settings.gatewaysTitle': 'পেমেন্ট গেটওয়ে আইকন',
+  'admin.settings.gatewaysDesc': 'ফুটারে দেখানো পেমেন্ট ব্যাজ — আপলোড না করলে ডিফল্ট আইকন ব্যবহার হবে',
+  'admin.settings.gatewayAdd': 'নতুন গেটওয়ে',
+  'admin.settings.gatewayUpload': 'আপলোড',
+  'admin.settings.gatewayUploadHint': 'PNG/JPG, সর্বোচ্চ 2MB — স্কয়ার লোগো সবচেয়ে ভালো দেখায়',
+  'admin.settings.gatewaysSave': 'পেমেন্ট আইকন সেভ',
+  'admin.settings.gatewayNamePlaceholder': 'যেমন: Rocket, Upay',
 
   // ── Pages ──
   'page.howItWorks.title': 'কিভাবে কাজ করে',

@@ -124,6 +124,14 @@ export const en: Record<TranslationKey, string> = {
   'footer.cat.services': 'Services',
   'footer.cat.company': 'Company',
   'footer.allRightsReserved': 'All rights reserved.',
+  'footer.payments': 'Secure payment methods',
+  'admin.settings.gatewaysTitle': 'Payment Gateway Icons',
+  'admin.settings.gatewaysDesc': 'Payment badges shown in the footer — bundled defaults are used until you upload your own',
+  'admin.settings.gatewayAdd': 'Add Gateway',
+  'admin.settings.gatewayUpload': 'Upload',
+  'admin.settings.gatewayUploadHint': 'PNG/JPG, max 2MB — square logos look best',
+  'admin.settings.gatewaysSave': 'Save Payment Icons',
+  'admin.settings.gatewayNamePlaceholder': 'e.g. Rocket, Upay',
 
   // ── Pages ──
   'page.howItWorks.title': 'How It Works',

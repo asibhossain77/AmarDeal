@@ -22,6 +22,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { parseGatewayList, resolveGatewayIcon, DEFAULT_GATEWAYS, type PaymentGateway } from '@/lib/payment-gateways';
 import dynamic from 'next/dynamic';
 import { cdnUrl } from '@/lib/cdn-url';
 
@@ -87,6 +89,9 @@ import {
   Trash2,
   PackageCheck,
   UserPlus,
+  ArrowUp,
+  ArrowDown,
+  Plus,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -2302,6 +2307,9 @@ function SettingsPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [gateways, setGateways] = useState<PaymentGateway[]>(DEFAULT_GATEWAYS);
+  const [gatewaysSaving, setGatewaysSaving] = useState(false);
+  const [uploadingIconId, setUploadingIconId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -2310,6 +2318,7 @@ function SettingsPanel() {
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
+          setGateways(parseGatewayList(data.payment_gateway_icons));
         }
       } catch {
         // silent
@@ -2365,6 +2374,93 @@ function SettingsPanel() {
     } finally {
       setLogoUploading(false);
       e.target.value = '';
+    }
+  };
+
+  /* ── Payment gateway footer badges (bKash/Nagad defaults, admin-managed) ── */
+  const updateGateway = (id: string, patch: Partial<PaymentGateway>) =>
+    setGateways((list) => list.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+
+  const moveGateway = (index: number, dir: -1 | 1) =>
+    setGateways((list) => {
+      const next = [...list];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return list;
+      [next[index], next[j]] = [next[j], next[index]];
+      return next;
+    });
+
+  const removeGateway = (id: string) =>
+    setGateways((list) => list.filter((g) => g.id !== id));
+
+  const addGateway = () =>
+    setGateways((list) => [
+      ...list,
+      { id: `custom-${Date.now().toString(36)}`, name: '', icon: '', enabled: true },
+    ]);
+
+  const handleGatewayIconUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    gw: PaymentGateway,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-uploading the same file
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('ছবি সর্বোচ্চ 2MB হতে পারে');
+      return;
+    }
+    setUploadingIconId(gw.id);
+    try {
+      const fd = new FormData();
+      fd.append('icon', file);
+      if (gw.icon && gw.icon.startsWith('http')) fd.append('previousUrl', gw.icon);
+      const res = await fetch('/api/admin/upload-payment-icon', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        updateGateway(gw.id, { icon: data.iconUrl });
+        toast.success('আইকন আপলোড হয়েছে!');
+      } else {
+        toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setUploadingIconId(null);
+    }
+  };
+
+  const handleGatewaysSave = async () => {
+    const cleaned = gateways
+      .map((g) => ({ ...g, name: g.name.trim() }))
+      .filter((g) => g.name); // drop unnamed rows
+    const missingIcon = cleaned.find((g) => !resolveGatewayIcon(g));
+    if (missingIcon) {
+      toast.error(`"${missingIcon.name}" এর জন্য একটি আইকন আপলোড করুন বা সরিয়ে ফেলুন`);
+      return;
+    }
+    if (cleaned.length === 0) {
+      toast.error('অন্তত একটি গেটওয়ে রাখুন অথবা সব টগল অফ করুন');
+      return;
+    }
+    setGatewaysSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_gateway_icons: JSON.stringify(cleaned) }),
+      });
+      if (res.ok) {
+        setGateways(cleaned);
+        invalidateSiteSettingsCache();
+        toast.success(t('common.success'));
+      } else {
+        toast.error(t('common.failed'));
+      }
+    } catch {
+      toast.error(t('common.serverError'));
+    } finally {
+      setGatewaysSaving(false);
     }
   };
 
@@ -2678,6 +2774,123 @@ function SettingsPanel() {
               )}
               Save Footer
             </Button>
+          </div>
+        </SolidCard>
+
+        {/* ── Payment Gateway Icons (Footer Badges) ── */}
+        <SolidCard>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CreditCard className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">{t('admin.settings.gatewaysTitle')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('admin.settings.gatewaysDesc')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {gateways.map((gw, i) => {
+              const icon = resolveGatewayIcon(gw);
+              return (
+                <div
+                  key={gw.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 sm:flex-row sm:items-center"
+                >
+                  {/* Icon preview — white chip, same as footer rendering */}
+                  <div className="h-11 w-11 shrink-0 rounded-lg bg-white ring-1 ring-border/40 shadow-sm flex items-center justify-center overflow-hidden">
+                    {icon ? (
+                      <img
+                        src={cdnUrl(icon) || ''}
+                        alt={gw.name}
+                        className="h-8 w-8 object-contain"
+                        loading="lazy" decoding="async"
+                      />
+                    ) : (
+                      <CreditCard className="h-5 w-5 text-muted-foreground/40" />
+                    )}
+                  </div>
+
+                  {/* Display name */}
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      type="text"
+                      value={gw.name}
+                      onChange={(e) => updateGateway(gw.id, { name: e.target.value })}
+                      placeholder={t('admin.settings.gatewayNamePlaceholder')}
+                      className="max-w-[220px]"
+                    />
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleGatewayIconUpload(e, gw)}
+                      />
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+                        {uploadingIconId === gw.id ? (
+                          <LoadingAnimation size="sm" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        {t('admin.settings.gatewayUpload')}
+                      </span>
+                    </label>
+                    <Switch
+                      checked={gw.enabled}
+                      onCheckedChange={(v) => updateGateway(gw.id, { enabled: v })}
+                      aria-label={gw.name}
+                    />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={i === 0}
+                        onClick={() => moveGateway(i, -1)}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={i === gateways.length - 1}
+                        onClick={() => moveGateway(i, 1)}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        onClick={() => removeGateway(gw.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="outline" onClick={addGateway} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t('admin.settings.gatewayAdd')}
+            </Button>
+            <div className="flex flex-col items-center gap-1 sm:items-end">
+              <span className="text-[10px] text-muted-foreground">{t('admin.settings.gatewayUploadHint')}</span>
+              <Button onClick={handleGatewaysSave} disabled={gatewaysSaving} className="gap-2">
+                {gatewaysSaving ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
+                {t('admin.settings.gatewaysSave')}
+              </Button>
+            </div>
           </div>
         </SolidCard>
       </motion.div>

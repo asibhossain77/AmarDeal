@@ -19,6 +19,7 @@ const settingKeys = [
   'admin_display_name',
   'admin_image_url',
   'contact_map_url',
+  'payment_gateway_icons',
 ]
 
 export async function GET() {
@@ -49,6 +50,7 @@ export async function GET() {
       admin_display_name: map.admin_display_name || '',
       admin_image_url: map.admin_image_url || '',
       contact_map_url: map.contact_map_url || '',
+      payment_gateway_icons: map.payment_gateway_icons || '',
     })
   } catch {
     return NextResponse.json(

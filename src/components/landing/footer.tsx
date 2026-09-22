@@ -5,9 +5,10 @@ import { useAppStore, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { Separator } from '@/components/ui/separator';
 import { cdnUrl } from '@/lib/cdn-url';
+import { resolveGatewayIcon } from '@/lib/payment-gateways';
 
 export function Footer() {
-  const { siteName, siteNameEn, siteLogo, footerDescription, footerCopyrightText, footerMadeIn } = useSiteSettings();
+  const { siteName, siteNameEn, siteLogo, footerDescription, footerCopyrightText, footerMadeIn, paymentGateways } = useSiteSettings();
   const setView = useAppStore((s) => s.setView);
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
@@ -37,6 +38,10 @@ export function Footer() {
   const description = footerDescription || `${displayName} ${defaultDescription}`;
   const copyrightLine = footerCopyrightText || `© ${new Date().getFullYear()} ${displayName}। ${t('footer.allRightsReserved')}`;
   const madeIn = footerMadeIn || defaultMadeIn;
+
+  // Footer payment gateway badges — admin-managed (default: bKash + Nagad)
+  const paymentBadges = (paymentGateways || [])
+    .filter((g) => g.enabled && resolveGatewayIcon(g));
 
   return (
     <footer className="border-t border-border/50 bg-card">
@@ -86,6 +91,32 @@ export function Footer() {
             </div>
           ))}
         </div>
+
+        {/* Payment gateways — secure payment badges */}
+        {paymentBadges.length > 0 && (
+          <div className="mb-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t('footer.payments')}
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {paymentBadges.map((g) => (
+                <span
+                  key={g.id}
+                  title={g.name}
+                  className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg bg-white px-1.5 ring-1 ring-border/40 shadow-sm dark:ring-white/10"
+                >
+                  <img
+                    src={cdnUrl(resolveGatewayIcon(g)) || ''}
+                    alt={g.name}
+                    className="h-7 w-7 rounded-md object-contain"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Separator className="my-8 bg-border/50" />
 

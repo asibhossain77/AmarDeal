@@ -61,6 +61,7 @@ server.log
 *.png
 !public/logo.png
 !public/uploads/site-logo.png
+!public/payment/*.png
 /screenshots/
 /upload/
 /skills/
