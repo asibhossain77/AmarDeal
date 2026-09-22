@@ -65,11 +65,11 @@ export function Footer() {
         <img
           src={cdnUrl(siteLogo) || ''}
           alt={displayName}
-          className="h-9 w-9 rounded-lg object-contain ring-1 ring-white/10"
+          className="h-9 w-9 rounded-lg object-contain"
           loading="lazy" decoding="async"
         />
       ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-lime-400/10 ring-1 ring-lime-400/20">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-lime-400/10">
           <span className="text-sm font-bold text-lime-400">{displayName?.charAt(0) || 'M'}</span>
         </div>
       )}
@@ -140,7 +140,7 @@ export function Footer() {
   );
 
   return (
-    <footer className="relative overflow-hidden bg-[#0A0C0B]">
+    <footer className="relative overflow-hidden bg-[#14171B]">
       {/* Subtle green glow decoration */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 left-1/2 h-64 w-[42rem] max-w-full -translate-x-1/2 rounded-full bg-lime-500/[0.07] blur-3xl" />

@@ -121,7 +121,7 @@ export const bn = {
   'footer.cat.services': 'সেবা',
   'footer.cat.company': 'কোম্পানি',
   'footer.allRightsReserved': 'সর্বস্বত্ব সংরক্ষিত।',
-  'footer.payments': 'নিরাপদ পেমেন্টের মাধ্যম',
+  'footer.payments': 'আমাদের পেমেন্টের মাধ্যম',
   'admin.settings.gatewaysTitle': 'পেমেন্ট গেটওয়ে আইকন',
   'admin.settings.gatewaysDesc': 'ফুটারে দেখানো পেমেন্ট ব্যাজ — আপলোড না করলে ডিফল্ট আইকন ব্যবহার হবে',
   'admin.settings.gatewayAdd': 'নতুন গেটওয়ে',
