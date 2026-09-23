@@ -201,3 +201,74 @@ html.dark {
 }
 .blob-float-1 { animation: blob-float-1 8s ease-in-out infinite; }
 .blob-float-2 { animation: blob-float-2 10s ease-in-out infinite; }
+
+/* ══ Hero 3D floating composition ══
+   Layered depth: page bg → tilt layer (JS parallax) → main card (float) →
+   inner step cards (independent float + translateZ) → ground shadow. */
+
+/* Main card: gentle vertical drift ~12px, 6s — premium, never spinny */
+@keyframes hero-main-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -12px, 0); }
+}
+
+/* Inner steps: small independent drifts (3-5px) + translateZ depth.
+   Negative delays desynchronize them from the first frame. */
+@keyframes hero-step-float-1 {
+  0%, 100% { transform: translate3d(0, -2px, 20px); }
+  50% { transform: translate3d(0, 2.5px, 20px); }
+}
+@keyframes hero-step-float-2 {
+  0%, 100% { transform: translate3d(0, 2.5px, 14px); }
+  50% { transform: translate3d(0, -2.5px, 14px); }
+}
+@keyframes hero-step-float-3 {
+  0%, 100% { transform: translate3d(0, -1.5px, 26px); }
+  50% { transform: translate3d(0, 2.5px, 26px); }
+}
+
+/* Ground shadow breathes in sync with the main float (6s):
+   card highest → shadow smaller + fainter. */
+@keyframes hero-ground-shadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50% { transform: translateX(-50%) scale(0.88); opacity: 0.55; }
+}
+
+.hero-main-float {
+  animation: hero-main-float 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.hero-step-float-1 { animation: hero-step-float-1 3.8s ease-in-out -0.4s infinite; will-change: transform; }
+.hero-step-float-2 { animation: hero-step-float-2 4.3s ease-in-out -1.6s infinite; will-change: transform; }
+.hero-step-float-3 { animation: hero-step-float-3 4.8s ease-in-out -2.7s infinite; will-change: transform; }
+
+/* Mouse-parallax tilt layer — JS only updates --hx/--hy (max ±3.2deg);
+   the transition does all the smoothing, incl. the return-to-rest on leave. */
+.hero-tilt {
+  transform: rotateX(var(--hx, 0deg)) rotateY(var(--hy, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.hero-ground-shadow {
+  /* base position (animation owns the full transform while playing;
+     this keeps it centered when animations are disabled) */
+  transform: translateX(-50%);
+  animation: hero-ground-shadow 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-main-float,
+  .hero-step-float-1,
+  .hero-step-float-2,
+  .hero-step-float-3,
+  .hero-ground-shadow {
+    animation: none !important;
+  }
+  .hero-tilt {
+    transition: none !important;
+    transform: none !important;
+  }
+}

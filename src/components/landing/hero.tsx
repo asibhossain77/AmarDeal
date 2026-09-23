@@ -11,6 +11,7 @@
  * #84CC16) in both light and dark modes — no hero-local color families.
  */
 
+import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, ShieldCheck, HandCoins } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
@@ -43,6 +44,63 @@ const STEP_TILE = 'bg-primary/10 text-primary';
 type TKey = Parameters<ReturnType<typeof useTranslation>['t']>[0];
 
 function EscrowProcessCard({ t }: { t: (k: TKey) => string }) {
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const tiltRef = useRef<HTMLDivElement>(null);
+
+  /* Subtle mouse parallax: the card tilts toward the cursor (max ±3.2deg).
+     JS only writes --hx/--hy custom properties (rAF-throttled); the CSS
+     transition on .hero-tilt does all smoothing, including the soft
+     return-to-rest when the pointer leaves the hero zone. Touch/pen-drag
+     is filtered per-event via pointerType, and reduced-motion users never
+     get listeners attached. */
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const tilt = tiltRef.current;
+    if (!scene || !tilt) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const zone = scene.closest<HTMLElement>('.hero-card-zone') ?? scene;
+    const MAX_TILT = 3.2; // deg — extremely subtle
+    let raf = 0;
+    let px = 0;
+    let py = 0;
+    let queued = false;
+
+    const flush = () => {
+      queued = false;
+      const rect = tilt.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const nx = Math.min(Math.max((px - rect.left) / rect.width, 0), 1) - 0.5;
+      const ny = Math.min(Math.max((py - rect.top) / rect.height, 0), 1) - 0.5;
+      tilt.style.setProperty('--hx', `${(-ny * MAX_TILT).toFixed(3)}deg`);
+      tilt.style.setProperty('--hy', `${(nx * MAX_TILT).toFixed(3)}deg`);
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      // Mouse-only: touch scrolls/drags must never tilt the card
+      if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+      px = e.clientX;
+      py = e.clientY;
+      if (!queued) {
+        queued = true;
+        raf = requestAnimationFrame(flush);
+      }
+    };
+    const onPointerLeave = () => {
+      cancelAnimationFrame(raf);
+      queued = false;
+      tilt.style.setProperty('--hx', '0deg');
+      tilt.style.setProperty('--hy', '0deg');
+    };
+
+    zone.addEventListener('pointermove', onPointerMove);
+    zone.addEventListener('pointerleave', onPointerLeave);
+    return () => {
+      zone.removeEventListener('pointermove', onPointerMove);
+      zone.removeEventListener('pointerleave', onPointerLeave);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
     <motion.div variants={cardIn} className="relative w-full max-w-[400px] lg:max-w-none">
       {/* soft glow behind the card */}
@@ -51,51 +109,64 @@ function EscrowProcessCard({ t }: { t: (k: TKey) => string }) {
         className="pointer-events-none absolute -inset-8 rounded-[40px] bg-primary/[0.06] blur-2xl dark:bg-primary/[0.08]"
       />
 
-      <div className="main-card-float relative rounded-[22px] border border-border/60 bg-card p-7 shadow-[0_16px_50px_-16px_rgba(16,24,40,0.12)] motion-reduce:[animation:none] dark:shadow-black/40 sm:p-7">
-        {/* ── Header row ── */}
-        <div className="flex items-center justify-between">
-          <p className="text-[13px] font-medium text-muted-foreground">{t('hero2.statusLabel')}</p>
-          <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary ring-1 ring-primary/25">
-            {t('hero2.secure')}
-          </span>
-        </div>
+      {/* 3D scene — perspective origin for the floating composition */}
+      <div ref={sceneRef} className="relative [perspective:1150px]">
+        {/* tilt layer — JS drives --hx/--hy, CSS transition smooths */}
+        <div ref={tiltRef} className="hero-tilt relative">
+          <div className="hero-main-float relative rounded-[22px] border border-border/60 bg-card p-7 shadow-[0_16px_50px_-16px_rgba(16,24,40,0.12)] [transform-style:preserve-3d] motion-reduce:[animation:none] dark:shadow-black/40 sm:p-7">
+            {/* ── Header row ── */}
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] font-medium text-muted-foreground">{t('hero2.statusLabel')}</p>
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary ring-1 ring-primary/25">
+                {t('hero2.secure')}
+              </span>
+            </div>
 
-        {/* ── Steps ── */}
-        <div className="mt-5 space-y-3" role="list">
-          {STEPS.map((step, i) => (
-            <motion.div
-              key={step.titleKey}
-              role="listitem"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.45 + i * 0.12, duration: 0.45, ease: 'easeOut' }}
-              className="flex items-center gap-3.5 rounded-[14px] bg-muted/70 p-3.5 dark:bg-white/[0.04]"
-            >
-              <div
-                aria-hidden
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${STEP_TILE}`}
-              >
-                <step.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-display text-[15px] font-bold leading-snug text-foreground">
-                  {t(step.titleKey)}
-                </p>
-                <p className="truncate text-[13px] leading-snug text-muted-foreground">
-                  {t(step.subKey)}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+            {/* ── Steps ── */}
+            <div className="mt-5 space-y-3 [transform-style:preserve-3d]" role="list">
+              {STEPS.map((step, i) => (
+                <div key={step.titleKey} className={`hero-step-float-${i + 1}`}>
+                  <motion.div
+                    role="listitem"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.45 + i * 0.12, duration: 0.45, ease: 'easeOut' }}
+                    className="flex items-center gap-3.5 rounded-[14px] bg-muted/70 p-3.5 dark:bg-white/[0.04]"
+                  >
+                    <div
+                      aria-hidden
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${STEP_TILE}`}
+                    >
+                      <step.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-display text-[15px] font-bold leading-snug text-foreground">
+                        {t(step.titleKey)}
+                      </p>
+                      <p className="truncate text-[13px] leading-snug text-muted-foreground">
+                        {t(step.subKey)}
+                      </p>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
 
-        {/* ── Amount ── */}
-        <div className="mt-6 border-t border-border/70 pt-5 dark:border-white/[0.06]">
-          <p className="flex items-baseline gap-0.5 font-display text-[26px] font-extrabold leading-none tracking-tight text-foreground">
-            ৳50,000
-            <span className="text-[13px] font-bold text-muted-foreground">.00</span>
-          </p>
-          <p className="mt-1.5 text-xs text-muted-foreground">{t('hero2.amountCaption')}</p>
+            {/* ── Amount ── */}
+            <div className="mt-6 border-t border-border/70 pt-5 dark:border-white/[0.06]">
+              <p className="flex items-baseline gap-0.5 font-display text-[26px] font-extrabold leading-none tracking-tight text-foreground">
+                ৳50,000
+                <span className="text-[13px] font-bold text-muted-foreground">.00</span>
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">{t('hero2.amountCaption')}</p>
+            </div>
+          </div>
+
+          {/* soft ground shadow — breathes in sync with the float */}
+          <div
+            aria-hidden
+            className="hero-ground-shadow pointer-events-none absolute bottom-[-26px] left-1/2 h-6 w-[72%] rounded-[50%] bg-zinc-950/15 blur-xl dark:bg-black/40"
+          />
         </div>
       </div>
     </motion.div>
@@ -126,7 +197,7 @@ export function Hero() {
         <div className="flex min-h-[calc(100svh-4rem)] items-center py-14 lg:py-10">
           <div className="grid w-full items-center gap-12 lg:grid-cols-2 lg:gap-10 xl:gap-16">
             {/* ── Escrow card — left on desktop, below content on mobile ── */}
-            <div className="order-2 lg:order-1">
+            <div className="hero-card-zone order-2 lg:order-1">
               <div className="mx-auto w-full max-w-[400px] lg:max-w-[420px]">
                 <EscrowProcessCard t={t} />
               </div>
