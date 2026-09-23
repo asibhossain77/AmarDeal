@@ -60,6 +60,20 @@ function buildCsp(nonce: string): string {
   return directives.join('; ')
 }
 
+/**
+ * Dev-only: ONE nonce per proxy process.
+ *
+ * A per-request nonce is CSP-correct in production (the HTML and its embedded
+ * RSC payload come from the same render, so they always agree), but in dev
+ * Turbopack HMR re-renders the RSC tree through SEPARATE requests — each
+ * rolling a fresh nonce — and React then sees nonce=""/old in the server HTML
+ * vs a new UUID in the client props → hydration mismatch warnings on every
+ * nonce-bearing element (meta-pixel script, next-themes, GA). A process-
+ * stable nonce keeps every dev render in sync; a dev-server restart reloads
+ * the page, so drift can't persist across restarts.
+ */
+const DEV_NONCE = process.env.NODE_ENV === 'development' ? crypto.randomUUID() : null
+
 /** Extract client IP from request (works behind Caddy/Nginx proxy) */
 function getClientIp(req: NextRequest): string {
   // x-forwarded-for can contain multiple IPs; first one is the original client
@@ -104,7 +118,7 @@ export async function proxy(req: NextRequest) {
   }
 
   // --- 2. CSP nonce ---
-  const nonce = crypto.randomUUID()
+  const nonce = DEV_NONCE ?? crypto.randomUUID()
   const csp = buildCsp(nonce)
 
   // --- 3. Forward nonce to downstream server components ---

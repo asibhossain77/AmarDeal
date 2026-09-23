@@ -97,10 +97,14 @@ export function MetaPixel({ nonce }: { nonce?: string }) {
       {/* Plain SSR'd inline script (NOT next/script): executes at HTML parse
           time with the CSP nonce — independent of hydration, so the pixel
           loads even before React hydrates. The base code itself injects
-          fbevents.js, which 'strict-dynamic' allows. */}
+          fbevents.js, which 'strict-dynamic' allows. suppressHydrationWarning
+          mirrors next-themes' own nonce'd script: the nonce attribute only
+          matters at parse time, and dev HMR re-renders must never report the
+          server/client nonce drift as a hydration mismatch. */}
       <script
         id="meta-pixel-base"
         nonce={nonce}
+        suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: BASE_CODE }}
       />
       <noscript>
