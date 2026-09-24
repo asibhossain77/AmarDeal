@@ -46,7 +46,10 @@ const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 
 export async function uploadToR2(
   file: File,
-  prefix: string = 'products'
+  prefix: string = 'products',
+  // Per-caller override — e.g. banners allow 4MB for high-quality creatives.
+  // Must stay under Vercel's 4.5MB serverless request-body limit.
+  maxBytes: number = MAX_SIZE
 ): Promise<{ url: string; key: string }> {
   assertR2Configured()
 
@@ -54,8 +57,8 @@ export async function uploadToR2(
     throw new Error('আপলোডের জন্য JPEG, PNG, WebP অথবা GIF ফাইল হতে হবে')
   }
 
-  if (file.size > MAX_SIZE) {
-    throw new Error('ফাইল সর্বোচ্চ 2MB হতে পারবে')
+  if (file.size > maxBytes) {
+    throw new Error(`ফাইল সর্বোচ্চ ${Math.round(maxBytes / (1024 * 1024))}MB হতে পারবে`)
   }
 
   const ext = file.name.split('.').pop()?.toLowerCase() || 'png'

@@ -8,8 +8,13 @@ import { uploadToR2, deleteFromR2 } from '@/lib/r2'
  * admin marketplace panel still posts to it, causing 404s.)
  *
  * FormData fields:
- *  - image: File (required) — JPEG/PNG/WebP/GIF, max 2MB (enforced by r2.ts)
+ *  - image: File (required) — JPEG/PNG/WebP/GIF, max 4MB (high-quality
+ *    creatives; stays under Vercel's 4.5MB serverless body limit)
  *  - oldImage: string (optional) — previous URL to delete after success
+ *
+ * The uploaded image is stored byte-for-byte (no recompression), and the
+ * marketplace renders it inside a fixed 3:1 aspect-ratio container that is
+ * identical on mobile and desktop.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +29,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'ছবি ফাইল দিন' }, { status: 400 })
     }
 
-    const result = await uploadToR2(file, 'banners')
+    const result = await uploadToR2(file, 'banners', 4 * 1024 * 1024)
 
     // Old banner image is removed only after the new upload succeeded
     if (oldImage) {

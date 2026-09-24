@@ -291,7 +291,7 @@ function BannersTab() {
   const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error('সর্বোচ্চ 2MB'); return; }
+    if (file.size > 4 * 1024 * 1024) { toast.error('সর্বোচ্চ 4MB'); return; }
     setBannerUploading(true);
     try {
       const fd = new FormData();
@@ -469,12 +469,15 @@ function BannersTab() {
                     <input
                       id={bannerFileInputId}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       className="sr-only"
                       onChange={handleBannerImageUpload}
                       disabled={bannerUploading}
                     />
                   </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    সর্বোচ্চ 4MB — হাই কোয়ালিটি JPEG/PNG/WebP/GIF। প্রস্তাবিত সাইজ: <span className="font-semibold text-foreground">1500×500px (3:1)</span> — মোবাইল ও ডেস্কটপে একই অনুপাতে দেখাবে।
+                  </p>
                   {form.image && (
                     <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px] relative group">
                       <img src={cdnUrl(form.image) || ''} alt="Preview" className="w-full h-full object-cover" />

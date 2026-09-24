@@ -698,3 +698,22 @@ Work Log:
 Stage Summary:
 - Commit 868481d pushed to origin/main; Vercel auto-deploys
 - Footer now shows bKash + Nagad badges by default; admin can upload/replace/reorder/toggle/add gateways without code changes
+
+---
+Task ID: 28
+Agent: Super Z (main)
+Task: Marketplace ads banner — admin image upload সত্যিই দেখাও (fixed 3:1 ratio mobile+desktop, high quality)
+
+Work Log:
+- Root cause found: admin panel-এর Banners tab + MarketplaceBanner model + /api/upload/banner-image (R2) ছিল, কিন্তু public site-এ banner দেখানোর কোডই ছিল না — marketplace-এর ads slot-এ hardcoded PromoSlider চলছিল; admin-এর upload করা image কোথাও render হতো না
+- r2.ts: uploadToR2(file, prefix, maxBytes=2MB) — per-caller size override; banner route 4MB দেয় (high quality, Vercel 4.5MB body limit-এর নিচে); কোনো recompression নেই — original bytes R2-তে যায়
+- New public GET /api/marketplace/banners (dynamic, active banners, sortOrder asc, Cache-Control s-maxage=30 swr=120); ইচ্ছাকৃতভাবে /api/admin/* বাদ — proxy public-route exemptions নিরাপদ রাখতে
+- marketplace-section.tsx: AdBannerSlider — fetches banners, FIXED aspect-[3/1] সব breakpoint-এ (মোবাইল=ডেস্কটপ same ratio), object-cover (source ratio যাই হোক crop, stretch নয়), crossfade AnimatePresence, 5s auto-advance, dots, link থাকলে clickable (target=_blank rel=noopener), loading skeleton (same 3:1 → no CLS), banner না থাকলে পুরনো PromoSlider fallback
+- marketplace-panel.tsx: client 2MB→4MB check, upload hint (প্রস্তাবিত 1500×500px 3:1), accept-এ gif
+- Verified (dev server + agent-browser): desktop 1086×362 ratio=3.000, mobile 356×119 ratio=3.000, naturalWidth>0 (loaded); mocked empty API → promo slider fallback ✓ + unroute → carousel back ✓; POST /api/upload/banner-image unauth → 401 ✓; TS clean on changed files (বাকি errগুলো pre-existing)
+- ট্রাবলশুটিং: Turbopack hang (next-server 104% CPU, /api/auth/me stuck compiling) → rm -rf .next + restart এ সমাধান; sandbox প্রতি call-এ background process মারে → server+browser test এক call-এ
+
+Stage Summary:
+- Commit + push: origin/main; Vercel auto-deploy
+- এখন থেকে Admin → Marketplace → Banners-এ upload করা image marketplace-এর ads banner slot-এ দেখাবে — সব ডিভাইসে একই 3:1 অনুপাতে, হাই কোয়ালিটি (4MB পর্যন্ত, compression ছাড়া)
+- প্রস্তাবিত upload size: 1500×500px; ratio container fixed তাই যেকোনো size-এর image ঠিক দেখাবে (crop)

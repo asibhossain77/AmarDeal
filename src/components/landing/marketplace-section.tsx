@@ -33,6 +33,9 @@ interface Product {
   isFree?: boolean; hasFile?: boolean;
 }
 
+// Admin-uploaded ad banner (see /api/marketplace/banners)
+interface AdBanner { id: string; title: string; subtitle: string | null; image: string; link: string | null; }
+
 const CATEGORIES = [
   { key: 'all', bn: '\u09B8\u09AC', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
   { key: 'design', bn: '\u09A1\u09BF\u099C\u09BE\u0987\u09A8', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
@@ -90,6 +93,76 @@ function getCategoryIcon(category: string) {
 function getCategoryColor(category: string) {
   const cat = CATEGORIES.find(c => c.key === category);
   return cat?.color || 'text-muted-foreground';
+}
+
+// -- AdBannerSlider --
+// Renders the admin-uploaded ad banners (Admin → Marketplace → Banners tab).
+// The image slot has a FIXED 3:1 aspect ratio on every breakpoint, so an
+// uploaded creative keeps exactly the same shape on mobile and desktop
+// (object-cover crops any source ratio — no stretching, no squashing).
+// Until any active banner exists, the built-in promo slider stays in place.
+function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () => void }) {
+  const [banners, setBanners] = useState<AdBanner[] | null>(null); // null = loading
+  const [current, setCurrent] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/marketplace/banners')
+      .then(r => r.json())
+      .then(d => { if (alive) setBanners(Array.isArray(d?.banners) ? d.banners : []); })
+      .catch(() => { if (alive) setBanners([]); });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!banners || banners.length < 2) return;
+    intervalRef.current = setInterval(() => setCurrent(p => (p + 1) % banners.length), 5000);
+    return () => clearInterval(intervalRef.current);
+  }, [banners]);
+
+  // Loading skeleton (same 3:1 footprint → no layout shift when data arrives)
+  if (banners === null) return (
+    <div aria-hidden className="aspect-[3/1] w-full animate-pulse rounded-2xl border border-border/40 bg-muted/50 sm:rounded-3xl dark:border-border/25" />
+  );
+
+  // No active banners → keep the built-in promo slider, the slot is never empty
+  if (banners.length === 0) return <PromoSlider locale={locale} onExplore={onExplore} />;
+
+  const banner = banners[Math.min(current, banners.length - 1)];
+  const image = cdnUrl(banner.image) || banner.image;
+
+  return (
+    <div aria-label="Ads banner">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-muted sm:rounded-3xl dark:border-border/25">
+        <div className="relative aspect-[3/1] w-full">
+          <AnimatePresence initial={false}>
+            <motion.a
+              key={banner.id}
+              href={banner.link || undefined}
+              target={banner.link ? '_blank' : undefined}
+              rel={banner.link ? 'noopener noreferrer' : undefined}
+              aria-label={banner.title}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: 'easeInOut' }}
+              className={`absolute inset-0 block ${banner.link ? 'cursor-pointer' : 'pointer-events-none'}`}
+            >
+              <img src={image} alt={banner.subtitle || banner.title} className="h-full w-full object-cover" loading="eager" decoding="async" />
+            </motion.a>
+          </AnimatePresence>
+        </div>
+      </div>
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-1.5 pt-3">
+          {banners.map((b, i) => (
+            <button key={b.id} onClick={() => { setCurrent(i); clearInterval(intervalRef.current); }} aria-label={`Banner ${i + 1}`} className={`h-2 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-primary' : 'w-2 bg-primary/20 hover:bg-primary/40'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // -- PromoSlider --
@@ -344,7 +417,7 @@ export function MarketplaceSection() {
 
   return (
     <section aria-label={t('page.marketplace.title')} className="space-y-6 sm:space-y-8">
-      <PromoSlider locale={locale} onExplore={() => {}} />
+      <AdBannerSlider locale={locale} onExplore={() => {}} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
