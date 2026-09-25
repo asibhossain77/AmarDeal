@@ -97,9 +97,10 @@ function getCategoryColor(category: string) {
 
 // -- AdBannerSlider --
 // Renders the admin-uploaded ad banners (Admin → Marketplace → Banners tab).
-// The image slot has a FIXED 3:1 aspect ratio on every breakpoint, so an
-// uploaded creative keeps exactly the same shape on mobile and desktop
-// (object-cover crops any source ratio — no stretching, no squashing).
+// The slot keeps a FIXED 3:1 aspect ratio on every breakpoint, and the image
+// is shown with object-CONTAIN — never zoomed/cropped: an uploaded creative
+// always displays at its own uploaded ratio, identically on mobile and
+// desktop, and any leftover blank space is WHITE (ad-slot letterbox).
 // Until any active banner exists, the built-in promo slider stays in place.
 function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () => void }) {
   const [banners, setBanners] = useState<AdBanner[] | null>(null); // null = loading
@@ -134,7 +135,7 @@ function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () =
 
   return (
     <div aria-label="Ads banner">
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-muted sm:rounded-3xl dark:border-border/25">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-white sm:rounded-3xl">
         <div className="relative aspect-[3/1] w-full">
           <AnimatePresence initial={false}>
             <motion.a
@@ -149,7 +150,7 @@ function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () =
               transition={{ duration: 0.45, ease: 'easeInOut' }}
               className={`absolute inset-0 block ${banner.link ? 'cursor-pointer' : 'pointer-events-none'}`}
             >
-              <img src={image} alt={banner.subtitle || banner.title} className="h-full w-full object-cover" loading="eager" decoding="async" />
+              <img src={image} alt={banner.subtitle || banner.title} className="h-full w-full object-contain" loading="eager" decoding="async" />
             </motion.a>
           </AnimatePresence>
         </div>

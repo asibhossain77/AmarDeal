@@ -476,7 +476,7 @@ function BannersTab() {
                     />
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    সর্বোচ্চ 4MB — হাই কোয়ালিটি JPEG/PNG/WebP/GIF। প্রস্তাবিত সাইজ: <span className="font-semibold text-foreground">1500×500px (3:1)</span> — মোবাইল ও ডেস্কটপে একই অনুপাতে দেখাবে।
+                    সর্বোচ্চ 4MB — হাই কোয়ালিটি JPEG/PNG/WebP/GIF। যেকোনো রেশিওর ছবি জুম/ক্রপ ছাড়া সম্পূর্ণ দেখাবে — মোবাইল ও ডেস্কটপে একই, ফাঁকা জায়গা সাদা থাকবে। প্রস্তাবিত: <span className="font-semibold text-foreground">1500×500px (3:1)</span>।
                   </p>
                   {form.image && (
                     <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px] relative group">

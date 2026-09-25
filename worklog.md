@@ -717,3 +717,20 @@ Stage Summary:
 - Commit + push: origin/main; Vercel auto-deploy
 - এখন থেকে Admin → Marketplace → Banners-এ upload করা image marketplace-এর ads banner slot-এ দেখাবে — সব ডিভাইসে একই 3:1 অনুপাতে, হাই কোয়ালিটি (4MB পর্যন্ত, compression ছাড়া)
 - প্রস্তাবিত upload size: 1500×500px; ratio container fixed তাই যেকোনো size-এর image ঠিক দেখাবে (crop)
+
+---
+Task ID: 29
+Agent: Super Z (main)
+Task: Ads banner image zoom বন্ধ — upload করা ratio-তেই full image, blank space white
+
+Work Log:
+- User feedback: object-cover এর কারণে banner image crop/zoom হচ্ছিল; চাইছেন যেই ratio-তে image upload হবে সেই ratio-তেই desktop+mobile এ সম্পূর্ণ image, ফাঁকা জায়গা সাদা
+- marketplace-section.tsx: img class object-cover → object-contain (no zoom/crop, সম্পূর্ণ creative সবসময় দৃশ্যমান), banner container bg-muted → bg-white (letterbox area সাদা; dark mode এও white — ad-slot convention)
+- Slot এখনও fixed aspect-[3/1] — সাইট layout stable, image ভিতরে নিজের uploaded ratio-তে render হয় (mobile+desktop identical)
+- admin panel hint আপডেট: "যেকোনো রেশিওর ছবি জুম/ক্রপ ছাড়া সম্পূর্ণ দেখাবে — ফাঁকা জায়গা সাদা"
+- Verified (1200×800 i.e. 3:2 test creative, data-URI SVG): desktop box 1086×362 + mobile 356×119, computed object-fit=contain দুটোতেই, natural ratio 1.5 অপরিবর্তিত, সাদা side bars স্ক্রিনশটে দৃশ্যমান, কোনো crop নেই
+- Sandbox আবার পুরনো base (04c6757) এ চলে গিয়েছিল + working tree তে upload routes deleted দেখাচ্ছিল → git fetch + reset --hard origin/main (12cb56d) এ সব ঠিক; Turbopack hang এড়াতে rm -rf .next + fresh restart
+
+Stage Summary:
+- Commit + push: origin/main; Vercel auto-deploy
+- Banner image এখন কখনো zoom/crop হয় না — upload করা ratio-ই সব ডিভাইসে দেখা যায়, বাকি জায়গা সাদা
