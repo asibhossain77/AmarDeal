@@ -760,3 +760,21 @@ Work Log:
 
 Stage Summary:
 - Commit 59587b3 pushed; Vercel auto-deploy
+
+---
+Task ID: 30-b
+Agent: Super Z (main)
+Task: Production Turso verification with user-provided credentials (Task 30 follow-up)
+
+Work Log:
+- User sent Turso rw token + URL (libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io); token valid ~24h
+- Direct libsql query on production DB: ChatFile table EXISTS — all 11 columns + types match schema.prisma exactly (id/dealId/messageId/key/fileName/fileSize/fileType/expiresAt/deletedAt/createdAt/updatedAt), all 3 indexes present (dealId, expiresAt, unique messageId); 0 rows (feature just live)
+- ChatMessage table intact (8 columns, untouched) — zero-migration design confirmed working
+- Table was auto-created by the deployed /api/health (auto-setup fired post-deploy) — no manual db push needed, production schema is fully ready
+- prisma migrate diff against libsql URL not possible (sqlite provider, prisma 5.22) — skipped; per-table verification sufficient and safer (no drift-mutation risk on working prod tables)
+- Local fresh-sandbox smoke test on origin/main: dev boot 200, /api/health prismaConnection OK, chat upload unauth → 401 NO_SESSION, cron endpoint open without CRON_SECRET but by design (only deletes already-expired files; Vercel Cron sends Bearer automatically when secret is set)
+- Temp verification script removed; token NOT persisted to any file (expires ~Sep 27)
+
+Stage Summary:
+- Task 30 confirmed FULLY live on production: schema ready, cron configured (daily 04:00 UTC), upload/download/cleanup endpoints deployed
+- No code changes, no production mutations; verification only
