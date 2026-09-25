@@ -194,6 +194,28 @@ model ChatMessage {
   @@index([dealId, createdAt])
 }
 
+/// Deal chat attachment (document or image) — lives in a SEPARATE table so the
+/// chat keeps working even before this table exists on a fresh database (the
+/// /api/health auto-setup creates it). R2 object is deleted 3 days after the
+/// message was sent (cron + lazy cleanup); the row is kept so the UI can show
+/// the "ফাইলের মেয়াদ শেষ" state with the original file name.
+model ChatFile {
+  id        String    @id @default(cuid())
+  dealId    String
+  messageId String    @unique
+  key       String
+  fileName  String
+  fileSize  Int
+  fileType  String?
+  expiresAt DateTime
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([expiresAt])
+}
+
 model BlogPost {
   id          String   @id @default(cuid())
   title       String

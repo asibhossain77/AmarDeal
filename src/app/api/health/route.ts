@@ -212,6 +212,25 @@ CREATE TABLE IF NOT EXISTS "MarketplaceBanner" (
   "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS "MarketplaceBanner_isActive_sortOrder_idx" ON "MarketplaceBanner"("isActive", "sortOrder");`,
+    // Deal chat attachments — files are auto-deleted 3 days after send;
+    // rows are kept so the chat UI can show the expired-file placeholder.
+    'ChatFile': `
+CREATE TABLE IF NOT EXISTS "ChatFile" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "dealId" TEXT NOT NULL,
+  "messageId" TEXT NOT NULL,
+  "key" TEXT NOT NULL,
+  "fileName" TEXT NOT NULL,
+  "fileSize" INTEGER NOT NULL,
+  "fileType" TEXT,
+  "expiresAt" DATETIME NOT NULL,
+  "deletedAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "ChatFile_dealId_idx" ON "ChatFile"("dealId");
+CREATE INDEX IF NOT EXISTS "ChatFile_expiresAt_idx" ON "ChatFile"("expiresAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "ChatFile_messageId_key" ON "ChatFile"("messageId");`,
     'SellerApplication': `
 CREATE TABLE IF NOT EXISTS "SellerApplication" (
   "id" TEXT NOT NULL PRIMARY KEY,

@@ -11,5 +11,11 @@
       "destination": "https://midman.bd/:path*",
       "permanent": true
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-chat-files",
+      "schedule": "0 4 * * *"
+    }
   ]
 }

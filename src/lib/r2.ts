@@ -263,3 +263,48 @@ export async function putDigitalFile(buffer: Buffer, key: string, contentType: s
     CacheControl: 'public, max-age=31536000, immutable',
   }))
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Deal chat attachments (documents + images)
+   — stored under `chat/<dealId>/…` and served ONLY through the
+   participant-guarded download route (never the public CDN).
+   Every object is auto-deleted 3 days after it was sent.
+   ═══════════════════════════════════════════════════════════ */
+
+const CHAT_FILE_EXTS = new Set([
+  // documents
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv',
+  // archives
+  'zip', 'rar',
+  // images (screenshots, photos of receipts, …)
+  'jpg', 'jpeg', 'png', 'webp', 'gif',
+])
+
+/** 4MB — stays under Vercel's 4.5MB serverless request-body limit. */
+export const MAX_CHAT_FILE_SIZE = 4 * 1024 * 1024
+
+/** Chat attachments are auto-deleted this many days after being sent. */
+export const CHAT_FILE_RETENTION_DAYS = 3
+
+/** Validate a chat attachment's name/extension + size. Returns the safe extension. */
+export function validateChatFile(fileName: string, fileSize: number): { ext: string } {
+  const ext = fileName.split('.').pop()?.toLowerCase() || ''
+  if (!ext || !CHAT_FILE_EXTS.has(ext)) {
+    throw new Error('এই ফাইল ফরম্যাট সাপোর্ট করা হয় না (PDF, DOC, XLS, PPT, TXT, CSV, ZIP, JPG, PNG ইত্যাদি)')
+  }
+  if (fileSize <= 0) throw new Error('ফাইল খালি হতে পারবে না')
+  if (fileSize > MAX_CHAT_FILE_SIZE) throw new Error('ফাইল সর্বোচ্চ 4MB হতে পারবে')
+  return { ext }
+}
+
+/** Build the R2 key for a chat attachment — embeds the deal id so ownership is verifiable. */
+export function chatFileKey(dealId: string, ext: string): string {
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+    .map(b => b.toString(16).padStart(2, '0')).join('') // 16-char secret
+  return `chat/${dealId}/${Date.now()}-${rand}.${ext}`
+}
+
+/** True when the given R2 key belongs to the given deal (`chat/<dealId>/…`). */
+export function ownsChatFileKey(key: string, dealId: string): boolean {
+  return key.startsWith(`chat/${dealId}/`) && /^[\w./-]+$/.test(key) && !key.includes('..')
+}

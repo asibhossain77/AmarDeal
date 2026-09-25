@@ -50,6 +50,13 @@ import {
   CircleCheckBig,
   FileDown,
   Download,
+  Paperclip,
+  File,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  FileArchive,
+  FileX,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -1070,6 +1077,13 @@ function getStatusBadge(status: string) {
 /** Chat message roles */
 type MessageRole = 'buyer' | 'seller' | 'admin' | 'system';
 
+/** Attachment metadata as returned by the chat API (key never reaches the client) */
+interface ChatFileMeta {
+  fileName: string;
+  fileSize?: number;
+  fileType?: string | null;
+}
+
 interface ChatMessage {
   id: string;
   role: MessageRole;
@@ -1077,6 +1091,38 @@ interface ChatMessage {
   senderName: string;
   text: string;
   timestamp: string;
+  file?: ChatFileMeta | null;
+  fileExpired?: boolean;
+}
+
+/* ── Chat attachment constants ── */
+const CHAT_FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.jpg,.jpeg,.png,.webp,.gif';
+const CHAT_FILE_MAX_BYTES = 4 * 1024 * 1024; // 4MB (Vercel body limit)
+
+/** Format bytes → short human readable size */
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Pick the right icon for a chat attachment */
+function ChatFileIcon({ fileType, fileName, className }: { fileType?: string | null; fileName: string; className?: string }) {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  let Icon = File;
+  if (fileType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) Icon = FileImage;
+  else if (ext === 'pdf' || ['doc', 'docx', 'ppt', 'pptx'].includes(ext)) Icon = FileText;
+  else if (['xls', 'xlsx', 'csv'].includes(ext)) Icon = FileSpreadsheet;
+  else if (['zip', 'rar'].includes(ext)) Icon = FileArchive;
+  return <Icon className={className} />;
+}
+
+/** True when the attachment is an image (rendered inline) */
+function isImageFile(fileType?: string | null, fileName?: string): boolean {
+  if (fileType?.startsWith('image/')) return true;
+  const ext = fileName?.split('.').pop()?.toLowerCase() || '';
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
 }
 
 /** Convert ISO date string to Bengali time */
@@ -1089,7 +1135,7 @@ function toBnTime(isoString: string): string {
 }
 
 /** Convert DB message to ChatMessage */
-function dbToChatMsg(m: { id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }): ChatMessage {
+function dbToChatMsg(m: { id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string; file?: ChatFileMeta | null; fileExpired?: boolean }): ChatMessage {
   return {
     id: m.id,
     role: (m.role as MessageRole) || 'system',
@@ -1097,6 +1143,8 @@ function dbToChatMsg(m: { id: string; role: string | null; senderName: string | 
     senderName: m.senderName || 'অজানা',
     text: m.text,
     timestamp: toBnTime(m.createdAt),
+    file: m.file || null,
+    fileExpired: !!m.fileExpired,
   };
 }
 
@@ -1504,8 +1552,9 @@ function ActionButton({
  * Buyer/Seller: aligned left/right, colored bubbles.
  * Admin: center-aligned, purple accent.
  * System: center-aligned, amber/orange accent.
+ * Attachments: inline images or a download card; expired files show a placeholder.
  */
-function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentUserId?: string }) {
+function ChatBubble({ message, currentUserId, dealId }: { message: ChatMessage; currentUserId?: string; dealId?: string }) {
   const { role, senderName, text, timestamp } = message;
 
   /* ── System messages: center-aligned, amber accent ── */
@@ -1580,6 +1629,17 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
   /* ── Buyer/Seller messages: own → right, other → left ── */
   const isOwn = currentUserId && message.senderId === currentUserId;
 
+  /* ── Attachment state ── */
+  const file = message.file || null;
+  const expired = !!message.fileExpired;
+  const fileUrl = file && dealId && !expired
+    ? `/api/deals/${encodeURIComponent(dealId)}/chat/file/${message.id}`
+    : null;
+  const isImage = file && !expired && isImageFile(file.fileType, file.fileName);
+  // File-only messages carry an auto fallback text ("📎 name") — hide it when the file card is shown
+  const fallbackText = file ? `📎 ${file.fileName}` : null;
+  const showCaption = !!text && text !== fallbackText;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8, x: isOwn ? 10 : -10 }}
@@ -1605,7 +1665,7 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
         </div>
 
         <div
-          className="rounded-2xl px-4 py-2.5 transition-transform duration-150 hover:scale-[1.01]"
+          className={`rounded-2xl transition-transform duration-150 hover:scale-[1.01] ${isImage && !showCaption ? 'p-1.5' : 'px-4 py-2.5'}`}
           style={{
             backgroundColor: isOwn ? PARROT_GREEN : 'var(--card)',
             color: isOwn ? '#fff' : 'var(--foreground)',
@@ -1617,7 +1677,54 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
             border: isOwn ? 'none' : '1px solid var(--border)',
           }}
         >
-          <p className="text-sm leading-relaxed">{text}</p>
+          {/* ── Attachment: inline image ── */}
+          {file && isImage && fileUrl && (
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl" aria-label={`${file.fileName} — বড় করে দেখুন`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={fileUrl} alt={file.fileName} loading="lazy" decoding="async" className="max-h-60 w-auto max-w-full rounded-xl" />
+            </a>
+          )}
+
+          {/* ── Attachment: document download card ── */}
+          {file && !isImage && !expired && (
+            <a
+              href={fileUrl || '#'}
+              download
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-colors"
+              style={{
+                backgroundColor: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
+                color: isOwn ? '#fff' : 'var(--foreground)',
+              }}
+            >
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: isOwn ? 'rgba(255,255,255,0.25)' : PARROT_GREEN, color: '#fff' }}
+              >
+                <ChatFileIcon fileType={file.fileType} fileName={file.fileName} className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-sm font-medium" style={{ maxWidth: '180px' }}>{file.fileName}</p>
+                <p className="text-[11px] opacity-70">
+                  {formatFileSize(file.fileSize)} · ডাউনলোড করতে ক্লিক করুন
+                </p>
+              </div>
+              <Download className="ml-1 h-4 w-4 shrink-0 opacity-80" />
+            </a>
+          )}
+
+          {/* ── Attachment: expired placeholder (auto-deleted after 3 days) ── */}
+          {file && expired && (
+            <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ backgroundColor: isOwn ? 'rgba(255,255,255,0.12)' : 'var(--muted)' }}>
+              <FileX className="h-5 w-5 shrink-0 opacity-50" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium line-through opacity-60" style={{ maxWidth: '180px' }}>{file.fileName}</p>
+                <p className="text-[11px] opacity-60">৩ দিন পূর্ণ — ফাইলটি স্বয়ংক্রিয়ভাবে মুছে ফেলা হয়েছে</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Caption / plain text ── */}
+          {showCaption && <p className="text-sm leading-relaxed break-words">{text}</p>}
         </div>
 
         <span className="flex items-center gap-1 px-1">
@@ -1672,6 +1779,11 @@ export function DealWorkflowTracker() {
   const [chatLoading, setChatLoading] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
   const [adminCallLoading, setAdminCallLoading] = useState(false);
+  /* ── Chat file attachment state ── */
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [pendingFile, setPendingFile] = useState<(ChatFileMeta & { key: string }) | null>(null);
+  const [chatFileError, setChatFileError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -2001,10 +2113,40 @@ export function DealWorkflowTracker() {
     }
   };
 
-  /** Send chat message via API */
+  /** Upload a chat attachment — file is stored in R2 and auto-deleted after 3 days */
+  const handleChatFileSelect = async (f: File) => {
+    if (!activeDeal?.id) return;
+    setChatFileError('');
+    if (f.size > CHAT_FILE_MAX_BYTES) {
+      setChatFileError('ফাইল সর্বোচ্চ 4MB হতে পারবে');
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat/upload`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setPendingFile({ key: data.key, fileName: data.fileName, fileSize: data.fileSize, fileType: data.fileType });
+      } else {
+        setChatFileError(data.error || 'ফাইল আপলোড করতে সমস্যা হয়েছে');
+      }
+    } catch {
+      setChatFileError('নেটওয়ার্ক সমস্যা — ফাইল আপলোড হয়নি');
+    } finally {
+      setUploadingFile(false);
+      if (chatFileInputRef.current) chatFileInputRef.current.value = '';
+    }
+  };
+
+  /** Send chat message via API (text and/or attachment) */
   const handleSend = async () => {
     const trimmed = chatInput.trim();
-    if (!trimmed || !activeDeal?.id || !user?.id) return;
+    if ((!trimmed && !pendingFile) || !activeDeal?.id || !user?.id) return;
     setSendingMsg(true);
     try {
       const role = isBuyer ? 'buyer' : 'seller';
@@ -2014,21 +2156,27 @@ export function DealWorkflowTracker() {
         body: JSON.stringify({
           role,
           senderName: user.name || 'আপনি',
-          text: trimmed,
+          text: trimmed || undefined,
+          file: pendingFile
+            ? { key: pendingFile.key, fileName: pendingFile.fileName, fileSize: pendingFile.fileSize, fileType: pendingFile.fileType }
+            : undefined,
         }),
       });
       if (res.ok) {
+        setPendingFile(null);
+        setChatFileError('');
         // Immediately fetch messages so the sent message appears without waiting for poll
         const msgRes = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
           headers: authHeaders(),
         });
         if (msgRes.ok) {
-          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await msgRes.json();
+          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string; file?: ChatFileMeta | null; fileExpired?: boolean }> = await msgRes.json();
           setMessages(data.map(dbToChatMsg));
           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
       } else {
-        toast.error('মেসেজ পাঠাতে সমস্যা হয়েছে');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'মেসেজ পাঠাতে সমস্যা হয়েছে');
       }
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
@@ -2742,7 +2890,7 @@ export function DealWorkflowTracker() {
                     <ChatDateDivider text="আজ" />
                     <AnimatePresence initial={false}>
                       {messages.map((msg) => (
-                        <ChatBubble key={msg.id} message={msg} currentUserId={user?.id} />
+                        <ChatBubble key={msg.id} message={msg} currentUserId={user?.id} dealId={activeDeal?.id} />
                       ))}
                     </AnimatePresence>
                   </>
@@ -2757,6 +2905,31 @@ export function DealWorkflowTracker() {
                   backgroundColor: 'var(--card)',
                 }}
               >
+                {/* Pending attachment chip + upload error */}
+                {(pendingFile || chatFileError) && (
+                  <div className="mb-2 flex flex-col gap-1">
+                    {pendingFile && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/40 px-3 py-2">
+                        <ChatFileIcon fileType={pendingFile.fileType} fileName={pendingFile.fileName} className="h-4 w-4 shrink-0 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium">{pendingFile.fileName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatFileSize(pendingFile.fileSize)} · পাঠানোর জন্য প্রস্তুত — ৩ দিন পর স্বয়ংক্রিয় মুছে যাবে
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setPendingFile(null)}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-muted"
+                          aria-label="ফাইল বাতিল করুন"
+                        >
+                          <XCircle className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    )}
+                    {chatFileError && <p className="text-xs font-medium text-red-500">{chatFileError}</p>}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* Admin ডাকুন button */}
                   <button
@@ -2785,17 +2958,36 @@ export function DealWorkflowTracker() {
                     />
                   </div>
 
+                  {/* File attach button (documents + images, auto-deleted after 3 days) */}
+                  <button
+                    onClick={() => chatFileInputRef.current?.click()}
+                    disabled={uploadingFile || sendingMsg}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                    aria-label="ফাইল পাঠান (সর্বোচ্চ 4MB)"
+                    title="ফাইল পাঠান — PDF, DOC, XLS, ZIP, JPG, PNG (সর্বোচ্চ 4MB, ৩ দিন পর মুছে যাবে)"
+                  >
+                    {uploadingFile ? <LoadingAnimation size="sm" /> : <Paperclip className="h-5 w-5" />}
+                  </button>
+                  <input
+                    ref={chatFileInputRef}
+                    type="file"
+                    accept={CHAT_FILE_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleChatFileSelect(f); }}
+                  />
+
                   {/* Send button */}
                   <motion.button
                     onClick={handleSend}
-                    disabled={!chatInput.trim() || sendingMsg}
+                    disabled={(!chatInput.trim() && !pendingFile) || sendingMsg || uploadingFile}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-40"
-                    whileHover={{ scale: chatInput.trim() && !sendingMsg ? 1.08 : 1 }}
-                    whileTap={{ scale: chatInput.trim() && !sendingMsg ? 0.92 : 1 }}
+                    whileHover={{ scale: (chatInput.trim() || pendingFile) && !sendingMsg ? 1.08 : 1 }}
+                    whileTap={{ scale: (chatInput.trim() || pendingFile) && !sendingMsg ? 0.92 : 1 }}
                     style={{
-                      backgroundColor: chatInput.trim() && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
-                      color: chatInput.trim() && !sendingMsg ? '#fff' : 'var(--muted-foreground)',
-                      boxShadow: chatInput.trim() && !sendingMsg ? PARROT_GREEN_GLOW : 'none',
+                      backgroundColor: (chatInput.trim() || pendingFile) && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
+                      color: (chatInput.trim() || pendingFile) && !sendingMsg ? '#fff' : 'var(--muted-foreground)',
+                      boxShadow: (chatInput.trim() || pendingFile) && !sendingMsg ? PARROT_GREEN_GLOW : 'none',
                     }}
                     aria-label="পাঠান"
                   >
