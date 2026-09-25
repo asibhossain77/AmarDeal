@@ -747,3 +747,16 @@ Work Log:
 
 Stage Summary:
 - Commit 05d024d pushed to origin/main; Vercel auto-deploy
+
+---
+Task ID: 30
+Agent: Super Z (main)
+Task: Deal chat file send + 3-day auto-delete
+
+Work Log:
+- ChatFile model + upload/download/cron routes + chat route file support + full chat UI (attach, pending chip, file cards, expired placeholder)
+- vercel.json cron daily 04:00 UTC cleanup-chat-files; health auto-creates ChatFile table
+- verified: auth guards, key-ownership, expiry masking, lazy+cron cleanup, browser E2E
+
+Stage Summary:
+- Commit 59587b3 pushed; Vercel auto-deploy
