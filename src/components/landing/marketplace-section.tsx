@@ -237,15 +237,16 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
   const hasRange = isMulti && product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice;
   return (
     <motion.article role="listitem" custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
-      <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientBg}`}>
+      {/* Product image: full image, no zoom/crop — native ratio kept on all devices, blank space white */}
+      <div className={`relative aspect-[16/10] overflow-hidden ${product.image ? 'bg-white' : `bg-gradient-to-br ${gradientBg}`}`}>
         {product.image ? (
-          <img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-contain" loading="lazy" decoding="async" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <CatIcon className={`h-12 w-12 ${catColor} opacity-30 transition-opacity group-hover:opacity-50 sm:h-14 sm:w-14`} strokeWidth={1.2} />
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />
+        {!product.image && <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />}
         <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5 sm:left-3 sm:top-3">
           <Badge variant="secondary" className="gap-1 bg-background/80 px-1.5 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
             <CatIcon className={`h-3.5 w-3.5 ${catColor}`} strokeWidth={2.5} />
@@ -300,7 +301,7 @@ function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: str
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) onUpload(f); };
   if (image && !image.startsWith('data:')) return (
     <div className="relative group">
-      <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-40 object-cover rounded-xl border border-border/40" />
+      <img src={cdnUrl(image) || ''} alt="Product" className="h-40 w-full rounded-xl border border-border/40 bg-white object-contain" />
       <button type="button" onClick={() => { onChange(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><X className="h-3.5 w-3.5" /></button>
     </div>
   );

@@ -255,7 +255,7 @@ export function SellerProfileView() {
                       <img
                         src={cdnUrl(p.image) || ''}
                         alt={p.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        className="h-full w-full bg-white object-contain"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center">

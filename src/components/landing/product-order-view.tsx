@@ -409,12 +409,12 @@ export function ProductOrderView() {
           transition={{ duration: 0.35 }}
           className="grid gap-6 lg:grid-cols-2 lg:gap-10"
         >
-          {/* Product image — fills full column height on desktop (no blank below) */}
-          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-muted/30 shadow-sm">
+          {/* Product image — fills full column height on desktop; full image, no zoom/crop, blank space white */}
+          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-white shadow-sm">
             {product.image ? (
-              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" />
+              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full bg-white object-contain lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" />
             ) : (
-              <div className="flex aspect-[16/10] w-full items-center justify-center lg:absolute lg:inset-0 lg:aspect-auto"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
+              <div className="flex aspect-[16/10] w-full items-center justify-center bg-muted/30 lg:absolute lg:inset-0 lg:aspect-auto"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
             )}
           </div>
 
@@ -700,7 +700,7 @@ export function ProductOrderView() {
                 >
                   <div className="aspect-[16/10] w-full overflow-hidden bg-muted/40">
                     {p.image ? (
-                      <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                      <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-full w-full bg-white object-contain" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center"><Package className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.2} /></div>
                     )}
