@@ -734,3 +734,16 @@ Work Log:
 Stage Summary:
 - Commit + push: origin/main; Vercel auto-deploy
 - Banner image এখন কখনো zoom/crop হয় না — upload করা ratio-ই সব ডিভাইসে দেখা যায়, বাকি জায়গা সাদা
+
+---
+Task ID: 29-b
+Agent: Super Z (main)
+Task: Marketplace product image — no zoom/crop, native ratio everywhere, white blank space
+
+Work Log:
+- object-cover → object-contain + bg-white on: marketplace grid card, product detail main, suggested products, seller profile grid, sell-dialog preview
+- removed hover scale-zoom on product images; top gradient overlay now placeholder-only
+- verified desktop+mobile: fit=contain, 16:10 container intact, white letterbox, full 1:1 test photo visible centered
+
+Stage Summary:
+- Commit 05d024d pushed to origin/main; Vercel auto-deploy
