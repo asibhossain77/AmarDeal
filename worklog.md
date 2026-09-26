@@ -797,3 +797,20 @@ Work Log:
 Stage Summary:
 - Commit 141ffac pushed to origin/main; Vercel auto-deploy
 - Deal lists now show unread marks: red count = unseen human chat messages, amber chip = deal row changed since last seen; opening the deal (or chat polling) clears them
+
+---
+Task ID: 32
+Agent: Super Z (main)
+Task: Customer quantity field on multi-price products — price auto-updates (option price × qty)
+
+Work Log:
+- Root cause: product-order-view hid the quantity selector for ALL digital products (!isDigital where isDigital = hasFile) — multi-price digital products had no qty, customer could only order 1
+- Fix: condition → (!isDigital || isMulti) — quantity now ALWAYS shows for multi-price products (digital or not); single-price digital files stay qty-less (file ×N meaningless)
+- Everything else was already wired: detail price shows unitPrice × qty with breakdown, confirm dialog shows total, confirmBuy sends quantity via dealPreFill, /api/deals/create validates 1..MAX_ORDER_QTY and computes finalAmount server-side (client amount ignored)
+- Legacy /api/products/[id]/buy ignores qty but no UI calls it — left untouched
+- Verified with a test multi digital product (fileKey set, Basic ৳500 / Premium ৳1,200): qty selector visible on digital product, select Premium + qty 3 → price shows ৳3,600 with '৳1,200 × 3' breakdown, live update confirmed via screenshot
+- TS clean on changed file; test rows cleaned, db/custom.db restored
+
+Stage Summary:
+- Commit 3f32313 pushed to origin/main; Vercel auto-deploy
+- Multi-price products (productType=multi) now always show the পরিমাণ quantity selector — total price auto-updates as option price × quantity
