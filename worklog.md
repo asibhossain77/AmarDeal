@@ -814,3 +814,23 @@ Work Log:
 Stage Summary:
 - Commit 3f32313 pushed to origin/main; Vercel auto-deploy
 - Multi-price products (productType=multi) now always show the পরিমাণ quantity selector — total price auto-updates as option price × quantity
+
+---
+Task ID: 33
+Agent: Super Z (main)
+Task: Seller work-duration commitment after payment verification + buyer countdown
+
+Work Log:
+- Schema: Deal.workDays Int? + Deal.workDeadlineAt DateTime? (local db push)
+- POST /api/deals/[id]/set-deadline: requireAuth seller-only, status==='payment_verified' guard, days 1-90 int, sets workDays+workDeadlineAt, system chat message (senderId __system__) + notifyUser to buyer
+- Shared src/components/dashboard/work-deadline.tsx: WorkDeadlineSelector (presets 1/3/7/15/30 + custom input, re-settable while payment_verified) + WorkDeadlineCountdown (1s tick, Bengali digits, amber <24h, red expired with admin hint) + toBn helper
+- DealWorkflowTracker: countdown card after stepper (payment_verified), প্রতিশ্রুত সময় InfoCard (Timer icon), selector in seller action block
+- SellerDealTracker: same selector above কাজ সম্পন্ন/ক্যান্সেল + DetailCard প্রতিশ্রুত সময়
+- health route autoFixSchema: Deal.workDays INTEGER + Deal.workDeadlineAt DATETIME (prod auto-ALTER on /api/health hit; token not available this time — health auto-setup is the prod path)
+- E2E API 7/7 PASS: seller set 7d→200, buyer GET has fields, system chat msg, buyer 403, 0/95→400, re-set 15d→200, in_delivery→400
+- Browser E2E: buyer live countdown (৬ দিন ২৩ ঘণ্টা ৫৭ মিনিট ২ সেকেন্ড বাকি), seller commitment summary + পরিবর্তন → 3d re-set works, expired red state verified; screenshots deadline-buyer-countdown/seller-set/seller-commit/expired.png
+- tsc: only 2 pre-existing tracker errors (baseline confirmed via stash); test deal restored to completed; scripts-dev removed
+
+Stage Summary:
+- Commit a8a20cf pushed; buyer sees live countdown in deal detail, seller commits duration after admin verifies payment
+- Prod note: first /api/health hit post-deploy auto-adds workDays/workDeadlineAt columns
