@@ -3,6 +3,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { requireDealAccess, requireAuth } from '@/lib/deal-guard'
 import { notifyUser } from '@/lib/push'
 import { ownsChatFileKey, MAX_CHAT_FILE_SIZE, CHAT_FILE_RETENTION_DAYS, deleteFileByKey } from '@/lib/r2'
+import { markDealRead } from '@/lib/deal-read'
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -29,6 +30,10 @@ export async function GET(
     // Authorization: user must own this deal
     const guard = await requireDealAccess(req, id)
     if (!guard.ok) return guard.response
+
+    // Reading the chat clears the unread badge (chat polls every 3s while the
+    // deal is open, so the badge stays cleared in real time).
+    after(() => markDealRead(id, guard.userId))
 
     const messages = await db.chatMessage.findMany({
       where: { dealId: id },

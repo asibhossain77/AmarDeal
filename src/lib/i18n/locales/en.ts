@@ -357,6 +357,7 @@ export const en: Record<TranslationKey, string> = {
   'deals.noDealFound': 'No deals found',
   'deals.searchNoResult': 'No deals found with "{search}"',
   'deals.view': 'View',
+  'deals.unreadUpdate': 'New update',
   'deals.copy': 'Copy',
 
   // ── Deal Form (New Deal) ──

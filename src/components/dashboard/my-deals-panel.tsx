@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Inbox, Copy, Check, Search, X, MessageSquare } from 'lucide-react';
 import { useT } from '@/lib/i18n';
+import { DealUnreadBadge } from '@/components/dashboard/deal-unread-badge';
 
 const emptySubscribe = () => () => {};
 
@@ -17,6 +18,9 @@ interface DealRow {
   amount: number;
   status: string;
   createdAt: string;
+  updatedAt?: string;
+  unreadCount?: number;
+  hasUpdate?: boolean;
   rejectionReason?: string | null;
   buyer?: { id: string; name: string; email: string; phone: string } | null;
   seller?: { id: string; name: string; email: string; phone: string } | null;
@@ -206,6 +210,11 @@ export function MyDealsPanel() {
                     <span className="text-xs text-muted-foreground">
                       {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
                     </span>
+                    <DealUnreadBadge
+                      unreadCount={deal.unreadCount ?? 0}
+                      hasUpdate={!!deal.hasUpdate}
+                      updateLabel={t('deals.unreadUpdate')}
+                    />
                   </div>
                   <p className="text-base font-semibold text-foreground truncate">{deal.title}</p>
                   <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>

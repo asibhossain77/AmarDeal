@@ -231,6 +231,20 @@ CREATE TABLE IF NOT EXISTS "ChatFile" (
 CREATE INDEX IF NOT EXISTS "ChatFile_dealId_idx" ON "ChatFile"("dealId");
 CREATE INDEX IF NOT EXISTS "ChatFile_expiresAt_idx" ON "ChatFile"("expiresAt");
 CREATE UNIQUE INDEX IF NOT EXISTS "ChatFile_messageId_key" ON "ChatFile"("messageId");`,
+    // Deal read states — per-user "seen" markers powering the unread badge on
+    // the deal lists. Safe to recreate: worst case badges reset to unread.
+    'DealReadState': `
+CREATE TABLE IF NOT EXISTS "DealReadState" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "dealId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "lastReadAt" DATETIME NOT NULL,
+  "lastSeenDealUpdated" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "DealReadState_dealId_userId_key" ON "DealReadState"("dealId", "userId");
+CREATE INDEX IF NOT EXISTS "DealReadState_userId_idx" ON "DealReadState"("userId");`,
     'SellerApplication': `
 CREATE TABLE IF NOT EXISTS "SellerApplication" (
   "id" TEXT NOT NULL PRIMARY KEY,

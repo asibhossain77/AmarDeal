@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Switch } from '@/components/ui/switch';
 import { SellerDealTracker } from './seller-deal-tracker';
 import { NewDealForm } from '@/components/dashboard/new-deal-form';
+import { DealUnreadBadge } from '@/components/dashboard/deal-unread-badge';
 import { BackButton } from '@/components/shared/back-button';
 import { ProductTypeSelector } from '@/components/shared/product-type-selector';
 import {
@@ -212,6 +213,7 @@ const CATEGORIES = [
 
 interface DealRow {
   id: string; title: string; amount: number; status: string; createdAt: string;
+  updatedAt?: string; unreadCount?: number; hasUpdate?: boolean;
   buyer?: { id: string; name: string; email: string; phone: string } | null;
   seller?: { id: string; name: string; email: string; phone: string } | null;
   creator?: { id: string; name: string; email: string } | null;
@@ -1413,6 +1415,11 @@ export function ActiveDealsPanel() {
                         {deal.product && (
                           <Badge variant="secondary" className="shrink-0 text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium">মার্কেটপ্লেস</Badge>
                         )}
+                        <DealUnreadBadge
+                          unreadCount={deal.unreadCount ?? 0}
+                          hasUpdate={!!deal.hasUpdate}
+                          updateLabel={t('deals.unreadUpdate')}
+                        />
                       </div>
                     </td>
                     <td className="px-4 py-3 text-foreground whitespace-nowrap">{deal.buyer?.name || '---'}</td>

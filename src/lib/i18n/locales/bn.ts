@@ -354,6 +354,7 @@ export const bn = {
   'deals.noDealFound': 'কোনো ডিল পাওয়া যায়নি',
   'deals.searchNoResult': '"{search}" দিয়ে কোনো ডিল পাওয়া যায়নি',
   'deals.view': 'দেখুন',
+  'deals.unreadUpdate': 'নতুন আপডেট',
   'deals.copy': 'কপি করুন',
 
   // ── Deal Form (New Deal) ──

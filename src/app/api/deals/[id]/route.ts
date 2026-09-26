@@ -1,6 +1,9 @@
 import { db } from '@/lib/db'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { markDealRead } from '@/lib/deal-read'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
@@ -41,6 +44,10 @@ export async function GET(
     if (!deal) {
       return NextResponse.json({ error: 'ডিল পাওয়া যায়নি' }, { status: 404 })
     }
+
+    // Viewing the deal clears the unread badge — snapshot the updatedAt we
+    // just served so only FUTURE changes by others re-flag it.
+    after(() => markDealRead(dealId, guard.userId))
 
     return NextResponse.json(deal)
   } catch {

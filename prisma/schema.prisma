@@ -216,6 +216,26 @@ model ChatFile {
   @@index([expiresAt])
 }
 
+/// Per-user "seen" marker for a deal — powers the unread badge on the deal
+/// list (My Deals / seller deals). lastReadAt is the threshold for new chat
+/// messages from others; lastSeenDealUpdated snapshots deal.updatedAt so a
+/// status change by the OTHER party (admin approve, seller deliver, …) counts
+/// as an update, while the user's own actions never flag their own list.
+/// Lives in a separate table (auto-created by /api/health) so chat keeps
+/// working even before this table exists.
+model DealReadState {
+  id                  String   @id @default(cuid())
+  dealId              String
+  userId              String
+  lastReadAt          DateTime
+  lastSeenDealUpdated DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([dealId, userId])
+  @@index([userId])
+}
+
 model BlogPost {
   id          String   @id @default(cuid())
   title       String
