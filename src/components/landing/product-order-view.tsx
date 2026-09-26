@@ -576,8 +576,12 @@ export function ProductOrderView() {
               </div>
             )}
 
-            {/* Quantity — order-time selection only (no stock); hidden for digital files */}
-            {!isDigital && (
+            {/* Quantity — order-time selection only (no stock). Hidden for
+                single-price digital files (a file ×N is meaningless), but
+                ALWAYS shown for multi-price products: the customer picks an
+                option (one of the multiple prices) and their own quantity —
+                the total price auto-updates to option price × quantity. */}
+            {(!isDigital || isMulti) && (
               <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"><Boxes className="h-4 w-4" />{t('marketplace.quantity')}</span>
