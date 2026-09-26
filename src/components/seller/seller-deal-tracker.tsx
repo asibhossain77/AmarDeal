@@ -28,7 +28,9 @@ import {
   AlertTriangle,
   XCircle,
   Ban,
+  Timer,
 } from 'lucide-react';
+import { WorkDeadlineSelector, toBn } from '@/components/dashboard/work-deadline';
 
 const emptySubscribe = () => () => {};
 
@@ -265,6 +267,9 @@ interface DealData {
   senderNumber?: string | null;
   transactionId?: string | null;
   paymentAmount?: number | null;
+  /* Seller work-duration commitment (set after payment verification) */
+  workDays?: number | null;
+  workDeadlineAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string } | null;
   seller: { id: string; name: string; email: string; phone: string } | null;
   creator: { id: string; name: string; email: string } | null;
@@ -474,6 +479,9 @@ export function SellerDealTracker() {
             <DetailCard icon={User} label="ক্রেতা" value={buyerName} />
             <DetailCard icon={User} label="বিক্রেতা" value={sellerName} />
             <DetailCard icon={CalendarDays} label="তৈরির তারিখ" value={dealDate} />
+            {dealData?.workDays != null && (
+              <DetailCard icon={Timer} label="প্রতিশ্রুত সময়" value={`${toBn(dealData.workDays)} দিন`} />
+            )}
           </div>
 
           {/* Deal Terms */}
@@ -521,6 +529,12 @@ export function SellerDealTracker() {
               <p className="text-sm text-center font-medium text-muted-foreground">
                 পেমেন্ট ভেরিফাই হয়েছে। পণ্য/সেবা ডেলিভারি করুন।
               </p>
+              <WorkDeadlineSelector
+                dealId={dealData?.id || activeDeal?.id || ''}
+                workDays={dealData?.workDays}
+                workDeadlineAt={dealData?.workDeadlineAt}
+                onSet={() => fetchDeal()}
+              />
               <div className="flex gap-3">
                 <Button
                   onClick={handleDeliver}

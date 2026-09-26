@@ -90,6 +90,9 @@ model Deal {
   productOptionId  String?
   adminCalled      Boolean  @default(false)
   adminCalledAt    DateTime?
+  // Seller work-duration commitment (set after admin verifies payment)
+  workDays         Int?      // কত দিনে কাজ সম্পন্ন হবে
+  workDeadlineAt   DateTime? // commitment expiry = set time + workDays days
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

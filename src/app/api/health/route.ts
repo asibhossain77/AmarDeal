@@ -121,6 +121,9 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     ['Deal', 'productId', 'TEXT', 'NULL'],
     ['Deal', 'adminCalled', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
     ['Deal', 'adminCalledAt', 'DATETIME', 'NULL'],
+    // Seller work-duration commitment (set after payment verification)
+    ['Deal', 'workDays', 'INTEGER', 'NULL'],
+    ['Deal', 'workDeadlineAt', 'DATETIME', 'NULL'],
     // Admin table columns
     ['Admin', 'permissions', 'TEXT NOT NULL DEFAULT \'[]\'', '\'[]\''],
     ['Admin', 'totpSecret', 'TEXT', 'NULL'],

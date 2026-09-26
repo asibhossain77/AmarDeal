@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
+import { WorkDeadlineSelector, WorkDeadlineCountdown, toBn } from './work-deadline';
 import {
   ArrowLeft,
   FileCheck,
@@ -51,6 +52,7 @@ import {
   FileDown,
   Download,
   Paperclip,
+  Timer,
   File,
   FileText,
   FileImage,
@@ -1170,6 +1172,9 @@ interface DealData {
   rejectionReason?: string | null;
   adminCalled?: boolean | null;
   adminCalledAt?: string | null;
+  /* Seller work-duration commitment (set after payment verification) */
+  workDays?: number | null;
+  workDeadlineAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   seller: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   creator: { id: string; name: string; email: string } | null;
@@ -2390,6 +2395,14 @@ export function DealWorkflowTracker() {
                   </div>
                 </div>
 
+                {/* ── Seller work-duration countdown (payment verified) ── */}
+                {dealData?.workDays != null && dealData?.workDeadlineAt && status === 'payment_verified' && (
+                  <WorkDeadlineCountdown
+                    workDays={dealData.workDays}
+                    workDeadlineAt={dealData.workDeadlineAt}
+                  />
+                )}
+
                 {/* ── Details Grid (2-col on mobile) ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <InfoCard
@@ -2397,6 +2410,13 @@ export function DealWorkflowTracker() {
                     label="ডিলের পরিমাণ"
                     value={`৳${dealAmount.toLocaleString('en')}`}
                   />
+                  {dealData?.workDays != null && (
+                    <InfoCard
+                      icon={Timer}
+                      label="প্রতিশ্রুত সময়"
+                      value={`${toBn(dealData.workDays)} দিন`}
+                    />
+                  )}
                   {dealData?.paymentAmount != null && dealData.paymentAmount !== dealData.amount && (
                     <InfoCard
                       icon={Banknote}
@@ -2499,6 +2519,12 @@ export function DealWorkflowTracker() {
                         পেমেন্ট ভেরিফাইড — আপনি কাজ সম্পূর্ণ করুন
                       </p>
                     </div>
+                    <WorkDeadlineSelector
+                      dealId={dealData?.id || activeDeal?.id || ''}
+                      workDays={dealData?.workDays}
+                      workDeadlineAt={dealData?.workDeadlineAt}
+                      onSet={() => fetchDeal()}
+                    />
                     <div className="flex gap-2 md:gap-3">
                       <ActionButton onClick={handleDeliver} loading={deliverLoading} variant="primary">
                         <PackageCheck className="h-5 w-5" />
