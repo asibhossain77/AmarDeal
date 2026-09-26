@@ -778,3 +778,22 @@ Work Log:
 Stage Summary:
 - Task 30 confirmed FULLY live on production: schema ready, cron configured (daily 04:00 UTC), upload/download/cleanup endpoints deployed
 - No code changes, no production mutations; verification only
+
+---
+Task ID: 31
+Agent: Super Z (main)
+Task: Deal list unread badge — unseen updates (chat messages + status changes) show a mark until opened
+
+Work Log:
+- New DealReadState model: per-user per-deal seen marker (lastReadAt = message threshold, lastSeenDealUpdated = deal.updatedAt snapshot); health auto-setup DDL added (ChatFile pattern, try/catch-safe everywhere)
+- markDealRead wired into GET /api/deals/[id] + GET /api/deals/[id]/chat via after() — chat polls every 3s while a deal is open, so badges clear in real time; own actions refetch detail → re-snapshot → own changes never flag your own list
+- attachUnreadMeta on /api/user/deals + /api/seller/deals: unreadCount = messages from other participants after lastReadAt (role='system' excluded — dispute/call-admin side effects bump deal.updatedAt → amber flag instead); one bounded message scan using min threshold, per-deal JS filter
+- DealUnreadBadge component: red count pill (unread > 0, priority) / amber pulsing 'নতুন আপডেট' chip (hasUpdate); rendered in my-deals-panel card header + seller-main table title cell; i18n bn/en ('deals.unreadUpdate')
+- E2E (10 steps, real cookies): never-opened → hasUpdate ✓; open detail clears ✓; B's message → A unread=1 exactly (system excluded) ✓; B never opened → sees history unread ✓; external status change → hasUpdate via snapshot ✓; reopening clears ✓; unauth 401 ✓
+- Visual: desktop screenshots — amber chips on never-opened deals, red 💬1 pill on seeded-message deal
+- TS clean on all changed files (remaining errors pre-existing, verified via stash baseline)
+- Production: DealReadState table created directly on Turso with user token (all cols + 2 indexes verified); health DDL covers fresh DBs
+
+Stage Summary:
+- Commit 141ffac pushed to origin/main; Vercel auto-deploy
+- Deal lists now show unread marks: red count = unseen human chat messages, amber chip = deal row changed since last seen; opening the deal (or chat polling) clears them
