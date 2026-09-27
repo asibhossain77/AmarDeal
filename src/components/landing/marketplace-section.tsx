@@ -126,6 +126,14 @@ function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () =
     return () => { alive = false; };
   }, []);
 
+  // Preload every banner image up-front — otherwise each slide change mounts a
+  // fresh <img> that pops in only after the network delivers it (the "jump"
+  // the user saw). Preloaded = crossfade is instantaneous and smooth.
+  useEffect(() => {
+    if (!banners) return;
+    banners.forEach(b => { const img = new Image(); img.src = cdnUrl(b.image) || b.image; });
+  }, [banners]);
+
   useEffect(() => {
     if (!banners || banners.length < 2) return;
     intervalRef.current = setInterval(() => setCurrent(p => (p + 1) % banners.length), 5000);
@@ -154,11 +162,11 @@ function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () =
               target={banner.link ? '_blank' : undefined}
               rel={banner.link ? 'noopener noreferrer' : undefined}
               aria-label={banner.title}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: 'easeInOut' }}
-              className={`absolute inset-0 block ${banner.link ? 'cursor-pointer' : 'pointer-events-none'}`}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className={`absolute inset-0 z-10 block ${banner.link ? 'cursor-pointer' : 'pointer-events-none'}`}
             >
               <img src={image} alt={banner.subtitle || banner.title} className="h-full w-full object-contain" loading="eager" decoding="async" />
             </motion.a>
@@ -521,21 +529,28 @@ export function MarketplaceSection() {
         <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
         <h2 className="text-[15px] font-bold text-foreground sm:text-base">{locale === 'bn' ? '\u09B8\u0995\u09B2 \u09AA\u09A3\u09CD\u09AF' : 'All Products'} {!loading && <span className="ml-2 text-[13px] font-normal text-muted-foreground">({filtered.length})</span>}</h2>
       </div>
-      {loading ? (
+      {/* No-jump refetch: skeleton ONLY on the very first load. When switching
+          category, the old grid stays in place (dimmed while fetching) instead
+          of collapsing to skeletons — that collapse was yanking the page up/down. */}
+      {loading && products.length === 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">{[...Array(6)].map((_, i) => (
           <div key={i} className="animate-pulse overflow-hidden rounded-2xl border border-border/30 bg-card">
             <div className="aspect-[16/10] bg-muted/50" />
             <div className="space-y-2.5 p-4"><div className="h-4 w-3/4 rounded bg-muted" /><div className="h-3 w-full rounded bg-muted" /><div className="flex justify-between pt-2"><div className="h-5 w-20 rounded bg-muted" /><div className="h-4 w-16 rounded bg-muted" /></div></div>
           </div>
         ))}</div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10"><Package className="h-7 w-7 text-primary" /></div>
-          <p className="mt-4 text-sm font-semibold text-foreground">{t('marketplace.noProducts')}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
-        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
+        <div className={`transition-opacity duration-200 ${loading ? 'pointer-events-none opacity-40' : 'opacity-100'}`}>
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10"><Package className="h-7 w-7 text-primary" /></div>
+              <p className="mt-4 text-sm font-semibold text-foreground">{t('marketplace.noProducts')}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
+          )}
+        </div>
       )}
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>

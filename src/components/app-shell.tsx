@@ -228,10 +228,10 @@ function BlogPage() {
 }
 
 function PageMarketplace() {
-  const locale = useAppStore((s) => s.locale);
-  const { t } = useTranslation(locale);
   return (
-    <PageWrapper title={t('page.marketplace.title')} subtitle={t('page.marketplace.subtitle')}>
+    /* No title/subtitle: user asked to drop the "ডিজিটাল মার্কেটপ্লেস" header —
+       the page now starts directly with the banner + toolbar */
+    <PageWrapper>
       <MarketplaceSection />
     </PageWrapper>
   );
