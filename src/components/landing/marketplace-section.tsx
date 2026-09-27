@@ -220,18 +220,27 @@ function PromoSlider({ locale, onExplore }: { locale: string; onExplore: () => v
 }
 
 // -- CategoryGrid --
-function CategoryGrid({ active, onSelect, locale }: { active: string; onSelect: (k: string) => void; locale: string }) {
+// staggered=true (popup): tiles cascade in one-by-one for a smoother open feel
+function CategoryGrid({ active, onSelect, locale, staggered }: { active: string; onSelect: (k: string) => void; locale: string; staggered?: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
-      {CATEGORIES.map(cat => {
+      {CATEGORIES.map((cat, i) => {
         const isActive = active === cat.key;
         return (
-          <button key={cat.key} onClick={() => onSelect(cat.key)} className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 sm:rounded-2xl sm:p-4 ${isActive ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}>
+          <motion.button
+            key={cat.key}
+            onClick={() => onSelect(cat.key)}
+            initial={staggered ? { opacity: 0, y: 14, scale: 0.9 } : false}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={staggered ? { delay: 0.04 + i * 0.028, type: 'spring', stiffness: 480, damping: 28 } : { duration: 0 }}
+            whileTap={{ scale: 0.94 }}
+            className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-colors duration-200 sm:rounded-2xl sm:p-4 ${isActive ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}
+          >
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 transition-colors sm:h-11 sm:w-11 sm:rounded-2xl group-hover:bg-muted ${isActive ? 'bg-primary/15' : ''}`}>
               <cat.Icon className={`h-5 w-5 sm:h-[22px] sm:w-[22px] ${isActive ? 'text-primary' : cat.color}`} strokeWidth={1.8} />
             </div>
             <span className={`text-[11px] font-semibold leading-tight sm:text-[12px] ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>{cat[locale === 'bn' ? 'bn' : 'en']}</span>
-          </button>
+          </motion.button>
         );
       })}
     </div>
@@ -246,37 +255,49 @@ function CategoryPicker({ active, onSelect, locale, t }: { active: string; onSel
   const [open, setOpen] = useState(false);
   const activeCat = CATEGORIES.find(c => c.key === active);
   const ActiveIcon = activeCat?.Icon ?? LayoutGrid;
+  // Smooth-open helpers: Esc closes, background scroll locked while popup is up
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prevOverflow; };
+  }, [open]);
   return (
     <div>
       <button
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/40 bg-background px-4 text-[13px] font-semibold text-foreground transition-all hover:border-primary/30 hover:shadow-sm dark:border-border/25"
+        className={`group inline-flex h-12 items-center gap-2.5 rounded-full border pl-2 pr-4 text-[13px] font-semibold shadow-sm transition-all duration-300 hover:-translate-y-px hover:shadow-md hover:shadow-primary/10 dark:border-border/25 ${activeCat && activeCat.key !== 'all' ? 'border-primary/40 bg-primary/[0.06] text-primary' : 'border-border/40 bg-background text-foreground hover:border-primary/35'}`}
       >
-        <ActiveIcon className={`h-4 w-4 ${activeCat?.color ?? 'text-primary'}`} strokeWidth={2} />
-        <span>{activeCat ? activeCat[locale === 'bn' ? 'bn' : 'en'] : CATEGORIES[0][locale === 'bn' ? 'bn' : 'en']}</span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-300 ${activeCat && activeCat.key !== 'all' ? 'bg-primary/15' : 'bg-muted/80 group-hover:bg-primary/10'}`}>
+          <ActiveIcon className={`h-4 w-4 ${activeCat && activeCat.key !== 'all' ? 'text-primary' : (activeCat?.color ?? 'text-primary')}`} strokeWidth={2.2} />
+        </span>
+        <span className="whitespace-nowrap">{activeCat ? activeCat[locale === 'bn' ? 'bn' : 'en'] : CATEGORIES[0][locale === 'bn' ? 'bn' : 'en']}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
             <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.96 }}
+              initial={{ opacity: 0, y: -16, scale: 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.97 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, y: -10, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.85 }}
+              style={{ transformOrigin: '50% 0%' }}
               role="dialog"
               aria-modal="true"
               aria-label={t('marketplace.selectCategory')}
-              className="fixed inset-x-4 top-[12%] z-50 mx-auto max-h-[80vh] max-w-md overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25"
+              className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[80vh] max-w-md overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl shadow-black/20 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25"
             >
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-base font-bold text-foreground">{t('marketplace.selectCategory')}</h3>
-                <button onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground transition-colors hover:text-foreground"><X className="h-5 w-5" /></button>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90"><X className="h-4.5 w-4.5" /></button>
               </div>
-              <CategoryGrid active={active} onSelect={(k) => { onSelect(k); setOpen(false); }} locale={locale} />
+              <CategoryGrid staggered active={active} onSelect={(k) => { onSelect(k); setOpen(false); }} locale={locale} />
             </motion.div>
           </>
         )}
@@ -477,18 +498,25 @@ export function MarketplaceSection() {
   return (
     <section aria-label={t('page.marketplace.title')} className="space-y-6 sm:space-y-8">
       <AdBannerSlider locale={locale} onExplore={() => {}} />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} aria-label={t('marketplace.searchPlaceholder')} className="h-11 w-full rounded-xl border border-border/40 bg-background pl-10 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all dark:border-border/25" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="group relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-primary" />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} aria-label={t('marketplace.searchPlaceholder')} className="h-12 w-full rounded-full border border-border/40 bg-muted/30 pl-11 pr-10 text-[13px] font-medium text-foreground shadow-sm placeholder:font-normal placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background focus:shadow-lg focus:shadow-primary/10 focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all duration-300 dark:border-border/25 dark:bg-muted/20" />
+          {search && (
+            <button onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-        {user?.isSeller && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-2 rounded-xl text-[13px] font-semibold shadow-md shadow-primary/20"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
-        )}
+        <div className="flex items-center gap-3">
+          <nav aria-label={locale === 'bn' ? 'ক্যাটাগরি ফিল্টার' : 'Category filter'}>
+            <CategoryPicker active={activeCategory} onSelect={setActiveCategory} locale={locale} t={t} />
+          </nav>
+          {user?.isSeller && (
+            <Button onClick={() => setShowAddDialog(true)} className="h-12 gap-2 rounded-full px-5 text-[13px] font-semibold shadow-md shadow-primary/20 transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-primary/25"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
+          )}
+        </div>
       </div>
-      <nav aria-label={locale === 'bn' ? 'ক্যাটাগরি ফিল্টার' : 'Category filter'}>
-        <CategoryPicker active={activeCategory} onSelect={setActiveCategory} locale={locale} t={t} />
-      </nav>
       <div className="flex items-center gap-2">
         <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
         <h2 className="text-[15px] font-bold text-foreground sm:text-base">{locale === 'bn' ? '\u09B8\u0995\u09B2 \u09AA\u09A3\u09CD\u09AF' : 'All Products'} {!loading && <span className="ml-2 text-[13px] font-normal text-muted-foreground">({filtered.length})</span>}</h2>
