@@ -902,3 +902,21 @@ Work Log:
 Stage Summary:
 - Commit 6c6f7e3 pushed; My Deals panel now has Updates + Awaiting Confirmation categories with counts
 - Seller ActiveDealsList (plain table) intentionally untouched — rows already carry DealUnreadBadge
+
+---
+Task ID: 37
+Agent: Super Z (main)
+Task: Product category te facebook/instagram/subscription/free service add + marketplace e category select popup system
+
+Work Log:
+- New category keys: facebook, instagram, subscription, free_service (bn: ফেসবুক/ইনস্টাগ্রাম/সাবস্ক্রিপশন/ফ্রি সার্ভিস)
+- Added to 5 places: API VALID_CATEGORIES whitelist (products route GET filter + POST fallback), marketplace-section CATEGORIES (Icons: Facebook/Instagram/Repeat/Gift + CATEGORY_BG gradients + bonus 'other' tile — fixed pre-existing form-default mismatch where select showed first option while state was 'other'), seller-main CATEGORIES (product create form), admin marketplace-panel CATEGORIES (also added missing social_media/id entries), product-order-view CATEGORY_NAMES label map
+- Marketplace UI: replaced always-visible CategoryGrid with CategoryPicker — compact trigger button (active category icon+name+chevron) opens AnimatePresence popup dialog (overlay + max-w-md panel + ক্যাটাগরি নির্বাচন করুন header + close X) containing the full CategoryGrid; selecting a tile closes popup and applies filter
+- i18n: marketplace.selectCategory (ক্যাটাগরি নির্বাচন করুন / Select Category)
+- auctions-panel CATEGORIES intentionally untouched (auction-specific categories not in scope)
+- E2E: API POST category=facebook → 201 (whitelist ok), invalid category falls back to 'other' (pre-existing safe behavior), GET ?category=facebook filters; browser — picker button renders, popup shows 15 tiles (all 14 categories + close), 4 new categories verified, selecting ফেসবুক closes popup + button shows ফেসবুক + FB product visible with badge; screenshots task37-category-popup.png / task37-facebook-filtered.png; 3 test products deleted after
+- Sandbox reset mid-task (server + /tmp wiped, working tree survived); user B isSeller restored true for E2E (kept); tsc: found 1 new error (CategoryPicker t prop TranslationKey type) → fixed via typed prop, final 170 = baseline 170
+
+Stage Summary:
+- Commit e697075 pushed; 14 categories live, marketplace category selection now popup-based
+- No schema change needed (category is String column) — no Turso action for this task
