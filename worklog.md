@@ -951,3 +951,18 @@ Work Log:
 
 Stage Summary:
 - Commit d85b7ed pushed origin/main; Vercel auto-deploy; no schema/i18n change
+
+---
+Task ID: 37-d
+Agent: Super Z (main)
+Task: contact page — hide whatsapp/phone numbers, buttons only
+
+Work Log:
+- WhatsApp card: value=waNumber -> value="WhatsApp" (number never rendered); removed waNumber parser
+- Phone card: value=data.phone -> t('contact.phoneValue') ("Voice Call Support"/"কল সাপোর্ট"); i18n key added bn+en
+- Bonus: plain whatsapp numbers normalized to https://wa.me/<digits> so button always opens valid chat
+- E2E pass: numberVisibleAnywhere=false, call/wa buttons intact, waBtnHref=https://wa.me/01712345678
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit pushed origin/main; Vercel auto-deploy; no schema change
