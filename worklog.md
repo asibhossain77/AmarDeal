@@ -834,3 +834,20 @@ Work Log:
 Stage Summary:
 - Commit a8a20cf pushed; buyer sees live countdown in deal detail, seller commits duration after admin verifies payment
 - Prod note: first /api/health hit post-deploy auto-adds workDays/workDeadlineAt columns
+
+---
+Task ID: 34
+Agent: Super Z (main)
+Task: Deal section e boro/long title kathe na kete full title show korano
+
+Work Log:
+- Scope: all deal-title render surfaces — buyer my-deals card, buyer deal detail header (DealWorkflowTracker), deal chat header, seller my-deals panel, seller ActiveDealsPanel table, user payment view (row + card), dashboard recent-deals table, admin (deals table, mobile cards, user-deals list, chat dialog, deal detail headers x2, disputes+live-chat tables)
+- Fix pattern: removed `truncate` / `max-w-[180px]` / `whitespace-nowrap` from deal title cells, added `break-words` (overflow-wrap) so long + unbroken titles wrap to multiple lines; 7 files, 15 title spots
+- Out of scope (left as-is): seller product grid card title (marketplace card design), admin DetailCard/InfoCard (amount/date/buyer only, no title)
+- E2E (agent-browser, 186-char Bangla title on test deal DL-bz9hr): buyer list fullyVisible=true (2 lines), buyer detail header fullyVisible=true (2 lines), chat header full title visible (2 lines), seller deals table fullyVisible=true (3 lines, badges/buttons aligned) — 4 screenshots in /home/z/my-project/download/
+- tsc: baseline stash comparison — 0 new errors (all 8 errors in touched files pre-existed at identical lines)
+- Test data: local db was stale after sandbox reset → prisma db push re-synced schema (workDays cols), sellerApplication approved + isSeller=true seeded for seller test user (kept for future E2E), deal title restored after test, db/custom.db checked out clean, scripts-dev removed
+
+Stage Summary:
+- Commit 99874e2 pushed to origin/main; Vercel auto-deploy
+- Deal titles now never truncate — full title wraps to multiple lines in every buyer/seller/admin deal surface
