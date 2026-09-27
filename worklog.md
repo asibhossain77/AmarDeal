@@ -920,3 +920,19 @@ Work Log:
 Stage Summary:
 - Commit e697075 pushed; 14 categories live, marketplace category selection now popup-based
 - No schema change needed (category is String column) — no Turso action for this task
+
+---
+Task ID: 37-b
+Agent: Super Z (main)
+Task: smoother category popup open + nicer marketplace search/category buttons
+
+Work Log:
+- Popup: spring transition (stiffness 380/damping 30, drop from top, transformOrigin top), backdrop fade 0.2s, tiles staggered cascade (i*0.028 spring), Esc close + body scroll lock
+- Search: rounded-full pill, muted bg, focus glow ring (ring-4 primary/10 + shadow), icon turns primary on focus, clear (X) button when text
+- Category trigger: pill with circular icon chip, active state = primary tint/border/text; hover lift; chevron rotates
+- Toolbar: search + category + add-product on one row (stack on mobile)
+- E2E pass: open/stagger screenshot, select facebook -> filter + active pill, Esc close, scroll restore, clear btn
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit 8e34742 pushed origin/main; Vercel auto-deploy; no schema/i18n change
