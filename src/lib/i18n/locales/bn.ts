@@ -2065,6 +2065,7 @@ export const bn = {
   'marketplace.formDescPh': 'পণ্য সম্পর্কে বিস্তারিত লিখুন...',
   'marketplace.formPrice': 'মূল্য',
   'marketplace.formCategory': 'ক্যাটাগরি',
+  'marketplace.selectCategory': 'ক্যাটাগরি নির্বাচন করুন',
   'marketplace.formImage': 'পণ্যের ছবি',
   'marketplace.optional': 'ঐচ্ছিক',
   'marketplace.uploadImage': 'ছবি আপলোড করুন',

@@ -2068,6 +2068,7 @@ export const en: Record<TranslationKey, string> = {
   'marketplace.formDescPh': 'Write details about the product...',
   'marketplace.formPrice': 'Price',
   'marketplace.formCategory': 'Category',
+  'marketplace.selectCategory': 'Select Category',
   'marketplace.formImage': 'Product Image',
   'marketplace.optional': 'optional',
   'marketplace.uploadImage': 'Upload Image',

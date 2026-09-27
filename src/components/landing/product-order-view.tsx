@@ -47,6 +47,10 @@ const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
   software: { bn: 'সফটওয়্যার', en: 'Software' },
   social_media: { bn: 'সোশ্যাল মিডিয়া', en: 'Social Media' },
   id: { bn: 'আইডি', en: 'ID' },
+  facebook: { bn: 'ফেসবুক', en: 'Facebook' },
+  instagram: { bn: 'ইনস্টাগ্রাম', en: 'Instagram' },
+  subscription: { bn: 'সাবস্ক্রিপশন', en: 'Subscription' },
+  free_service: { bn: 'ফ্রি সার্ভিস', en: 'Free Service' },
   other: { bn: 'অন্যান্য', en: 'Other' },
 };
 

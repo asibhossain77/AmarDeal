@@ -14,6 +14,10 @@ const VALID_CATEGORIES = [
   'software',
   'social_media',
   'id',
+  'facebook',
+  'instagram',
+  'subscription',
+  'free_service',
   'other',
 ] as const
 

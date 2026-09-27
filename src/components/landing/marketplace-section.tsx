@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import {
   Search, X, MessageCircle, Package, Plus, Loader2, User, Layers,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon, FileDown,
+  ChevronLeft, ChevronRight, ChevronDown, Zap, ArrowRight, Clock, Star, Upload, ImageIcon, FileDown,
+  Facebook, Instagram, Repeat, Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
-import { useT } from '@/lib/i18n';
+import { useT, type TranslationKey } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 import { ProductTypeSelector } from '@/components/shared/product-type-selector';
 import {
@@ -37,15 +38,20 @@ interface Product {
 interface AdBanner { id: string; title: string; subtitle: string | null; image: string; link: string | null; }
 
 const CATEGORIES = [
-  { key: 'all', bn: '\u09B8\u09AC', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
-  { key: 'design', bn: '\u09A1\u09BF\u099C\u09BE\u0987\u09A8', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
-  { key: 'development', bn: '\u09A1\u09C7\u09AD\u09C7\u09B2\u09AA\u09AE\u09C7\u09A8\u09CD\u099F', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
-  { key: 'content', bn: '\u0995\u09A8\u09CD\u099F\u09C7\u09A8\u09CD\u099F', en: 'Content', Icon: PenTool, color: 'text-orange-500 dark:text-orange-400' },
-  { key: 'marketing', bn: '\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F\u09BF\u0982', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
-  { key: 'education', bn: '\u09B6\u09BF\u0995\u09CD\u09B7\u09BE', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
-  { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
-  { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
-  { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
+  { key: 'all', bn: 'সব', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
+  { key: 'design', bn: 'ডিজাইন', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
+  { key: 'development', bn: 'ডেভেলপমেন্ট', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
+  { key: 'content', bn: 'কন্টেন্ট', en: 'Content', Icon: PenTool, color: 'text-orange-500 dark:text-orange-400' },
+  { key: 'marketing', bn: 'মার্কেটিং', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
+  { key: 'education', bn: 'শিক্ষা', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
+  { key: 'software', bn: 'সফটওয়্যার', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
+  { key: 'social_media', bn: 'সোশ্যাল মিডিয়া', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
+  { key: 'id', bn: 'আইডি', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
+  { key: 'facebook', bn: 'ফেসবুক', en: 'Facebook', Icon: Facebook, color: 'text-blue-600 dark:text-blue-400' },
+  { key: 'instagram', bn: 'ইনস্টাগ্রাম', en: 'Instagram', Icon: Instagram, color: 'text-fuchsia-500 dark:text-fuchsia-400' },
+  { key: 'subscription', bn: 'সাবস্ক্রিপশন', en: 'Subscription', Icon: Repeat, color: 'text-violet-500 dark:text-violet-400' },
+  { key: 'free_service', bn: 'ফ্রি সার্ভিস', en: 'Free Service', Icon: Gift, color: 'text-emerald-500 dark:text-emerald-400' },
+  { key: 'other', bn: 'অন্যান্য', en: 'Other', Icon: Package, color: 'text-zinc-500 dark:text-zinc-400' },
 ];
 
 const CATEGORY_BG: Record<string, string> = {
@@ -57,6 +63,10 @@ const CATEGORY_BG: Record<string, string> = {
   software: 'from-cyan-500/10 to-cyan-500/5 dark:from-cyan-500/15 dark:to-cyan-500/5',
   social_media: 'from-green-500/10 to-green-500/5 dark:from-green-500/15 dark:to-green-500/5',
   id: 'from-rose-500/10 to-rose-500/5 dark:from-rose-500/15 dark:to-rose-500/5',
+  facebook: 'from-blue-500/10 to-blue-500/5 dark:from-blue-500/15 dark:to-blue-500/5',
+  instagram: 'from-fuchsia-500/10 to-fuchsia-500/5 dark:from-fuchsia-500/15 dark:to-fuchsia-500/5',
+  subscription: 'from-violet-500/10 to-violet-500/5 dark:from-violet-500/15 dark:to-violet-500/5',
+  free_service: 'from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/15 dark:to-emerald-500/5',
   other: 'from-zinc-500/10 to-zinc-500/5 dark:from-zinc-500/15 dark:to-zinc-500/5',
 };
 
@@ -224,6 +234,53 @@ function CategoryGrid({ active, onSelect, locale }: { active: string; onSelect: 
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// -- CategoryPicker --
+// Compact trigger + popup selector — the full category grid no longer sits
+// permanently on the marketplace page (13 tiles looked cluttered); the user
+// opens the popup, taps a category, and the popup closes with the filter set.
+function CategoryPicker({ active, onSelect, locale, t }: { active: string; onSelect: (k: string) => void; locale: string; t: (key: TranslationKey, vars?: Record<string, string | number>) => string }) {
+  const [open, setOpen] = useState(false);
+  const activeCat = CATEGORIES.find(c => c.key === active);
+  const ActiveIcon = activeCat?.Icon ?? LayoutGrid;
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="inline-flex h-11 items-center gap-2 rounded-xl border border-border/40 bg-background px-4 text-[13px] font-semibold text-foreground transition-all hover:border-primary/30 hover:shadow-sm dark:border-border/25"
+      >
+        <ActiveIcon className={`h-4 w-4 ${activeCat?.color ?? 'text-primary'}`} strokeWidth={2} />
+        <span>{activeCat ? activeCat[locale === 'bn' ? 'bn' : 'en'] : CATEGORIES[0][locale === 'bn' ? 'bn' : 'en']}</span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              transition={{ duration: 0.25 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('marketplace.selectCategory')}
+              className="fixed inset-x-4 top-[12%] z-50 mx-auto max-h-[80vh] max-w-md overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground">{t('marketplace.selectCategory')}</h3>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="text-muted-foreground transition-colors hover:text-foreground"><X className="h-5 w-5" /></button>
+              </div>
+              <CategoryGrid active={active} onSelect={(k) => { onSelect(k); setOpen(false); }} locale={locale} />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -429,8 +486,8 @@ export function MarketplaceSection() {
           <Button onClick={() => setShowAddDialog(true)} className="gap-2 rounded-xl text-[13px] font-semibold shadow-md shadow-primary/20"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
         )}
       </div>
-      <nav aria-label={locale === 'bn' ? '\u0995\u09CD\u09AF\u09BE\u099F\u09C7\u0997\u09B0\u09BF \u09AB\u09BF\u09B2\u09CD\u099F\u09BE\u09B0' : 'Category filter'}>
-        <CategoryGrid active={activeCategory} onSelect={setActiveCategory} locale={locale} />
+      <nav aria-label={locale === 'bn' ? 'ক্যাটাগরি ফিল্টার' : 'Category filter'}>
+        <CategoryPicker active={activeCategory} onSelect={setActiveCategory} locale={locale} t={t} />
       </nav>
       <div className="flex items-center gap-2">
         <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
