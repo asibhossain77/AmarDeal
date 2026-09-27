@@ -996,3 +996,21 @@ Work Log:
 
 Stage Summary:
 - Commit pushed origin/main; Vercel auto-deploy
+---
+Task ID: 38
+Agent: Super Z (main)
+Task: mobile view te deal section scroll hocche na ar deal terms show hoi na
+
+Work Log:
+- Root causes (2): (1) deal terms card had hidden sm:block — invisible below 640px; (2) dashboard-main immersive wrapper used fixed h-[calc(100vh-4rem)] on mobile → forced inner-scroll area, but 100vh > real device viewport (URL bar) so the panel bottom (incl. action buttons) was unreachable — users perceived "page won't scroll"
+- Fix A: dashboard-main immersive root → min-h-[calc(100dvh-3.5rem)] sm:min-h-0; mobile panel grows with content and the PAGE scrolls natively; sm+ desktop capped layout (tracker sm:max-h + info-tab inner scroll) untouched
+- Fix B: deal terms card hidden sm:block removed → visible at every breakpoint
+- Fix C: tracker scrolls window to top on deal open (page-scroll entry starts at header); hook placed above early returns (React rules-of-hooks)
+- E2E mobile 375×812 (buyer asib@gmail.com, deal cmrdm81wd with 586-char 8-clause terms): terms header + clause 1/8 in innerText, docH 1007 vs winH 812, window scrolls to 195 (max), terms card top 352 after scroll, "পেমেন্ট করুন" button reachable at bottom; html scroll-behavior smooth explains sync scrollY=0 read (touch unaffected); screenshots task38-mobile-terms.png / task38-mobile-bottom.png
+- E2E desktop 1440×900 regression: page does NOT scroll (docH 900), tracker capped 772px (sm:max-h), info tab inner scroll intact (sh 774 > ch 642, overflow-y auto), terms visible — desktop identical to pre-fix
+- Gotchas: server dies between tool calls → all measurements must happen in the same call as the alive-check/restart, else Chrome error page gives garbage metrics (body 364px etc.); db/custom.db git-checkout restored after terms test data; scripts-dev removed
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit 032027a pushed origin/main; Vercel auto-deploys
+- Mobile deal detail = native page scroll + terms always visible; desktop immersive inner-scroll unchanged
