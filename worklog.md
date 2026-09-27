@@ -966,3 +966,18 @@ Work Log:
 
 Stage Summary:
 - Commit pushed origin/main; Vercel auto-deploy; no schema change
+
+---
+Task ID: 37-e
+Agent: Super Z (main)
+Task: contact page clarification — phone shows number, WhatsApp hides it
+
+Work Log:
+- Reverted phone card value to data.phone (number visible), WhatsApp card stays value="WhatsApp" (hidden)
+- Removed unused contact.phoneValue i18n key (bn+en)
+- Fixed JSX parse error (inline comment between attributes was invalid) caught by dev 500
+- E2E pass: numberOnPage=true (phone card), WhatsApp section has no number, both buttons work
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit pushed origin/main; Vercel auto-deploy
