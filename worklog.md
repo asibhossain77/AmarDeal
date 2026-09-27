@@ -851,3 +851,22 @@ Work Log:
 Stage Summary:
 - Commit 99874e2 pushed to origin/main; Vercel auto-deploy
 - Deal titles now never truncate — full title wraps to multiple lines in every buyer/seller/admin deal surface
+
+---
+Task ID: 35
+Agent: Super Z (main)
+Task: Buyer unresponsive hole seller reminder email + 1 month por auto-complete (seller er tk hold na thake)
+
+Work Log:
+- Schema: Deal.deliveredAt (deliver route sets it) + Deal.reminderEmailSentAt + Deal.autoCompleteAt (local db push; health autoFixSchema covers prod ALTERs)
+- POST /api/deals/[id]/send-reminder: seller-only, status=in_delivery, requires 3 days since deliveredAt (updatedAt fallback for legacy deals), one-shot guard; sets reminderEmailSentAt + autoCompleteAt = +30d; system chat message (__system__ + broadcast), buyer notification (delivery_reminder), buyer email (new deliveryReminderEmail template with Bengali date label + dispute hint)
+- GET /api/cron/auto-complete-deals: CRON_SECRET-guarded daily cron; finds in_delivery deals with autoCompleteAt <= now; per-deal atomic guarded updateMany (idempotent under overlap); side effects mirror accept route exactly (status completed, system chat msg, notify buyer+seller, dealCompletedEmail/WA both); vercel.json cron 30 4 * * * (after 04:00 chat cleanup)
+- Shared src/components/dashboard/auto-complete.tsx: DeliveryReminderCard (seller: <3d muted hint with remaining days / >=3d amber send button / sent = green confirmation + AutoCompleteCountdown), AutoCompleteWarning (buyer: amber reminder-sent explanation + dispute CTA + countdown), bnDateLabel helper (Bengali digits/months)
+- Wired into both trackers: seller-deal-tracker + deal-workflow-tracker seller in_delivery block (card under waiting box, onUpdated=fetchDeal); workflow tracker buyer in_delivery block (warning above accept/dispute buttons); ApiDealData types extended
+- E2E API 13/13 PASS: deliver->200 deliveredAt set; reminder <3d->400; buyer->403; unauth->401; backdate 4d->reminder 200 (autoCompleteAt exactly +30d, bn label ২৭ অক্টোবর ২০২৬); re-send->400 one-shot; system msg + buyer notification verified; cron future->0; backdate auto->cron completes 1; deal completed + auto system msg + 2 notifications
+- Browser E2E: seller can-send amber button, seller sent card + live countdown (২৮ দিন ২৩ ঘণ্টা…), buyer warning + countdown above accept buttons — 3 screenshots in /home/z/my-project/download/autocomplete-*.png
+- tsc: 0 new errors (tracker 175/2983 pre-existing, shifted lines); test deal restored to completed + fields cleared; scripts-dev removed
+
+Stage Summary:
+- Commit f427a06 pushed; Vercel auto-deploy (first /api/health hit auto-adds 3 Deal columns; cron safe before that via try/catch)
+- Unresponsive-buyer flow live: deliver → 3d → seller reminder email → 30d grace → daily cron auto-completes → seller can request payout (no more permanent escrow hold)
