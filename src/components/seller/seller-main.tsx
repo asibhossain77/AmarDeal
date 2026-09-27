@@ -1409,9 +1409,9 @@ export function ActiveDealsPanel() {
                 {deals.map((deal) => (
                   <tr key={deal.id} className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">DL-{deal.id.slice(-5)}</td>
-                    <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap max-w-[180px]">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate">{deal.title}</span>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <span className="break-words">{deal.title}</span>
                         {deal.product && (
                           <Badge variant="secondary" className="shrink-0 text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium">মার্কেটপ্লেস</Badge>
                         )}

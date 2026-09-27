@@ -438,7 +438,7 @@ export function DealChatView() {
           {/* Deal info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-foreground truncate">{dealTitle}</h2>
+              <h2 className="text-sm font-bold text-foreground break-words">{dealTitle}</h2>
               {getStatusBadge(dealStatus, t)}
             </div>
             <div className="flex items-center gap-2 mt-0.5">

@@ -1327,7 +1327,7 @@ function AllDealsPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{chatDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{chatDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {chatDeal.buyer?.name || '—'} — {chatDeal.seller?.name || 'N/A'} · ৳{chatDeal.amount.toLocaleString('en')}
             </p>
@@ -1450,7 +1450,7 @@ function AllDealsPanel() {
                       <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">{shortId}</td>
                       <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{buyerName}</td>
                       <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{sellerName}</td>
-                      <td className="px-5 py-4 text-foreground max-w-[160px] truncate">{deal.title}</td>
+                      <td className="px-5 py-4 text-foreground break-words">{deal.title}</td>
                       <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">৳{deal.amount.toLocaleString('en')}</td>
                       <td className="px-5 py-4 text-center whitespace-nowrap"><StatusBadge status={deal.status} /></td>
                       <td className="px-5 py-4 text-center whitespace-nowrap">
@@ -1496,7 +1496,7 @@ function AllDealsPanel() {
                     <span className="font-mono text-xs text-muted-foreground">{shortId}</span>
                     <StatusBadge status={deal.status} />
                   </div>
-                  <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
+                  <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
                       <p>Buyer: <span className="text-foreground font-medium">{buyerName}</span></p>
@@ -2010,7 +2010,7 @@ function UsersPanel() {
                     {userDeals.map((d) => (
                       <div key={d.id} className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate">{d.title}</p>
+                          <p className="text-sm font-semibold text-foreground break-words">{d.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {new Date(d.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })}
                           </p>
@@ -3467,7 +3467,7 @@ function DisputesPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{selectedDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{selectedDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {selectedDeal.buyer?.name} — {selectedDeal.seller?.name || 'N/A'} · {formatAmount(selectedDeal.amount)}
             </p>
@@ -3648,7 +3648,7 @@ function DisputesPanel() {
                   {deals.map((deal) => (
                     <tr key={deal.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedDeal(deal)}>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">{deal.title}</p>
+                        <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                         <p className="text-[10px] text-muted-foreground">DL-{deal.id.slice(-5)}</p>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{deal.buyer?.name || 'N/A'}</td>
@@ -3673,7 +3673,7 @@ function DisputesPanel() {
               <SolidCard key={deal.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedDeal(deal)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
+                    <p className="text-sm font-bold text-foreground break-words">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>
@@ -3840,7 +3840,7 @@ function AdminCallsPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{selectedDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{selectedDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {selectedDeal.buyer?.name} — {selectedDeal.seller?.name || 'N/A'} · {formatAmount(selectedDeal.amount)}
             </p>
@@ -3949,7 +3949,7 @@ function AdminCallsPanel() {
                   {deals.map((deal) => (
                     <tr key={deal.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedDeal(deal)}>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">{deal.title}</p>
+                        <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                         <p className="text-[10px] text-muted-foreground">DL-{deal.id.slice(-5)}</p>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{deal.buyer?.name || 'N/A'}</td>
@@ -3974,7 +3974,7 @@ function AdminCallsPanel() {
               <SolidCard key={deal.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedDeal(deal)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
+                    <p className="text-sm font-bold text-foreground break-words">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>

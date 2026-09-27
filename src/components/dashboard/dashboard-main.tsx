@@ -487,7 +487,7 @@ function OverviewPanel() {
                         <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
                           {deal.id.slice(0, 10)}…
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-foreground max-w-[180px] truncate">
+                        <td className="px-5 py-3.5 font-medium text-foreground break-words">
                           {deal.title}
                         </td>
                         <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">

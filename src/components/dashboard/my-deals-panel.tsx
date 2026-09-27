@@ -216,7 +216,7 @@ export function MyDealsPanel() {
                       updateLabel={t('deals.unreadUpdate')}
                     />
                   </div>
-                  <p className="text-base font-semibold text-foreground truncate">{deal.title}</p>
+                  <p className="text-base font-semibold text-foreground break-words">{deal.title}</p>
                   <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">

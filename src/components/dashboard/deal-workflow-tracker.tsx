@@ -2375,7 +2375,7 @@ export function DealWorkflowTracker() {
                 {/* ── Deal title + status badge ── */}
                 <div className="flex items-center gap-3 sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className="text-base sm:text-xl font-bold text-foreground truncate">
+                    <h2 className="text-base sm:text-xl font-bold text-foreground break-words">
                       {dealTitle}
                     </h2>
                     <p className="text-xs sm:text-xs text-muted-foreground mt-0.5">

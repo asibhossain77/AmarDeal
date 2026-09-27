@@ -220,7 +220,7 @@ function TxnRow({ deal, user, onClick, t }: { deal: DealRow; user: any; onClick:
             <DirIcon className={`h-4 w-4 ${dirColor}`} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate max-w-[180px]">{deal.title}</p>
+            <p className="text-sm font-medium text-foreground break-words">{deal.title}</p>
             <p className="text-xs text-muted-foreground">{counterParty || t('payment.waiting')}</p>
           </div>
         </div>
@@ -273,7 +273,7 @@ function TxnCard({ deal, user, onClick, t }: { deal: DealRow; user: any; onClick
           <DirIcon className={`h-5 w-5 ${dirColor}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{deal.title}</p>
+          <p className="text-sm font-medium text-foreground break-words">{deal.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
             {counterParty || t('payment.waiting')} · {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
           </p>
