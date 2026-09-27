@@ -93,6 +93,10 @@ model Deal {
   // Seller work-duration commitment (set after admin verifies payment)
   workDays         Int?      // কত দিনে কাজ সম্পন্ন হবে
   workDeadlineAt   DateTime? // commitment expiry = set time + workDays days
+  // Unresponsive-buyer auto-complete flow (seller reminder → 30-day grace)
+  deliveredAt         DateTime? // when seller marked the work delivered (in_delivery)
+  reminderEmailSentAt DateTime? // seller → buyer "please confirm delivery" reminder email
+  autoCompleteAt      DateTime? // reminderEmailSentAt + 30 days → cron auto-completes deal
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

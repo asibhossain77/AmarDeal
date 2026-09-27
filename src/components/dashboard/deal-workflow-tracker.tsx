@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
 import { WorkDeadlineSelector, WorkDeadlineCountdown, toBn } from './work-deadline';
+import { DeliveryReminderCard, AutoCompleteWarning } from './auto-complete';
 import {
   ArrowLeft,
   FileCheck,
@@ -1175,6 +1176,10 @@ interface DealData {
   /* Seller work-duration commitment (set after payment verification) */
   workDays?: number | null;
   workDeadlineAt?: string | null;
+  /* Unresponsive-buyer auto-complete flow */
+  deliveredAt?: string | null;
+  reminderEmailSentAt?: string | null;
+  autoCompleteAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   seller: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   creator: { id: string; name: string; email: string } | null;
@@ -2541,6 +2546,12 @@ export function DealWorkflowTracker() {
                 {/* Buyer: Accept + Dispute (status = in_delivery) */}
                 {isBuyer && status === 'in_delivery' && (
                   <div className="space-y-2 md:space-y-3">
+                    {(dealData?.reminderEmailSentAt || dealData?.autoCompleteAt) && (
+                      <AutoCompleteWarning
+                        reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                        autoCompleteAt={dealData?.autoCompleteAt}
+                      />
+                    )}
                     <p className="text-xs md:text-sm text-center font-medium text-muted-foreground">
                       বিক্রেতা ডেলিভারি করেছেন। নিশ্চিত করুন।
                     </p>
@@ -2559,11 +2570,20 @@ export function DealWorkflowTracker() {
 
                 {/* Seller: Waiting for buyer (status = in_delivery) */}
                 {isSeller && status === 'in_delivery' && (
-                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
-                    <Truck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
-                    <p className="text-xs md:text-sm font-medium text-foreground">
-                      ক্রেতার নিশ্চিতকরণের অপেক্ষায়
-                    </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+                      <Truck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+                      <p className="text-xs md:text-sm font-medium text-foreground">
+                        ক্রেতার নিশ্চিতকরণের অপেক্ষায়
+                      </p>
+                    </div>
+                    <DeliveryReminderCard
+                      dealId={dealData?.id || activeDeal?.id || ''}
+                      deliveredAt={dealData?.deliveredAt}
+                      reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                      autoCompleteAt={dealData?.autoCompleteAt}
+                      onUpdated={fetchDeal}
+                    />
                   </div>
                 )}
 

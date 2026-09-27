@@ -291,6 +291,32 @@ export function deliveryStartedEmail(toName: string, dealTitle: string, amount: 
   };
 }
 
+export function deliveryReminderEmail(
+  toName: string,
+  dealTitle: string,
+  amount: number,
+  sellerName: string,
+  autoCompleteLabel: string
+) {
+  return {
+    subject: `রিমাইন্ডার: ডেলিভারি নিশ্চিত করুন — "${dealTitle}" — ${s('email_site_name')}`,
+    html: wrap(`
+      <h2>ডেলিভারি রিমাইন্ডার</h2>
+      <p class="greeting">প্রিয় ${toName},</p>
+      <p><strong>${sellerName}</strong> আপনার "${dealTitle}" ডিলের কাজ ডেলিভারি করেছেন, কিন্তু আপনি এখনো ডেলিভারি নিশ্চিত করেননি।</p>
+      ${infoTable([
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
+        infoRow('বিক্রেতা', sellerName),
+        infoRow('স্বয়ংক্রিয় সম্পন্নের তারিখ', autoCompleteLabel),
+      ])}
+      <div class="alert alert-warn"><strong>গুরুত্বপূর্ণ:</strong> ${autoCompleteLabel} তারিখের মধ্যে "পণ্য/সার্ভিস পেয়েছি" বাটনে ক্লিক না করলে ডিলটি স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে বিক্রেতার পেমেন্ট মুক্ত হয়ে যাবে।</div>
+      <p>পণ্য/সেবা ঠিক থাকলে দয়া করে ডেলিভারি নিশ্চিত করুন। কোনো সমস্যা থাকলে দেরি না করে ডিলের ভেতরে বিরোধ (Dispute) দায়ের করুন — অ্যাডমিন পর্যালোচনা করবেন।</p>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি নিশ্চিত করুন</a></div>
+    `),
+  };
+}
+
 export function dealCompletedEmail(toName: string, dealTitle: string, amount: number, role: 'buyer' | 'seller') {
   const isSeller = role === 'seller';
   return {

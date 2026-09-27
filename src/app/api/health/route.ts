@@ -124,6 +124,10 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     // Seller work-duration commitment (set after payment verification)
     ['Deal', 'workDays', 'INTEGER', 'NULL'],
     ['Deal', 'workDeadlineAt', 'DATETIME', 'NULL'],
+    // Unresponsive-buyer auto-complete flow (seller reminder → 30-day grace)
+    ['Deal', 'deliveredAt', 'DATETIME', 'NULL'],
+    ['Deal', 'reminderEmailSentAt', 'DATETIME', 'NULL'],
+    ['Deal', 'autoCompleteAt', 'DATETIME', 'NULL'],
     // Admin table columns
     ['Admin', 'permissions', 'TEXT NOT NULL DEFAULT \'[]\'', '\'[]\''],
     ['Admin', 'totpSecret', 'TEXT', 'NULL'],

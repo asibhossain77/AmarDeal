@@ -31,6 +31,7 @@ import {
   Timer,
 } from 'lucide-react';
 import { WorkDeadlineSelector, toBn } from '@/components/dashboard/work-deadline';
+import { DeliveryReminderCard } from '@/components/dashboard/auto-complete';
 
 const emptySubscribe = () => () => {};
 
@@ -270,6 +271,10 @@ interface DealData {
   /* Seller work-duration commitment (set after payment verification) */
   workDays?: number | null;
   workDeadlineAt?: string | null;
+  /* Unresponsive-buyer auto-complete flow */
+  deliveredAt?: string | null;
+  reminderEmailSentAt?: string | null;
+  autoCompleteAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string } | null;
   seller: { id: string; name: string; email: string; phone: string } | null;
   creator: { id: string; name: string; email: string } | null;
@@ -570,6 +575,15 @@ export function SellerDealTracker() {
                 <p className="text-sm font-medium text-foreground">
                   ক্রেতার নিশ্চিতকরণের অপেক্ষায় আছে
                 </p>
+              </div>
+              <div className="w-full text-left">
+                <DeliveryReminderCard
+                  dealId={dealData?.id || activeDeal?.id || ''}
+                  deliveredAt={dealData?.deliveredAt}
+                  reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                  autoCompleteAt={dealData?.autoCompleteAt}
+                  onUpdated={fetchDeal}
+                />
               </div>
             </div>
           )}

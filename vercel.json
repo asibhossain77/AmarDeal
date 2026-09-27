@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/cleanup-chat-files",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/auto-complete-deals",
+      "schedule": "30 4 * * *"
     }
   ]
 }
