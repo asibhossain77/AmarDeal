@@ -2018,6 +2018,13 @@ export function DealWorkflowTracker() {
     return () => clearInterval(interval);
   }, [activeDeal?.id, fetchMessages, authHeaders, checkPayoutStatus]);
 
+  /* Mobile: the deal panel now grows with content and the PAGE scrolls — entering
+     from the deals list must start at the top, not at the list's scroll offset.
+     (Must stay above the early returns — unconditional hook.) */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [activeDeal?.id]);
+
   if (!mounted) return null;
 
   const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
@@ -2368,8 +2375,10 @@ export function DealWorkflowTracker() {
               TAB 1: ডিলের তথ্য (Deal Info)
               ═══════════════════════════════════════ */}
           {activeTab === 'info' && (
-            /* Scrollable at EVERY breakpoint — the old md:-only overflow prefix
-               left mobile with no scrolling, clipping deal details below the fold */
+            /* sm+: the tracker root's sm:max-h caps the panel, so this area
+               inner-scrolls. Mobile: no cap anywhere → content defines the height
+               and the PAGE scrolls (fixed-height inner scroll was unreachable on
+               real devices — 100vh ignores the URL-bar viewport). */
             <motion.div
               key="deal-info"
               initial={{ opacity: 0, y: 8 }}
@@ -2459,9 +2468,10 @@ export function DealWorkflowTracker() {
                   </div>
                 </div>
 
-                {/* ── Deal Terms (hidden on mobile) ── */}
+                {/* ── Deal Terms (visible on every breakpoint — hiding it on
+                    mobile left buyers unable to read the terms they must accept) ── */}
                 {dealTerms && (
-                  <div className="hidden sm:block rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
+                  <div className="rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
                     <div className="flex items-center gap-2 mb-2.5">
                       <div
                         className="flex h-7 w-7 items-center justify-center rounded-lg"

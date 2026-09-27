@@ -557,7 +557,11 @@ export function DashboardMain() {
   }
 
   return (
-    <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
+    /* Immersive (deal-detail): on mobile the panel grows with its content and the
+       PAGE scrolls — a fixed h-[100vh-...] box forced an inner-scroll area that real
+       devices couldn't reach (100vh ignores the URL bar, clipping the bottom). sm+
+       keeps the capped desktop layout via the tracker's own sm:max-h. */
+    <div className={`${isImmersive ? 'flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 min-h-[calc(100dvh-3.5rem)] sm:min-h-0' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
       {/* Back button for sub-panels (not overview, not immersive) */}
       {!isImmersive && dashboardPanel !== 'overview' && (
         <div className="mb-4">
