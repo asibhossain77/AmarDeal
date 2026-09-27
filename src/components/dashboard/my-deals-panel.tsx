@@ -54,7 +54,7 @@ export function MyDealsPanel() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [deals, setDeals] = useState<DealRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'updates' | 'active' | 'pending_confirm' | 'completed'>('all');
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const t = useT();
@@ -100,6 +100,14 @@ export function MyDealsPanel() {
 
   const filteredDeals = deals.filter((d) => {
     // Status filter
+    if (filter === 'updates') {
+      // শুধু আপডেট হওয়া ডিল: নতুন মেসেজ বা ডিল স্টেটাস/ডেটা পরিবর্তন হলে hasUpdate জ্বলে
+      if (!d.hasUpdate) return false;
+    }
+    if (filter === 'pending_confirm') {
+      // সেলার কাজ শেষ করেছে (in_delivery) কিন্তু বায়ার এখনো "কাজ পেয়েছি" ক্লিক করেনি
+      if (d.status !== 'in_delivery') return false;
+    }
     if (filter === 'active') {
       if (!['created', 'payment_pending', 'payment_verified', 'in_delivery'].includes(d.status)) return false;
     }
@@ -126,6 +134,17 @@ export function MyDealsPanel() {
   };
 
   if (!mounted) return null;
+
+  // Per-tab live counts so the user sees how many deals each category holds
+  const tabCount = (tab: 'all' | 'updates' | 'active' | 'pending_confirm' | 'completed') => {
+    switch (tab) {
+      case 'updates': return deals.filter((d) => d.hasUpdate).length;
+      case 'pending_confirm': return deals.filter((d) => d.status === 'in_delivery').length;
+      case 'active': return deals.filter((d) => ['created', 'payment_pending', 'payment_verified', 'in_delivery'].includes(d.status)).length;
+      case 'completed': return deals.filter((d) => d.status === 'completed').length;
+      default: return deals.length;
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
@@ -155,20 +174,38 @@ export function MyDealsPanel() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2">
-        {(['all', 'active', 'completed'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setFilter(tab)}
-            className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
-              filter === tab
-                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                : 'bg-white dark:bg-zinc-900 text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground shadow-lg'
-            }`}
-          >
-            {tab === 'all' ? t('deals.all') : tab === 'active' ? t('status.active') : t('status.completed')}
-          </button>
-        ))}
+      <div className="flex flex-wrap gap-2">
+        {(['all', 'updates', 'active', 'pending_confirm', 'completed'] as const).map((tab) => {
+          const n = tabCount(tab);
+          return (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
+                filter === tab
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                  : 'bg-white dark:bg-zinc-900 text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground shadow-lg'
+              }`}
+            >
+              <span>
+                {tab === 'all' ? t('deals.all')
+                  : tab === 'updates' ? t('deals.updates')
+                  : tab === 'active' ? t('status.active')
+                  : tab === 'pending_confirm' ? t('deals.pendingConfirm')
+                  : t('status.completed')}
+              </span>
+              {n > 0 && (
+                <span
+                  className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none ${
+                    filter === tab ? 'bg-white/25' : 'bg-muted'
+                  }`}
+                >
+                  {n}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (

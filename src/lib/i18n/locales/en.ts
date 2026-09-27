@@ -354,6 +354,8 @@ export const en: Record<TranslationKey, string> = {
   'deals.myDealsDesc': 'List of all your deals',
   'deals.searchPlaceholder': 'Search by deal ID or title...',
   'deals.all': 'All',
+  'deals.updates': 'Updates',
+  'deals.pendingConfirm': 'Awaiting Confirmation',
   'deals.noDealFound': 'No deals found',
   'deals.searchNoResult': 'No deals found with "{search}"',
   'deals.view': 'View',

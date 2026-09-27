@@ -351,6 +351,8 @@ export const bn = {
   'deals.myDealsDesc': 'আপনার সকল ডিলের তালিকা',
   'deals.searchPlaceholder': 'ডিল আইডি বা টাইটেল দিয়ে খুঁজুন...',
   'deals.all': 'সকল',
+  'deals.updates': 'আপডেট',
+  'deals.pendingConfirm': 'কনফার্মেশন বাকি',
   'deals.noDealFound': 'কোনো ডিল পাওয়া যায়নি',
   'deals.searchNoResult': '"{search}" দিয়ে কোনো ডিল পাওয়া যায়নি',
   'deals.view': 'দেখুন',
