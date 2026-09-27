@@ -301,12 +301,13 @@ export function ContactSection() {
         <section aria-label={t('contact.directChannels')} className="mb-10">
           <SectionHeading icon={<Headset className="h-4.5 w-4.5" strokeWidth={2} />} text={t('contact.directChannels')} />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Phone shows the real number — only the WhatsApp card hides it (user request) */}
             {data?.phone && (
               <ChannelCard
                 icon={<Phone className="h-5 w-5" strokeWidth={2} />}
                 iconClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 label={t('contact.phone')}
-                value={t('contact.phoneValue')}
+                value={data.phone}
                 action={
                   <a
                     href={phoneHref}

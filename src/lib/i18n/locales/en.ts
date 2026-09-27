@@ -887,7 +887,6 @@ export const en: Record<TranslationKey, string> = {
   'contact.adminDesc': 'Contact us for any issue or collaboration on Midman.',
   'contact.available': 'Usually replies within 24 hours',
   'contact.callNow': 'Call Now',
-  'contact.phoneValue': 'Voice Call Support',
   'contact.whatsappBtn': 'Message on WhatsApp',
   'contact.emailBtn': 'Send Email',
   'contact.pageVisitBtn': 'Visit Page',
