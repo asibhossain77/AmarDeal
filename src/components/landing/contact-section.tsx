@@ -159,10 +159,15 @@ export function ContactSection() {
 
   const phoneHref = data?.phone ? `tel:${data.phone.replace(/[^\d+]/g, '')}` : '';
   const waRaw = data?.whatsapp || '';
-  const waNumber = waRaw
-    ? (waRaw.match(/(?:wa\.me|api\.whatsapp\.com\/send\?phone=)\/?(\+?\d[\d\s-]*)/i)?.[1] || '').trim()
+  // Number intentionally NOT displayed (user request) — the card shows only
+  // the WhatsApp label + "Message on WhatsApp" button linking to the number.
+  // If admin saved a plain number (no wa.me/API link), build the wa.me URL so
+  // the button always opens a valid WhatsApp chat.
+  const waHref = waRaw
+    ? (/^(https?:\/\/|wa\.me\/)/i.test(waRaw) || waRaw.includes('api.whatsapp.com')
+        ? waRaw
+        : `https://wa.me/${waRaw.replace(/\D/g, '')}`)
     : '';
-  const waHref = waRaw || '';
 
   const hasProfile = Boolean(data?.adminName || data?.adminImageUrl);
   const hasLocation = Boolean(data?.address || data?.mapUrl);
@@ -301,7 +306,7 @@ export function ContactSection() {
                 icon={<Phone className="h-5 w-5" strokeWidth={2} />}
                 iconClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 label={t('contact.phone')}
-                value={data.phone}
+                value={t('contact.phoneValue')}
                 action={
                   <a
                     href={phoneHref}
@@ -318,7 +323,7 @@ export function ContactSection() {
                 icon={<WhatsAppIcon className="h-5 w-5" />}
                 iconClass="bg-[#25D366]/10 text-[#1da851]"
                 label={t('contact.whatsapp')}
-                value={waNumber || 'WhatsApp'}
+                value="WhatsApp"
                 action={
                   <a
                     href={waHref}

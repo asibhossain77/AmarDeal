@@ -884,6 +884,7 @@ export const bn = {
   'contact.adminDesc': 'Midman-এর যেকোনো সমস্যা বা সহযোগিতার জন্য আমাদের সাথে যোগাযোগ করুন।',
   'contact.available': 'সাধারণত 24 ঘণ্টার মধ্যে উত্তর পাবেন',
   'contact.callNow': 'কল করুন',
+  'contact.phoneValue': 'কল সাপোর্ট',
   'contact.whatsappBtn': 'WhatsApp-এ মেসেজ করুন',
   'contact.emailBtn': 'ইমেইল করুন',
   'contact.pageVisitBtn': 'Page Visit করুন',
