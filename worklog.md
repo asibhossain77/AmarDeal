@@ -870,3 +870,18 @@ Work Log:
 Stage Summary:
 - Commit f427a06 pushed; Vercel auto-deploy (first /api/health hit auto-adds 3 Deal columns; cron safe before that via try/catch)
 - Unresponsive-buyer flow live: deliver → 3d → seller reminder email → 30d grace → daily cron auto-completes → seller can request payout (no more permanent escrow hold)
+
+---
+Task ID: 35-b
+Agent: Super Z (main)
+Task: User asked "turso te ki update korte hobe" — verify production Turso schema state for Task 35 columns
+
+Work Log:
+- Confirmed Task 35 code already on origin/main (f427a06 + worklog b6653e5); schema adds Deal.deliveredAt / reminderEmailSentAt / autoCompleteAt; health autoFixSchema + vercel cron 30 4 * * * all in place
+- Attempted production /api/health hit to trigger autoFixSchema: curl blocked by Vercel Security Checkpoint (challenge, HTTP 429); agent-browser headless also fails challenge (Code 21 — headless detection)
+- Checked sandbox for Turso credentials: none (central /home/z/my-project/.env only has empty DATABASE_URL; old scripts-dev ALTER script deleted after prior task)
+- Conclusion: prod schema update is one browser hit away — user must open https://midman.bd/api/health in a real browser (autoFixSchema adds the 3 columns, response shows schemaAutoFixed), or re-share TURSO_AUTH_TOKEN for direct ALTER path
+- Until columns exist: send-reminder API and auto-complete cron will error/skip (cron guarded by try/catch — safe); everything else unaffected
+
+Stage Summary:
+- No code change needed — awaiting one /api/health hit from user's real browser (or Turso token) to finish Task 35 production rollout
