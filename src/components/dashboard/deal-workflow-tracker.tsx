@@ -2368,13 +2368,15 @@ export function DealWorkflowTracker() {
               TAB 1: ডিলের তথ্য (Deal Info)
               ═══════════════════════════════════════ */}
           {activeTab === 'info' && (
+            /* Scrollable at EVERY breakpoint — the old md:-only overflow prefix
+               left mobile with no scrolling, clipping deal details below the fold */
             <motion.div
               key="deal-info"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
-              className="flex-1 min-h-0 md:overflow-y-auto"
+              className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
             >
               <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between">
                 {/* ── Deal title + status badge ── */}
