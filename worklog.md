@@ -885,3 +885,20 @@ Work Log:
 
 Stage Summary:
 - No code change needed — awaiting one /api/health hit from user's real browser (or Turso token) to finish Task 35 production rollout
+
+---
+Task ID: 36
+Agent: Super Z (main)
+Task: Deal list e aro 2 ta category — Updates (message/deal update) + Awaiting Confirmation (seller done, buyer pending)
+
+Work Log:
+- my-deals-panel.tsx: filter state extended to all/updates/active/pending_confirm/completed; updates = d.hasUpdate (Task 31 attachUnreadMeta — new messages OR deal.updatedAt changed since last seen); pending_confirm = status in_delivery (seller delivered, buyer yet to click কাজ পেয়েছি)
+- Tabs now 5 with live count chips (tabCount helper, count>0 shown as rounded chip; active chip = bg-white/25) + flex-wrap for mobile
+- i18n: deals.updates (আপডেট/Updates), deals.pendingConfirm (কনফার্মেশন বাকি/Awaiting Confirmation) in bn+en
+- Sandbox note: reset created fresh clone at stale 04c6757 — fetched + reset to e2bd8a3 (Task 34/35 commits intact on origin); local db stale → prisma db push re-sync
+- E2E: API returns hasUpdate/unreadCount for 16 deals; browser — 5 tabs render (সকল 16 / আপডেট 16 / চলমান 5 / কনফার্মেশন বাকি 1 / সম্পন্ন 1); pending tab shows only DL-bz9hr (ডেলিভারি চলছে); updates tab shows 16; screenshots task36-*.png; deal restored to completed; scripts-dev removed
+- tsc: 170 baseline vs 170 current = 0 new errors
+
+Stage Summary:
+- Commit 6c6f7e3 pushed; My Deals panel now has Updates + Awaiting Confirmation categories with counts
+- Seller ActiveDealsList (plain table) intentionally untouched — rows already carry DealUnreadBadge
