@@ -936,3 +936,18 @@ Work Log:
 
 Stage Summary:
 - Commit 8e34742 pushed origin/main; Vercel auto-deploy; no schema/i18n change
+
+---
+Task ID: 37-c
+Agent: Super Z (main)
+Task: marketplace UX fixes — remove header, banner jump, category-select page jump
+
+Work Log:
+- PageMarketplace: removed PageWrapper title/subtitle (header gone, Home btn kept)
+- AdBannerSlider: preload all banner Images on fetch (kills blank-pop on slide change); crossfade 0.5s + scale 1.03->1 settle, incoming z-10
+- MarketplaceSection refetch: skeleton only on first load (products.length===0); category switch keeps old grid mounted, dimmed opacity-40 + pointer-events-none while fetching
+- E2E: headerGone true, homeKept true, grid mounted at identical scrollY during/after refetch, 17 cards after dev-category switch
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit d85b7ed pushed origin/main; Vercel auto-deploy; no schema/i18n change
