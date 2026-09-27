@@ -981,3 +981,18 @@ Work Log:
 
 Stage Summary:
 - Commit pushed origin/main; Vercel auto-deploy
+
+---
+Task ID: 37-f
+Agent: Super Z (main)
+Task: deal details not visible on mobile view
+
+Work Log:
+- Root cause: deal-workflow-tracker info-tab wrapper had md:overflow-y-auto (scroll only on desktop) inside a fixed-height immersive mobile layout -> content below fold unreachable
+- Fix: overflow-y-auto overscroll-contain at all breakpoints (chat tab already scrollable)
+- Local db resynced (prisma db push) — sandbox reset had dropped Task 35 columns causing /api/user/deals 500
+- E2E mobile 375x550: overflow 481>339, scrollTop moves (was 0/clipped), details grid + pending notice visible after scroll
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit pushed origin/main; Vercel auto-deploy
