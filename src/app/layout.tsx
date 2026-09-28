@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -15,13 +16,17 @@ const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 const SITE_URL = "https://midman.bd";
 const FALLBACK_LOGO = "/logo.svg";
 
-async function getSiteLogo(): Promise<string> {
+// React cache(): generateMetadata AND buildJsonLd both need the logo on EVERY
+// request — without dedupe that was 2 sequential Turso round trips added to
+// server TTFB for every page view. cache() collapses them into one query
+// per request (dedupe is per-render, so logo changes still show instantly).
+const getSiteLogo = cache(async (): Promise<string> => {
   try {
     const row = await db.platformSetting.findUnique({ where: { key: 'site_logo' } });
     if (row?.value && row.value !== '/logo.png' && !row.value.startsWith('data:')) return row.value;
   } catch { /* fallback */ }
   return FALLBACK_LOGO;
-}
+});
 
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",

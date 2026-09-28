@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
       exclude: ['warn', 'error'],
     } : false,
   },
-  // Tree-shake heavy packages so only imported sub-paths are bundled
+  // Tree-shake heavy packages so only imported sub-path imports are bundled
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -35,6 +35,15 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-icons',
       'react-syntax-highlighter',
     ],
+    // NOTE: cssChunking is a Webpack-only knob — Next 16 builds with Turbopack
+    // by default, which silently ignores it (verified 2026-09: with 'strict'
+    // set the build still emitted two root-layout CSS chunks — Tailwind
+    // globals + next/font @font-face). Merging/inlining them via
+    // experimental.inlineCss was evaluated and rejected: it embeds ~270KB of
+    // CSS into every dynamic (nonce-CSP, uncacheable) HTML response —
+    // repeat visitors pay ~38KB gzip per page view — and inlined @font-face
+    // uses ../media/* relative URLs that resolve against the page URL.
+    // The two render-blocking stylesheets stay; they are platform behavior.
   },
   // Shrink the traced function bundle: Vercel Functions Storage keeps every
   // deployment's bundle (~was 134MB each → 11GB across retained deployments,
