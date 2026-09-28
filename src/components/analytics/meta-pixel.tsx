@@ -26,17 +26,30 @@ import { DEFAULT_META_PIXEL_ID } from '@/lib/meta-pixel-id';
 
 const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
 
+/**
+ * Base code, restructured for performance (everything else is Meta's own
+ * snippet): the fbq STUB + init + PageView are defined inline immediately —
+ * calls land in n.queue exactly like the stock snippet, so NO event is ever
+ * lost — but the ~90KB fbevents.js network fetch + eval is deferred to
+ * window load + requestIdleCallback (4s worst-case timeout). Lighthouse
+ * showed fbevents.js costing ~235ms main-thread bootup + 42KB wasted JS
+ * while competing with hydration on the critical path; the pixel is
+ * analytics, not rendering, so it must not fight the app for the main
+ * thread. When fbevents.js finally loads it replays the queued calls
+ * (init/PageView included) — standard Meta loader behavior.
+ */
 const BASE_CODE = `
 !function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window,document,'script',
+n.queue=[];fbq('init','${PIXEL_ID}');fbq('track','PageView');
+var load=function(){t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)};
+var go=function(){(f.requestIdleCallback||function(c){setTimeout(c,1800)})(load,{timeout:4000})};
+window.addEventListener('load',go);
+}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '${PIXEL_ID}');
-fbq('track', 'PageView');
 `;
 
 /** fbclid landing param → _fbc cookie (Conversions API also reads it server-side) */

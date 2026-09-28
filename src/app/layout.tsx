@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { DEFAULT_META_PIXEL_ID } from "@/lib/meta-pixel-id";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
@@ -12,6 +13,8 @@ import { LocaleEffect } from "@/components/shared/locale-effect";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
+// Must mirror the pixel resolution in MetaPixel — used only for a preconnect hint.
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
 
 const SITE_URL = "https://midman.bd";
 const FALLBACK_LOGO = "/logo.svg";
@@ -290,6 +293,7 @@ export default async function RootLayout({
         {/* Resource hints — preconnect to 3rd-party origins for faster fetch */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {GA_ID && <link rel="preconnect" href="https://www.googletagmanager.com" />}
+        {PIXEL_ID && <link rel="preconnect" href="https://connect.facebook.net" />}
         <meta name="geo.region" content="BD" />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Dhaka" />

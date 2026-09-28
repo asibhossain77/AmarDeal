@@ -7,6 +7,7 @@ import {
   GetBucketCorsCommand,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import sharp from 'sharp'
 
 const r2 = new S3Client({
   region: 'auto',
@@ -42,7 +43,48 @@ const ALLOWED_TYPES = new Set([
   'image/gif',
 ])
 
-const MAX_SIZE = 2 * 1024 * 1024 // 2MB
+// 4MB ceiling — uploads are recompressed server-side (compressImage below),
+// and this still fits Vercel's 4.5MB serverless request-body limit.
+const MAX_SIZE = 4 * 1024 * 1024
+
+/**
+ * Display-size cap per upload folder. Phone cameras push 3-5MB JPEGs; a
+ * visitor only ever needs a display-sized image, so every public upload is
+ * re-encoded to WebP at the folder's real display dimension before it lands
+ * in R2. Unknown folders get a sane 1600px default.
+ */
+const IMAGE_MAX_DIM: Record<string, number> = {
+  'payment-icons': 256, // rendered as small card icons
+  profiles: 512,        // avatars — navbar/cards/details, never full width
+  logos: 512,           // site logo, navbar-sized
+  payment: 1024,        // payment QRs/screenshots — keep QR legible
+  products: 1600,       // product cards + detail view
+  banners: 1920,        // full-width hero slider on desktop
+}
+
+/**
+ * Recompress an image upload to WebP: bake EXIF orientation, fit inside the
+ * folder's display cap (never upscale), quality 82. Returns null when the
+ * caller should upload the original bytes (unknown folder, or sharp failed —
+ * a failed re-encode must never break an upload).
+ */
+async function compressImage(
+  buffer: Buffer,
+  folder: string
+): Promise<{ buffer: Buffer; ext: string; contentType: string } | null> {
+  const maxDim = IMAGE_MAX_DIM[folder] ?? 1600
+  try {
+    const out = await sharp(buffer)
+      .rotate() // bake EXIF orientation before resizing
+      .resize({ width: maxDim, height: maxDim, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer()
+    return { buffer: out, ext: 'webp', contentType: 'image/webp' }
+  } catch (err) {
+    console.error('[R2] Image recompression failed — uploading original bytes:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
 
 export async function uploadToR2(
   file: File,
@@ -64,16 +106,34 @@ export async function uploadToR2(
   const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 8)
-  const key = `${prefix}/${timestamp}-${random}.${ext}`
 
   const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
+  // Buffer<ArrayBufferLike> — sharp's toBuffer() may back the replacement
+  // buffer with a pooled ArrayBufferLike (tsc strictly distinguishes them).
+  let buffer: Buffer = Buffer.from(bytes)
+  let keyExt = ext
+  let contentType = file.type
+
+  // Server-side recompression: a 4MB phone JPEG becomes a ~100-300KB
+  // display-sized WebP before it reaches R2, so the /cdn/ proxy, Cloudflare
+  // edge and the visitor's mobile data all move a fraction of the bytes.
+  // GIF is skipped — re-encoding would drop the animation.
+  if (file.type !== 'image/gif') {
+    const compressed = await compressImage(buffer, prefix)
+    if (compressed) {
+      buffer = compressed.buffer
+      keyExt = compressed.ext
+      contentType = compressed.contentType
+    }
+  }
+
+  const key = `${prefix}/${timestamp}-${random}.${keyExt}`
 
   await r2.send(new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: key,
     Body: buffer,
-    ContentType: file.type,
+    ContentType: contentType,
     // Immutable forever: keys are unique per upload (timestamp-random), so a
     // URL's content never changes. This lets Cloudflare edge-cache the object
     // (cf-cache-status: HIT) and browsers keep it for a year — repeat views
