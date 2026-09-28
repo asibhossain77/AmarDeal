@@ -1030,3 +1030,19 @@ Work Log:
 Stage Summary:
 - Commit e154f71 pushed origin/main; Vercel auto-deploys
 - Port-conflict gotcha recorded: always verify app title before E2E after any server restart
+---
+Task ID: 40
+Agent: Super Z (main)
+Task: seller product edit — category change save error; want image/description/category/price editable
+
+Work Log:
+- Root cause: PATCH /api/products/[id] had stale 7-item VALID_CATEGORIES (pre-Task-37) while POST /api/products had 13 — the edit form ALWAYS sends category, so any save of a facebook/instagram/subscription/free_service product 400'd 'অবৈধ ক্যাটাগরি'
+- Fix: new src/lib/product-categories.ts (PRODUCT_CATEGORIES + isValidProductCategory) imported by both routes — single source of truth; PATCH already handled image/description/price/isFree/options fully, so whitelist was the only blocker
+- API E2E (seller@gmail.com): create cat=facebook 201 → PATCH cat=subscription+desc+price+image 200 (was the failing case) → PATCH cat=free_service 200 → invalid cat 400 → GET persisted ✓
+- UI E2E (production build + next start — dev server kept dying to sandbox reaper during Turbopack compiles): products → pencil → সাবস্ক্রিপশন pill + price 599 → সেভ → success toast + back to list → DB/category=subscription, price=599 ✓; test product deleted after
+- Gotchas recorded: (1) dev-mode "Application error" during E2E = ChunkLoadError from server restarts, NOT app bugs — use next build + next start for long E2E flows; (2) scaffold `bun run dev` respawns on :3000 — pkill it before starting amardeal; (3) every tool call needs alive-check preamble, save-fetches must happen while server confirmed alive
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit 93d4960 pushed origin/main; Vercel auto-deploys
+- Product edit now supports image, description, category (all 13), price updates end-to-end
