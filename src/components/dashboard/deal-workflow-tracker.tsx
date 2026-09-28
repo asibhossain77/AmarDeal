@@ -2278,13 +2278,8 @@ export function DealWorkflowTracker() {
             >
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </button>
-            <div className="flex items-center gap-2.5">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
-                style={{ backgroundColor: PARROT_GREEN }}
-              >
-                <span className="text-sm font-bold text-white">আ</span>
-              </div>
+            {/* "আ" logo badge removed (user request) — title only */}
+            <div className="flex items-center">
               <div>
                 <span className="text-base font-bold tracking-tight text-foreground">
                   আমার ডিল

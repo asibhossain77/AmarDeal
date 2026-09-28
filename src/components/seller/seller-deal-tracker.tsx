@@ -427,10 +427,8 @@ export function SellerDealTracker() {
             >
               <ArrowLeft className="h-4 w-4" style={{ color: 'var(--foreground)' }} />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-md" style={{ backgroundColor: '#84CC16' }}>
-                <span className="text-sm font-bold" style={{ color: '#18181b' }}>আ</span>
-              </div>
+            {/* "আ" logo badge removed (user request) — title only */}
+            <div className="flex items-center">
               <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
                 আমার ডিল
               </span>
