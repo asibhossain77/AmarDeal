@@ -1046,3 +1046,20 @@ Work Log:
 Stage Summary:
 - Commit 93d4960 pushed origin/main; Vercel auto-deploys
 - Product edit now supports image, description, category (all 13), price updates end-to-end
+---
+Task ID: 41
+Agent: Super Z (main)
+Task: PageSpeed Insights render-blocking requests (2 CSS chunks + document) optimization
+
+Work Log:
+- Insight decoded: 2 render-blocking stylesheets = big 271KB raw / 37.7KB gz Tailwind globals + small 8.7KB / 1KB gz next/font @font-face chunk (small chunk hash a6351a872359d6c4 reproduced EXACTLY in local build); document row 38.6KB/850ms = SSR HTML itself
+- cssChunking:'strict' tested empirically → NO merge: flag exists only in webpack-config.js, Turbopack (Next 16 default builder) silently ignores it → flag removed, evidence comment left in next.config.ts
+- experimental.inlineCss evaluated and REJECTED: render-css-resource.js injects entryCssFile.content raw with NO url() rewrite → inlined @font-face ../media/* relative URLs would resolve against the page URL and break Bengali fonts; plus HTML is uncacheable (nonce CSP + headers()) so every repeat page view would pay +38KB gzip — bad trade for a repeat-visit-heavy escrow platform
+- Big CSS audited for bloat: 3431 rules, bytes spread evenly across legit utilities (bg/text/border/dark variants) — no pathological plugin dump, nothing safe to trim
+- REAL TTFB fix shipped: layout getSiteLogo awaited 2x per request (generateMetadata + buildJsonLd) = 2 sequential Turso round trips on EVERY page; wrapped in React cache() → 1 query per render, freshness preserved (per-request dedupe only)
+- E2E: tsc 170/170 baseline, production build OK, home HTTP 200 (11.2KB gz), 2 stylesheet links (accepted platform behavior), font woff2 HTTP 200, JSON-LD present, CSP nonce header intact
+
+Stage Summary:
+- Commit 96972ae pushed origin/main; Vercel auto-deploys
+- Every page render now does one fewer Turso round trip (improves the Lighthouse document/TTFB row)
+- Render-blocking CSS rows are Turbopack platform behavior — documented in next.config.ts to prevent future re-introduction attempts; revisit only if Next ships Turbopack CSS merging or HTML caching becomes viable
