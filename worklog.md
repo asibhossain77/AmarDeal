@@ -1014,3 +1014,19 @@ Work Log:
 Stage Summary:
 - Commit 032027a pushed origin/main; Vercel auto-deploys
 - Mobile deal detail = native page scroll + terms always visible; desktop immersive inner-scroll unchanged
+---
+Task ID: 39
+Agent: Super Z (main)
+Task: Deal section e আমার ডিল er age আ profile deya ota remove kore daw
+
+Work Log:
+- Found 3 'আ' badges: buyer deal detail header (deal-workflow-tracker.tsx), seller deal detail header (seller-deal-tracker.tsx), contact page logo (contact-page-client.tsx — left untouched, not deal section)
+- Removed the green square badge div before আমার ডিল in BOTH trackers (title + DL-id subtitle kept)
+- Infra discovery: sandbox watchdog auto-starts scaffold `bun run dev` from /home/z/my-project on :3000 — port conflict was killing/masquerading the amardeal dev server (mid-task pages served "Z.ai Code Scaffold" title). Fix: pkill bun run dev + next + next-server, then start amardeal server; verify <title> contains Midman before E2E
+- Sandbox also wiped node_modules + local db mid-task → bun install + db restored via git checkout (password resets lost; cookie auth unaffected — midman_session = user id)
+- E2E mobile 375×812 (buyer cookie): badgeElsCount 0, আমার ডিল title + DL-id present, deal info + terms intact, no 404; screenshot task39-badge-removed.png
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit e154f71 pushed origin/main; Vercel auto-deploys
+- Port-conflict gotcha recorded: always verify app title before E2E after any server restart
