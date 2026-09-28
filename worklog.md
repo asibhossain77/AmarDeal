@@ -1063,3 +1063,22 @@ Stage Summary:
 - Commit 96972ae pushed origin/main; Vercel auto-deploys
 - Every page render now does one fewer Turso round trip (improves the Lighthouse document/TTFB row)
 - Render-blocking CSS rows are Turbopack platform behavior — documented in next.config.ts to prevent future re-introduction attempts; revisit only if Next ships Turbopack CSS merging or HTML caching becomes viable
+---
+Task ID: 42
+Agent: Super Z (main)
+Task: pagespeed.web.dev e midman.bd check kore fix kora
+
+Work Log:
+- PSI API anonymous quota exhausted → ran the SAME engine locally: puppeteer Chrome 153 + lighthouse (lh-tool/, outside repo), mobile simulated throttling against local production build; production itself 429s programmatic access (Vercel WAF)
+- Local lab baseline: perf 46, TBT 1690ms, bootup 3.1s, mainthread 7.0s; biggest JS chunk 223KB = react-dom framework itself (unavoidable floor); app-shell already fully dynamic-imported (all sections ssr:false) — code-splitting was already done
+- Found real waste: (1) ZERO next/image usage + uploads stored byte-for-byte (no recompression) — phones push multi-MB JPEGs to every visitor; (2) Meta Pixel fbevents.js on the critical path (235ms bootup + 42KB wasted)
+- Fix A (src/lib/r2.ts): uploadToR2 now recompresses every image to display-sized WebP via sharp — EXIF rotate, per-folder caps (banners 1920/products 1600/payment 1024/profiles+logos 512/payment-icons 256, q82, unknown folders 1600); GIF byte-for-byte passthrough; sharp failure falls back to original bytes; ceiling 2MB→4MB (post-compression, under Vercel 4.5MB body limit)
+- Fix B (meta-pixel.tsx): fbq stub+init+PageView inline (queue semantics, zero event loss), fbevents.js deferred to window load + requestIdleCallback (4s cap); layout preconnects connect.facebook.net
+- E2E: fake-S3 harness (scripts/r2-compress-test.ts) — JPEG 70KB→3.5KB webp + image/webp content-type, GIF identical bytes, PNG icon re-encoded; gotcha: aws-sdk PUTs carry ?x-id=PutObject query (test must strip it); Buffer<ArrayBufferLike> vs Buffer<ArrayBuffer> tsc distinction
+- Local Lighthouse after: perf 50, TBT 990ms (−700ms), bootup 2.6s, mainthread 6.5s, unused-JS savings 810→240ms; local LCP 8.2s is a broken-R2-images artifact, production numbers need a real PSI re-run after deploy
+- tsc 170/170 baseline (0 new)
+
+Stage Summary:
+- Commit 4d14ec2 pushed origin/main; Vercel auto-deploys
+- NEW uploads are compressed; EXISTING R2 images stay original — re-upload key banners once from admin panel for immediate wins (or build an admin recompress tool later)
+- User should re-run pagespeed.web.dev after deploy to see production deltas
