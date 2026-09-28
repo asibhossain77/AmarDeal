@@ -4,22 +4,11 @@ import { requireAuth } from '@/lib/deal-guard'
 import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 import { normalizeProductType, validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
+import { isValidProductCategory } from '@/lib/product-categories'
 
-const VALID_CATEGORIES = [
-  'design',
-  'development',
-  'content',
-  'marketing',
-  'education',
-  'software',
-  'social_media',
-  'id',
-  'facebook',
-  'instagram',
-  'subscription',
-  'free_service',
-  'other',
-] as const
+/* PRODUCT_CATEGORIES lives in src/lib/product-categories.ts — single source of
+   truth shared with PATCH /api/products/[id] so edits always accept every
+   category create allows (Task 40 drift fix). */
 
 // GET /api/products — list all active products (public, no auth needed)
 export async function GET(req: NextRequest) {
@@ -28,7 +17,7 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category')
 
     const where: Record<string, unknown> = { status: 'active' }
-    if (category && VALID_CATEGORIES.includes(category as (typeof VALID_CATEGORIES)[number])) {
+    if (category && isValidProductCategory(category)) {
       where.category = category
     }
 
@@ -169,7 +158,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const validCategory = category && VALID_CATEGORIES.includes(category as (typeof VALID_CATEGORIES)[number])
+    const validCategory = isValidProductCategory(category) && category
       ? category
       : 'other'
 

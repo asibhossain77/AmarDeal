@@ -5,16 +5,7 @@ import { getAdminFromRequest } from '@/lib/admin-guard'
 import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 import { validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, deleteFileByKey, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
-
-const VALID_CATEGORIES = [
-  'design',
-  'development',
-  'content',
-  'marketing',
-  'education',
-  'software',
-  'other',
-] as const
+import { isValidProductCategory } from '@/lib/product-categories'
 
 const VALID_STATUSES = ['active', 'inactive', 'sold'] as const
 
@@ -242,7 +233,10 @@ export async function PATCH(
     }
 
     if (category !== undefined) {
-      if (!VALID_CATEGORIES.includes(category as (typeof VALID_CATEGORIES)[number])) {
+      /* Shared whitelist (src/lib/product-categories.ts) — the old local 7-item
+         list rejected every category added in Task 37, so saving an edit of a
+         facebook/instagram/subscription/free_service product always 400'd */
+      if (!isValidProductCategory(category)) {
         return NextResponse.json(
           { success: false, error: 'অবৈধ ক্যাটাগরি' },
           { status: 400 }
