@@ -47,6 +47,7 @@ import {
   Wallet,
   Copy,
   ChevronDown,
+  ChevronUp,
   ArrowRight,
   RotateCcw,
   CircleCheckBig,
@@ -1808,6 +1809,7 @@ export function DealWorkflowTracker() {
 
   /* ── Payment dialog state ── */
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
   /* ── Payout/Refund dialog state ── */
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
 
@@ -2465,14 +2467,13 @@ export function DealWorkflowTracker() {
 
                 {/* ── Deal Terms (visible on every breakpoint — hiding it on
                     mobile left buyers unable to read the terms they must accept).
-                    Height-capped with an inner scroll: unlimited terms text used
-                    to push the action buttons ~3000px below the fold where the
-                    scroll was barely reachable on real devices.
-                    Mobile: rendered LAST (after the action buttons) — a touch drag
-                    landing on the big scrollable terms box scrolls the box, not
-                    the page, so with terms above the buttons the payment button
-                    sat below the fold and every upward swipe from it appeared to
-                    "not scroll". Desktop keeps the DOM order. ── */}
+                    Mobile: rendered LAST (after the action buttons) and shown as
+                    a COLLAPSED 140px peek with an expand toggle — the box must
+                    NOT be a touch scroll container, because drags landing on it
+                    scroll the box instead of the page (thumbs land right here,
+                    under the buttons) and the page appears scroll-frozen. The
+                    page itself is the only scroller on mobile. Desktop keeps
+                    the 40vh inner-scroll panel (mouse wheel chains fine) ── */}
                 {dealTerms && (
                   <div className="order-last sm:order-none rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
                     <div className="flex items-center gap-2 mb-2.5">
@@ -2486,19 +2487,34 @@ export function DealWorkflowTracker() {
                         ডিলের শর্তাবলী
                       </h3>
                     </div>
-                    {/* No overscroll-contain: when the box hits its end the touch
-                        gesture must chain to the page — with contain the drag
-                        dies at the boundary and the page looks scroll-frozen. */}
-                    <div className="max-h-[40vh] overflow-y-auto pl-9 pr-1">
+                    <div
+                      className={
+                        termsExpanded
+                          ? 'pl-9 pr-1'
+                          : 'max-h-[40vh] overflow-y-auto pl-9 pr-1 max-sm:max-h-[140px] max-sm:overflow-hidden'
+                      }
+                    >
                       <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
                         {dealTerms}
                       </p>
                     </div>
-                    {dealTerms.length > 400 && (
-                      <p className="mt-2 pl-9 flex items-center gap-1 text-[10px] font-medium text-muted-foreground/60">
-                        <ChevronDown className="h-3 w-3 shrink-0" />
-                        সম্পূর্ণ শর্ত পড়তে বক্সের ভেতরে স্ক্রল করুন
-                      </p>
+                    {dealTerms.length > 280 && (
+                      <button
+                        onClick={() => setTermsExpanded((v) => !v)}
+                        className="mt-2 pl-9 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {termsExpanded ? (
+                          <>
+                            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                            শর্ত গুটিয়ে নিন
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                            সম্পূর্ণ শর্ত দেখুন
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
                 )}

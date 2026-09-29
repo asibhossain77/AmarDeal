@@ -22,6 +22,8 @@ import {
   User,
   CalendarDays,
   ScrollText,
+  ChevronDown,
+  ChevronUp,
   SendHorizonal,
   Shield,
   PackageCheck,
@@ -289,6 +291,7 @@ export function SellerDealTracker() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const trackerAvatarUrl = cdnUrl(user?.imageLink);
   const [trackerAvatarLoaded, setTrackerAvatarLoaded] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
   useEffect(() => { setTrackerAvatarLoaded(false); if (!trackerAvatarUrl) return; const img = new Image(); img.onload = () => setTrackerAvatarLoaded(true); img.src = trackerAvatarUrl; }, [trackerAvatarUrl]);
 
   const [dealData, setDealData] = useState<DealData | null>(null);
@@ -492,23 +495,43 @@ export function SellerDealTracker() {
 
           {/* Deal Terms — height-capped with an inner scroll so very long terms
               can't push the seller action buttons below the unreachable fold.
-              Mobile: rendered LAST (after the action buttons) — desktop keeps
-              the DOM order; see buyer tracker for the full touch-trap note */}
+              Mobile: rendered LAST (after the action buttons) and COLLAPSED to a
+              140px peek with an expand toggle — no touch scroll container here
+              (see buyer tracker for the full trap note); desktop keeps the
+              40vh inner-scroll panel */}
           {dealTerms && (
             <div className="order-last sm:order-none rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
               </div>
-              {/* No overscroll-contain: at the box's end the touch gesture must
-                  chain to the page instead of dying at the boundary */}
-              <div className="max-h-[40vh] overflow-y-auto pr-1">
+              <div
+                className={
+                  termsExpanded
+                    ? 'pr-1'
+                    : 'max-h-[40vh] overflow-y-auto pr-1 max-sm:max-h-[140px] max-sm:overflow-hidden'
+                }
+              >
                 <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
               </div>
-              {dealTerms.length > 400 && (
-                <p className="mt-2 text-[10px] font-medium" style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}>
-                  সম্পূর্ণ শর্ত পড়তে বক্সের ভেতরে স্ক্রল করুন
-                </p>
+              {dealTerms.length > 280 && (
+                <button
+                  onClick={() => setTermsExpanded((v) => !v)}
+                  className="mt-2 flex items-center gap-1 text-[11px] font-semibold transition-colors"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  {termsExpanded ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                      শর্ত গুটিয়ে নিন
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      সম্পূর্ণ শর্ত দেখুন
+                    </>
+                  )}
+                </button>
               )}
             </div>
           )}
