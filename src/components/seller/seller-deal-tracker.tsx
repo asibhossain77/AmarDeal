@@ -451,8 +451,11 @@ export function SellerDealTracker() {
           </div>
         </div>
 
-        {/* ── Deal Info Content ── */}
-        <div className="p-4 sm:p-6 space-y-6">
+        {/* ── Deal Info Content — flex-col so the terms card can drop to the
+            bottom on mobile (touch drags landing on the scrollable terms box
+            scroll the box, not the page; with terms above the action buttons
+            the buttons sat below the fold and the page appeared scroll-locked) */}
+        <div className="flex flex-col p-4 sm:p-6 space-y-6">
           {/* Deal title + status badge */}
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -488,14 +491,18 @@ export function SellerDealTracker() {
           </div>
 
           {/* Deal Terms — height-capped with an inner scroll so very long terms
-              can't push the seller action buttons below the unreachable fold */}
+              can't push the seller action buttons below the unreachable fold.
+              Mobile: rendered LAST (after the action buttons) — desktop keeps
+              the DOM order; see buyer tracker for the full touch-trap note */}
           {dealTerms && (
-            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
+            <div className="order-last sm:order-none rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
               </div>
-              <div className="max-h-[40vh] overflow-y-auto overscroll-contain pr-1">
+              {/* No overscroll-contain: at the box's end the touch gesture must
+                  chain to the page instead of dying at the boundary */}
+              <div className="max-h-[40vh] overflow-y-auto pr-1">
                 <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
               </div>
               {dealTerms.length > 400 && (

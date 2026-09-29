@@ -2467,9 +2467,14 @@ export function DealWorkflowTracker() {
                     mobile left buyers unable to read the terms they must accept).
                     Height-capped with an inner scroll: unlimited terms text used
                     to push the action buttons ~3000px below the fold where the
-                    scroll was barely reachable on real devices. ── */}
+                    scroll was barely reachable on real devices.
+                    Mobile: rendered LAST (after the action buttons) — a touch drag
+                    landing on the big scrollable terms box scrolls the box, not
+                    the page, so with terms above the buttons the payment button
+                    sat below the fold and every upward swipe from it appeared to
+                    "not scroll". Desktop keeps the DOM order. ── */}
                 {dealTerms && (
-                  <div className="rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
+                  <div className="order-last sm:order-none rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
                     <div className="flex items-center gap-2 mb-2.5">
                       <div
                         className="flex h-7 w-7 items-center justify-center rounded-lg"
@@ -2481,7 +2486,10 @@ export function DealWorkflowTracker() {
                         ডিলের শর্তাবলী
                       </h3>
                     </div>
-                    <div className="max-h-[40vh] overflow-y-auto overscroll-contain pl-9 pr-1">
+                    {/* No overscroll-contain: when the box hits its end the touch
+                        gesture must chain to the page — with contain the drag
+                        dies at the boundary and the page looks scroll-frozen. */}
+                    <div className="max-h-[40vh] overflow-y-auto pl-9 pr-1">
                       <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
                         {dealTerms}
                       </p>
