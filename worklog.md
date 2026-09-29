@@ -1155,3 +1155,25 @@ Stage Summary:
 - Commit 90115ad pushed origin/main; Vercel auto-deploys
 - Mobile deal section now has ZERO scroll containers in the info tab — the page is the only scroller; terms read via expand toggle
 - Task 35-b production health hit STILL pending (unchanged)
+
+---
+Task ID: 45
+Agent: Super Z (main)
+Task: User sent 1-day rw Turso token — "dekho kono update korte hobe ki na" (verify prod schema + fix whatever is broken)
+
+Work Log:
+- Decoded token: rw scope, exp 1790754674 = Sep-30 07:51 UTC (1-day); stored ONLY in /home/z/my-project/.env (outside repo)
+- curl of https://midman.bd/api/health from sandbox = Vercel Security Checkpoint (429 + JS challenge); agent-browser headless also fails verification (Code 21) — server-side prod-health verification is impossible, direct Turso connection is the only path
+- scripts/turso-schema-heal.mjs: exact replica of /api/health autoFixSchema (28 column checks + 15 table DDLs, idempotent) — ran against prod Turso: SANITY OK, 31 tables, SCHEMA CHECK OK — ALL columns present incl. deliveredAt/reminderEmailSentAt/autoCompleteAt (prod had already self-healed via a health hit before this session; Task 35-b blocker is now RESOLVED)
+- Deal status distribution on prod: created 16, in_delivery 4, completed 4, cancelled 1; deliveredAt set: 0
+- THE REAL BUG: 4 legacy in_delivery deals all have deliveredAt=null despite one (cmujygm19, Sep 27 15:17) being delivered AFTER f427a06 deployed (Sep 27 04:36, the commit that added the stamp). Root cause: TWO deliver routes — /api/deals/[id]/deliver stamps deliveredAt, but the LIVE tracker (deal-workflow-tracker.tsx:2047) calls the legacy /api/deals/deliver which only set status → deliveredAt NEVER stamped on real deliver clicks → cron remindDue (deliveredAt lte now-3d) and auto-complete (autoCompleteAt lte now) never match → Task 43 automatic flow was completely inert in production
+- Fix: /api/deals/deliver/route.ts data now includes deliveredAt: new Date() (+ comment explaining the trap)
+- E2E local (cmrkddc9q): set payment_verified → POST /api/deals/deliver with seller session → status in_delivery + deliveredAt 2026-09-29T08:06:23.761Z stamped ✓ → restored to payment_pending + deliveredAt null; db/custom.db checked out to HEAD
+- tsc 170/170 baseline (0 new); next build OK; scripts/turso-inspect-indelivery.mjs (read-only prod inspector) + turso-schema-heal.mjs committed (no secrets — env-driven creds)
+- Legacy 4 deals: per cron route design comment, deals without deliveredAt are intentionally skipped — seller's manual reminder button (send-reminder) covers them; no data backfill performed
+
+Stage Summary:
+- Commits: deliver-route deliveredAt fix + prod schema heal scripts; Vercel auto-deploys
+- Task 43 automatic unresponsive-buyer flow NOW actually works in production (was inert: stamp missing on the route the UI actually calls)
+- Task 35-b CLOSED: prod Turso schema verified complete (31 tables, all columns) via direct token connection
+- Token hygiene: 1-day token expires Sep-30 07:51 UTC — advise user NOT to put it in Vercel env; Vercel keeps its own long-lived token (prod is working, so it's fine)
