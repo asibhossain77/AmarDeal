@@ -1119,3 +1119,21 @@ Stage Summary:
 - Commit cd49334 pushed origin/main; Vercel auto-deploys
 - Long terms can no longer push action buttons out of reach on any breakpoint — terms box self-scrolls, buttons stay right under it
 - Task 35-b production health hit STILL pending (same as Task 43 note)
+
+---
+Task ID: 44-b
+Agent: Super Z (main)
+Task: Mobile e deal section long hole scroll hoi na kintu desktop e hoi (post-cd49334 real-device follow-up)
+
+Work Log:
+- User re-reported AFTER cd49334 deploy: mobile page scroll still appears frozen when the deal section is long; desktop fine
+- Root cause found (was invisible to the wheel-based emulation test): the capped terms box (max-h-40vh overflow-y-auto overscroll-contain) is a ~338px-tall full-width touch target directly ABOVE the action buttons; on touch, drags landing on it scroll the box's ~6700px of inner terms instead of the page, and overscroll-contain kills chaining at the box boundary -> page never moves. Desktop unaffected: buttons already visible inside the sm+ inner-scroll panel
+- Fix (both trackers): terms card gets `order-last sm:order-none` -> on mobile the action buttons render right under the deal details IN VIEWPORT at scrollY 0 (no scroll needed at all); desktop keeps DOM order. Removed `overscroll-contain` from both terms boxes so the gesture chains to the page at the box end. Seller tracker info container switched block->flex-col for order support (component is currently unreachable legacy — SellerMain/seller-view imported by nobody, verified — kept in sync anyway)
+- E2E (iPhone 14 emulation 390x844, 120-line Bengali terms ~19k chars, buyer deal cmrkddc9q status=created): payment button top 3041->613px, inViewport true at scrollY 0; page scrolls full range (scrollY 299 = 1143-844); terms box now BELOW the button (rectTop 720), overscroll auto, still capped 338px inner-scroll 7020px; termsCardOrder 9999. Desktop 1280x800: order 0 restored, tabContent inner scroll active (1051>542), layout identical to pre-change. Seller branch verified on cmrkdcrbz (created, asib seller): order 9999, overscroll auto, terms at 635px below the waiting card
+- tsc 170/170 baseline (0 new); next build (Turbopack) OK; both test deals restored to original status/terms; db/custom.db checked out to HEAD
+
+Stage Summary:
+- Commit b03b5a5 pushed origin/main; Vercel auto-deploys
+- Mobile deal section: action buttons always visible without scrolling, terms at the bottom, no touch-scroll trap anywhere
+- Deep-link gotcha: /dashboard/deals/<id> renders DealWorkflowTracker (buyer tracker incl. seller branches) — SellerDealTracker is dead code, live app never mounts it
+- Task 35-b production health hit STILL pending (unchanged)
