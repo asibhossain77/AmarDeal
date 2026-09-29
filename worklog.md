@@ -1101,3 +1101,21 @@ Stage Summary:
 - Deal flow is now fully zero-touch: deliver → +3d automatic reminder email → +30d automatic completion; seller button remains as instant shortcut (atomic stamp keeps both paths mutually exclusive)
 - Commit d737bd7 pushed origin/main; Vercel auto-deploys
 - ⚠️ PRODUCTION still needs ONE real-browser hit of https://midman.bd/api/health (Task 35-b pending since Task 35) — until the 3 columns exist in prod Turso, reminder/auto-complete code errors and the cron skips (safe-guarded); feature stays inert in prod
+---
+Task ID: 44
+Agent: Super Z (main)
+Task: Deal terms onek long hole deal section er payment button + onno button screen er niche cole jay ar oi khane scroll hoy na
+
+Work Log:
+- Reproduced in headless browser (mobile 390x844, deal cmrkddc9q… status=created + 6830-char terms injected via Prisma): unbounded terms card pushed the payment button to y=3041 with page scrollHeight 3122 vs 844 viewport — buttons effectively unreachable below the fold; desktop (1280x800) buries them 946px deep inside the sm:max-h inner-scroll panel users don't realize scrolls
+- Scroll chain audited end-to-end (AppShell → dashboard-view → dashboard-main immersive → tracker → info tab): html/body overflow visible, no ancestor clipping, wheel+scrollTop DO scroll in emulation (earlier scrollTo=0 reading was a scroll-behavior:smooth animation-timing artifact); root cause is pure UX: unbounded terms content, not a hard scroll lock
+- Fix in BOTH trackers (buyer deal-workflow-tracker + seller-deal-tracker): terms card text now wrapped in max-h-[40vh] overflow-y-auto overscroll-contain box (pl-9 alignment kept in buyer card, pr-1 scrollbar gap), plus "সম্পূর্ণ শর্ত পড়তে বক্সের ভেতরে স্ক্রল করুন" hint with ChevronDown shown only when terms.length > 400
+- Verified after fix: mobile pageScrollH 3122→1143 (scroll distance 2278→299px), payment button top 763px (reachable, screenshot shows it in-viewport below the capped terms box); desktop inner content 1488→1051, button fully visible without any scroll; screenshots download/task44-{mobile,desktop}-fixed.png
+- Test data restored: deal status payment_pending + original terms "Jfhfhf" recovered from git HEAD db copy (git show HEAD:db/custom.db via @libsql/client query); db/custom.db checked out to HEAD
+- tsc 170/170 baseline (0 new)
+- Gotchas: agent-browser `find text` fails on composite Bengali text nodes — use eval + querySelectorAll text matching; deep link /dashboard/deals/<id> opens deal-detail directly after cookie auth
+
+Stage Summary:
+- Commit cd49334 pushed origin/main; Vercel auto-deploys
+- Long terms can no longer push action buttons out of reach on any breakpoint — terms box self-scrolls, buttons stay right under it
+- Task 35-b production health hit STILL pending (same as Task 43 note)
