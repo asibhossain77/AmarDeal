@@ -1082,3 +1082,22 @@ Stage Summary:
 - Commit 4d14ec2 pushed origin/main; Vercel auto-deploys
 - NEW uploads are compressed; EXISTING R2 images stay original — re-upload key banners once from admin panel for immediate wins (or build an admin recompress tool later)
 - User should re-run pagespeed.web.dev after deploy to see production deltas
+---
+Task ID: 43
+Agent: Super Z (main)
+Task: Seller kaj sesh korar 3 din pore reminder email AUTOMATICALLY + 1 month por auto-complete (seller nijeo button click korte vule jawar case cover)
+
+Work Log:
+- Audited Task 35 flow: reminder was SELLER-initiated only (manual button unlocked at deliveredAt+3d) — if the seller forgets too, autoCompleteAt is never stamped and escrow stays held forever
+- New src/lib/delivery-reminder.ts: shared sendDeliveryReminder(deal, source) — atomic one-shot stamp (guarded updateMany: status=in_delivery AND reminderEmailSentAt:null AND autoCompleteAt:null → reminderEmailSentAt=now, autoCompleteAt=now+30d) then system chat message + buyer notification + deliveryReminderEmail with bnDateLabel; REMINDER_WAIT_MS/AUTO_COMPLETE_MS exported; source 'seller'|'system' only switches the chat message wording
+- Cron /api/cron/auto-complete-deals now runs 2 passes: pass 1 auto-reminds in_delivery deals with deliveredAt ≤ now−3d and both stamps null (take 200; legacy deals without deliveredAt skipped — manual button still covers them via its updatedAt fallback); pass 2 = pre-existing auto-complete; response JSON adds remindersSent
+- send-reminder route refactored onto the shared helper — all guards unchanged (404 / in_delivery-only / seller-only 403 / one-shot pre-check 400 / 3-day wait 400); broadcasts the helper's chat message; losing the atomic race → 400 already-sent
+- auto-complete.tsx wording: buyer warning "বিক্রেতা রিমাইন্ডার পাঠিয়েছেন" → passive "ডেলিভারি রিমাইন্ডার পাঠানো হয়েছে" (true for both senders); seller card description now says the system auto-sends at 3d even if the seller doesn't press the button
+- E2E all PASS: cron#1 remindersSent=2 (stamps exactly +30d 2026-09-29→2026-10-29, bn label ২৯ অক্টোবর ২০২৬, system wording, buyer delivery_reminder notification); cron#2 one-shot → 0; backdate autoCompleteAt −1d → cron completed=1 (status completed); manual route 401 unauth / 403 buyer / 400 3-day wait / 200 seller (seller-wording chat msg) / 400 duplicate
+- tsc 170/170 baseline (one transient error fixed: Prisma chatMessage.role is string|null); next build (Turbopack) OK; db/custom.db checked out to HEAD (committed db already schema-in-sync), test deals restored to original statuses with side effects cleaned
+- Gotcha: helper script outside repo resolved scaffold's @prisma/client — must import via absolute amardeal node_modules path; bun strips TS types only in .ts files
+
+Stage Summary:
+- Deal flow is now fully zero-touch: deliver → +3d automatic reminder email → +30d automatic completion; seller button remains as instant shortcut (atomic stamp keeps both paths mutually exclusive)
+- Commit d737bd7 pushed origin/main; Vercel auto-deploys
+- ⚠️ PRODUCTION still needs ONE real-browser hit of https://midman.bd/api/health (Task 35-b pending since Task 35) — until the 3 columns exist in prod Turso, reminder/auto-complete code errors and the cron skips (safe-guarded); feature stays inert in prod
