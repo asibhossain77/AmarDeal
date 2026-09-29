@@ -487,14 +487,22 @@ export function SellerDealTracker() {
             )}
           </div>
 
-          {/* Deal Terms */}
+          {/* Deal Terms — height-capped with an inner scroll so very long terms
+              can't push the seller action buttons below the unreachable fold */}
           {dealTerms && (
             <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
               </div>
-              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+              <div className="max-h-[40vh] overflow-y-auto overscroll-contain pr-1">
+                <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+              </div>
+              {dealTerms.length > 400 && (
+                <p className="mt-2 text-[10px] font-medium" style={{ color: 'var(--muted-foreground)', opacity: 0.6 }}>
+                  সম্পূর্ণ শর্ত পড়তে বক্সের ভেতরে স্ক্রল করুন
+                </p>
+              )}
             </div>
           )}
 

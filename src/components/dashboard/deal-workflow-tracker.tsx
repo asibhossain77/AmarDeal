@@ -2464,7 +2464,10 @@ export function DealWorkflowTracker() {
                 </div>
 
                 {/* ── Deal Terms (visible on every breakpoint — hiding it on
-                    mobile left buyers unable to read the terms they must accept) ── */}
+                    mobile left buyers unable to read the terms they must accept).
+                    Height-capped with an inner scroll: unlimited terms text used
+                    to push the action buttons ~3000px below the fold where the
+                    scroll was barely reachable on real devices. ── */}
                 {dealTerms && (
                   <div className="rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
                     <div className="flex items-center gap-2 mb-2.5">
@@ -2478,9 +2481,17 @@ export function DealWorkflowTracker() {
                         ডিলের শর্তাবলী
                       </h3>
                     </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line pl-9">
-                      {dealTerms}
-                    </p>
+                    <div className="max-h-[40vh] overflow-y-auto overscroll-contain pl-9 pr-1">
+                      <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
+                        {dealTerms}
+                      </p>
+                    </div>
+                    {dealTerms.length > 400 && (
+                      <p className="mt-2 pl-9 flex items-center gap-1 text-[10px] font-medium text-muted-foreground/60">
+                        <ChevronDown className="h-3 w-3 shrink-0" />
+                        সম্পূর্ণ শর্ত পড়তে বক্সের ভেতরে স্ক্রল করুন
+                      </p>
+                    )}
                   </div>
                 )}
 
