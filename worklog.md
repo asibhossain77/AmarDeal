@@ -1137,3 +1137,21 @@ Stage Summary:
 - Mobile deal section: action buttons always visible without scrolling, terms at the bottom, no touch-scroll trap anywhere
 - Deep-link gotcha: /dashboard/deals/<id> renders DealWorkflowTracker (buyer tracker incl. seller branches) — SellerDealTracker is dead code, live app never mounts it
 - Task 35-b production health hit STILL pending (unchanged)
+
+---
+Task ID: 44-c
+Agent: Super Z (main)
+Task: Payment button er upore scroll korle page scroll hoi na — sudhu header area e hoi (touch trap final kill)
+
+Work Log:
+- User report after b03b5a5 deploy: page scroll works only when swiping the top/header area; swiping on/around the payment button (where the capped terms box now sits) still doesn't move the page
+- Diagnosis: the 40vh inner-scroll terms box is a big touch target exactly where thumbs land; upward drags on it scroll the box's ~6700px inner terms instead of the page, and chaining only fires at the box's very end (nobody drags that far). Any scrollable box in a page-scroll layout is a touch trap
+- Fix: on mobile (<sm) the terms box is now a COLLAPSED 140px peek with overflow-hidden — NOT a scroll container, so every touch anywhere scrolls the page — plus a "সম্পূর্ণ শর্ত দেখুন / শর্ত গুটিয়ে নিন" toggle (terms > 280 chars) expanding the full terms INLINE (page grows; page scroll handles it; zero inner scroll on mobile). Desktop (sm+) keeps the 40vh inner-scroll panel, now with the same toggle. Both trackers (seller tracker is dead code, synced anyway; ChevronUp/ChevronDown imports + termsExpanded state)
+- E2E mobile 390x844 (19k-char terms): collapsed box rectH 140 overflow hidden (max-sm: variant verified applied), payment button 613px in viewport at scrollY 0, page 1143→947px; toggle expand → page 7827px (box 7020 overflow visible, inline) → collapse → 947px. Desktop 1280x800: box 320px overflow auto inner-scrollable + toggle present
+- PipraPayButton checked (plain fetch+redirect button, no iframe) — ruled out as cause
+- tsc 170/170 baseline (0 new); next build OK; buyer test deal restored (payment_pending + "Jfhfhf"); db/custom.db checked out to HEAD
+
+Stage Summary:
+- Commit 90115ad pushed origin/main; Vercel auto-deploys
+- Mobile deal section now has ZERO scroll containers in the info tab — the page is the only scroller; terms read via expand toggle
+- Task 35-b production health hit STILL pending (unchanged)
