@@ -3,18 +3,28 @@ import { db } from '@/lib/db'
 import { sendEmail, dealCompletedEmail } from '@/lib/email'
 import { sendWhatsApp, dealCompletedWa } from '@/lib/whatsapp'
 import { notifyUser } from '@/lib/push'
+import { sendDeliveryReminder, REMINDER_WAIT_MS } from '@/lib/delivery-reminder'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/cron/auto-complete-deals — daily auto-completion of deals where the
- * buyer never confirmed delivery.
+ * GET /api/cron/auto-complete-deals — nightly, fully zero-touch unresponsive-
+ * buyer resolution. Two passes:
  *
- * Flow: seller delivers → 3 days later seller may send the buyer a reminder
- * email (POST /api/deals/[id]/send-reminder) → that stamps
- * `autoCompleteAt = sentAt + 30 days`. If the buyer still never clicks
- * "পণ্য/সার্ভিস পেয়েছি", this cron completes the deal at/after `autoCompleteAt`
- * so the seller's escrow money doesn't stay held forever.
+ * Pass 1 (auto-reminder): seller delivered → 3 days passed → buyer still silent
+ * → nobody sent the reminder yet (seller forgot / never pressed the button) →
+ * send the buyer reminder email SYSTEM-side and stamp `reminderEmailSentAt`
+ * + `autoCompleteAt = now + 30 days`. Deals without `deliveredAt` (legacy) are
+ * skipped here — the seller's manual button covers them.
+ *
+ * Pass 2 (auto-complete): if the buyer still never clicks "পণ্য/সার্ভিস পেয়েছি"
+ * by `autoCompleteAt`, complete the deal so the seller's escrow money doesn't
+ * stay held forever.
+ *
+ * Net effect: deliver → +3d reminder email → +30d auto-complete, with the
+ * seller's manual button (POST /api/deals/[id]/send-reminder) as an instant
+ * shortcut for the same one-shot flow (shared atomic stamp in
+ * sendDeliveryReminder keeps both paths mutually exclusive).
  *
  * Vercel Cron hits this once a day (see vercel.json) and automatically sends
  * `Authorization: Bearer $CRON_SECRET` when the CRON_SECRET env var is set.
@@ -36,6 +46,31 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    /* ── Pass 1: automatic delivery reminders ────────────────────────
+       in_delivery for ≥3 days (deliveredAt stamped), nobody reminded yet.
+       System-side sendDeliveryReminder stamps reminderEmailSentAt +
+       autoCompleteAt (+30d) atomically, then emails/notifies the buyer. */
+    const remindDue = await db.deal.findMany({
+      where: {
+        status: 'in_delivery',
+        deliveredAt: { lte: new Date(Date.now() - REMINDER_WAIT_MS) },
+        reminderEmailSentAt: null,
+        autoCompleteAt: null,
+      },
+      take: 200,
+      include: {
+        buyer: { select: { id: true, name: true, email: true, phone: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true } },
+      },
+    })
+
+    let reminded = 0
+    for (const deal of remindDue) {
+      const stamped = await sendDeliveryReminder(deal, 'system')
+      if (stamped) reminded++
+    }
+
+    /* ── Pass 2: auto-complete past the 30-day grace ───────────────── */
     const due = await db.deal.findMany({
       where: { status: 'in_delivery', autoCompleteAt: { lte: new Date() } },
       take: 200,
@@ -111,6 +146,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       checked: due.length,
+      remindersSent: reminded,
       completed,
       checkedAt: new Date().toISOString(),
     })

@@ -1,24 +1,13 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireDealAccess } from '@/lib/deal-guard'
-import { sendEmail, deliveryReminderEmail } from '@/lib/email'
-import { notifyUser } from '@/lib/push'
+import {
+  sendDeliveryReminder,
+  bnDateLabel,
+  REMINDER_WAIT_MS,
+} from '@/lib/delivery-reminder'
 
 export const dynamic = 'force-dynamic'
-
-const DAY_MS = 24 * 60 * 60 * 1000
-const REMINDER_WAIT_MS = 3 * DAY_MS // seller can remind 3 days after delivery
-const AUTO_COMPLETE_MS = 30 * DAY_MS // deal auto-completes 30 days after the reminder
-
-// Bengali date label used in emails / system messages, e.g. "০৫ অক্টোবর, ২০২৬"
-const BN_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
-function toBnDigits(n: number | string): string {
-  const BN = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
-  return String(n).replace(/\d/g, (d) => BN[+d])
-}
-export function bnDateLabel(d: Date): string {
-  return `${toBnDigits(d.getDate())} ${BN_MONTHS[d.getMonth()]}, ${toBnDigits(d.getFullYear())}`
-}
 
 // Broadcast chat message to WebSocket service
 async function broadcastChatMessage(dealId: string, message: Record<string, unknown>) {
@@ -35,11 +24,18 @@ async function broadcastChatMessage(dealId: string, message: Record<string, unkn
 
 /**
  * POST /api/deals/[id]/send-reminder
- * Seller sends the unresponsive-buyer reminder email. Allowed only while the
- * deal is in `in_delivery`, only by the seller, and only after 3 days have
- * passed since delivery. One-shot: after sending, the deal gets
+ * Seller sends the unresponsive-buyer reminder email manually. Allowed only
+ * while the deal is in `in_delivery`, only by the seller, and only after 3
+ * days have passed since delivery. One-shot: after sending, the deal gets
  * `autoCompleteAt = sentAt + 30 days` and the daily cron will auto-complete it
  * if the buyer never confirms — so the seller's money doesn't stay held forever.
+ *
+ * The daily cron (/api/cron/auto-complete-deals) sends the same reminder
+ * AUTOMATICALLY at deliveredAt + 3 days when the seller never pressed the
+ * button, so the flow no longer stalls if the seller forgets too. This manual
+ * endpoint stays for instant delivery at the 3-day mark instead of waiting
+ * for the next nightly cron run. Both paths share sendDeliveryReminder(),
+ * whose atomic stamp makes them mutually one-shot.
  */
 export async function POST(
   req: NextRequest,
@@ -92,71 +88,33 @@ export async function POST(
       )
     }
 
-    const autoCompleteAt = new Date(now.getTime() + AUTO_COMPLETE_MS)
-    const autoCompleteLabel = bnDateLabel(autoCompleteAt)
+    const result = await sendDeliveryReminder(deal, 'seller')
+    if (!result) {
+      // Lost the atomic race (cron auto-reminded first / deal moved on)
+      return NextResponse.json(
+        { error: 'রিমাইন্ডার ইমেইল আগেই পাঠানো হয়েছে' },
+        { status: 400 }
+      )
+    }
 
-    const updated = await db.deal.update({
-      where: { id },
-      data: { reminderEmailSentAt: now, autoCompleteAt },
-    })
-
-    // System chat message so both parties see it in the deal chat
-    const sysMsg = await db.chatMessage
-      .create({
-        data: {
-          dealId: id,
-          senderId: '__system__',
-          role: 'system',
-          senderName: null,
-          text: `📧 বিক্রেতা বয়ারকে রিমাইন্ডার ইমেইল পাঠিয়েছেন। ${autoCompleteLabel} এর মধ্যে ডেলিভারি নিশ্চিত না করলে ডিলটি স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে বিক্রেতার পেমেন্ট মুক্ত হবে।`,
-        },
-      })
-      .catch(() => null)
-
-    if (sysMsg) {
+    // Broadcast the system chat message so live chat sessions see it
+    if (result.chatMessage) {
       broadcastChatMessage(id, {
-        id: sysMsg.id,
+        id: result.chatMessage.id,
         dealId: id,
-        senderId: sysMsg.senderId,
-        role: sysMsg.role,
-        senderName: sysMsg.senderName,
-        text: sysMsg.text,
-        createdAt: sysMsg.createdAt,
+        senderId: result.chatMessage.senderId,
+        role: result.chatMessage.role,
+        senderName: result.chatMessage.senderName,
+        text: result.chatMessage.text,
+        createdAt: result.chatMessage.createdAt,
       })
-    }
-
-    // Notify the buyer (notification bell + push)
-    if (deal.buyerId) {
-      notifyUser({
-        userId: deal.buyerId,
-        dealId: id,
-        type: 'delivery_reminder',
-        title: 'ডেলিভারি রিমাইন্ডার',
-        message: `"${deal.title}" ডিলের ডেলিভারি এখনো নিশ্চিত করেননি। ${autoCompleteLabel} এর মধ্যে নিশ্চিত না করলে ডিল স্বয়ংক্রিয়ভাবে সম্পন্ন হবে।`,
-        pushUrl: '/dashboard',
-      }).catch(() => {})
-    }
-
-    // Reminder email to the buyer (best-effort)
-    if (deal.buyer?.email) {
-      sendEmail(
-        deal.buyer.email,
-        () =>
-          deliveryReminderEmail(
-            deal.buyer.name || 'ক্রেতা',
-            deal.title,
-            deal.amount || 0,
-            deal.seller?.name || 'বিক্রেতা',
-            autoCompleteLabel
-          ),
-        'delivery_reminder'
-      ).catch(() => {})
     }
 
     return NextResponse.json({
       success: true,
-      reminderEmailSentAt: updated.reminderEmailSentAt,
-      autoCompleteAt: updated.autoCompleteAt,
+      reminderEmailSentAt: result.reminderEmailSentAt,
+      autoCompleteAt: result.autoCompleteAt,
+      autoCompleteLabel: bnDateLabel(result.autoCompleteAt),
     })
   } catch {
     return NextResponse.json({ error: 'রিমাইন্ডার পাঠাতে সমস্যা' }, { status: 500 })

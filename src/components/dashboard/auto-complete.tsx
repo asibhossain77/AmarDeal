@@ -151,7 +151,7 @@ export function DeliveryReminderCard({
           <div className="min-w-0 flex-1">
             <p className="text-xs md:text-sm font-bold text-foreground">বয়ার নিশ্চিত করছেন না?</p>
             <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              রিমাইন্ডার ইমেইল পাঠালে বয়ারের ১ মাস সময় পাবে — তার মধ্যে &quot;পণ্য/সার্ভিস পেয়েছি&quot; ক্লিক না করলে ডিল স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে আপনার পেমেন্ট হোল্ড থেকে মুক্ত হবে।
+              রিমাইন্ডার ইমেইল পাঠালে বয়ারের ১ মাস সময় পাবে — তার মধ্যে &quot;পণ্য/সার্ভিস পেয়েছি&quot; ক্লিক না করলে ডিল স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে আপনার পেমেন্ট হোল্ড থেকে মুক্ত হবে। আপনি না পাঠালেও ডেলিভারির ৩ দিন পর আমরা স্বয়ংক্রিয়ভাবে রিমাইন্ডার পাঠিয়ে দেব।
             </p>
             {canSend ? (
               <button
@@ -189,9 +189,9 @@ export function AutoCompleteWarning({ reminderEmailSentAt, autoCompleteAt }: { r
       <div className="flex items-start gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.25)' }}>
         <ShieldAlert className="h-4 w-4 md:h-5 md:w-5 shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
         <div className="min-w-0 flex-1">
-          <p className="text-xs md:text-sm font-bold text-foreground">বিক্রেতা রিমাইন্ডার পাঠিয়েছেন</p>
+          <p className="text-xs md:text-sm font-bold text-foreground">ডেলিভারি রিমাইন্ডার পাঠানো হয়েছে</p>
           <p className="text-[11px] md:text-xs text-muted-foreground mt-0.5 leading-relaxed">
-            {bnDateLabel(reminderEmailSentAt || new Date())} এ বিক্রেতা আপনাকে ইমেইল রিমাইন্ডার দিয়েছেন।{' '}
+            {bnDateLabel(reminderEmailSentAt || new Date())} এ আপনাকে ইমেইল রিমাইন্ডার দেওয়া হয়েছে।{' '}
             <span className="font-bold" style={{ color: '#F59E0B' }}>
               সময়সীমার মধ্যে &quot;পণ্য/সার্ভিস পেয়েছি&quot; ক্লিক না করলে ডিল স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে বিক্রেতার পেমেন্ট মুক্ত হয়ে যাবে।
             </span>{' '}
