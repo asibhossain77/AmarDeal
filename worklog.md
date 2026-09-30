@@ -1195,3 +1195,23 @@ Stage Summary:
 - Deal message/chat headers no longer show a fake "Online" status on either chat surface
 - Commit pushed to origin/main; Vercel auto-deploys
 - Sandbox reset lesson: after any reset, re-run bun install TWICE-check @aws-sdk + prisma generate before trusting tsc/build counts
+
+---
+Task ID: 47
+Agent: Super Z (main)
+Task: Mobile view of the Deal section still not scrolling properly — smooth vertical scroll, no layout/overflow issues
+
+Work Log:
+- Sandbox reset again between turns (node_modules + /home/z/my-project/scripts wiped; working tree had stale 04c6757-era noise) — reset to 15dfee2, bun install, re-created test scripts
+- Emulation diagnostic (iPhone 14, deep link, session cookie via eval — cookies set command fails CDP validation): collapsed short deal fit exactly in viewport (docH 844 = innerH, no scroll needed); with long terms collapsed: docH 937, page scroll OK; expanded: docH 5477, window.scrollTo reached 4633 = maxScroll — geometry was CORRECT in emulation (same blind spot as 44-b: emulation can't see real-touch ghost-scroller traps)
+- Deterministic touch-trap audit of the full ancestor chain found the LAST two mobile scroll-container hazards (both invisible to emulation, both proven chain-killers on real devices by the 44-b saga):
+  1. deal-workflow-tracker tab content (line ~2390): `overflow-y-auto overscroll-contain` on ALL breakpoints — even with zero overflow it is still a scroll CONTAINER, and overscroll-contain on that ghost scroller swallows swipes on real touch (Chrome applies overscroll-behavior to any scroll container). The 44-c comment already declared mobile = page-scroll, but the classes never matched the intent
+  2. dashboard-view main wrapper: `overflow-x-hidden` — computes overflow-y to auto → a page-wide ghost scroll container wrapping EVERYTHING in the dashboard
+- Fixes: tab content → `max-sm:overflow-visible sm:overflow-y-auto sm:overscroll-contain` (mobile: not a scroll container at all; sm+ keeps the designed inner-scroll panel) + wrapper → `overflow-x-clip` (clip without creating a scroller)
+- E2E after fix — mobile 390x844: collapsed box oy=visible/ob=auto/diff=0, page 937px scrollable; expanded oy=visible/diff=0, docH 5477, scrolled to 4633=4633 maxScroll. Desktop 1280x800: tab content inner-scroll ACTIVE (oy auto, ob contain, 1050>542) — sm+ design unchanged
+- tsc 170 (below 171 post-generate baseline, 0 new); next build Turbopack compiled successfully; test deal restored (payment_pending + "Jfhfhf"); db/custom.db checked out to HEAD
+
+Stage Summary:
+- Commit pushed origin/main; Vercel auto-deploys
+- Mobile deal section now has ZERO scroll containers on the info-tab path AND no page-wide ghost scroller — every touch gesture chains to the page scroller; desktop inner-scroll design intact
+- Recurring gotcha logged: agent-browser `cookies set` fails CDP validation → set session cookie via eval document.cookie on a same-origin page instead

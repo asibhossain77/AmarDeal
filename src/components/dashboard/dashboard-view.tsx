@@ -188,8 +188,11 @@ export function DashboardView() {
           <DashboardSidebar />
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 md:pl-64 overflow-x-hidden">
+        {/* Main Content — overflow-x-clip (NOT -hidden): hidden computes
+            overflow-y to auto, making this wrapper a ghost page-wide scroll
+            container that can trap touch gestures on mobile; clip clips
+            without creating a scroller */}
+        <div className="flex-1 md:pl-64 overflow-x-clip">
           <DashboardMain />
         </div>
       </div>

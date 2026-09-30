@@ -2375,14 +2375,19 @@ export function DealWorkflowTracker() {
             /* sm+: the tracker root's sm:max-h caps the panel, so this area
                inner-scrolls. Mobile: no cap anywhere → content defines the height
                and the PAGE scrolls (fixed-height inner scroll was unreachable on
-               real devices — 100vh ignores the URL-bar viewport). */
+               real devices — 100vh ignores the URL-bar viewport).
+               ⚠ Mobile must NOT be a scroll container at all: overflow-y-auto
+               makes this a scroller even when nothing overflows, and on real
+               touch devices overscroll-contain on that ghost scroller swallows
+               swipes (page freeze). max-sm:overflow-visible removes it
+               entirely so every gesture chains to the page. */
             <motion.div
               key="deal-info"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
-              className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
+              className="flex-1 min-h-0 max-sm:overflow-visible sm:overflow-y-auto sm:overscroll-contain"
             >
               <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between">
                 {/* ── Deal title + status badge ── */}
