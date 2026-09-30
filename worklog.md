@@ -1177,3 +1177,21 @@ Stage Summary:
 - Task 43 automatic unresponsive-buyer flow NOW actually works in production (was inert: stamp missing on the route the UI actually calls)
 - Task 35-b CLOSED: prod Turso schema verified complete (31 tables, all columns) via direct token connection
 - Token hygiene: 1-day token expires Sep-30 07:51 UTC — advise user NOT to put it in Vercel env; Vercel keeps its own long-lived token (prod is working, so it's fine)
+
+---
+Task ID: 46
+Agent: Super Z (main)
+Task: Remove the always-on "Online" status shown above the user in the deal message/chat header
+
+Work Log:
+- The indicator was FAKE — a hardcoded green dot + label in both deal chat surfaces, no presence system behind it (i18n keys 'chat.active'/'tracker.online' exist but presence was never implemented)
+- Removed from deal-chat-view.tsx chat header (pulsing emerald dot + 'chat.active' text, right side of header)
+- Removed from deal-workflow-tracker.tsx chat header (emerald dot + hardcoded 'অনলাইন' under counterparty name; name kept)
+- Locale keys left in place (harmless, no other consumers); seller-deal-tracker (dead code) has no such badge — nothing to sync
+- Sandbox had been reset between turns: node_modules wiped + working tree had stale snapshot noise (contact-message mod, upload-route deletions from an old 04c6757-era state). Fixed via git reset --hard origin/main + bun install; edits re-applied (first application was lost in the reset)
+- Verification: stash test clean-HEAD vs edited = identical error count (my edits add 0); total tsc count now 171 vs old 170 baseline = environmental drift from fresh dep resolution (166 in src/, all pre-existing i18n-key type errors); prisma generate re-run after fresh install; missing @aws-sdk/s3-request-presigner restored by second bun install (partial cache restore); next build (Turbopack) compiled successfully
+
+Stage Summary:
+- Deal message/chat headers no longer show a fake "Online" status on either chat surface
+- Commit pushed to origin/main; Vercel auto-deploys
+- Sandbox reset lesson: after any reset, re-run bun install TWICE-check @aws-sdk + prisma generate before trusting tsc/build counts

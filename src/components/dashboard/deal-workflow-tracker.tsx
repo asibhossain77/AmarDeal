@@ -2934,12 +2934,6 @@ export function DealWorkflowTracker() {
                     <p className="text-sm font-semibold text-foreground">
                       {isBuyer ? sellerName : buyerName}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                        অনলাইন
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
