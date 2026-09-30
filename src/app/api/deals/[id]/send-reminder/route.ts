@@ -4,7 +4,7 @@ import { requireDealAccess } from '@/lib/deal-guard'
 import {
   sendDeliveryReminder,
   bnDateLabel,
-  REMINDER_WAIT_MS,
+  isReminderWaitOver,
 } from '@/lib/delivery-reminder'
 
 export const dynamic = 'force-dynamic'
@@ -77,11 +77,10 @@ export async function POST(
       )
     }
 
-    const now = new Date()
-    const waitOk = deal.deliveredAt
-      ? now.getTime() - deal.deliveredAt.getTime() >= REMINDER_WAIT_MS
-      : now.getTime() - deal.updatedAt.getTime() >= REMINDER_WAIT_MS // legacy deals w/o deliveredAt
-    if (!waitOk) {
+    // 3-day gate — measured from deliveredAt, falling back to updatedAt for
+    // legacy deals delivered before the stamp existed (shared rule with the
+    // nightly cron so both paths agree).
+    if (!isReminderWaitOver(deal)) {
       return NextResponse.json(
         { error: 'বয়ারকে রিমাইন্ডার পাঠাতে ডেলিভারির পর কমপক্ষে ৩ দিন অপেক্ষা করতে হবে' },
         { status: 400 }

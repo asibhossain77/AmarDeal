@@ -1179,6 +1179,8 @@ interface DealData {
   workDeadlineAt?: string | null;
   /* Unresponsive-buyer auto-complete flow */
   deliveredAt?: string | null;
+  /** Fallback anchor for the reminder 3-day gate on legacy deals (deliveredAt = null) */
+  updatedAt?: string | null;
   reminderEmailSentAt?: string | null;
   autoCompleteAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
@@ -2627,6 +2629,7 @@ export function DealWorkflowTracker() {
                     <DeliveryReminderCard
                       dealId={dealData?.id || activeDeal?.id || ''}
                       deliveredAt={dealData?.deliveredAt}
+                      updatedAt={dealData?.updatedAt}
                       reminderEmailSentAt={dealData?.reminderEmailSentAt}
                       autoCompleteAt={dealData?.autoCompleteAt}
                       onUpdated={fetchDeal}

@@ -8,6 +8,25 @@ export const REMINDER_WAIT_MS = 3 * DAY_MS
 /** Deal auto-completes 30 days (~1 month) after the reminder goes out */
 export const AUTO_COMPLETE_MS = 30 * DAY_MS
 
+/**
+ * Has the 3-day reminder wait elapsed for this deal?
+ *
+ * Fresh deals are measured from `deliveredAt` (stamped by both deliver
+ * routes). Legacy deals — delivered BEFORE the deliveredAt stamp existed —
+ * have `deliveredAt = null` and fall back to `updatedAt`, which for an
+ * in_delivery deal is the deliver action itself (its last write).
+ *
+ * Shared by the seller's manual endpoint (send-reminder) and the nightly
+ * cron so both paths agree on exactly when the reminder may fire.
+ */
+export function isReminderWaitOver(deal: {
+  deliveredAt: Date | null
+  updatedAt: Date
+}): boolean {
+  const start = deal.deliveredAt ?? deal.updatedAt
+  return Date.now() - start.getTime() >= REMINDER_WAIT_MS
+}
+
 // Bengali date label used in emails / system messages, e.g. "০৫ অক্টোবর, ২০২৬"
 const BN_MONTHS = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর']
 function toBnDigits(n: number | string): string {

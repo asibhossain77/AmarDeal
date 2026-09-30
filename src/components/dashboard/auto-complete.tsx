@@ -69,16 +69,23 @@ export function AutoCompleteCountdown({ autoCompleteAt }: { autoCompleteAt: stri
    • < 3 days since delivery  → muted hint (can't send yet)
    • ≥ 3 days, not sent       → "রিমাইন্ডার ইমেইল পাঠান" action
    • sent                     → confirmation + live auto-complete countdown
+
+   The 3-day wait is measured from `deliveredAt`; legacy deals delivered
+   before that stamp existed have `deliveredAt = null` and fall back to
+   `updatedAt` — the same rule the API and the nightly cron use, so the
+   button actually appears for those deals instead of hiding forever.
    ──────────────────────────────────────────────────────────── */
 export function DeliveryReminderCard({
   dealId,
   deliveredAt,
+  updatedAt,
   reminderEmailSentAt,
   autoCompleteAt,
   onUpdated,
 }: {
   dealId: string;
   deliveredAt?: string | null;
+  updatedAt?: string | null;
   reminderEmailSentAt?: string | null;
   autoCompleteAt?: string | null;
   onUpdated?: () => void;
@@ -99,7 +106,12 @@ export function DeliveryReminderCard({
     setAutoAt(autoCompleteAt || null);
   }, [reminderEmailSentAt, autoCompleteAt]);
 
-  const elapsed = deliveredAt ? nowTick - new Date(deliveredAt).getTime() : null;
+  const startMs = deliveredAt
+    ? new Date(deliveredAt).getTime()
+    : updatedAt
+      ? new Date(updatedAt).getTime()
+      : null;
+  const elapsed = startMs !== null ? nowTick - startMs : null;
   const canSend = !sentAt && elapsed !== null && elapsed >= 3 * DAY_MS;
   const waitDays = elapsed !== null ? Math.max(0, Math.ceil((3 * DAY_MS - elapsed) / DAY_MS)) : null;
 
