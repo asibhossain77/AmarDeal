@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LinkifyText } from '@/components/ui/linkify-text';
 import {
   Dialog,
   DialogContent,
@@ -1590,7 +1591,7 @@ function ChatBubble({ message, currentUserId, dealId }: { message: ChatMessage; 
               <Bot className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <p className="text-[13px] leading-relaxed text-amber-800 dark:text-amber-200/90">
-              {text}
+              <LinkifyText text={text} variant="amber" />
             </p>
           </div>
           <span className="flex items-center gap-1.5 text-[10px] text-amber-500/60 dark:text-amber-400/50">
@@ -1627,7 +1628,7 @@ function ChatBubble({ message, currentUserId, dealId }: { message: ChatMessage; 
             }}
           >
             <p className="text-[13px] leading-relaxed text-purple-900 dark:text-purple-200">
-              {text}
+              <LinkifyText text={text} variant="purple" />
             </p>
           </div>
           <span className="flex items-center gap-1.5 text-[10px] text-purple-500/60 dark:text-purple-400/50">
@@ -1736,8 +1737,8 @@ function ChatBubble({ message, currentUserId, dealId }: { message: ChatMessage; 
             </div>
           )}
 
-          {/* ── Caption / plain text ── */}
-          {showCaption && <p className="text-sm leading-relaxed break-words">{text}</p>}
+          {/* ── Caption / plain text (URLs → safe clickable links) ── */}
+          {showCaption && <p className="text-sm leading-relaxed break-words"><LinkifyText text={text} variant={isOwn ? 'accent' : 'default'} /></p>}
         </div>
 
         <span className="flex items-center gap-1 px-1">
@@ -2502,7 +2503,7 @@ export function DealWorkflowTracker() {
                       }
                     >
                       <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
-                        {dealTerms}
+                        <LinkifyText text={dealTerms} />
                       </p>
                     </div>
                     {dealTerms.length > 280 && (

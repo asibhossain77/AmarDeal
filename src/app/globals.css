@@ -272,3 +272,46 @@ html.dark {
     transform: none !important;
   }
 }
+
+/* ── Auto-linkified URLs (Deal Terms + Deal Messages) ─────────────────
+   Rendered by <LinkifyText>; typography (size/weight/leading) is
+   inherited from the surrounding paragraph — only link affordance is
+   added. Colors follow the bubble/card context via variant classes. */
+.linkify-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  transition: opacity 150ms ease;
+}
+.linkify-link:hover {
+  opacity: 0.75;
+}
+/* On the sender's own green chat bubble → white */
+.linkify-link--accent {
+  color: #ffffff;
+  text-decoration-color: rgb(255 255 255 / 0.7);
+}
+.linkify-link--accent:hover {
+  opacity: 0.85;
+}
+/* On amber system-message bubbles */
+.linkify-link--amber {
+  color: rgb(146 64 14); /* amber-800 */
+  text-decoration-color: rgb(146 64 14 / 0.5);
+}
+html.dark .linkify-link--amber {
+  color: rgb(253 230 138); /* amber-200 */
+  text-decoration-color: rgb(253 230 138 / 0.5);
+}
+/* On purple admin-message bubbles */
+.linkify-link--purple {
+  color: rgb(107 33 168); /* purple-800 */
+  text-decoration-color: rgb(107 33 168 / 0.5);
+}
+html.dark .linkify-link--purple {
+  color: rgb(233 213 255); /* purple-200 */
+  text-decoration-color: rgb(233 213 255 / 0.5);
+}

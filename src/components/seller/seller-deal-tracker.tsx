@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
+import { LinkifyText } from '@/components/ui/linkify-text';
 import {
   ArrowLeft,
   FileCheck,
@@ -512,7 +513,7 @@ export function SellerDealTracker() {
                     : 'max-h-[40vh] overflow-y-auto pr-1 max-sm:max-h-[140px] max-sm:overflow-hidden'
                 }
               >
-                <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+                <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}><LinkifyText text={dealTerms} /></p>
               </div>
               {dealTerms.length > 280 && (
                 <button
