@@ -2286,7 +2286,7 @@ export function DealWorkflowTracker() {
             <div className="flex items-center">
               <div>
                 <span className="text-base font-bold tracking-tight text-foreground">
-                  আমার ডিল
+                  অ্যাডমিন ডিল
                 </span>
                 <p className="text-[10px] text-muted-foreground hidden sm:block">
                   DL-{(dealData?.id || activeDeal?.id || '').slice(-5)}
@@ -2301,7 +2301,7 @@ export function DealWorkflowTracker() {
               onClick={() => { useAppStore.getState().setActiveDeal(null); useAppStore.getState().goBack(); }}
               className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              আমার ডিলসমূহ
+              অ্যাডমিন ডিলসমূহ
             </button>
             <span className="text-xs text-muted-foreground/40">/</span>
             <span className="px-3 py-1.5 text-xs font-medium text-foreground">
@@ -2802,7 +2802,7 @@ export function DealWorkflowTracker() {
                       <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
                         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে নতুন ডিল তৈরি করুন।
+                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে অ্যাডমিন ডিল তৈরি করুন।
                         </p>
                       </div>
                     ) : payoutChecking ? (

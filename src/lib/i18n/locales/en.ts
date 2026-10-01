@@ -3,7 +3,7 @@ import type { TranslationKey } from './bn';
 export const en: Record<TranslationKey, string> = {
   // ── Navbar ──
   'nav.dashboard': 'Dashboard',
-  'nav.myDeals': 'My Deals',
+  'nav.myDeals': 'Admin Deals',
   'nav.transactions': 'Transactions',
   'nav.profile': 'Profile',
   'nav.settings': 'Settings',
@@ -12,8 +12,8 @@ export const en: Record<TranslationKey, string> = {
   'nav.withdraw': 'Withdraw',
   'nav.logout': 'Logout',
   'nav.loginRegister': 'Login / Register',
-  'nav.newDeal': 'New Deal',
-  'nav.createNewDeal': 'Create New Deal',
+  'nav.newDeal': 'Admin Deal',
+  'nav.createNewDeal': 'Create Admin Deal',
   'nav.exitAdmin': 'Exit Admin',
   'nav.openMenu': 'Open menu',
   'nav.navMenu': 'Navigation menu',
@@ -323,11 +323,11 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.amount': 'Amount',
   'dashboard.status': 'Status',
   'dashboard.noDeals': 'No Deals',
-  'dashboard.startNewDeal': 'Create a new deal to get started',
+  'dashboard.startNewDeal': 'Create an admin deal to get started',
   'dashboard.user': 'User',
   'dashboard.profile': 'Profile',
-  'dashboard.newDeal': 'Create New Deal',
-  'dashboard.myDealsBtn': 'My Deals',
+  'dashboard.newDeal': 'Create Admin Deal',
+  'dashboard.myDealsBtn': 'Admin Deals',
 
   // ── Status Labels ──
   'status.deposited': 'Deposited',
@@ -350,7 +350,7 @@ export const en: Record<TranslationKey, string> = {
   'status.activeDispute': 'Dispute in Progress',
 
   // ── Deals (My Deals Panel) ──
-  'deals.myDeals': 'My Deals',
+  'deals.myDeals': 'Admin Deals',
   'deals.myDealsDesc': 'List of all your deals',
   'deals.searchPlaceholder': 'Search by deal ID or title...',
   'deals.all': 'All',
@@ -363,7 +363,7 @@ export const en: Record<TranslationKey, string> = {
   'deals.copy': 'Copy',
 
   // ── Deal Form (New Deal) ──
-  'deal.createTitle': 'Create New Deal',
+  'deal.createTitle': 'Create Admin Deal',
   'deal.createDesc': 'Provide deal details for a safe transaction',
   'deal.titleLabel': 'Deal Title',
   'deal.titlePlaceholder': 'e.g. Logo Design, Web Development',
@@ -478,8 +478,8 @@ export const en: Record<TranslationKey, string> = {
   'tracker.step3': 'Verification',
   'tracker.step4': 'Delivery',
   'tracker.step5': 'Deal Complete',
-  'tracker.myDeal': 'My Deal',
-  'tracker.myDealsBreadcrumb': 'My Deals',
+  'tracker.myDeal': 'Admin Deal',
+  'tracker.myDealsBreadcrumb': 'Admin Deals',
   'tracker.dealInfo': 'Deal Info',
   'tracker.dealChat': 'Deal Chat',
   'tracker.dealAmount': 'Deal Amount',
@@ -514,7 +514,7 @@ export const en: Record<TranslationKey, string> = {
   'tracker.payoutPendingMsg': 'Payout request submitted. Admin is processing.',
   'tracker.dealRejected': 'Deal rejected',
   'tracker.dealCancelled': 'Deal cancelled',
-  'tracker.rejectedRefundNote': 'Admin rejected payment verification. Refund is not applicable due to wrong transaction. Create a new deal with correct info.',
+  'tracker.rejectedRefundNote': 'Admin rejected payment verification. Refund is not applicable due to wrong transaction. Create an admin deal with correct info.',
   'tracker.fillRefundForm': 'Fill the form below to get your refund',
   'tracker.requestRefund': 'Request Refund',
   'tracker.refundCompleted': 'Refund completed! Money sent to your account.',
@@ -636,7 +636,7 @@ export const en: Record<TranslationKey, string> = {
   'download.paymentPending': 'Waiting for payment verification',
   'download.paymentPendingDesc': 'Your payment is being reviewed — the download unlocks right after verification',
   'download.orderPendingDesc': 'You will get the download page once your deal is approved',
-  'download.viewMyDeals': 'View My Deals',
+  'download.viewMyDeals': 'View Admin Deals',
   'download.claimFreeDesc': 'This is a free product — click below to get instant access',
   'download.claimFree': 'Claim Free Download',
   'download.claiming': 'Claiming...',
@@ -774,7 +774,7 @@ export const en: Record<TranslationKey, string> = {
   'faq.q2': 'How does this platform work?',
   'faq.a2': 'First, the buyer creates a deal. When the seller accepts the deal, the buyer makes the payment. After the admin verifies the payment, the seller delivers the product/service. When the buyer confirms, the payout goes to the seller. Your money is fully secure throughout the entire process.',
   'faq.q3': 'How do I create a deal?',
-  'faq.a3': 'After logging in, click the "New Deal" button on the dashboard. Enter the deal title, amount and details. Invite the seller using their phone number. If the seller has an account, they will see the deal directly; if not, they will need to register.',
+  'faq.a3': 'After logging in, click the "Admin Deal" button on the dashboard. Enter the deal title, amount and details. Invite the seller using their phone number. If the seller has an account, they will see the deal directly; if not, they will need to register.',
   'faq.q4': 'How do I make a payment?',
   'faq.a4': 'After creating and accepting the deal, the payment option will appear on your deal page. Choose from the admin-set payment methods (bKash, Nagad, Rocket etc.) and send money to the specified number. Submit payment proof (screenshot/transaction ID). Once the admin verifies, you\'ll move to the next step.',
   'faq.q5': 'How much is the transaction fee?',
@@ -792,7 +792,7 @@ export const en: Record<TranslationKey, string> = {
   'faq.q11': 'Can a deal be cancelled?',
   'faq.a11': 'Yes, a deal can be cancelled under certain conditions. Before payment verification, either party can cancel the deal. If payment is verified, resolution must be done through the dispute process. The admin will verify the reason for cancellation.',
   'faq.q12': 'What is the Deal ID (DL-XXXXX) used for?',
-  'faq.a12': 'Each deal has a unique ID (e.g., DL-abc12). This makes it easy to find a specific deal. Type the deal ID in the search box on the "My Deals" page to see that deal. When contacting support, providing the deal ID helps in quick resolution.',
+  'faq.a12': 'Each deal has a unique ID (e.g., DL-abc12). This makes it easy to find a specific deal. Type the deal ID in the search box on the "Admin Deals" page to see that deal. When contacting support, providing the deal ID helps in quick resolution.',
 
   // ── Fee Structure ──
   'fee.badge': 'Transparent Pricing',

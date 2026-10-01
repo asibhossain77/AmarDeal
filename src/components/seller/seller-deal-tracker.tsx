@@ -433,7 +433,7 @@ export function SellerDealTracker() {
             {/* "আ" logo badge removed (user request) — title only */}
             <div className="flex items-center">
               <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
-                আমার ডিল
+                অ্যাডমিন ডিল
               </span>
             </div>
           </div>
