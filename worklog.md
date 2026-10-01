@@ -1215,3 +1215,37 @@ Stage Summary:
 - Commit pushed origin/main; Vercel auto-deploys
 - Mobile deal section now has ZERO scroll containers on the info-tab path AND no page-wide ghost scroller — every touch gesture chains to the page scroller; desktop inner-scroll design intact
 - Recurring gotcha logged: agent-browser `cookies set` fails CDP validation → set session cookie via eval document.cookie on a same-origin page instead
+
+---
+Task ID: 48
+Agent: main (Super Z)
+Task: Fix deal completion flow — seller reminder after 3d of delivery, auto-complete 1 month after reminder; reliable in background
+
+Work Log:
+- Root cause of "previous commit not working": legacy in_delivery deals had deliveredAt=null → cron pass 1 `deliveredAt: { lte }` never matched + UI reminder card `elapsed !== null` hid the button → deals stuck forever
+- src/lib/delivery-reminder.ts: added shared `isReminderWaitOver()` (deliveredAt ?? updatedAt fallback); src/app/api/deals/[id]/send-reminder/route.ts now uses it
+- cron route: pass 1 where gets OR-branch `{ deliveredAt: null, updatedAt: { lte: waitOver } }`; per-deal try/catch in both passes; pass 2 independent of pass 1; response reports remindChecked
+- auto-complete.tsx DeliveryReminderCard accepts updatedAt prop → legacy deals get the 3-day button; deal-workflow-tracker passes deal.updatedAt
+- cron auth: Bearer CRON_SECRET or ?secret= (timingSafeEqual); E2E (task48-e2e.ts, 4 synthetic deals, 11 assertions incl. idempotent rerun) all green
+- Deployed d7a6033; user verified prod via browser: /api/cron/auto-complete-deals → {"remindChecked":4,"remindersSent":4} — all 4 legacy deals (Shanaya/elitist/Jelly Shop/ABDULLAH MUAJ) reminded, auto-complete ≈ 2026-10-30
+- NOTE: this entry was restored later (it was accidentally lost from this file); full details in session summary
+
+Stage Summary:
+- Commit d7a6033 pushed; Vercel scheduled cron (vercel.json, daily 04:30 UTC) self-heals legacy deals; no manual cron URL setup needed by user
+
+---
+Task ID: 50
+Agent: main (Super Z)
+Task: Auto-linkify URLs in Deal Terms and Deal Message sections (clickable, new tab, original text visible, XSS-safe)
+
+Work Log:
+- Found all render points: deal terms in deal-workflow-tracker.tsx (buyer) + seller-deal-tracker.tsx (seller); chat message text in ChatBubble — system (amber), admin (purple), buyer/seller caption variants
+- New src/components/ui/linkify-text.tsx: tokenizeUrlText() + LinkifyText component. Detection regex only matches \b(https?://|www.) + non-space/<>"/' body → javascript:/data:/vbscript: schemes can never linkify; every href re-validated via new URL() and must be http/https else rendered as plain text; renders React elements (auto-escaped), zero dangerouslySetInnerHTML; target=_blank + rel="noopener noreferrer nofollow"
+- Smart edges: trailing sentence punctuation stripped (.,;:!? curly quotes + Bengali dandi । ॥), balanced brackets kept (Wikipedia-style (bar) links), unbalanced closers stripped; www. gets https:// prepended; uppercase schemes handled; emails/protocol-relative/word-embedded schemes stay plain text
+- globals.css: .linkify-link base (var(--primary), underline, overflow-wrap anywhere) + --accent (white on own green bubble) / --amber / --purple variants with html.dark overrides; typography inherited from surrounding paragraph
+- 5 call sites swapped {text}/{dealTerms} → <LinkifyText> with matching variant; existing <p> classes untouched (whitespace-pre-line, break-words preserved)
+- Verification: 38/38 tokenizer tests pass (/home/z/my-project/scripts/task50-linkify-test.ts runs the REAL repo file via bun); git diff audited = imports + render swaps + CSS only, zero logic changes; tsc 170 = pre-existing baseline; next build clean
+
+Stage Summary:
+- Commit fdc3929 pushed origin/main (after 32b81a7); Vercel auto-deploys
+- Existing AND new deal terms/messages both covered automatically (pure display-layer tokenization, no data migration)
