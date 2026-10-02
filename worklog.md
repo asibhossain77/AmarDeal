@@ -1249,3 +1249,27 @@ Work Log:
 Stage Summary:
 - Commit fdc3929 pushed origin/main (after 32b81a7); Vercel auto-deploys
 - Existing AND new deal terms/messages both covered automatically (pure display-layer tokenization, no data migration)
+
+---
+Task ID: 51
+Agent: main (Super Z)
+Task: Authentication bridge midman.bd → verify.midman.bd (midman = ONLY account system; Verify stores user_id references only)
+
+Work Log:
+- Auth inspection: custom session — httpOnly `midman_session` cookie = user.id (cuid), host-only, SameSite=Lax, 7d; validated via DB lookup + isActive in /api/auth/me, deal-guard etc. next-auth installed but ZERO routes use it (no [...nextauth]). Client zustand store = UI mirror only. proxy.ts = rate-limit + CSP + admin gate.
+- Decision: cookie is host-only+httpOnly → verify cannot read it → OAuth2-style signed handoff token (additive, zero cookie changes = zero break risk) + CORS-hardened GET /api/me.
+- New src/lib/bridge-origins.ts (isomorphic allowlist: prod https://verify.midman.bd + https://midman.bd; dev adds localhost:3000/3001/5173; ALLOWED_BRIDGE_ORIGINS env; sanitizeNextParam open-redirect guard)
+- New src/lib/bridge.ts (node crypto): HMAC-SHA256 token {sub:user.id, name, email, avatar(imageLink only), iat, exp=120s, jti, aud=verify-bridge}; timingSafeEqual; prod fail-closed w/o VERIFY_BRIDGE_SECRET
+- New GET /api/me → {authenticated, user:{id,name,email,avatar}} / {authenticated:false}; CORS reflected ONLY for allowlisted origins + credentials; OPTIONS preflight
+- New GET /api/auth/bridge?redirect&state → 400 INVALID_REDIRECT (allowlist) / 302 /login?next=<bridge URL> when no session / 302 <redirect>?bridge_token&state with no-store + no-referrer
+- logout/route.ts: POST unchanged; additive GET with validated redirect (same-origin paths or allowlisted origins) → clears midman_session + 302 back
+- auth-view.tsx: getLoginNextTarget() via sanitizeNextParam after password login + 2FA paths only — normal flow byte-identical
+- Sandbox incidents: node_modules wiped mid-session (tsc 127 → reinstall; s3-request-presigner missing → build fail → reinstall ok); stale git refs (reset landed 04c6757; refetch → true head 6ae69de); foreign working-tree noise (upload routes deleted etc.) → git reset --hard + re-applied my edits; sandbox exports DATABASE_URL=/home/z/my-project/db/custom.db globally → verify prisma db push + server polluted outer custom.db → pushed verify schema to correct absolute path + dropped leaked tables
+- E2E (scripts/task51-e2e.ts, 42/42): /api/me in/out, CORS reflect/deny, bridge in/out + evil-redirect 400, full SSO round-trip across both dev servers (midman :3000 + verify :3001), token payload shape (sub/aud/120s/jti, no credential fields), replay→token_replayed, tamper/expiry/wrong-aud→invalid_token, state mismatch, business create with userId === midman id, next= sanitisation, combined logout chain, logout evil-redirect → JSON
+- Fixed during E2E: verify decode() normalised bridge `sub` → userId; session API returns user.id shape (consistent with /api/me); E2E replay-test initially used an unconsumed token (bridge mints fresh per hit) → corrected
+- tsc stash-compare: HEAD 310 vs WIP 310 (fresh-install baseline shifted from 170; zero new errors from Task 51); midman next build ✓; verify tsc clean + build ✓
+- verify scaffold: /home/z/my-project/verify (own git repo, commit 19ece6b) — Next 16 + prisma/libsql, schema: Business, Brand, BusinessCategory, Review, Rating, VerificationRequest, VerificationBadge, Claim, Report, Notification, AuditLog (all userId-referenced) + UsedBridgeToken (jti PK); session.ts (bridge verify + session sign, aud verify-session); routes /auth/midman (state cookie), /auth/callback (state check → verify → consume jti once → verify_session 7d), /api/auth/session (4-state), /api/auth/logout?all=1 (chains midman logout), /api/businesses GET/POST (userId from session only), /api/categories (auto-seed); minimal 4-state UI + business form
+
+Stage Summary:
+- Midman commit 25862fa pushed origin/main (25862fa = bridge); Vercel auto-deploys
+- Architecture live: ONE midman account + ONE auth system + separate Verify DB referencing user_id; verify project at /home/z/my-project/verify (README.md has deploy checklist: Turso DB, env vars, Vercel project, DNS CNAME verify.midman.bd, shared VERIFY_BRIDGE_SECRET)
