@@ -30,6 +30,18 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
+import { sanitizeNextParam } from '@/lib/bridge-origins';
+
+/**
+ * Validated post-login redirect target from ?next= (used by the SSO bridge
+ * for verify.midman.bd). Only allowlisted bridge origins or same-origin
+ * relative paths survive sanitisation (open-redirect guard) — normal logins
+ * without ?next= behave exactly as before.
+ */
+function getLoginNextTarget(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sanitizeNextParam(new URLSearchParams(window.location.search).get('next'));
+}
 
 const emptySubscribe = () => () => {};
 
@@ -493,6 +505,8 @@ function ManualLoginForm({
       }
       toast.success(t('auth.loginSuccess'));
       setUser(data, { isLogin: true });
+      const nextTarget = getLoginNextTarget();
+      if (nextTarget) { window.location.href = nextTarget; return; } // SSO bridge return
     } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
   }, [identifier, password, setUser, onNeedsVerification, t]);
@@ -519,6 +533,8 @@ function ManualLoginForm({
       }
       toast.success(t('auth.loginSuccess'));
       setUser(data, { isLogin: true });
+      const nextTarget2FA = getLoginNextTarget();
+      if (nextTarget2FA) { window.location.href = nextTarget2FA; return; } // SSO bridge return
       setPending2FA(null);
       setTotpCode('');
     } catch {
