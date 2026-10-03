@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { LogOut, Menu, Sun, Moon, Globe, Home, ShoppingCart } from 'lucide-react';
 import { SellerApplyButton } from './seller-apply-dialog';
 import { NotificationBell } from '@/components/shared/notification-bell';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 
 const emptySubscribe = () => () => {};
 
@@ -137,8 +138,9 @@ export function DashboardView() {
 
             {/* Dashboard label - show on all screens */}
             <div className="flex items-center gap-2 min-w-0">
-              <div className="h-7 w-7 rounded-lg bg-primary/15 hidden md:flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">M</span>
+              {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+              <div className="hidden md:flex items-center">
+                <MidmanLogo className="h-7 rounded-lg" alt="Midman" />
               </div>
               <h1 className="text-sm font-bold tracking-tight text-foreground hidden md:block">{t('nav.dashboard')}</h1>
               {/* Mobile: current panel label (replaces Dashboard text on mobile) */}

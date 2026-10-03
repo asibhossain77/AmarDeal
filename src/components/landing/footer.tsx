@@ -5,6 +5,7 @@ import { useAppStore, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 import { resolveGatewayIcon } from '@/lib/payment-gateways';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 import { ShieldCheck, ChevronRight } from 'lucide-react';
 import {
   Accordion,
@@ -58,24 +59,10 @@ export function Footer() {
   const goLanding = (e: React.MouseEvent) => { e.preventDefault(); setView('landing'); };
   const goLink = (view: AppView) => (e: React.MouseEvent) => { e.preventDefault(); setView(view); };
 
-  /* ── Shared: brand logo ── */
+  /* ── Shared: brand logo (footer background is always dark → always the Dark Mode SVG) ── */
   const brandLogo = (
-    <a href="/" onClick={goLanding} className="group inline-flex items-center gap-2.5">
-      {siteLogo ? (
-        <img
-          src={cdnUrl(siteLogo) || ''}
-          alt={displayName}
-          className="h-9 w-9 rounded-lg object-contain"
-          loading="lazy" decoding="async"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-lime-400/10">
-          <span className="text-sm font-bold text-lime-400">{displayName?.charAt(0) || 'M'}</span>
-        </div>
-      )}
-      <span className="text-lg font-bold tracking-tight text-white transition-colors group-hover:text-lime-300">
-        {displayName}
-      </span>
+    <a href="/" onClick={goLanding} className="group inline-flex items-center">
+      <MidmanLogo className="h-9 rounded-lg" forceDark alt={displayName} />
     </a>
   );
 

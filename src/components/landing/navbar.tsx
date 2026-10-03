@@ -3,8 +3,8 @@
 import { useState, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
 import { useAppStore, type DashboardPanel, type AdminPanel, type AppView } from '@/lib/store';
-import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -45,7 +45,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -75,54 +74,22 @@ function ThemeToggle() {
 }
 
 function LogoButton({ onClick }: { onClick: () => void }) {
-  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
-    <button onClick={onClick} className="flex items-center gap-2.5">
-      {siteLogo ? (
-        <img
-          src={cdnUrl(siteLogo) || ''}
-          alt={displayName}
-          fetchPriority="high"
-          className="h-9 w-9 rounded-lg object-contain"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
-        </div>
-      )}
-      <span className="text-lg font-bold tracking-tight text-foreground">{displayName}</span>
+    <button onClick={onClick} className="flex items-center" aria-label="Midman">
+      {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+      <MidmanLogo className="h-9 rounded-lg" priority />
     </button>
   );
 }
 
 function MobileBrandHeader({ sub }: { sub?: string }) {
-  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <div className="mb-4 flex items-center gap-2.5 px-1">
-      {siteLogo ? (
-        <img
-          src={cdnUrl(siteLogo) || ''}
-          alt={displayName}
-          fetchPriority="high"
-          className="h-9 w-9 rounded-lg object-contain"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
-        </div>
-      )}
+      {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+      <MidmanLogo className="h-9 rounded-lg" priority />
       {sub ? (
-        <div>
-          <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
-          <p className="text-[10px] font-semibold tracking-widest text-primary">{sub}</p>
-        </div>
-      ) : (
-        <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
-      )}
+        <p className="text-[10px] font-semibold tracking-widest text-primary">{sub}</p>
+      ) : null}
     </div>
   );
 }
