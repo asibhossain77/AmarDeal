@@ -21,7 +21,7 @@ interface FooterLink {
 }
 
 export function Footer() {
-  const { siteName, siteNameEn, siteLogo, footerDescription, footerCopyrightText, footerMadeIn, paymentGateways } = useSiteSettings();
+  const { siteName, siteNameEn, footerDescription, footerCopyrightText, footerMadeIn, paymentGateways } = useSiteSettings();
   const setView = useAppStore((s) => s.setView);
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);

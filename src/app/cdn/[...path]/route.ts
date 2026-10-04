@@ -81,6 +81,16 @@ export async function GET(
   }
   // Same-origin already, but harmless for any external embedding
   headers.set('Cross-Origin-Resource-Policy', 'cross-origin')
+  headers.set('X-Content-Type-Options', 'nosniff')
+
+  // SVG can carry active content — serve it locked down (upload-side
+  // sanitization is the first layer, this is the second). `sandbox`
+  // + `default-src 'none'` stop scripts from running even if someone
+  // navigates to the SVG URL directly; inline styles stay allowed so
+  // legitimate brand artwork renders untouched.
+  if ((upstream.headers.get('content-type') || '').toLowerCase().includes('image/svg')) {
+    headers.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+  }
 
   return new Response(upstream.body, { status: upstream.status, headers })
 }

@@ -153,6 +153,43 @@ export async function uploadToR2(
   return { url: proxyUrl, key }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Brand logo SVGs (admin-uploaded, admin-gated)
+   — SVG must NEVER pass through the sharp/WebP pipeline above:
+   rasterizing would destroy the vector art. Stored byte-for-byte
+   as image/svg+xml under `logos/<ts>-<rand>.svg` (unique key ⇒ the
+   immutable edge caching stays correct when a new logo replaces it).
+   Content is sanitized by the caller (src/lib/svg-logo.ts) BEFORE
+   it reaches this function.
+   ═══════════════════════════════════════════════════════════ */
+export async function uploadSvgToR2(
+  svgText: string,
+  prefix: string = 'logos'
+): Promise<{ url: string; key: string }> {
+  assertR2Configured()
+
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 8)
+  const key = `${prefix}/${timestamp}-${random}.svg`
+
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+    Body: Buffer.from(svgText, 'utf8'),
+    ContentType: 'image/svg+xml',
+    // Same immutable strategy as image uploads — keys never repeat.
+    CacheControl: 'public, max-age=31536000, immutable',
+  }))
+
+  if (!R2_PUBLIC_URL) {
+    throw new Error('R2 public URL is not configured. Set R2_PUBLIC_URL environment variable.')
+  }
+
+  const proxyUrl = `/cdn/${key}`
+  console.error('[R2] SVG upload success:', `${R2_PUBLIC_URL}/${key}`)
+  return { url: proxyUrl, key }
+}
+
 /** Extract R2 key from a URL — handles both proxied (/cdn/profiles/123.jpg) and direct (https://cdn.midman.bd/profiles/123.jpg) URLs */
 function urlToKey(url: string): string | null {
   // Proxied URL: /cdn/profiles/123.jpg → profiles/123.jpg

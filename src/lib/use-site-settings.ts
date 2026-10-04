@@ -12,6 +12,10 @@ interface SiteSettings {
   siteNameEn: string;
   siteTitle: string;
   siteLogo: string;
+  /** Admin-uploaded brand logo URLs (R2 /cdn/ paths). null ⇒ MidmanLogo falls back to the bundled brand SVGs. */
+  logoLight: string | null;
+  /** Admin-uploaded dark-variant logo URL. The footer always renders this variant. */
+  logoDark: string | null;
   footerDescription: string;
   footerCopyrightText: string;
   footerMadeIn: string;
@@ -24,17 +28,21 @@ const FALLBACK: SiteSettings = {
   siteNameEn: 'Midman',
   siteTitle: '',
   siteLogo: '/logo.svg',
+  logoLight: null,
+  logoDark: null,
   footerDescription: '',
   footerCopyrightText: '',
   footerMadeIn: '',
   paymentGateways: DEFAULT_GATEWAYS,
 };
 
-/** Old localStorage caches predate paymentGateways — normalize on read. */
+/** Old localStorage caches predate paymentGateways/logo fields — normalize on read. */
 function normalize(raw: SiteSettings | null): SiteSettings | null {
   if (!raw) return null;
   return {
     ...raw,
+    logoLight: raw.logoLight ?? null,
+    logoDark: raw.logoDark ?? null,
     paymentGateways: raw.paymentGateways ?? DEFAULT_GATEWAYS,
   };
 }

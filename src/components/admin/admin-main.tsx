@@ -24,6 +24,7 @@ import {
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { parseGatewayList, resolveGatewayIcon, DEFAULT_GATEWAYS, type PaymentGateway } from '@/lib/payment-gateways';
+import { DEFAULT_LOGO_LIGHT, DEFAULT_LOGO_DARK } from '@/components/shared/midman-logo';
 import dynamic from 'next/dynamic';
 import { cdnUrl } from '@/lib/cdn-url';
 
@@ -92,6 +93,9 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
+  Image as ImageIcon,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -190,7 +194,8 @@ interface PlatformSettings {
   platform_name: string;
   platform_name_en: string;
   site_title: string;
-  site_logo: string;
+  site_logo_light: string;
+  site_logo_dark: string;
   fee_percentage: string;
   fee_free_below: string;
   min_deal_amount: string;
@@ -2294,7 +2299,8 @@ function SettingsPanel() {
     platform_name: '',
     platform_name_en: '',
     site_title: '',
-    site_logo: '',
+    site_logo_light: '',
+    site_logo_dark: '',
     fee_percentage: '',
     fee_free_below: '',
     min_deal_amount: '',
@@ -2306,7 +2312,8 @@ function SettingsPanel() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
+  // Which logo variant is currently uploading/resetting ('light' | 'dark' | null)
+  const [logoBusy, setLogoBusy] = useState<'light' | 'dark' | null>(null);
   const [gateways, setGateways] = useState<PaymentGateway[]>(DEFAULT_GATEWAYS);
   const [gatewaysSaving, setGatewaysSaving] = useState(false);
   const [uploadingIconId, setUploadingIconId] = useState<string | null>(null);
@@ -2350,30 +2357,59 @@ function SettingsPanel() {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /** Upload/replace a brand logo SVG (variant: light | dark). */
+  const handleLogoUpload = async (variant: 'light' | 'dark', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLogoUploading(true);
+    setLogoBusy(variant);
     try {
       const formData = new FormData();
       formData.append('logo', file);
+      formData.append('variant', variant);
       const res = await fetch('/api/admin/upload-logo', {
         method: 'POST',
         body: formData,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSettings((s) => ({ ...s, site_logo: data.logoPath }));
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.logoPath) {
+        setSettings((s) => ({
+          ...s,
+          [variant === 'light' ? 'site_logo_light' : 'site_logo_dark']: data.logoPath as string,
+        }));
         invalidateSiteSettingsCache();
-        toast.success('Logo updated!');
+        toast.success(t('admin.settings.logoUpdated'));
+      } else {
+        toast.error(data?.error || t('admin.settings.uploadLogoFailed'));
+      }
+    } catch {
+      toast.error(t('common.serverError'));
+    } finally {
+      setLogoBusy(null);
+      e.target.value = '';
+    }
+  };
+
+  /** Reset a logo variant to the bundled Midman default. */
+  const handleLogoReset = async (variant: 'light' | 'dark') => {
+    setLogoBusy(variant);
+    try {
+      const res = await fetch(`/api/admin/upload-logo?variant=${variant}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSettings((s) => ({
+          ...s,
+          [variant === 'light' ? 'site_logo_light' : 'site_logo_dark']: '',
+        }));
+        invalidateSiteSettingsCache();
+        toast.success(t('admin.settings.logoResetDone'));
       } else {
         toast.error(t('admin.settings.uploadLogoFailed'));
       }
     } catch {
       toast.error(t('common.serverError'));
     } finally {
-      setLogoUploading(false);
-      e.target.value = '';
+      setLogoBusy(null);
     }
   };
 
@@ -2550,51 +2586,11 @@ function SettingsPanel() {
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">Brand Settings</p>
-              <p className="text-[11px] text-muted-foreground">Change logo and website name</p>
+              <p className="text-[11px] text-muted-foreground">Change website name and title</p>
             </div>
           </div>
 
           <div className="space-y-5">
-            {/* Logo Upload */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-start">
-              <Label className="text-sm font-medium text-foreground text-center sm:text-left pt-2.5">
-                Website Logo
-              </Label>
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-xl border-2 border-dashed border-border/60 bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
-                  {settings.site_logo ? (
-                    <img
-                      src={settings.site_logo}
-                      alt={t('admin.settings.logoAlt')}
-                      className="h-full w-full object-contain p-1"
-                      loading="lazy" decoding="async"
-                    />
-                  ) : (
-                    <CreditCard className="h-5 w-5 text-muted-foreground/40" />
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
-                      {logoUploading ? (
-                        <LoadingAnimation size="sm" />
-                      ) : (
-                        <Upload className="h-3.5 w-3.5" />
-                      )}
-                      {logoUploading ? 'Uploading...' : t('admin.settings.uploadLogo')}
-                    </span>
-                  </label>
-                  <span className="text-[10px] text-muted-foreground">{t('admin.settings.logoUploadHint')}</span>
-                </div>
-              </div>
-            </div>
-
             {/* Website Name — English */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
               <Label htmlFor="platform_name_en" className="text-sm font-medium text-foreground text-center sm:text-left">
@@ -2664,6 +2660,103 @@ function SettingsPanel() {
               Save Brand
             </Button>
           </div>
+        </SolidCard>
+
+        {/* ── Logo Settings (light/dark brand logos) ── */}
+        <SolidCard>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">{t('admin.settings.logoSettingsTitle')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('admin.settings.logoSettingsDesc')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {([
+              {
+                variant: 'light' as const,
+                label: t('admin.settings.logoLight'),
+                icon: <Sun className="h-3.5 w-3.5 text-amber-500" />,
+                current: settings.site_logo_light,
+                fallback: DEFAULT_LOGO_LIGHT,
+                previewBg: 'bg-white',
+              },
+              {
+                variant: 'dark' as const,
+                label: t('admin.settings.logoDark'),
+                icon: <Moon className="h-3.5 w-3.5 text-indigo-400" />,
+                current: settings.site_logo_dark,
+                fallback: DEFAULT_LOGO_DARK,
+                previewBg: 'bg-zinc-900',
+              },
+            ]).map((cfg) => (
+              <div key={cfg.variant} className="rounded-xl border border-border/60 p-3.5 space-y-3">
+                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  {cfg.icon}
+                  {cfg.label}
+                </p>
+
+                {/* Current logo preview — exactly what visitors see (custom if set, else bundled default) */}
+                <div className={`h-16 rounded-lg border border-border/60 ${cfg.previewBg} flex items-center justify-center overflow-hidden px-3`}>
+                  <img
+                    src={cfg.current || cfg.fallback}
+                    alt={cfg.label}
+                    className="max-h-full w-auto object-contain py-1"
+                    loading="lazy" decoding="async"
+                  />
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">
+                  {cfg.current ? t('admin.settings.logoCustomActive') : t('admin.settings.logoDefaultActive')}
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".svg,image/svg+xml"
+                      onChange={(e) => handleLogoUpload(cfg.variant, e)}
+                      className="hidden"
+                    />
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+                      {logoBusy === cfg.variant ? (
+                        <LoadingAnimation size="sm" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      {logoBusy === cfg.variant
+                        ? t('admin.settings.logoUploading')
+                        : cfg.current
+                          ? t('admin.settings.logoReplace')
+                          : t('admin.settings.logoUpload')}
+                    </span>
+                  </label>
+                  {cfg.current && (
+                    <button
+                      type="button"
+                      onClick={() => handleLogoReset(cfg.variant)}
+                      disabled={logoBusy !== null}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('admin.settings.logoReset')}
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">{t('admin.settings.logoSvgHint')}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer always renders the dark variant — no separate footer upload exists */}
+          <p className="mt-4 text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <Moon className="h-3.5 w-3.5 shrink-0" />
+            {t('admin.settings.logoFooterNote')}
+          </p>
         </SolidCard>
 
         {/* ── General Settings ── */}
