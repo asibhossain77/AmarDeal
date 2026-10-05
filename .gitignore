@@ -61,6 +61,7 @@ server.log
 *.png
 !public/logo.png
 !public/uploads/site-logo.png
+!public/payment/*.png
 /screenshots/
 /upload/
 /skills/
@@ -70,3 +71,4 @@ tool-results/
 prisma/dummy.db
 *.db-journal
 prisma/*.db
+package-lock.json

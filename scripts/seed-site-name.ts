@@ -1,9 +1,29 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
 import { createClient } from '@libsql/client'
+import * as fs from 'fs'
 
-const TURSO_URL = 'libsql://amardeal-asibhossain77.aws-ap-south-1.turso.io'
-const TURSO_TOKEN = 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJleHAiOjE3ODUxMjQwNTYsImlhdCI6MTc4NTAzNzY1NywiaWQiOiIwMTlmNDc2Yi1jODAxLTc4MzctYWU1Zi1hMzkzNjhjOGY5OTAiLCJraWQiOiJPTU92OW1sMlJ2dEJPSlFrUDh3NFNUclQ0SDRPdTVSa0x0ZzBnbnlQcGJjIiwicmlkIjoiZTYwNjA2OWMtYTE0MS00MmYzLTlkNGEtMDdiZTJhZDEwNGM5In0.HgBbN5fSGDjNTxewUdMjYK4kb0s_XH5k18NcEboX8qMnXG2zvStNKK8r8S28lVY3Q9jS5b2EjyLTCMesUkQSCA'
+// Production creds are read from env — NEVER hardcode tokens in git.
+// (The previously hardcoded tokens leaked into the repo and have since
+// expired; they are intentionally not replaced here.)
+// Resolution order: shell env → /home/z/my-project/.env → amardeal/.env
+const env: Record<string, string> = {}
+for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v
+for (const envPath of ['/home/z/my-project/.env', '/home/z/my-project/amardeal/.env']) {
+  try {
+    for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+      const [key, ...rest] = line.split('=')
+      if (key && rest.length && env[key.trim()] === undefined) env[key.trim()] = rest.join('=').trim()
+    }
+  } catch { /* optional file */ }
+}
+
+const TURSO_URL = env.TURSO_DATABASE_URL || ''
+const TURSO_TOKEN = env.TURSO_AUTH_TOKEN || ''
+if (!TURSO_URL.startsWith('libsql://') || !TURSO_TOKEN) {
+  console.error('❌ Missing production creds: set TURSO_DATABASE_URL (libsql://...) and TURSO_AUTH_TOKEN in /home/z/my-project/.env')
+  process.exit(1)
+}
 
 async function main() {
   const libsql = createClient({ url: TURSO_URL, authToken: TURSO_TOKEN })

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LinkifyText } from '@/components/ui/linkify-text';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
+import { WorkDeadlineSelector, WorkDeadlineCountdown, toBn } from './work-deadline';
+import { DeliveryReminderCard, AutoCompleteWarning } from './auto-complete';
 import {
   ArrowLeft,
   FileCheck,
@@ -45,9 +48,20 @@ import {
   Wallet,
   Copy,
   ChevronDown,
+  ChevronUp,
   ArrowRight,
   RotateCcw,
   CircleCheckBig,
+  FileDown,
+  Download,
+  Paperclip,
+  Timer,
+  File,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  FileArchive,
+  FileX,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -1068,6 +1082,13 @@ function getStatusBadge(status: string) {
 /** Chat message roles */
 type MessageRole = 'buyer' | 'seller' | 'admin' | 'system';
 
+/** Attachment metadata as returned by the chat API (key never reaches the client) */
+interface ChatFileMeta {
+  fileName: string;
+  fileSize?: number;
+  fileType?: string | null;
+}
+
 interface ChatMessage {
   id: string;
   role: MessageRole;
@@ -1075,6 +1096,38 @@ interface ChatMessage {
   senderName: string;
   text: string;
   timestamp: string;
+  file?: ChatFileMeta | null;
+  fileExpired?: boolean;
+}
+
+/* ── Chat attachment constants ── */
+const CHAT_FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.jpg,.jpeg,.png,.webp,.gif';
+const CHAT_FILE_MAX_BYTES = 4 * 1024 * 1024; // 4MB (Vercel body limit)
+
+/** Format bytes → short human readable size */
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Pick the right icon for a chat attachment */
+function ChatFileIcon({ fileType, fileName, className }: { fileType?: string | null; fileName: string; className?: string }) {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  let Icon = File;
+  if (fileType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) Icon = FileImage;
+  else if (ext === 'pdf' || ['doc', 'docx', 'ppt', 'pptx'].includes(ext)) Icon = FileText;
+  else if (['xls', 'xlsx', 'csv'].includes(ext)) Icon = FileSpreadsheet;
+  else if (['zip', 'rar'].includes(ext)) Icon = FileArchive;
+  return <Icon className={className} />;
+}
+
+/** True when the attachment is an image (rendered inline) */
+function isImageFile(fileType?: string | null, fileName?: string): boolean {
+  if (fileType?.startsWith('image/')) return true;
+  const ext = fileName?.split('.').pop()?.toLowerCase() || '';
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext);
 }
 
 /** Convert ISO date string to Bengali time */
@@ -1087,7 +1140,7 @@ function toBnTime(isoString: string): string {
 }
 
 /** Convert DB message to ChatMessage */
-function dbToChatMsg(m: { id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }): ChatMessage {
+function dbToChatMsg(m: { id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string; file?: ChatFileMeta | null; fileExpired?: boolean }): ChatMessage {
   return {
     id: m.id,
     role: (m.role as MessageRole) || 'system',
@@ -1095,6 +1148,8 @@ function dbToChatMsg(m: { id: string; role: string | null; senderName: string | 
     senderName: m.senderName || 'অজানা',
     text: m.text,
     timestamp: toBnTime(m.createdAt),
+    file: m.file || null,
+    fileExpired: !!m.fileExpired,
   };
 }
 
@@ -1120,10 +1175,21 @@ interface DealData {
   rejectionReason?: string | null;
   adminCalled?: boolean | null;
   adminCalledAt?: string | null;
+  /* Seller work-duration commitment (set after payment verification) */
+  workDays?: number | null;
+  workDeadlineAt?: string | null;
+  /* Unresponsive-buyer auto-complete flow */
+  deliveredAt?: string | null;
+  /** Fallback anchor for the reminder 3-day gate on legacy deals (deliveredAt = null) */
+  updatedAt?: string | null;
+  reminderEmailSentAt?: string | null;
+  autoCompleteAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   seller: { id: string; name: string; email: string; phone: string; imageLink?: string | null } | null;
   creator: { id: string; name: string; email: string } | null;
   paymentMethod?: { id: string; name: string; accountType: string } | null;
+  /* Digital product attached to this deal (fileName presence ⇒ downloadable) */
+  product?: { id: string; title: string; fileName?: string | null; fileSize?: number | null; isFree?: boolean } | null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1500,8 +1566,9 @@ function ActionButton({
  * Buyer/Seller: aligned left/right, colored bubbles.
  * Admin: center-aligned, purple accent.
  * System: center-aligned, amber/orange accent.
+ * Attachments: inline images or a download card; expired files show a placeholder.
  */
-function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentUserId?: string }) {
+function ChatBubble({ message, currentUserId, dealId }: { message: ChatMessage; currentUserId?: string; dealId?: string }) {
   const { role, senderName, text, timestamp } = message;
 
   /* ── System messages: center-aligned, amber accent ── */
@@ -1524,7 +1591,7 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
               <Bot className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
             </div>
             <p className="text-[13px] leading-relaxed text-amber-800 dark:text-amber-200/90">
-              {text}
+              <LinkifyText text={text} variant="amber" />
             </p>
           </div>
           <span className="flex items-center gap-1.5 text-[10px] text-amber-500/60 dark:text-amber-400/50">
@@ -1561,7 +1628,7 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
             }}
           >
             <p className="text-[13px] leading-relaxed text-purple-900 dark:text-purple-200">
-              {text}
+              <LinkifyText text={text} variant="purple" />
             </p>
           </div>
           <span className="flex items-center gap-1.5 text-[10px] text-purple-500/60 dark:text-purple-400/50">
@@ -1575,6 +1642,17 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
 
   /* ── Buyer/Seller messages: own → right, other → left ── */
   const isOwn = currentUserId && message.senderId === currentUserId;
+
+  /* ── Attachment state ── */
+  const file = message.file || null;
+  const expired = !!message.fileExpired;
+  const fileUrl = file && dealId && !expired
+    ? `/api/deals/${encodeURIComponent(dealId)}/chat/file/${message.id}`
+    : null;
+  const isImage = file && !expired && isImageFile(file.fileType, file.fileName);
+  // File-only messages carry an auto fallback text ("📎 name") — hide it when the file card is shown
+  const fallbackText = file ? `📎 ${file.fileName}` : null;
+  const showCaption = !!text && text !== fallbackText;
 
   return (
     <motion.div
@@ -1601,7 +1679,7 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
         </div>
 
         <div
-          className="rounded-2xl px-4 py-2.5 transition-transform duration-150 hover:scale-[1.01]"
+          className={`rounded-2xl transition-transform duration-150 hover:scale-[1.01] ${isImage && !showCaption ? 'p-1.5' : 'px-4 py-2.5'}`}
           style={{
             backgroundColor: isOwn ? PARROT_GREEN : 'var(--card)',
             color: isOwn ? '#fff' : 'var(--foreground)',
@@ -1613,7 +1691,54 @@ function ChatBubble({ message, currentUserId }: { message: ChatMessage; currentU
             border: isOwn ? 'none' : '1px solid var(--border)',
           }}
         >
-          <p className="text-sm leading-relaxed">{text}</p>
+          {/* ── Attachment: inline image ── */}
+          {file && isImage && fileUrl && (
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl" aria-label={`${file.fileName} — বড় করে দেখুন`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={fileUrl} alt={file.fileName} loading="lazy" decoding="async" className="max-h-60 w-auto max-w-full rounded-xl" />
+            </a>
+          )}
+
+          {/* ── Attachment: document download card ── */}
+          {file && !isImage && !expired && (
+            <a
+              href={fileUrl || '#'}
+              download
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-colors"
+              style={{
+                backgroundColor: isOwn ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
+                color: isOwn ? '#fff' : 'var(--foreground)',
+              }}
+            >
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: isOwn ? 'rgba(255,255,255,0.25)' : PARROT_GREEN, color: '#fff' }}
+              >
+                <ChatFileIcon fileType={file.fileType} fileName={file.fileName} className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 text-left">
+                <p className="truncate text-sm font-medium" style={{ maxWidth: '180px' }}>{file.fileName}</p>
+                <p className="text-[11px] opacity-70">
+                  {formatFileSize(file.fileSize)} · ডাউনলোড করতে ক্লিক করুন
+                </p>
+              </div>
+              <Download className="ml-1 h-4 w-4 shrink-0 opacity-80" />
+            </a>
+          )}
+
+          {/* ── Attachment: expired placeholder (auto-deleted after 3 days) ── */}
+          {file && expired && (
+            <div className="flex items-center gap-2.5 rounded-xl px-3 py-2.5" style={{ backgroundColor: isOwn ? 'rgba(255,255,255,0.12)' : 'var(--muted)' }}>
+              <FileX className="h-5 w-5 shrink-0 opacity-50" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium line-through opacity-60" style={{ maxWidth: '180px' }}>{file.fileName}</p>
+                <p className="text-[11px] opacity-60">৩ দিন পূর্ণ — ফাইলটি স্বয়ংক্রিয়ভাবে মুছে ফেলা হয়েছে</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Caption / plain text (URLs → safe clickable links) ── */}
+          {showCaption && <p className="text-sm leading-relaxed break-words"><LinkifyText text={text} variant={isOwn ? 'accent' : 'default'} /></p>}
         </div>
 
         <span className="flex items-center gap-1 px-1">
@@ -1668,6 +1793,11 @@ export function DealWorkflowTracker() {
   const [chatLoading, setChatLoading] = useState(false);
   const [sendingMsg, setSendingMsg] = useState(false);
   const [adminCallLoading, setAdminCallLoading] = useState(false);
+  /* ── Chat file attachment state ── */
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [pendingFile, setPendingFile] = useState<(ChatFileMeta & { key: string }) | null>(null);
+  const [chatFileError, setChatFileError] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1682,6 +1812,7 @@ export function DealWorkflowTracker() {
 
   /* ── Payment dialog state ── */
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
   /* ── Payout/Refund dialog state ── */
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
 
@@ -1892,6 +2023,13 @@ export function DealWorkflowTracker() {
     return () => clearInterval(interval);
   }, [activeDeal?.id, fetchMessages, authHeaders, checkPayoutStatus]);
 
+  /* Mobile: the deal panel now grows with content and the PAGE scrolls — entering
+     from the deals list must start at the top, not at the list's scroll offset.
+     (Must stay above the early returns — unconditional hook.) */
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [activeDeal?.id]);
+
   if (!mounted) return null;
 
   const dealAmount = dealData?.amount ?? activeDeal?.amount ?? 0;
@@ -1997,10 +2135,40 @@ export function DealWorkflowTracker() {
     }
   };
 
-  /** Send chat message via API */
+  /** Upload a chat attachment — file is stored in R2 and auto-deleted after 3 days */
+  const handleChatFileSelect = async (f: File) => {
+    if (!activeDeal?.id) return;
+    setChatFileError('');
+    if (f.size > CHAT_FILE_MAX_BYTES) {
+      setChatFileError('ফাইল সর্বোচ্চ 4MB হতে পারবে');
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const res = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat/upload`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setPendingFile({ key: data.key, fileName: data.fileName, fileSize: data.fileSize, fileType: data.fileType });
+      } else {
+        setChatFileError(data.error || 'ফাইল আপলোড করতে সমস্যা হয়েছে');
+      }
+    } catch {
+      setChatFileError('নেটওয়ার্ক সমস্যা — ফাইল আপলোড হয়নি');
+    } finally {
+      setUploadingFile(false);
+      if (chatFileInputRef.current) chatFileInputRef.current.value = '';
+    }
+  };
+
+  /** Send chat message via API (text and/or attachment) */
   const handleSend = async () => {
     const trimmed = chatInput.trim();
-    if (!trimmed || !activeDeal?.id || !user?.id) return;
+    if ((!trimmed && !pendingFile) || !activeDeal?.id || !user?.id) return;
     setSendingMsg(true);
     try {
       const role = isBuyer ? 'buyer' : 'seller';
@@ -2010,21 +2178,27 @@ export function DealWorkflowTracker() {
         body: JSON.stringify({
           role,
           senderName: user.name || 'আপনি',
-          text: trimmed,
+          text: trimmed || undefined,
+          file: pendingFile
+            ? { key: pendingFile.key, fileName: pendingFile.fileName, fileSize: pendingFile.fileSize, fileType: pendingFile.fileType }
+            : undefined,
         }),
       });
       if (res.ok) {
+        setPendingFile(null);
+        setChatFileError('');
         // Immediately fetch messages so the sent message appears without waiting for poll
         const msgRes = await fetch(`/api/deals/${encodeURIComponent(activeDeal.id)}/chat`, {
           headers: authHeaders(),
         });
         if (msgRes.ok) {
-          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string }> = await msgRes.json();
+          const data: Array<{ id: string; role: string | null; senderName: string | null; text: string; createdAt: string; senderId: string; file?: ChatFileMeta | null; fileExpired?: boolean }> = await msgRes.json();
           setMessages(data.map(dbToChatMsg));
           chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
       } else {
-        toast.error('মেসেজ পাঠাতে সমস্যা হয়েছে');
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'মেসেজ পাঠাতে সমস্যা হয়েছে');
       }
     } catch {
       toast.error('নেটওয়ার্ক সমস্যা');
@@ -2109,16 +2283,11 @@ export function DealWorkflowTracker() {
             >
               <ArrowLeft className="h-4 w-4 text-foreground" />
             </button>
-            <div className="flex items-center gap-2.5">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-xl shadow-sm"
-                style={{ backgroundColor: PARROT_GREEN }}
-              >
-                <span className="text-sm font-bold text-white">আ</span>
-              </div>
+            {/* "আ" logo badge removed (user request) — title only */}
+            <div className="flex items-center">
               <div>
                 <span className="text-base font-bold tracking-tight text-foreground">
-                  আমার ডিল
+                  অ্যাডমিন ডিল
                 </span>
                 <p className="text-[10px] text-muted-foreground hidden sm:block">
                   DL-{(dealData?.id || activeDeal?.id || '').slice(-5)}
@@ -2133,7 +2302,7 @@ export function DealWorkflowTracker() {
               onClick={() => { useAppStore.getState().setActiveDeal(null); useAppStore.getState().goBack(); }}
               className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              আমার ডিলসমূহ
+              অ্যাডমিন ডিলসমূহ
             </button>
             <span className="text-xs text-muted-foreground/40">/</span>
             <span className="px-3 py-1.5 text-xs font-medium text-foreground">
@@ -2206,19 +2375,28 @@ export function DealWorkflowTracker() {
               TAB 1: ডিলের তথ্য (Deal Info)
               ═══════════════════════════════════════ */}
           {activeTab === 'info' && (
+            /* sm+: the tracker root's sm:max-h caps the panel, so this area
+               inner-scrolls. Mobile: no cap anywhere → content defines the height
+               and the PAGE scrolls (fixed-height inner scroll was unreachable on
+               real devices — 100vh ignores the URL-bar viewport).
+               ⚠ Mobile must NOT be a scroll container at all: overflow-y-auto
+               makes this a scroller even when nothing overflows, and on real
+               touch devices overscroll-contain on that ghost scroller swallows
+               swipes (page freeze). max-sm:overflow-visible removes it
+               entirely so every gesture chains to the page. */
             <motion.div
               key="deal-info"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
-              className="flex-1 min-h-0 md:overflow-y-auto"
+              className="flex-1 min-h-0 max-sm:overflow-visible sm:overflow-y-auto sm:overscroll-contain"
             >
               <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col justify-between">
                 {/* ── Deal title + status badge ── */}
                 <div className="flex items-center gap-3 sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <h2 className="text-base sm:text-xl font-bold text-foreground truncate">
+                    <h2 className="text-base sm:text-xl font-bold text-foreground break-words">
                       {dealTitle}
                     </h2>
                     <p className="text-xs sm:text-xs text-muted-foreground mt-0.5">
@@ -2238,6 +2416,14 @@ export function DealWorkflowTracker() {
                   </div>
                 </div>
 
+                {/* ── Seller work-duration countdown (payment verified) ── */}
+                {dealData?.workDays != null && dealData?.workDeadlineAt && status === 'payment_verified' && (
+                  <WorkDeadlineCountdown
+                    workDays={dealData.workDays}
+                    workDeadlineAt={dealData.workDeadlineAt}
+                  />
+                )}
+
                 {/* ── Details Grid (2-col on mobile) ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <InfoCard
@@ -2245,6 +2431,13 @@ export function DealWorkflowTracker() {
                     label="ডিলের পরিমাণ"
                     value={`৳${dealAmount.toLocaleString('en')}`}
                   />
+                  {dealData?.workDays != null && (
+                    <InfoCard
+                      icon={Timer}
+                      label="প্রতিশ্রুত সময়"
+                      value={`${toBn(dealData.workDays)} দিন`}
+                    />
+                  )}
                   {dealData?.paymentAmount != null && dealData.paymentAmount !== dealData.amount && (
                     <InfoCard
                       icon={Banknote}
@@ -2280,9 +2473,17 @@ export function DealWorkflowTracker() {
                   </div>
                 </div>
 
-                {/* ── Deal Terms (hidden on mobile) ── */}
+                {/* ── Deal Terms (visible on every breakpoint — hiding it on
+                    mobile left buyers unable to read the terms they must accept).
+                    Mobile: rendered LAST (after the action buttons) and shown as
+                    a COLLAPSED 140px peek with an expand toggle — the box must
+                    NOT be a touch scroll container, because drags landing on it
+                    scroll the box instead of the page (thumbs land right here,
+                    under the buttons) and the page appears scroll-frozen. The
+                    page itself is the only scroller on mobile. Desktop keeps
+                    the 40vh inner-scroll panel (mouse wheel chains fine) ── */}
                 {dealTerms && (
-                  <div className="hidden sm:block rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
+                  <div className="order-last sm:order-none rounded-2xl border border-border/40 bg-card/50 p-4 sm:p-5">
                     <div className="flex items-center gap-2 mb-2.5">
                       <div
                         className="flex h-7 w-7 items-center justify-center rounded-lg"
@@ -2294,9 +2495,35 @@ export function DealWorkflowTracker() {
                         ডিলের শর্তাবলী
                       </h3>
                     </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line pl-9">
-                      {dealTerms}
-                    </p>
+                    <div
+                      className={
+                        termsExpanded
+                          ? 'pl-9 pr-1'
+                          : 'max-h-[40vh] overflow-y-auto pl-9 pr-1 max-sm:max-h-[140px] max-sm:overflow-hidden'
+                      }
+                    >
+                      <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">
+                        <LinkifyText text={dealTerms} />
+                      </p>
+                    </div>
+                    {dealTerms.length > 280 && (
+                      <button
+                        onClick={() => setTermsExpanded((v) => !v)}
+                        className="mt-2 pl-9 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        {termsExpanded ? (
+                          <>
+                            <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                            শর্ত গুটিয়ে নিন
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                            সম্পূর্ণ শর্ত দেখুন
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -2347,6 +2574,12 @@ export function DealWorkflowTracker() {
                         পেমেন্ট ভেরিফাইড — আপনি কাজ সম্পূর্ণ করুন
                       </p>
                     </div>
+                    <WorkDeadlineSelector
+                      dealId={dealData?.id || activeDeal?.id || ''}
+                      workDays={dealData?.workDays}
+                      workDeadlineAt={dealData?.workDeadlineAt}
+                      onSet={() => fetchDeal()}
+                    />
                     <div className="flex gap-2 md:gap-3">
                       <ActionButton onClick={handleDeliver} loading={deliverLoading} variant="primary">
                         <PackageCheck className="h-5 w-5" />
@@ -2363,6 +2596,12 @@ export function DealWorkflowTracker() {
                 {/* Buyer: Accept + Dispute (status = in_delivery) */}
                 {isBuyer && status === 'in_delivery' && (
                   <div className="space-y-2 md:space-y-3">
+                    {(dealData?.reminderEmailSentAt || dealData?.autoCompleteAt) && (
+                      <AutoCompleteWarning
+                        reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                        autoCompleteAt={dealData?.autoCompleteAt}
+                      />
+                    )}
                     <p className="text-xs md:text-sm text-center font-medium text-muted-foreground">
                       বিক্রেতা ডেলিভারি করেছেন। নিশ্চিত করুন।
                     </p>
@@ -2381,11 +2620,21 @@ export function DealWorkflowTracker() {
 
                 {/* Seller: Waiting for buyer (status = in_delivery) */}
                 {isSeller && status === 'in_delivery' && (
-                  <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
-                    <Truck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
-                    <p className="text-xs md:text-sm font-medium text-foreground">
-                      ক্রেতার নিশ্চিতকরণের অপেক্ষায়
-                    </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+                      <Truck className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+                      <p className="text-xs md:text-sm font-medium text-foreground">
+                        ক্রেতার নিশ্চিতকরণের অপেক্ষায়
+                      </p>
+                    </div>
+                    <DeliveryReminderCard
+                      dealId={dealData?.id || activeDeal?.id || ''}
+                      deliveredAt={dealData?.deliveredAt}
+                      updatedAt={dealData?.updatedAt}
+                      reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                      autoCompleteAt={dealData?.autoCompleteAt}
+                      onUpdated={fetchDeal}
+                    />
                   </div>
                 )}
 
@@ -2396,6 +2645,34 @@ export function DealWorkflowTracker() {
                     <p className="text-xs md:text-sm font-medium text-foreground">
                       পেমেন্ট ভেরিফাইড
                     </p>
+                  </div>
+                )}
+
+                {/* Buyer: digital file download — payment verified & product has a file */}
+                {isBuyer && dealData?.product?.fileName && ['payment_verified', 'in_delivery', 'completed'].includes(status) && (
+                  <div className="space-y-2 md:space-y-3">
+                    <div className="flex items-center gap-2.5 rounded-xl md:rounded-2xl px-3.5 py-3 md:px-5 md:py-4 border" style={{ backgroundColor: PARROT_GREEN_MILD, borderColor: 'rgba(101,163,13,0.2)' }}>
+                      <FileDown className="h-4 w-4 md:h-5 md:w-5 shrink-0" style={{ color: PARROT_GREEN }} />
+                      <div className="min-w-0">
+                        <p className="text-xs md:text-sm font-bold text-foreground">
+                          ডিজিটাল পণ্য ডাউনলোড করুন
+                        </p>
+                        <p className="truncate text-[11px] md:text-xs text-muted-foreground" dir="ltr">
+                          {dealData.product.fileName}
+                        </p>
+                      </div>
+                    </div>
+                    <ActionButton
+                      onClick={() => {
+                        const s = useAppStore.getState();
+                        s.setDownloadProductId(dealData.product!.id);
+                        s.setView('page-download');
+                      }}
+                      variant="primary"
+                    >
+                      <Download className="h-5 w-5" />
+                      ডাউনলোড পেজ খুলুন
+                    </ActionButton>
                   </div>
                 )}
 
@@ -2426,14 +2703,22 @@ export function DealWorkflowTracker() {
                       </div>
                     ) : !payoutSubmitted ? (
                       <div className="space-y-3">
-                        <p className="text-xs text-muted-foreground font-medium">আপনার পেমেন্ট পেতে পেআউট অনুরোধ করুন</p>
+                        <div className="flex items-center gap-2 rounded-xl bg-emerald-100/70 dark:bg-emerald-500/15 px-4 py-3">
+                          <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            ৳{Math.round(dealData?.paymentAmount || dealData?.amount || 0).toLocaleString('en')} আপনার উত্তোলনযোগ্য ব্যালেন্সে যোগ হয়েছে।
+                          </p>
+                        </div>
                         <ActionButton
-                          onClick={() => setPayoutDialogOpen(true)}
+                          onClick={() => useAppStore.getState().setDashboardPanel('seller-withdraw')}
                           variant="primary"
                         >
                           <Banknote className="h-5 w-5" />
-                          পেআউট অনুরোধ করুন
+                          উত্তোলন পেজে যান
                         </ActionButton>
+                        <p className="text-[11px] text-muted-foreground">
+                          সম্পন্ন হওয়া সব ডিলের টাকা একসাথে উত্তোলন করতে ড্যাশবোর্ডের "উত্তোলন" পেজ ব্যবহার করুন।
+                        </p>
                       </div>
                     ) : payoutPaid ? (
                       <div className="space-y-3">
@@ -2518,7 +2803,7 @@ export function DealWorkflowTracker() {
                       <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-4 py-3">
                         <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
                         <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে নতুন ডিল তৈরি করুন।
+                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে অ্যাডমিন ডিল তৈরি করুন।
                         </p>
                       </div>
                     ) : payoutChecking ? (
@@ -2658,12 +2943,6 @@ export function DealWorkflowTracker() {
                     <p className="text-sm font-semibold text-foreground">
                       {isBuyer ? sellerName : buyerName}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                        অনলাইন
-                      </span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -2702,7 +2981,7 @@ export function DealWorkflowTracker() {
                     <ChatDateDivider text="আজ" />
                     <AnimatePresence initial={false}>
                       {messages.map((msg) => (
-                        <ChatBubble key={msg.id} message={msg} currentUserId={user?.id} />
+                        <ChatBubble key={msg.id} message={msg} currentUserId={user?.id} dealId={activeDeal?.id} />
                       ))}
                     </AnimatePresence>
                   </>
@@ -2717,6 +2996,31 @@ export function DealWorkflowTracker() {
                   backgroundColor: 'var(--card)',
                 }}
               >
+                {/* Pending attachment chip + upload error */}
+                {(pendingFile || chatFileError) && (
+                  <div className="mb-2 flex flex-col gap-1">
+                    {pendingFile && (
+                      <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-muted/40 px-3 py-2">
+                        <ChatFileIcon fileType={pendingFile.fileType} fileName={pendingFile.fileName} className="h-4 w-4 shrink-0 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium">{pendingFile.fileName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatFileSize(pendingFile.fileSize)} · পাঠানোর জন্য প্রস্তুত — ৩ দিন পর স্বয়ংক্রিয় মুছে যাবে
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setPendingFile(null)}
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-muted"
+                          aria-label="ফাইল বাতিল করুন"
+                        >
+                          <XCircle className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </div>
+                    )}
+                    {chatFileError && <p className="text-xs font-medium text-red-500">{chatFileError}</p>}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 sm:gap-3">
                   {/* Admin ডাকুন button */}
                   <button
@@ -2745,17 +3049,36 @@ export function DealWorkflowTracker() {
                     />
                   </div>
 
+                  {/* File attach button (documents + images, auto-deleted after 3 days) */}
+                  <button
+                    onClick={() => chatFileInputRef.current?.click()}
+                    disabled={uploadingFile || sendingMsg}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+                    aria-label="ফাইল পাঠান (সর্বোচ্চ 4MB)"
+                    title="ফাইল পাঠান — PDF, DOC, XLS, ZIP, JPG, PNG (সর্বোচ্চ 4MB, ৩ দিন পর মুছে যাবে)"
+                  >
+                    {uploadingFile ? <LoadingAnimation size="sm" /> : <Paperclip className="h-5 w-5" />}
+                  </button>
+                  <input
+                    ref={chatFileInputRef}
+                    type="file"
+                    accept={CHAT_FILE_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleChatFileSelect(f); }}
+                  />
+
                   {/* Send button */}
                   <motion.button
                     onClick={handleSend}
-                    disabled={!chatInput.trim() || sendingMsg}
+                    disabled={(!chatInput.trim() && !pendingFile) || sendingMsg || uploadingFile}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-40"
-                    whileHover={{ scale: chatInput.trim() && !sendingMsg ? 1.08 : 1 }}
-                    whileTap={{ scale: chatInput.trim() && !sendingMsg ? 0.92 : 1 }}
+                    whileHover={{ scale: (chatInput.trim() || pendingFile) && !sendingMsg ? 1.08 : 1 }}
+                    whileTap={{ scale: (chatInput.trim() || pendingFile) && !sendingMsg ? 0.92 : 1 }}
                     style={{
-                      backgroundColor: chatInput.trim() && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
-                      color: chatInput.trim() && !sendingMsg ? '#fff' : 'var(--muted-foreground)',
-                      boxShadow: chatInput.trim() && !sendingMsg ? PARROT_GREEN_GLOW : 'none',
+                      backgroundColor: (chatInput.trim() || pendingFile) && !sendingMsg ? PARROT_GREEN : 'var(--muted)',
+                      color: (chatInput.trim() || pendingFile) && !sendingMsg ? '#fff' : 'var(--muted-foreground)',
+                      boxShadow: (chatInput.trim() || pendingFile) && !sendingMsg ? PARROT_GREEN_GLOW : 'none',
                     }}
                     aria-label="পাঠান"
                   >

@@ -1,68 +1,95 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Bell, CheckCheck, X, BellOff } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Bell,
+  BellOff,
+  CheckCheck,
+  X,
+  ClipboardList,
+  FilePlus2,
+  CheckCircle2,
+  Truck,
+  XCircle,
+  Wallet,
+  ShieldCheck,
+  AlertTriangle,
+  Scale,
+  MessageSquare,
+  Store,
+  BadgeCheck,
+  Info,
+  Banknote,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAppStore } from '@/lib/store'
 import { useTranslation } from '@/lib/i18n'
-import { useSocket } from '@/hooks/use-socket'
+import { useNotifications, navigateToNotification, type NotificationItem } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
-interface Notification {
-  id: string
-  type: string
-  title: string
-  message: string
-  read: boolean
-  dealId?: string
-  createdAt: string
-}
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = now - then
+/** Locale-aware relative time with English digits */
+export function timeAgo(dateStr: string, locale: 'bn' | 'en'): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
+  if (locale === 'en') {
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days}d ago`
+    return `${Math.floor(days / 30)}mo ago`
+  }
   if (mins < 1) return 'এইমাত্র'
-  if (mins < 60) return `${mins}মি আগে`
+  if (mins < 60) return `${mins} মিনিট আগে`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}ঘণ্টা আগে`
+  if (hours < 24) return `${hours} ঘণ্টা আগে`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}দিন আগে`
-  return `${Math.floor(days / 30)}মাস আগে`
+  if (days < 30) return `${days} দিন আগে`
+  return `${Math.floor(days / 30)} মাস আগে`
 }
 
-function NotificationIcon({ type }: { type: string }) {
-  const iconClass = 'h-4 w-4'
-  const colorMap: Record<string, string> = {
-    deal_request: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400',
-    deal_accepted: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
-    deal_completed: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400',
-    deal_cancelled: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400',
-    payment_verified: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400',
-    dispute: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400',
-    payout: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400',
-    system: 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400',
-  }
-  const color = colorMap[type] || colorMap.system
+type IconComponent = React.ComponentType<{ className?: string }>
 
-  const emojiMap: Record<string, string> = {
-    deal_request: '📋',
-    deal_accepted: '✅',
-    deal_completed: '🎉',
-    deal_cancelled: '❌',
-    payment_verified: '💰',
-    dispute: '⚠️',
-    payout: '💸',
-    system: '🔔',
-  }
-  const emoji = emojiMap[type] || emojiMap.system
+interface TypeStyle {
+  icon: IconComponent
+  color: string
+}
 
+/** Lucide icon + color chip per notification type (no emojis) */
+const TYPE_STYLES: Record<string, TypeStyle> = {
+  deal_request: { icon: ClipboardList, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' },
+  deal_created: { icon: FilePlus2, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' },
+  deal_accepted: { icon: CheckCircle2, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
+  deal_status_updated: { icon: Truck, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' },
+  delivery_started: { icon: Truck, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' },
+  deal_completed: { icon: BadgeCheck, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
+  deal_cancelled: { icon: XCircle, color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' },
+  payment_pending: { icon: Wallet, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  payment_submitted: { icon: Wallet, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  payment_verified: { icon: ShieldCheck, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
+  deal_disputed: { icon: AlertTriangle, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  dispute_opened: { icon: AlertTriangle, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  dispute_resolved: { icon: Scale, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
+  new_message: { icon: MessageSquare, color: 'bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400' },
+  seller_request: { icon: Store, color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400' },
+  seller_approved: { icon: Store, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
+  seller_rejected: { icon: Store, color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' },
+  system_update: { icon: Info, color: 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400' },
+  payout: { icon: Banknote, color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400' },
+  system: { icon: Bell, color: 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400' },
+}
+
+const FALLBACK_STYLE: TypeStyle = TYPE_STYLES.system
+
+export function NotificationIcon({ type }: { type: string }) {
+  const { icon: Icon, color } = TYPE_STYLES[type] || FALLBACK_STYLE
   return (
-    <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm', color)}>
-      {emoji}
+    <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full', color)}>
+      <Icon className="h-4 w-4" />
     </span>
   )
 }
@@ -70,54 +97,16 @@ function NotificationIcon({ type }: { type: string }) {
 export function NotificationBell() {
   const user = useAppStore((s) => s.user)
   const locale = useAppStore((s) => s.locale)
-  const t = useTranslation(locale)
+  const { t } = useTranslation(locale)
   const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { onNotification } = useSocket(user?.id)
-
-  // Initial fetch
-  useEffect(() => {
-    let active = true
-    async function load() {
-      if (!user?.id || !active) return
-      setLoading(true)
-      try {
-        const res = await fetch('/api/notifications')
-        const data = await res.json()
-        if (active) {
-          setNotifications(data.notifications || [])
-          setUnreadCount(data.unreadCount || 0)
-        }
-      } catch { /* silent */ }
-      if (active) setLoading(false)
-    }
-    load()
-    return () => { active = false }
-  }, [user?.id])
-
-  // Listen for real-time notifications
-  useEffect(() => {
-    if (!user?.id) return
-    const unsub = onNotification((n) => {
-      setNotifications((prev) => [
-        {
-          id: n.id || Date.now().toString(),
-          type: n.type,
-          title: n.title,
-          message: n.message,
-          read: false,
-          dealId: n.dealId,
-          createdAt: n.createdAt || new Date().toISOString(),
-        },
-        ...prev,
-      ])
-      setUnreadCount((c) => c + 1)
-    })
-    return unsub
-  }, [user?.id, onNotification])
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markRead,
+    markAllRead,
+  } = useNotifications()
 
   // Close on outside click
   useEffect(() => {
@@ -130,29 +119,11 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Mark single as read
-  const markRead = async (id: string) => {
-    try {
-      await fetch(`/api/notifications/${id}/read`, { method: 'POST' })
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      )
-      setUnreadCount((c) => Math.max(0, c - 1))
-    } catch { /* silent */ }
-  }
-
-  // Mark all as read
-  const markAllRead = async () => {
-    if (!user?.id) return
-    try {
-      await fetch('/api/notifications/all-read', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      })
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-      setUnreadCount(0)
-    } catch { /* silent */ }
+  /** Click a notification: auto mark-read + open the related deal/chat */
+  const handleOpen = (n: NotificationItem) => {
+    if (!n.read) markRead(n.id)
+    setOpen(false)
+    navigateToNotification(n)
   }
 
   if (!user) return null
@@ -190,6 +161,11 @@ export function NotificationBell() {
             <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
               <h3 className="text-sm font-semibold text-foreground">
                 {t('nav.notifications')}
+                {unreadCount > 0 && (
+                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    {unreadCount} {t('notif.unreadCount')}
+                  </span>
+                )}
               </h3>
               <div className="flex items-center gap-1">
                 {unreadCount > 0 && (
@@ -229,12 +205,10 @@ export function NotificationBell() {
                   {notifications.map((n) => (
                     <button
                       key={n.id}
-                      onClick={() => {
-                        if (!n.read) markRead(n.id)
-                      }}
+                      onClick={() => handleOpen(n)}
                       className={cn(
                         'flex w-full items-start gap-3 border-b border-border/30 px-4 py-3 text-left transition-colors hover:bg-accent/50',
-                        !n.read && 'bg-primary/[0.03]'
+                        !n.read && 'bg-primary/[0.04]'
                       )}
                     >
                       <NotificationIcon type={n.type} />
@@ -242,7 +216,7 @@ export function NotificationBell() {
                         <div className="flex items-center gap-2">
                           <p className={cn(
                             'truncate text-sm font-medium text-foreground',
-                            !n.read && 'text-foreground'
+                            !n.read && 'font-semibold'
                           )}>
                             {n.title}
                           </p>
@@ -254,7 +228,7 @@ export function NotificationBell() {
                           {n.message}
                         </p>
                         <p className="mt-1 text-[10px] text-muted-foreground/60">
-                          {timeAgo(n.createdAt)}
+                          {timeAgo(n.createdAt, locale)}
                         </p>
                       </div>
                     </button>
@@ -263,14 +237,16 @@ export function NotificationBell() {
               )}
             </ScrollArea>
 
-            {/* Footer */}
-            {notifications.length > 0 && (
-              <div className="border-t border-border/50 px-4 py-2.5">
-                <p className="text-center text-[11px] text-muted-foreground/60">
-                  {t('notif.hint')}
-                </p>
-              </div>
-            )}
+            {/* Footer — View All */}
+            <div className="border-t border-border/50 px-4 py-2.5">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
+              >
+                {t('notif.viewAll')}
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -39,7 +39,7 @@ export async function POST(
 
     const updated = await db.deal.update({
       where: { id },
-      data: { status: 'in_delivery' },
+      data: { status: 'in_delivery', deliveredAt: new Date() },
     })
 
     // Notify buyer

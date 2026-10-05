@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Zap, Loader2, User,
-  Eye, Heart, Package, Minus, Plus, Boxes,
+  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2, Facebook, FileDown, Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,15 +14,25 @@ import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 import { waMeLink } from '@/lib/wa-me';
+import { fbqTrack, genMetaEventId, META_IC_EVENT_ID_KEY } from '@/lib/meta-client';
 import { PageWrapper } from './page-wrapper';
 import { Footer } from './footer';
 
 interface OrderProductSeller {
   id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null;
 }
+interface OrderProductOption {
+  id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
+}
 interface OrderProduct {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; quantity?: number; status: string; createdAt: string; seller: OrderProductSeller;
+  productType?: string;
+  options?: OrderProductOption[];
+  optionsCount?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  isFree?: boolean; hasFile?: boolean; fileName?: string | null; fileSize?: number | null;
 }
 
 // Quantity is an order-time selection only — no stock concept (max 99 per order)
@@ -37,6 +47,10 @@ const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
   software: { bn: 'সফটওয়্যার', en: 'Software' },
   social_media: { bn: 'সোশ্যাল মিডিয়া', en: 'Social Media' },
   id: { bn: 'আইডি', en: 'ID' },
+  facebook: { bn: 'ফেসবুক', en: 'Facebook' },
+  instagram: { bn: 'ইনস্টাগ্রাম', en: 'Instagram' },
+  subscription: { bn: 'সাবস্ক্রিপশন', en: 'Subscription' },
+  free_service: { bn: 'ফ্রি সার্ভিস', en: 'Free Service' },
   other: { bn: 'অন্যান্য', en: 'Other' },
 };
 
@@ -55,6 +69,16 @@ export function ProductOrderView() {
   const user = useAppStore((s) => s.user);
   const productDetailId = useAppStore((s) => s.productDetailId);
   const setView = useAppStore((s) => s.setView);
+  const prevView = useAppStore((s) => s._prevView);
+  const goBack = useAppStore((s) => s.goBack);
+
+  /* Smart back: return to where the user came from (e.g. seller profile);
+     fallback to the marketplace when there is no in-app history (direct URL). */
+  const backTargetProfile = prevView === 'page-seller-profile';
+  const handleBack = () => {
+    if (backTargetProfile) goBack();
+    else setView('page-marketplace');
+  };
 
   const [product, setProduct] = useState<OrderProduct | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +87,52 @@ export function ProductOrderView() {
   const [followLoading, setFollowLoading] = useState(false);
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [qty, setQty] = useState(1);
+  /* Multi-price products: the buyer must pick an option before ordering */
+  const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
+  /* Share: native share sheet on mobile, popover fallback (copy/WhatsApp/Facebook) on desktop */
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  const isMulti = product?.productType === 'multi' && (product.options?.length ?? 0) > 0;
+  const availableOptions = useMemo(
+    () => (product?.options ?? []).filter((o) => o.isAvailable),
+    [product?.options]
+  );
+  const selectedOption = useMemo(
+    () => (isMulti ? product?.options?.find((o) => o.id === selectedOptionId) ?? null : null),
+    [isMulti, product?.options, selectedOptionId]
+  );
+  /* The unit price the buyer sees — always from the selected option (multi)
+     or the product price (single). Never editable by hand. */
+  const unitPrice = isMulti ? (selectedOption?.price ?? null) : (product?.price ?? 0);
+  /* Digital product state */
+  const [entitled, setEntitled] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
+  /* Meta Pixel — ViewContent (browser-only; fires once per loaded product) */
+  useEffect(() => {
+    if (!product) return;
+    const value = isMulti ? (selectedOption?.price ?? product.minPrice ?? product.price) : product.price;
+    fbqTrack('ViewContent', {
+      content_type: 'product',
+      content_ids: [product.id],
+      content_name: product.title,
+      value,
+      currency: 'BDT',
+    }, genMetaEventId('vc'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
+
+  // Is the logged-in user already entitled to the digital file?
+  useEffect(() => {
+    if (!product || !user || !product.hasFile) { setEntitled(false); return; }
+    let cancelled = false;
+    fetch(`/api/download/${product.id}/info`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setEntitled(!!d.entitled); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [product?.id, product?.hasFile, user?.id]);
 
   useEffect(() => {
     if (!productDetailId) return;
@@ -70,9 +140,18 @@ export function ProductOrderView() {
     setShowBuyConfirm(false);
     setProduct(null);
     setQty(1);
+    setSelectedOptionId(null);
     fetch(`/api/products/${productDetailId}`)
       .then((r) => r.json())
-      .then((d) => { setProduct(d.success ? d.product : null); })
+      .then((d) => {
+        setProduct(d.success ? d.product : null);
+        // If exactly one option is available, preselect it so the buyer sees
+        // a single clear price instead of an empty "select a package" state.
+        const opts = d.success && d.product?.options ? d.product.options.filter((o: OrderProductOption) => o.isAvailable) : [];
+        if (d.success && d.product?.productType === 'multi' && opts.length === 1) {
+          setSelectedOptionId(opts[0].id);
+        }
+      })
       .catch(() => setProduct(null))
       .finally(() => setLoading(false));
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -118,26 +197,80 @@ export function ProductOrderView() {
 
   const waNumber = product?.seller.whatsappNumber || null;
   const waHref = product ? waMeLink(waNumber, locale === 'bn'
-    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}" পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
-    : `Hi! I saw your product "${product.title}"${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
+    ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''} পণ্যটি${qty > 1 ? ` (${toLocaleNum(qty, locale)} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
+    : `Hi! I saw your product "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''}${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
 
   const handleBuyNow = () => {
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
+    /* Multi-price: an option MUST be selected before ordering */
+    if (isMulti && !selectedOption) { toast.error(t('marketplace.selectPackageHint')); return; }
     setShowBuyConfirm(true);
   };
 
   const confirmBuy = () => {
     if (!product) return;
     setShowBuyConfirm(false);
+    /* Meta Pixel — InitiateCheckout; the event_id rides to POST /api/deals/create
+       via sessionStorage so the server CAPI event deduplicates against this one */
+    const icEventId = genMetaEventId('ic');
+    fbqTrack('InitiateCheckout', {
+      content_type: 'product',
+      content_ids: [product.id],
+      value: (unitPrice ?? product.price) * qty,
+      currency: 'BDT',
+      num_items: qty,
+    }, icEventId);
+    try { sessionStorage.setItem(META_IC_EVENT_ID_KEY, icEventId); } catch { /* private mode */ }
     const store = useAppStore.getState();
+    const optionSuffix = selectedOption ? ` — ${selectedOption.name}` : '';
     store.setDealPreFill({
-      title: qty > 1 ? `${product.title} (×${qty})` : product.title,
-      amount: product.price * qty,
+      title: qty > 1 ? `${product.title}${optionSuffix} (×${qty})` : `${product.title}${optionSuffix}`,
+      amount: (unitPrice ?? product.price) * qty,
       partyEmail: product.seller.email || '',
+      /* Server re-verifies the product/option and computes the real price —
+         these values are what makes the order product-verified. */
+      productId: product.id,
+      optionId: selectedOption?.id,
+      quantity: qty,
     });
     store.setDashboardPanel('new-deal');
     store.setView('dashboard');
   };
+
+  /** Free product → claim + open the download page */
+  const claimFreeDownload = async () => {
+    if (!product) return;
+    setClaiming(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}/claim`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const store = useAppStore.getState();
+        store.setDownloadProductId(product.id);
+        store.setView('page-download');
+      } else if (res.status === 401) {
+        toast.error(t('download.loginRequired'));
+        setView('auth');
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch {
+      toast.error('Failed');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  /** Open the download page (already entitled) */
+  const openDownload = () => {
+    if (!product) return;
+    const store = useAppStore.getState();
+    store.setDownloadProductId(product.id);
+    store.setView('page-download');
+  };
+
+  const isDigital = !!product?.hasFile;
+  const isFreeDigital = isDigital && !!product?.isFree;
 
   const openProduct = (id: string) => {
     useAppStore.getState().setProductDetailId(id);
@@ -149,6 +282,77 @@ export function ProductOrderView() {
     store.setSellerProfileId(product.seller.id);
     store.setView('page-seller-profile');
   };
+
+  /* ── Share ────────────────────────────────────────────────────────────
+     Mobile: native share sheet (any installed app).
+     Desktop / unsupported: popover with Copy Link, WhatsApp, Facebook.
+     The shared URL always points at the SEO route /product/{id}. */
+  const getProductUrl = () =>
+    `${window.location.origin}/product/${product?.id ?? productDetailId ?? ''}`;
+
+  const toggleShare = async () => {
+    if (!product) return;
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: product.title,
+          text: t('marketplace.shareText', { title: product.title }),
+          url: getProductUrl(),
+        });
+        return;
+      } catch (err) {
+        // User closed the native sheet — do not open the fallback popover
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+      }
+    }
+    setShareOpen((o) => !o);
+  };
+
+  const copyShareLink = async () => {
+    const url = getProductUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API blocked (http / iframe) — legacy fallback
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    toast.success(t('marketplace.shareCopied'));
+    setShareOpen(false);
+  };
+
+  const shareOnWhatsApp = () => {
+    const text = `${t('marketplace.shareText', { title: product?.title ?? '' })} ${getProductUrl()}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    setShareOpen(false);
+  };
+
+  const shareOnFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getProductUrl())}`,
+      '_blank', 'noopener,noreferrer,width=620,height=540'
+    );
+    setShareOpen(false);
+  };
+
+  // Close the share popover on outside click / Escape
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShareOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShareOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [shareOpen]);
 
   if (loading) {
     return (
@@ -193,11 +397,11 @@ export function ProductOrderView() {
         <div className="flex items-center gap-3">
           <a
             href="/marketplace"
-            onClick={(e) => { e.preventDefault(); setView('page-marketplace'); }}
+            onClick={(e) => { e.preventDefault(); handleBack(); }}
             className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent"
           >
             <ArrowLeft className="h-4 w-4" />
-            {t('sellerProfile.backToMarketplace')}
+            {backTargetProfile ? t('sellerProfile.backToSeller') : t('sellerProfile.backToMarketplace')}
           </a>
         </div>
       </div>
@@ -209,12 +413,12 @@ export function ProductOrderView() {
           transition={{ duration: 0.35 }}
           className="grid gap-6 lg:grid-cols-2 lg:gap-10"
         >
-          {/* Product image — fills full column height on desktop (no blank below) */}
-          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-muted/30 shadow-sm">
+          {/* Product image — fills full column height on desktop; full image, no zoom/crop, blank space white */}
+          <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-white shadow-sm">
             {product.image ? (
-              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" />
+              <img src={cdnUrl(product.image) || ''} alt={product.title} className="aspect-[16/10] w-full bg-white object-contain lg:absolute lg:inset-0 lg:aspect-auto lg:h-full" />
             ) : (
-              <div className="flex aspect-[16/10] w-full items-center justify-center lg:absolute lg:inset-0 lg:aspect-auto"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
+              <div className="flex aspect-[16/10] w-full items-center justify-center bg-muted/30 lg:absolute lg:inset-0 lg:aspect-auto"><Package className="h-16 w-16 text-muted-foreground/40" strokeWidth={1.2} /></div>
             )}
           </div>
 
@@ -222,15 +426,76 @@ export function ProductOrderView() {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1.5 text-[11px] font-semibold">{catName}</Badge>
+              {product.hasFile && (
+                <Badge variant="secondary" className="gap-1 text-[10px] font-bold">
+                  <FileDown className="h-3 w-3 text-primary" />{t('marketplace.digitalProduct')}
+                </Badge>
+              )}
               <div className="flex items-center gap-1 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-[11px] font-medium">{t('marketplace.verified')}</span></div>
+              {/* Share — native sheet on mobile, popover fallback on desktop */}
+              <div className="relative ml-auto" ref={shareRef}>
+                <button
+                  type="button"
+                  onClick={toggleShare}
+                  aria-label={t('marketplace.share')}
+                  title={t('marketplace.share')}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+                {shareOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-9 z-50 w-52 overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+                  >
+                    <button type="button" onClick={copyShareLink} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <Link2 className="h-4 w-4 text-muted-foreground" />
+                      {t('marketplace.shareCopy')}
+                    </button>
+                    <button type="button" onClick={shareOnWhatsApp} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                      {t('marketplace.shareWhatsApp')}
+                    </button>
+                    <button type="button" onClick={shareOnFacebook} className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-accent">
+                      <Facebook className="h-4 w-4 text-[#1877F2]" />
+                      {t('marketplace.shareFacebook')}
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </div>
             <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <p className="text-3xl font-extrabold text-primary">{formatPrice(product.price * qty, locale)}</p>
-              {qty > 1 && (
-                <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(product.price, locale)} × {toLocaleNum(qty, locale)}</p>
+              {product.isFree ? (
+                <p className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{t('marketplace.free')}</p>
+              ) : isMulti && !selectedOption ? (
+                <>
+                  {/* Dynamic price — multi: range until an option is picked */}
+                  <p className="text-3xl font-extrabold text-primary">
+                    {product.minPrice === product.maxPrice
+                      ? formatPrice(product.price, locale)
+                      : `${formatPrice(product.minPrice ?? product.price, locale)} – ${formatPrice(product.maxPrice ?? product.price, locale)}`}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-extrabold text-primary">{formatPrice((unitPrice ?? product.price) * qty, locale)}</p>
+                  {isMulti && selectedOption && (
+                    <p className="text-[13px] font-semibold text-foreground">{selectedOption.name}</p>
+                  )}
+                  {qty > 1 && unitPrice !== null && (
+                    <p className="text-[13px] font-medium text-muted-foreground">{formatPrice(unitPrice, locale)} × {toLocaleNum(qty, locale)}</p>
+                  )}
+                </>
               )}
             </div>
+            {!isMulti && (product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice) && (
+              <p className="mt-1 text-[12px] font-medium text-muted-foreground">
+                {formatPrice(product.minPrice, locale)} – {formatPrice(product.maxPrice, locale)}
+              </p>
+            )}
             <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
 
             {/* Seller box */}
@@ -239,11 +504,7 @@ export function ProductOrderView() {
                 <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{product.seller.name}</p>
-                  {waNumber ? (
-                    <p className="flex items-center gap-1 text-[12px] font-medium text-[#25D366]" dir="ltr"><MessageCircle className="h-3 w-3 shrink-0" />{waNumber}</p>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
-                  )}
+                  <p className="text-[12px] text-muted-foreground">{t('marketplace.seller')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
@@ -266,8 +527,66 @@ export function ProductOrderView() {
               </div>
             </div>
 
-            {/* Quantity — order-time selection only (no stock) */}
-            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* Option selector — multi-price products only.
+                Touch-friendly rounded cards; price updates instantly on change. */}
+            {isMulti && (
+              <div className="mt-5">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <p className="text-[13px] font-bold text-foreground">{t('marketplace.selectPackage')}</p>
+                </div>
+                <p className="mt-1 text-[12px] text-muted-foreground">{t('marketplace.selectPackageHint')}</p>
+                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {product.options!.map((opt) => {
+                    const selected = opt.id === selectedOptionId;
+                    const unavailable = !opt.isAvailable;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        disabled={unavailable}
+                        onClick={() => setSelectedOptionId(opt.id)}
+                        aria-pressed={selected}
+                        className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
+                          selected
+                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
+                            : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
+                        } ${unavailable ? 'opacity-45' : ''}`}
+                      >
+                        <span className="flex min-w-0 items-center gap-2.5">
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                              selected ? 'border-primary bg-primary' : 'border-muted-foreground/40'
+                            }`}
+                          >
+                            {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                          </span>
+                          <span className={`truncate text-[13px] font-semibold ${selected ? 'text-primary' : 'text-foreground'}`}>{opt.name}</span>
+                        </span>
+                        <span className="shrink-0 text-[14px] font-extrabold tabular-nums text-foreground">
+                          {unavailable ? (
+                            <span className="text-[11px] font-medium text-muted-foreground">{t('seller.optionUnavailable')}</span>
+                          ) : (
+                            formatPrice(opt.price, locale)
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {availableOptions.length === 0 && (
+                  <p className="mt-2 text-[12px] font-medium text-destructive">{t('seller.optionUnavailable')}</p>
+                )}
+              </div>
+            )}
+
+            {/* Quantity — order-time selection only (no stock). Hidden for
+                single-price digital files (a file ×N is meaningless), but
+                ALWAYS shown for multi-price products: the customer picks an
+                option (one of the multiple prices) and their own quantity —
+                the total price auto-updates to option price × quantity. */}
+            {(!isDigital || isMulti) && (
+              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground"><Boxes className="h-4 w-4" />{t('marketplace.quantity')}</span>
                 <div className="flex items-center overflow-hidden rounded-xl border border-border">
@@ -293,16 +612,35 @@ export function ProductOrderView() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Order actions */}
             <div className="mt-5">
-              {showBuyConfirm ? (
+              {entitled ? (
+                <Button onClick={openDownload} className="h-14 w-full gap-2 rounded-xl text-[15px] font-semibold shadow-lg shadow-primary/25">
+                  <Download className="h-5 w-5" />
+                  {t('marketplace.downloadNow')}
+                </Button>
+              ) : isFreeDigital ? (
+                <div className="space-y-2">
+                  <Button onClick={claimFreeDownload} disabled={claiming} className="h-14 w-full gap-2 rounded-xl text-[15px] font-semibold shadow-lg shadow-primary/25">
+                    {claiming ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                    {claiming ? t('download.claiming') : t('marketplace.freeDownload')}
+                  </Button>
+                  <p className="text-center text-[12px] text-muted-foreground">{t('marketplace.freeDownloadHint')}</p>
+                </div>
+              ) : showBuyConfirm ? (
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-foreground">{t('marketplace.dealConfirmTitle')}</p>
-                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice(product.price * qty, locale) })}</p>
+                      <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice((unitPrice ?? product.price) * qty, locale) })}</p>
+                      {selectedOption && (
+                        <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                          {selectedOption.name} · {formatPrice(selectedOption.price, locale)}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -316,21 +654,37 @@ export function ProductOrderView() {
                   </div>
                 </div>
               ) : (
-                <div className={waHref ? 'flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3' : 'flex'}>
-                  {waHref && (
-                    <a
-                      href={waHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-14 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                <div className="space-y-2">
+                  <div className={waHref ? 'flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3' : 'flex'}>
+                    {waHref && (
+                      <a
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-14 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#25D366]/50 text-[14px] font-semibold text-[#25D366] transition-colors hover:bg-[#25D366]/10"
+                      >
+                        <MessageCircle className="h-4.5 w-4.5" />
+                        {t('marketplace.contactWhatsApp')}
+                      </a>
+                    )}
+                    <Button
+                      onClick={handleBuyNow}
+                      disabled={isMulti && !selectedOption}
+                      className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold"
                     >
-                      <MessageCircle className="h-4.5 w-4.5" />
-                      {t('marketplace.contactWhatsApp')}
-                    </a>
+                      <ShoppingCart className="h-4.5 w-4.5 shrink-0" />
+                      <span className="truncate">
+                        {t('marketplace.buyNow')}
+                        {isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty, locale)}` : ''}
+                      </span>
+                    </Button>
+                  </div>
+                  {isDigital && (
+                    <p className="flex items-center justify-center gap-1.5 text-[12px] text-muted-foreground">
+                      <FileDown className="h-3.5 w-3.5 text-primary" />
+                      {t('marketplace.digitalHint')}
+                    </p>
                   )}
-                  <Button onClick={handleBuyNow} className="h-14 min-w-0 gap-2 rounded-xl text-[14px] font-semibold">
-                    <ShoppingCart className="h-4.5 w-4.5" /> {t('marketplace.buyNow')}
-                  </Button>
                 </div>
               )}
             </div>
@@ -344,7 +698,7 @@ export function ProductOrderView() {
               <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
               <h2 className="text-[15px] font-bold text-foreground sm:text-base">{t('marketplace.suggestedProducts')}</h2>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">
               {suggested.map((p) => (
                 <button
                   key={p.id}
@@ -354,15 +708,19 @@ export function ProductOrderView() {
                 >
                   <div className="aspect-[16/10] w-full overflow-hidden bg-muted/40">
                     {p.image ? (
-                      <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                      <img src={cdnUrl(p.image) || ''} alt={p.title} className="h-full w-full bg-white object-contain" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center"><Package className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.2} /></div>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col gap-1 p-4">
+                  <div className="flex flex-1 flex-col gap-1 p-3 sm:p-4">
                     <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{CATEGORY_NAMES[p.category]?.[locale === 'bn' ? 'bn' : 'en'] || p.category}</span>
                     <span className="line-clamp-2 text-[14px] font-semibold text-foreground">{p.title}</span>
-                    <span className="mt-auto pt-1.5 text-base font-extrabold text-primary">{formatPrice(p.price, locale)}</span>
+                    <span className="mt-auto pt-1.5 text-base font-extrabold text-primary">
+                      {p.productType === 'multi' && p.minPrice !== undefined && p.maxPrice !== undefined && p.minPrice !== p.maxPrice
+                        ? `${formatPrice(p.minPrice, locale)} – ${formatPrice(p.maxPrice, locale)}`
+                        : formatPrice(p.price, locale)}
+                    </span>
                   </div>
                 </button>
               ))}

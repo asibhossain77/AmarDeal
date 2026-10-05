@@ -2,8 +2,8 @@
 
 import { useState, useSyncExternalStore, useEffect } from 'react';
 import { useAppStore, type SellerPanel } from '@/lib/store';
-import { useSiteSettings } from '@/lib/use-site-settings';
 import { useT } from '@/lib/i18n';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 import {
   LayoutDashboard,
   PlusCircle,
@@ -40,7 +40,6 @@ export function SellerSidebar() {
   const sidebarAvatarUrl = cdnUrl(user?.imageLink);
   const [sidebarAvatarLoaded, setSidebarAvatarLoaded] = useState(false);
   useEffect(() => { setSidebarAvatarLoaded(false); if (!sidebarAvatarUrl) return; const img = new Image(); img.onload = () => setSidebarAvatarLoaded(true); img.src = sidebarAvatarUrl; }, [sidebarAvatarUrl]);
-  const { siteName, siteLogo } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
 
@@ -53,22 +52,10 @@ export function SellerSidebar() {
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      {/* Brand Header */}
+      {/* Brand Header — full brand SVG (icon + wordmark), theme-switches light/dark */}
       <div className="flex items-center justify-between p-5 pb-6">
-        <div className="flex items-center gap-2.5">
-          {siteLogo ? (
-            <img
-              src={cdnUrl(siteLogo) || ''}
-              alt={siteName}
-              className="h-9 w-9 rounded-lg object-contain"
-              loading="lazy" decoding="async"
-            />
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <span className="text-sm font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>
-            </div>
-          )}
-          <span className="text-lg font-bold tracking-tight text-foreground">{siteName}</span>
+        <div className="flex items-center">
+          <MidmanLogo className="h-9 rounded-lg" alt="Midman" />
         </div>
         <button
           onClick={() => setSidebarOpen(false)}

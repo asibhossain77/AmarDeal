@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Save, Plus, Trash2, Pencil, Eye, EyeOff, Image, Link2, GripVertical,
-  Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown,
+  Package, Settings, Megaphone, ShoppingCart, X, Loader2, ArrowUpDown, Layers,
   Check, Search, ToggleLeft, ToggleRight, Type, FileText, RefreshCw, Users, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useT } from '@/lib/i18n';
+import { useAppStore, type AdminMarketplaceTab } from '@/lib/store';
 import { SellerAppsTab } from './seller-apps-tab';
 import { cdnUrl } from '@/lib/cdn-url';
 
@@ -41,6 +42,14 @@ interface Banner {
   createdAt: string;
 }
 
+interface AdminProductOption {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface AdminProduct {
   id: string;
   title: string;
@@ -50,6 +59,8 @@ interface AdminProduct {
   image: string | null;
   status: string;
   createdAt: string;
+  productType?: string;
+  options?: AdminProductOption[];
   seller: { name: string };
 }
 
@@ -65,6 +76,12 @@ const CATEGORIES = [
   { key: 'marketing', bn: '\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F\u09BF\u0982', en: 'Marketing' },
   { key: 'education', bn: '\u09B6\u09BF\u0995\u09CD\u09B7\u09BE', en: 'Education' },
   { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software' },
+  { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media' },
+  { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID' },
+  { key: 'facebook', bn: 'ফেসবুক', en: 'Facebook' },
+  { key: 'instagram', bn: 'ইনস্টাগ্রাম', en: 'Instagram' },
+  { key: 'subscription', bn: 'সাবস্ক্রিপশন', en: 'Subscription' },
+  { key: 'free_service', bn: 'ফ্রি সার্ভিস', en: 'Free Service' },
   { key: 'other', bn: '\u0985\u09A8\u09CD\u09AF\u09BE\u09A8\u09CD\u09AF', en: 'Other' },
 ];
 
@@ -93,6 +110,8 @@ export function SolidCard({ children, className = '' }: { children: React.ReactN
 
 export function AdminMarketplacePanel() {
   const t = useT();
+  const tab = useAppStore((s) => s.adminMarketplaceTab);
+  const setTab = useAppStore((s) => s.setAdminMarketplaceTab);
 
   return (
     <div className="space-y-6">
@@ -106,7 +125,7 @@ export function AdminMarketplacePanel() {
         </p>
       </div>
 
-      <Tabs defaultValue="settings" className="w-full">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as AdminMarketplaceTab)} className="w-full">
         <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex h-11 rounded-xl bg-muted/60 p-1">
           <TabsTrigger value="settings" className="gap-1.5 text-xs sm:text-sm rounded-lg">
             <Settings className="h-4 w-4" />
@@ -278,7 +297,7 @@ function BannersTab() {
   const handleBannerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error('সর্বোচ্চ 2MB'); return; }
+    if (file.size > 4 * 1024 * 1024) { toast.error('সর্বোচ্চ 4MB'); return; }
     setBannerUploading(true);
     try {
       const fd = new FormData();
@@ -456,12 +475,15 @@ function BannersTab() {
                     <input
                       id={bannerFileInputId}
                       type="file"
-                      accept="image/jpeg,image/png,image/webp"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
                       className="sr-only"
                       onChange={handleBannerImageUpload}
                       disabled={bannerUploading}
                     />
                   </div>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    সর্বোচ্চ 4MB — হাই কোয়ালিটি JPEG/PNG/WebP/GIF। যেকোনো রেশিওর ছবি জুম/ক্রপ ছাড়া সম্পূর্ণ দেখাবে — মোবাইল ও ডেস্কটপে একই, ফাঁকা জায়গা সাদা থাকবে। প্রস্তাবিত: <span className="font-semibold text-foreground">1500×500px (3:1)</span>।
+                  </p>
                   {form.image && (
                     <div className="mt-2 rounded-xl overflow-hidden border border-border max-h-[140px] relative group">
                       <img src={cdnUrl(form.image) || ''} alt="Preview" className="w-full h-full object-cover" />
@@ -797,9 +819,28 @@ function ProductsTab() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{p.seller.name}</td>
-                    <td className="px-4 py-3 font-semibold text-foreground">৳{p.price.toLocaleString()}</td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-[10px]">{p.category}</Badge>
+                      {p.productType === 'multi' && p.options && p.options.length > 0 ? (
+                        <div className="space-y-0.5">
+                          <p className="font-semibold text-foreground whitespace-nowrap">
+                            ৳{Math.min(...p.options.map(o => o.price)).toLocaleString()} – ৳{Math.max(...p.options.map(o => o.price)).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{t('seller.optionsCount', { count: p.options.length })}</p>
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-foreground whitespace-nowrap">৳{p.price.toLocaleString()}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge variant="outline" className="text-[10px]">{p.category}</Badge>
+                        {p.productType === 'multi' && (
+                          <Badge className="gap-1 bg-primary/10 text-primary border-0 text-[9px] font-semibold">
+                            <Layers className="h-2.5 w-2.5" />
+                            {t('admin.marketplace.typeMulti')}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <Badge className={`text-[10px] border ${statusColor(p.status)}`}>
@@ -872,8 +913,24 @@ function ProductsTab() {
                       </Badge>
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{p.seller.name}</p>
+                    {/* Options summary for multi-price products */}
+                    {p.productType === 'multi' && p.options && p.options.length > 0 && (
+                      <div className="mt-1.5 rounded-lg bg-muted/40 px-2 py-1.5 space-y-0.5">
+                        <p className="text-[10px] font-semibold text-primary">{t('admin.marketplace.typeMulti')} · {t('seller.optionsCount', { count: p.options.length })}</p>
+                        {p.options.map((o) => (
+                          <p key={o.id} className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span className="truncate max-w-[110px]">{o.name}{!o.isAvailable ? ' ·' : ''}</span>
+                            <span className="font-semibold text-foreground">৳{o.price.toLocaleString()}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-2">
-                      <p className="text-sm font-bold text-foreground">৳{p.price.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-foreground">
+                        {p.productType === 'multi' && p.options && p.options.length > 0 && Math.min(...p.options.map(o => o.price)) !== Math.max(...p.options.map(o => o.price))
+                          ? `৳${Math.min(...p.options.map(o => o.price)).toLocaleString()} – ৳${Math.max(...p.options.map(o => o.price)).toLocaleString()}`
+                          : `৳${p.price.toLocaleString()}`}
+                      </p>
                       <div className="flex items-center gap-1">
                         {p.status === 'active' ? (
                           <button onClick={() => changeStatus(p.id, 'inactive')} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-amber-500/10 hover:text-amber-600">

@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# ARD — Agentic Resource Discovery entry source (agenticresourcediscovery.org)
+Agentmap: https://midman.bd/.well-known/ard.json

@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdmin(req);
     if (!guard.ok) return guard.response;
-    const [totalDeals, totalUsers, pendingVerification, pendingPayouts, completedSum, profitSum, adminCalls, disputedCount, pendingProducts] = await Promise.all([
+    const [totalDeals, totalUsers, pendingVerification, pendingPayouts, completedSum, profitSum, adminCalls, disputedCount, pendingProducts, pendingSellerApps] = await Promise.all([
       db.deal.count(),
 
       db.user.count(),
@@ -45,6 +45,10 @@ export async function GET(req: NextRequest) {
       db.digitalProduct.count({
         where: { status: 'pending' },
       }),
+
+      db.sellerApplication.count({
+        where: { status: 'pending' },
+      }),
     ])
 
     return NextResponse.json({
@@ -57,6 +61,7 @@ export async function GET(req: NextRequest) {
       adminCalls,
       disputedCount,
       pendingProducts,
+      pendingSellerApps,
     })
   } catch {
     return NextResponse.json(

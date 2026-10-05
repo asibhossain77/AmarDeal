@@ -438,7 +438,7 @@ export function DealChatView() {
           {/* Deal info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-foreground truncate">{dealTitle}</h2>
+              <h2 className="text-sm font-bold text-foreground break-words">{dealTitle}</h2>
               {getStatusBadge(dealStatus, t)}
             </div>
             <div className="flex items-center gap-2 mt-0.5">
@@ -452,18 +452,6 @@ export function DealChatView() {
             </div>
           </div>
 
-          {/* Online indicator */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hidden sm:inline">
-                {t('chat.active')}
-              </span>
-            </div>
-          </div>
         </div>
       </div>
 

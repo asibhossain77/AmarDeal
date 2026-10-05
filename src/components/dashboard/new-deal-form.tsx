@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileText, PlusCircle, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
+import { takeMetaIcEventId } from '@/lib/meta-client';
 
 const emptySubscribe = () => () => {};
 
@@ -28,7 +29,11 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [feePreview, setFeePreview] = useState<{ fee: number; total: number } | null>(null);
+  const [lockedProductOrder, setLockedProductOrder] = useState(false);
   const preFillApplied = useRef(false);
+  /* Product fields captured from the pre-fill before it is cleared —
+     sent to the server so it can re-verify and compute the real price. */
+  const productOrderRef = useRef<{ productId?: string; optionId?: string; quantity?: number }>({});
 
   // Apply pre-fill data from marketplace buy flow
   useEffect(() => {
@@ -38,6 +43,16 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
     setAmount(String(dealPreFill.amount));
     setPartyEmail(dealPreFill.partyEmail);
     setRole('buyer'); // buying from marketplace
+    // Product-verified order: title & price come from the DB on the server —
+    // the buyer must not be able to change them here.
+    if (dealPreFill.productId) {
+      productOrderRef.current = {
+        productId: dealPreFill.productId,
+        optionId: dealPreFill.optionId,
+        quantity: dealPreFill.quantity,
+      };
+      setLockedProductOrder(true);
+    }
     // Clear pre-fill after applying
     setDealPreFill(null);
   }, [dealPreFill, setDealPreFill]);
@@ -71,6 +86,9 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
 
     setLoading(true);
     try {
+      // For product-verified orders the server re-verifies product/option and
+      // recomputes the amount — the client amount is only a preview.
+      const productFields = lockedProductOrder ? productOrderRef.current : {};
       const res = await fetch('/api/deals/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,6 +99,10 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
           partyEmail: partyEmail.trim(),
           terms: terms.trim(),
           userId: user?.id,
+          /* Meta CAPI dedup: the InitiateCheckout event_id fired by the
+             browser at Buy Now — undefined for manual deals */
+          metaEventId: takeMetaIcEventId(),
+          ...productFields,
         }),
       });
       const data = await res.json();
@@ -110,7 +132,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
     } finally {
       setLoading(false);
     }
-  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setActiveDeal, t, mode]);
+  }, [title, role, partyEmail, amount, terms, user, setDashboardPanel, setActiveDeal, t, mode, lockedProductOrder]);
 
   if (!mounted) return null;
 
@@ -141,6 +163,12 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
 
         {/* Form Fields */}
         <div className="space-y-5">
+          {/* Product order notice — title & price are fixed by the marketplace product */}
+          {lockedProductOrder && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-[13px] font-medium text-primary dark:bg-primary/10">
+              {t('deal.lockedProductOrder')}
+            </div>
+          )}
           {/* Field 1: Title */}
           <div className="space-y-2 text-center md:text-left">
             <Label htmlFor="deal-title" className="text-foreground text-sm">
@@ -152,7 +180,8 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
               placeholder={t('deal.titlePlaceholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className={inputClass}
+              readOnly={lockedProductOrder}
+              className={`${inputClass} ${lockedProductOrder ? 'cursor-not-allowed opacity-80' : ''}`}
             />
           </div>
 
@@ -170,7 +199,8 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
                   key={opt.value}
                   type="button"
                   onClick={() => setRole(opt.value)}
-                  className={`flex w-full sm:flex-1 items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                  disabled={lockedProductOrder}
+                  className={`flex w-full sm:flex-1 items-center gap-3 rounded-xl border-2 p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-70 ${
                     role === opt.value
                       ? 'border-primary bg-primary/5 dark:bg-primary/10'
                       : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
@@ -230,7 +260,8 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
               placeholder={t('deal.amountPlaceholder')}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className={inputClass}
+              readOnly={lockedProductOrder}
+              className={`${inputClass} ${lockedProductOrder ? 'cursor-not-allowed opacity-80' : ''}`}
             />
             {/* Fee Preview */}
             <AnimatePresence>

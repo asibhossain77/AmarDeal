@@ -1,10 +1,15 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
+import { ensureDigitalSchema } from '@/lib/digital-access'
 
 const SESSION_COOKIE = 'midman_session'
 
 export async function GET(req: NextRequest) {
   try {
+    // One-time-per-process schema healing for the digital product system
+    // (new columns/table) — keeps deploys safe before manual migration.
+    await ensureDigitalSchema().catch(() => {})
+
     const sessionId = req.cookies.get(SESSION_COOKIE)?.value
 
     if (!sessionId) {

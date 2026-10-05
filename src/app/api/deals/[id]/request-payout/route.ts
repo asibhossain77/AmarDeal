@@ -40,7 +40,13 @@ export async function POST(
     let payoutType: string | null = null
 
     if (deal.status === 'completed' && deal.sellerId === userId) {
-      payoutType = 'seller_payout'
+      // Per-deal seller payouts are retired — sellers now withdraw their
+      // accumulated balance from the dashboard Withdraw page, where the
+      // amount is verified server-side against completed deals.
+      return NextResponse.json(
+        { error: 'সেলার পেআউট এখন ব্যালেন্স উত্তোলন সিস্টেমে স্থানান্তরিত হয়েছে। ড্যাশবোর্ডের "উত্তোলন" পেজ ব্যবহার করুন।' },
+        { status: 403 }
+      )
     } else if (deal.status === 'cancelled' && deal.buyerId === userId) {
       // Refund only for cancelled deals — rejected deals mean wrong/invalid transaction
       payoutType = 'buyer_refund'

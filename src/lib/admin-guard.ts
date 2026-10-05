@@ -8,6 +8,8 @@ export interface AdminRecord {
   id: string
   userId: string
   role: string
+  permissions: string
+  isActive: boolean
   user: { id: string; name: string; email: string }
 }
 
@@ -41,7 +43,7 @@ export async function getAdminFromRequest(
       where: { userId },
       include: {
         user: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, isActive: true },
         },
       },
     })
@@ -54,6 +56,8 @@ export async function getAdminFromRequest(
       id: admin.id,
       userId: admin.userId,
       role: admin.role,
+      permissions: admin.permissions,
+      isActive: admin.user.isActive,
       user: admin.user,
     }
   } catch (err) {
@@ -95,6 +99,19 @@ export async function requireAdmin(req: NextRequest): Promise<AdminGuardResult> 
       ok: false,
       response: NextResponse.json(
         { error: 'অ্যাডমিন অনুমতি নেই', code: 'NOT_ADMIN' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  // A deactivated admin loses panel AND API access immediately — otherwise
+  // "toggle_active" on an admin would be cosmetic (their session cookie is
+  // just the user id and would keep working until it expires).
+  if (admin.isActive === false) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'আপনার অ্যাডমিন অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে', code: 'ADMIN_INACTIVE' },
         { status: 403 }
       ),
     }

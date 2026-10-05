@@ -17,7 +17,9 @@ import {
   Package,
   ClipboardCheck,
   Briefcase,
+  Banknote,
   SeparatorHorizontal,
+  Gavel,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
@@ -46,7 +48,9 @@ export const sellerNavItems: NavItem[] = [
   { labelKey: 'seller.activeDealsList', icon: ClipboardCheck, panel: 'seller-orders', sellerOnly: true },
   { labelKey: 'seller.myProducts', icon: Package, panel: 'seller-products', sellerOnly: true },
   { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },
+  { labelKey: 'seller.auctionNav', icon: Gavel, panel: 'seller-auctions', sellerOnly: true },
   { labelKey: 'seller.businessProfile', icon: Briefcase, panel: 'seller-business-profile', sellerOnly: true },
+  { labelKey: 'nav.withdraw', icon: Banknote, panel: 'seller-withdraw', sellerOnly: true },
 ];
 
 export function DashboardSidebar() {

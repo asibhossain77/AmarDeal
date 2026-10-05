@@ -9,11 +9,12 @@ envContent.split('\n').forEach(line => {
   if (key && rest.length) env[key.trim()] = rest.join('=').trim()
 })
 
-console.log('URL from .env:', env.DATABASE_URL?.substring(0, 50) + '...')
+console.log('DB URL:', (env.TURSO_DATABASE_URL || env.DATABASE_URL)?.substring(0, 50) + '...')
 
+const dbUrl = env.TURSO_DATABASE_URL || env.DATABASE_URL || ''
 const client = createClient({
-  url: env.DATABASE_URL,
-  authToken: env.TURSO_AUTH_TOKEN,
+  url: dbUrl,
+  authToken: dbUrl.startsWith('libsql://') ? env.TURSO_AUTH_TOKEN : undefined,
 })
 
 async function check() {

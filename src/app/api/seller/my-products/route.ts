@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,10 +14,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const products = await db.digitalProduct.findMany({
-      where: { sellerId: userId },
-      orderBy: { createdAt: 'desc' },
-    })
+    let products
+    try {
+      products = await db.digitalProduct.findMany({
+        where: { sellerId: userId },
+        include: {
+          options: {
+            select: { id: true, name: true, price: true, isAvailable: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+    } catch (err) {
+      if (!isMissingProductOptionsSupportError(err)) throw err
+      // ProductOption support not migrated yet (production) — fall back without options
+      products = await db.digitalProduct.findMany({
+        where: { sellerId: userId },
+        orderBy: { createdAt: 'desc' },
+      })
+    }
 
     return NextResponse.json({ products })
   } catch {

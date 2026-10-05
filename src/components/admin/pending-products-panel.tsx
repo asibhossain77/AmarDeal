@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Package, Image as ImageIcon, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Package, Image as ImageIcon, Clock, Layers } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,14 @@ import { useT } from "@/lib/i18n";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+interface PendingProductOption {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+  sortOrder: number;
+}
+
 interface PendingProduct {
   id: string;
   title: string;
@@ -23,6 +31,8 @@ interface PendingProduct {
   sellerName: string;
   image: string | null;
   createdAt: string;
+  productType?: string;
+  options?: PendingProductOption[];
 }
 
 /* ------------------------------------------------------------------ */
@@ -171,21 +181,44 @@ export function PendingProductsPanel() {
               {/* Body */}
               <div className="space-y-3 p-4">
                 {/* Category badge */}
-                {product.category && (
-                  <Badge variant="secondary" className="text-xs">
-                    {product.category}
-                  </Badge>
-                )}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {product.category && (
+                    <Badge variant="secondary" className="text-xs">
+                      {product.category}
+                    </Badge>
+                  )}
+                  {product.productType === "multi" && (
+                    <Badge className="gap-1 bg-primary/10 text-primary border-0 text-xs font-semibold">
+                      <Layers className="h-3 w-3" />
+                      {t("admin.marketplace.typeMulti") || "মাল্টিপল"}
+                    </Badge>
+                  )}
+                </div>
 
                 {/* Title */}
                 <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
                   {product.title}
                 </h3>
 
+                {/* Options list for multi-price products */}
+                {product.productType === "multi" && product.options && product.options.length > 0 && (
+                  <div className="rounded-xl bg-muted/40 px-3 py-2 space-y-1">
+                    {product.options.map((o) => (
+                      <div key={o.id} className="flex items-center justify-between text-xs">
+                        <span className="truncate max-w-[140px] text-muted-foreground">{o.name}{!o.isAvailable ? " ·" : ""}</span>
+                        <span className="font-semibold text-foreground">৳{o.price.toLocaleString("bn-BD")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Meta row */}
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                    ৳{product.price.toLocaleString("bn-BD")}
+                    {product.productType === "multi" && product.options && product.options.length > 0 &&
+                      Math.min(...product.options.map(o => o.price)) !== Math.max(...product.options.map(o => o.price))
+                      ? `৳${Math.min(...product.options.map(o => o.price)).toLocaleString("bn-BD")} – ৳${Math.max(...product.options.map(o => o.price)).toLocaleString("bn-BD")}`
+                      : `৳${product.price.toLocaleString("bn-BD")}`}
                   </span>
                   <span className="flex items-center gap-1 text-muted-foreground">
                     <Clock className="h-3.5 w-3.5" />

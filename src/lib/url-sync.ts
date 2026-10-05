@@ -25,6 +25,9 @@ const VIEW_PATHS: Record<string, string> = {
   'page-marketplace': 'marketplace',
   'page-seller-profile': 's/__SELLER_ID__',
   'page-product': 'product/__PRODUCT_ID__',
+  'page-download': 'download/__PRODUCT_ID__',
+  'page-auction': 'nilam',
+  'page-auction-detail': 'nilam/__AUCTION_ID__',
 };
 
 const PATH_VIEWS: Record<string, AppView> = {
@@ -41,6 +44,7 @@ const PATH_VIEWS: Record<string, AppView> = {
   'terms': 'page-terms',
   'contact': 'page-contact',
   'marketplace': 'page-marketplace',
+  'nilam': 'page-auction',
 };
 
 /* ── Build URL from store state ── */
@@ -52,8 +56,10 @@ export function buildUrl(state: {
   activeDeal: { id: string } | null;
   sellerProfileId?: string | null;
   productDetailId?: string | null;
+  downloadProductId?: string | null;
+  auctionDetailId?: string | null;
 }): string {
-  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId } = state;
+  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId, downloadProductId, auctionDetailId } = state;
 
   // Seller public profile
   if (view === 'page-seller-profile' && sellerProfileId) {
@@ -63,6 +69,16 @@ export function buildUrl(state: {
   // Product order page
   if (view === 'page-product' && productDetailId) {
     return `/product/${productDetailId}`;
+  }
+
+  // Digital product download page
+  if (view === 'page-download' && downloadProductId) {
+    return `/download/${downloadProductId}`;
+  }
+
+  // Auction detail page
+  if (view === 'page-auction-detail' && auctionDetailId) {
+    return `/nilam/${auctionDetailId}`;
   }
 
   // Static pages
@@ -96,11 +112,12 @@ interface ParsedUrl {
   dealId: string | null;
   sellerId: string | null;
   productId: string | null;
+  auctionId: string | null;
 }
 
 export function parseUrl(pathname: string): ParsedUrl {
   const result: ParsedUrl = {
-    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null, productId: null,
+    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null, productId: null, auctionId: null,
   };
 
   const p = pathname.replace(/\/+$/, '') || '/';
@@ -132,6 +149,26 @@ export function parseUrl(pathname: string): ParsedUrl {
     return result;
   }
 
+  // /download/[productId] — digital product download page
+  if (segments.length === 2 && segments[0] === 'download') {
+    result.view = 'page-download';
+    result.productId = segments[1];
+    return result;
+  }
+
+  // /nilam — auction list; /nilam/[auctionId] — auction detail
+  if (segments[0] === 'nilam') {
+    if (segments.length === 1) {
+      result.view = 'page-auction';
+      return result;
+    }
+    if (segments.length === 2) {
+      result.view = 'page-auction-detail';
+      result.auctionId = segments[1];
+      return result;
+    }
+  }
+
   const [seg1, seg2] = segments;
 
   if (seg1 === 'dashboard') {
@@ -143,7 +180,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;
@@ -200,7 +237,7 @@ function pushUrl(url: string) {
 
 /* ── Apply current URL to store (reusable) ── */
 
-const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product']);
+const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product', 'page-download', 'page-auction', 'page-auction-detail']);
 const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'auth']);
 
 function applyUrlToStore() {
@@ -229,7 +266,11 @@ function applyUrlToStore() {
 
   if (parsed.view && parsed.view !== state.view) updates.view = parsed.view;
   if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-  if (parsed.productId) updates.productDetailId = parsed.productId;
+  if (parsed.productId) {
+    if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+    else updates.productDetailId = parsed.productId;
+  }
+  if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
   if (parsed.dashboardPanel && state.view === 'dashboard' && parsed.dashboardPanel !== state.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
   if (parsed.adminPanel && state.view === 'admin' && parsed.adminPanel !== state.adminPanel) updates.adminPanel = parsed.adminPanel;
 
@@ -276,7 +317,11 @@ export function applyUrlAfterAuth() {
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     updates.view = parsed.view;
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-    if (parsed.productId) updates.productDetailId = parsed.productId;
+    if (parsed.productId) {
+      if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+      else updates.productDetailId = parsed.productId;
+    }
+    if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
   }
 
   if (Object.keys(updates).length > 0) {
@@ -323,7 +368,11 @@ export function initUrlSync() {
     // view component can fetch the right data.
     const updates: Record<string, unknown> = { view: parsed.view };
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
-    if (parsed.productId) updates.productDetailId = parsed.productId;
+    if (parsed.productId) {
+      if (parsed.view === 'page-download') updates.downloadProductId = parsed.productId;
+      else updates.productDetailId = parsed.productId;
+    }
+    if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
     store.setState(updates);
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {

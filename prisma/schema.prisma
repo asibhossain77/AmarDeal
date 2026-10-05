@@ -49,6 +49,13 @@ model User {
   sellerReviews      SellerReview[]   @relation("SellerReviews")
   userSellerReviews  SellerReview[]   @relation("UserSellerReviews")
   pushSubscriptions  PushSubscription[]
+  payoutAccounts     PayoutAccount[]
+  sellerWithdrawals  SellerWithdrawal[]
+  productDownloads   ProductDownload[]
+  auctionsSold       Auction[] @relation("AuctionSeller")
+  auctionBids        Bid[]     @relation("AuctionBids")
+  auctionsWon        Auction[] @relation("AuctionWinner")
+  topBidAuctions     Auction[] @relation("AuctionTopBidder")
 }
 
 model Admin {
@@ -80,8 +87,16 @@ model Deal {
   platformFee      Float?
   rejectionReason  String?
   productId         String?
+  productOptionId  String?
   adminCalled      Boolean  @default(false)
   adminCalledAt    DateTime?
+  // Seller work-duration commitment (set after admin verifies payment)
+  workDays         Int?      // কত দিনে কাজ সম্পন্ন হবে
+  workDeadlineAt   DateTime? // commitment expiry = set time + workDays days
+  // Unresponsive-buyer auto-complete flow (seller reminder → 30-day grace)
+  deliveredAt         DateTime? // when seller marked the work delivered (in_delivery)
+  reminderEmailSentAt DateTime? // seller → buyer "please confirm delivery" reminder email
+  autoCompleteAt      DateTime? // reminderEmailSentAt + 30 days → cron auto-completes deal
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -90,6 +105,7 @@ model Deal {
   creator       User           @relation("DealCreator", fields: [creatorId], references: [id])
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   product       DigitalProduct? @relation(fields: [productId], references: [id])
+  productOption ProductOption?  @relation(fields: [productOptionId], references: [id], onDelete: SetNull)
 }
 
 model PaymentMethod {
@@ -126,19 +142,22 @@ model FeeRule {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  dealId    String?
-  type      String
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  dealId      String?
+  type        String
+  title       String
+  message     String
+  relatedType String?
+  relatedId   String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, read])
 }
 
 model ContactInfo {
@@ -180,6 +199,48 @@ model ChatMessage {
   updatedAt  DateTime @updatedAt
 
   @@index([dealId, createdAt])
+}
+
+/// Deal chat attachment (document or image) — lives in a SEPARATE table so the
+/// chat keeps working even before this table exists on a fresh database (the
+/// /api/health auto-setup creates it). R2 object is deleted 3 days after the
+/// message was sent (cron + lazy cleanup); the row is kept so the UI can show
+/// the "ফাইলের মেয়াদ শেষ" state with the original file name.
+model ChatFile {
+  id        String    @id @default(cuid())
+  dealId    String
+  messageId String    @unique
+  key       String
+  fileName  String
+  fileSize  Int
+  fileType  String?
+  expiresAt DateTime
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([dealId])
+  @@index([expiresAt])
+}
+
+/// Per-user "seen" marker for a deal — powers the unread badge on the deal
+/// list (My Deals / seller deals). lastReadAt is the threshold for new chat
+/// messages from others; lastSeenDealUpdated snapshots deal.updatedAt so a
+/// status change by the OTHER party (admin approve, seller deliver, …) counts
+/// as an update, while the user's own actions never flag their own list.
+/// Lives in a separate table (auto-created by /api/health) so chat keeps
+/// working even before this table exists.
+model DealReadState {
+  id                  String   @id @default(cuid())
+  dealId              String
+  userId              String
+  lastReadAt          DateTime
+  lastSeenDealUpdated DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([dealId, userId])
+  @@index([userId])
 }
 
 model BlogPost {
@@ -258,14 +319,54 @@ model DigitalProduct {
   sellerId    String
   seller      User     @relation(fields: [sellerId], references: [id])
   status      String   @default("active")
+  // "single" = one fixed price, "multi" = multiple priced options.
+  // Existing products default to "single" so old listings keep working.
+  productType String   @default("single")
+  // Digital product file (uploaded to R2 `files/` prefix) — null = physical/service product
+  isFree      Boolean  @default(false) // free products: anyone can download without a deal
+  fileKey     String?  // R2 object key — NEVER exposed to clients (secret URL)
+  fileName    String?  // original display filename
+  fileSize    Int?     // bytes
+  fileType    String?  // mime type
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   chatMessages ProductChatMessage[]
   deals         Deal[]
+  options       ProductOption[]
+  downloads     ProductDownload[]
 
   @@index([sellerId, status])
   @@index([status, createdAt])
+}
+
+model ProductOption {
+  id          String   @id @default(cuid())
+  productId   String
+  product     DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String
+  price       Float
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deals Deal[]
+
+  @@index([productId, sortOrder])
+}
+
+model ProductDownload {
+  id        String   @id @default(cuid())
+  productId String
+  product   DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealId    String? // set when granted via a paid deal, null for free claims
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@index([userId])
 }
 
 model ProductChatMessage {
@@ -367,4 +468,90 @@ model SellerReview {
   @@unique([sellerId, userId])
   @@index([sellerId])
   @@index([userId])
+}
+
+// Saved withdrawal accounts (bkash/nagad/rocket/bank) for sellers.
+// NOTE: /api/user/payout-accounts + payout-accounts-panel existed before this
+// model did — adding it fixes that long-broken feature.
+model PayoutAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  accountType  String
+  accountName  String
+  accountNumber String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Nilam (Auction) ──────────────────────────────────────────────────
+// Sellers list a product for auction (starting price + end time).
+// Buyers bid; when the timer expires the highest bidder automatically
+// gets an escrow Deal created with the seller (status 'created').
+// Finalization is LAZY — any read/bid on an expired auction finalizes it.
+model Auction {
+  id              String   @id @default(cuid())
+  title           String
+  description     String
+  category        String   @default("other")
+  image           String?
+  sellerId        String
+  seller          User     @relation("AuctionSeller", fields: [sellerId], references: [id])
+  startPrice      Float
+  currentPrice    Float?   // highest bid so far — null until first bid
+  highestBidderId String?
+  highestBidder   User?    @relation("AuctionTopBidder", fields: [highestBidderId], references: [id])
+  bidCount        Int      @default(0)
+  // active → bids open | sold → winner + deal created | ended → expired, no bids | cancelled → seller cancelled (no bids)
+  status          String   @default("active")
+  endsAt          DateTime
+  winnerId        String?
+  winner          User?    @relation("AuctionWinner", fields: [winnerId], references: [id])
+  dealId          String?  // escrow deal created for the winner
+  finalPrice      Float?   // winning amount at close (audit copy of currentPrice)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bids            Bid[]
+
+  @@index([status, endsAt])
+  @@index([sellerId])
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  bidderId  String
+  bidder    User     @relation("AuctionBids", fields: [bidderId], references: [id])
+  amount    Float
+  createdAt DateTime @default(now())
+
+  @@index([auctionId, createdAt])
+  @@index([bidderId])
+}
+
+// Seller balance withdrawals — pool-based (NOT per-deal).
+// Balance = Σ completed deal amounts − Σ legacy per-deal seller_payouts − Σ withdrawals
+// (pending + approved + completed). Computed server-side in src/lib/seller-balance.ts.
+model SellerWithdrawal {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  accountType   String
+  accountName   String
+  accountNumber String
+  status        String   @default("pending") // pending | approved | completed | rejected
+  adminNote     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status])
 }

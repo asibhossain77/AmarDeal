@@ -46,6 +46,13 @@ export function SellerProfileView() {
   const user = useAppStore((s) => s.user);
   const sellerId = useAppStore((s) => s.sellerProfileId);
   const setView = useAppStore((s) => s.setView);
+  const setProductDetailId = useAppStore((s) => s.setProductDetailId);
+
+  /* Open the product's buy page — same flow as the marketplace grid */
+  const openProductPage = (id: string) => {
+    setProductDetailId(id);
+    setView('page-product');
+  };
 
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -236,10 +243,10 @@ export function SellerProfileView() {
               {products.map((p) => (
                 <a
                   key={p.id}
-                  href="/marketplace"
+                  href={`/product/${p.id}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    setView('page-marketplace');
+                    openProductPage(p.id);
                   }}
                   className="group rounded-xl border border-border/50 bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/20"
                 >
@@ -248,7 +255,7 @@ export function SellerProfileView() {
                       <img
                         src={cdnUrl(p.image) || ''}
                         alt={p.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        className="h-full w-full bg-white object-contain"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center">
@@ -258,7 +265,7 @@ export function SellerProfileView() {
                   </div>
                   <div className="p-3">
                     <h3 className="text-sm font-semibold text-foreground truncate">{p.title}</h3>
-                    <p className="text-sm font-bold text-primary mt-1">৳{p.price.toLocaleString('bn-BD')}</p>
+                    <p className="text-sm font-bold text-primary mt-1">৳{p.price.toLocaleString('en-BD')}</p>
                   </div>
                 </a>
               ))}
@@ -354,7 +361,7 @@ export function SellerProfileView() {
                         </div>
                         <p className="text-sm text-muted-foreground">{r.comment}</p>
                         <p className="text-[11px] text-muted-foreground/60 mt-1.5">
-                          {new Date(r.createdAt).toLocaleDateString(locale === 'bn' ? 'bn-BD' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {new Date(r.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </p>
                       </div>
                     </div>

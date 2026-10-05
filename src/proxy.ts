@@ -30,9 +30,13 @@ const SESSION_COOKIE = 'midman_session'
  */
 
 export const config = {
-  // Run on everything except true static assets.
+  // Run on everything except true static assets and discovery manifests
+  // (ARD ai-catalog / ard.json must serve raw JSON to agents with zero
+  // overhead). `cdn/(?!files/)` keeps the image proxy fast-path excluded
+  // EXCEPT for /cdn/files/* which must never be publicly proxied (paid
+  // digital files are not public content).
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|uploads|cdn/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|\\.well-known/|ai-catalog\\.json|ard\\.json|uploads|cdn/(?!files/)).*)',
   ],
 }
 
@@ -40,11 +44,12 @@ function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === 'development'
   const directives: string[] = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://connect.facebook.net${isDev ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' wss: ws: https://www.googletagmanager.com",
+    // Dev-only: allow presigned PUTs to a local fake S3/R2 server (E2E tests)
+    "connect-src 'self' wss: ws: https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net https://*.r2.cloudflarestorage.com" + (isDev ? ' http://127.0.0.1:* http://localhost:*' : ''),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -54,6 +59,20 @@ function buildCsp(nonce: string): string {
   }
   return directives.join('; ')
 }
+
+/**
+ * Dev-only: ONE nonce per proxy process.
+ *
+ * A per-request nonce is CSP-correct in production (the HTML and its embedded
+ * RSC payload come from the same render, so they always agree), but in dev
+ * Turbopack HMR re-renders the RSC tree through SEPARATE requests — each
+ * rolling a fresh nonce — and React then sees nonce=""/old in the server HTML
+ * vs a new UUID in the client props → hydration mismatch warnings on every
+ * nonce-bearing element (meta-pixel script, next-themes, GA). A process-
+ * stable nonce keeps every dev render in sync; a dev-server restart reloads
+ * the page, so drift can't persist across restarts.
+ */
+const DEV_NONCE = process.env.NODE_ENV === 'development' ? crypto.randomUUID() : null
 
 /** Extract client IP from request (works behind Caddy/Nginx proxy) */
 function getClientIp(req: NextRequest): string {
@@ -72,6 +91,16 @@ export async function proxy(req: NextRequest) {
   const method = req.method
   const ip = getClientIp(req)
 
+  // --- 0. Block public proxying of paid digital files ---
+  // Digital files are served ONLY via short-lived presigned URLs issued by
+  // /api/download/[id] after an entitlement check.
+  if (pathname.startsWith('/cdn/files/')) {
+    return NextResponse.json(
+      { error: 'Not found' },
+      { status: 404, headers: { 'Content-Security-Policy': buildCsp(crypto.randomUUID()) } }
+    )
+  }
+
   // --- 1. Rate limiting ---
   const rateResult = checkRateLimit(pathname, method, ip)
   if (!rateResult.allowed) {
@@ -89,7 +118,7 @@ export async function proxy(req: NextRequest) {
   }
 
   // --- 2. CSP nonce ---
-  const nonce = crypto.randomUUID()
+  const nonce = DEV_NONCE ?? crypto.randomUUID()
   const csp = buildCsp(nonce)
 
   // --- 3. Forward nonce to downstream server components ---

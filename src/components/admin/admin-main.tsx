@@ -22,6 +22,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { parseGatewayList, resolveGatewayIcon, DEFAULT_GATEWAYS, type PaymentGateway } from '@/lib/payment-gateways';
+import { DEFAULT_LOGO_LIGHT, DEFAULT_LOGO_DARK } from '@/components/shared/midman-logo';
 import dynamic from 'next/dynamic';
 import { cdnUrl } from '@/lib/cdn-url';
 
@@ -45,6 +48,7 @@ const GoogleOAuthPanel = dynamic(() => import('./google-oauth-panel').then(m => 
 const PipraPayPanel = dynamic(() => import('./piprapay-panel').then(m => ({ default: m.PipraPayPanel })), { loading: () => <PanelLoader /> });
 const AdminAffiliatePanel = dynamic(() => import('./affiliate-panel').then(m => ({ default: m.AdminAffiliatePanel })), { loading: () => <PanelLoader /> });
 const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payouts-panel').then(m => ({ default: m.AdminAffiliatePayoutsPanel })), { loading: () => <PanelLoader /> });
+const AdminSellerWithdrawalsPanel = dynamic(() => import('./admin-seller-withdrawals-panel').then(m => ({ default: m.AdminSellerWithdrawalsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 import {
@@ -85,6 +89,13 @@ import {
   User,
   Trash2,
   PackageCheck,
+  UserPlus,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Image as ImageIcon,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const emptySubscribe = () => () => {};
@@ -176,13 +187,15 @@ interface AdminStats {
   adminCalls: number;
   disputedCount: number;
   pendingProducts: number;
+  pendingSellerApps?: number;
 }
 
 interface PlatformSettings {
   platform_name: string;
   platform_name_en: string;
   site_title: string;
-  site_logo: string;
+  site_logo_light: string;
+  site_logo_dark: string;
   fee_percentage: string;
   fee_free_below: string;
   min_deal_amount: string;
@@ -408,7 +421,7 @@ function DashboardStatsPanel() {
   const role = user?.adminRole;
   const staffPerms = new Set(user?.permissions ?? []);
   const ALWAYS = new Set(['dashboard', 'profile']);
-  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
 
   const canAccess = (target: string) => {
     if (role === 'super_admin') return true;
@@ -417,7 +430,7 @@ function DashboardStatsPanel() {
     return true;
   };
 
-  const allCards = stats
+  const allCards: Array<{ label: string; value: string; icon: React.ElementType; color: string; bg: string; target: AdminPanel; preClick?: () => void }> = stats
     ? [
         {
           label: t('adminNav.userManagement'),
@@ -476,6 +489,15 @@ function DashboardStatsPanel() {
           target: 'pending-products' as const,
         },
         {
+          label: t('adminNav.sellerRequests'),
+          value: (stats.pendingSellerApps ?? 0).toLocaleString('en'),
+          icon: UserPlus,
+          color: 'text-sky-500 dark:text-sky-400',
+          bg: 'bg-sky-500/10',
+          target: 'marketplace' as const,
+          preClick: () => useAppStore.getState().setAdminMarketplaceTab('applications'),
+        },
+        {
           label: `${t('admin.verify.totalTransactions')} (৳)`,
           value: stats.completedAmount.toLocaleString('en'),
           icon: Wallet,
@@ -520,7 +542,7 @@ function DashboardStatsPanel() {
           >
             <SolidCard
               className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-              onClick={() => setAdminPanel(stat.target)}
+              onClick={() => { stat.preClick?.(); setAdminPanel(stat.target); }}
             >
               <div className="flex items-center justify-between text-center sm:text-left">
                 <div className="flex-1 min-w-0">
@@ -1310,7 +1332,7 @@ function AllDealsPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{chatDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{chatDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {chatDeal.buyer?.name || '—'} — {chatDeal.seller?.name || 'N/A'} · ৳{chatDeal.amount.toLocaleString('en')}
             </p>
@@ -1433,7 +1455,7 @@ function AllDealsPanel() {
                       <td className="px-5 py-4 font-mono text-xs text-muted-foreground whitespace-nowrap">{shortId}</td>
                       <td className="px-5 py-4 font-medium text-foreground whitespace-nowrap">{buyerName}</td>
                       <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{sellerName}</td>
-                      <td className="px-5 py-4 text-foreground max-w-[160px] truncate">{deal.title}</td>
+                      <td className="px-5 py-4 text-foreground break-words">{deal.title}</td>
                       <td className="px-5 py-4 text-right font-semibold text-foreground whitespace-nowrap">৳{deal.amount.toLocaleString('en')}</td>
                       <td className="px-5 py-4 text-center whitespace-nowrap"><StatusBadge status={deal.status} /></td>
                       <td className="px-5 py-4 text-center whitespace-nowrap">
@@ -1479,7 +1501,7 @@ function AllDealsPanel() {
                     <span className="font-mono text-xs text-muted-foreground">{shortId}</span>
                     <StatusBadge status={deal.status} />
                   </div>
-                  <p className="text-sm font-semibold text-foreground truncate">{deal.title}</p>
+                  <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
                       <p>Buyer: <span className="text-foreground font-medium">{buyerName}</span></p>
@@ -1993,7 +2015,7 @@ function UsersPanel() {
                     {userDeals.map((d) => (
                       <div key={d.id} className="px-4 sm:px-5 py-3 flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate">{d.title}</p>
+                          <p className="text-sm font-semibold text-foreground break-words">{d.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {new Date(d.createdAt).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' })}
                           </p>
@@ -2277,7 +2299,8 @@ function SettingsPanel() {
     platform_name: '',
     platform_name_en: '',
     site_title: '',
-    site_logo: '',
+    site_logo_light: '',
+    site_logo_dark: '',
     fee_percentage: '',
     fee_free_below: '',
     min_deal_amount: '',
@@ -2289,7 +2312,11 @@ function SettingsPanel() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
+  // Which logo variant is currently uploading/resetting ('light' | 'dark' | null)
+  const [logoBusy, setLogoBusy] = useState<'light' | 'dark' | null>(null);
+  const [gateways, setGateways] = useState<PaymentGateway[]>(DEFAULT_GATEWAYS);
+  const [gatewaysSaving, setGatewaysSaving] = useState(false);
+  const [uploadingIconId, setUploadingIconId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -2298,6 +2325,7 @@ function SettingsPanel() {
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
+          setGateways(parseGatewayList(data.payment_gateway_icons));
         }
       } catch {
         // silent
@@ -2329,30 +2357,146 @@ function SettingsPanel() {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  /** Upload/replace a brand logo SVG (variant: light | dark). */
+  const handleLogoUpload = async (variant: 'light' | 'dark', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLogoUploading(true);
+    setLogoBusy(variant);
     try {
       const formData = new FormData();
       formData.append('logo', file);
+      formData.append('variant', variant);
       const res = await fetch('/api/admin/upload-logo', {
         method: 'POST',
         body: formData,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSettings((s) => ({ ...s, site_logo: data.logoPath }));
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.logoPath) {
+        setSettings((s) => ({
+          ...s,
+          [variant === 'light' ? 'site_logo_light' : 'site_logo_dark']: data.logoPath as string,
+        }));
         invalidateSiteSettingsCache();
-        toast.success('Logo updated!');
+        toast.success(t('admin.settings.logoUpdated'));
+      } else {
+        toast.error(data?.error || t('admin.settings.uploadLogoFailed'));
+      }
+    } catch {
+      toast.error(t('common.serverError'));
+    } finally {
+      setLogoBusy(null);
+      e.target.value = '';
+    }
+  };
+
+  /** Reset a logo variant to the bundled Midman default. */
+  const handleLogoReset = async (variant: 'light' | 'dark') => {
+    setLogoBusy(variant);
+    try {
+      const res = await fetch(`/api/admin/upload-logo?variant=${variant}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSettings((s) => ({
+          ...s,
+          [variant === 'light' ? 'site_logo_light' : 'site_logo_dark']: '',
+        }));
+        invalidateSiteSettingsCache();
+        toast.success(t('admin.settings.logoResetDone'));
       } else {
         toast.error(t('admin.settings.uploadLogoFailed'));
       }
     } catch {
       toast.error(t('common.serverError'));
     } finally {
-      setLogoUploading(false);
-      e.target.value = '';
+      setLogoBusy(null);
+    }
+  };
+
+  /* ── Payment gateway footer badges (bKash/Nagad defaults, admin-managed) ── */
+  const updateGateway = (id: string, patch: Partial<PaymentGateway>) =>
+    setGateways((list) => list.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+
+  const moveGateway = (index: number, dir: -1 | 1) =>
+    setGateways((list) => {
+      const next = [...list];
+      const j = index + dir;
+      if (j < 0 || j >= next.length) return list;
+      [next[index], next[j]] = [next[j], next[index]];
+      return next;
+    });
+
+  const removeGateway = (id: string) =>
+    setGateways((list) => list.filter((g) => g.id !== id));
+
+  const addGateway = () =>
+    setGateways((list) => [
+      ...list,
+      { id: `custom-${Date.now().toString(36)}`, name: '', icon: '', enabled: true },
+    ]);
+
+  const handleGatewayIconUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    gw: PaymentGateway,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-uploading the same file
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('ছবি সর্বোচ্চ 2MB হতে পারে');
+      return;
+    }
+    setUploadingIconId(gw.id);
+    try {
+      const fd = new FormData();
+      fd.append('icon', file);
+      if (gw.icon && gw.icon.startsWith('http')) fd.append('previousUrl', gw.icon);
+      const res = await fetch('/api/admin/upload-payment-icon', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        updateGateway(gw.id, { icon: data.iconUrl });
+        toast.success('আইকন আপলোড হয়েছে!');
+      } else {
+        toast.error(data.error || 'আপলোড ব্যর্থ হয়েছে');
+      }
+    } catch {
+      toast.error('সার্ভারে সমস্যা হয়েছে');
+    } finally {
+      setUploadingIconId(null);
+    }
+  };
+
+  const handleGatewaysSave = async () => {
+    const cleaned = gateways
+      .map((g) => ({ ...g, name: g.name.trim() }))
+      .filter((g) => g.name); // drop unnamed rows
+    const missingIcon = cleaned.find((g) => !resolveGatewayIcon(g));
+    if (missingIcon) {
+      toast.error(`"${missingIcon.name}" এর জন্য একটি আইকন আপলোড করুন বা সরিয়ে ফেলুন`);
+      return;
+    }
+    if (cleaned.length === 0) {
+      toast.error('অন্তত একটি গেটওয়ে রাখুন অথবা সব টগল অফ করুন');
+      return;
+    }
+    setGatewaysSaving(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_gateway_icons: JSON.stringify(cleaned) }),
+      });
+      if (res.ok) {
+        setGateways(cleaned);
+        invalidateSiteSettingsCache();
+        toast.success(t('common.success'));
+      } else {
+        toast.error(t('common.failed'));
+      }
+    } catch {
+      toast.error(t('common.serverError'));
+    } finally {
+      setGatewaysSaving(false);
     }
   };
 
@@ -2442,51 +2586,11 @@ function SettingsPanel() {
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">Brand Settings</p>
-              <p className="text-[11px] text-muted-foreground">Change logo and website name</p>
+              <p className="text-[11px] text-muted-foreground">Change website name and title</p>
             </div>
           </div>
 
           <div className="space-y-5">
-            {/* Logo Upload */}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-start">
-              <Label className="text-sm font-medium text-foreground text-center sm:text-left pt-2.5">
-                Website Logo
-              </Label>
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-xl border-2 border-dashed border-border/60 bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
-                  {settings.site_logo ? (
-                    <img
-                      src={settings.site_logo}
-                      alt={t('admin.settings.logoAlt')}
-                      className="h-full w-full object-contain p-1"
-                      loading="lazy" decoding="async"
-                    />
-                  ) : (
-                    <CreditCard className="h-5 w-5 text-muted-foreground/40" />
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
-                      {logoUploading ? (
-                        <LoadingAnimation size="sm" />
-                      ) : (
-                        <Upload className="h-3.5 w-3.5" />
-                      )}
-                      {logoUploading ? 'Uploading...' : t('admin.settings.uploadLogo')}
-                    </span>
-                  </label>
-                  <span className="text-[10px] text-muted-foreground">{t('admin.settings.logoUploadHint')}</span>
-                </div>
-              </div>
-            </div>
-
             {/* Website Name — English */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[240px_1fr] sm:items-center">
               <Label htmlFor="platform_name_en" className="text-sm font-medium text-foreground text-center sm:text-left">
@@ -2556,6 +2660,103 @@ function SettingsPanel() {
               Save Brand
             </Button>
           </div>
+        </SolidCard>
+
+        {/* ── Logo Settings (light/dark brand logos) ── */}
+        <SolidCard>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <ImageIcon className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">{t('admin.settings.logoSettingsTitle')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('admin.settings.logoSettingsDesc')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {([
+              {
+                variant: 'light' as const,
+                label: t('admin.settings.logoLight'),
+                icon: <Sun className="h-3.5 w-3.5 text-amber-500" />,
+                current: settings.site_logo_light,
+                fallback: DEFAULT_LOGO_LIGHT,
+                previewBg: 'bg-white',
+              },
+              {
+                variant: 'dark' as const,
+                label: t('admin.settings.logoDark'),
+                icon: <Moon className="h-3.5 w-3.5 text-indigo-400" />,
+                current: settings.site_logo_dark,
+                fallback: DEFAULT_LOGO_DARK,
+                previewBg: 'bg-zinc-900',
+              },
+            ]).map((cfg) => (
+              <div key={cfg.variant} className="rounded-xl border border-border/60 p-3.5 space-y-3">
+                <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  {cfg.icon}
+                  {cfg.label}
+                </p>
+
+                {/* Current logo preview — exactly what visitors see (custom if set, else bundled default) */}
+                <div className={`h-16 rounded-lg border border-border/60 ${cfg.previewBg} flex items-center justify-center overflow-hidden px-3`}>
+                  <img
+                    src={cfg.current || cfg.fallback}
+                    alt={cfg.label}
+                    className="max-h-full w-auto object-contain py-1"
+                    loading="lazy" decoding="async"
+                  />
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">
+                  {cfg.current ? t('admin.settings.logoCustomActive') : t('admin.settings.logoDefaultActive')}
+                </p>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".svg,image/svg+xml"
+                      onChange={(e) => handleLogoUpload(cfg.variant, e)}
+                      className="hidden"
+                    />
+                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+                      {logoBusy === cfg.variant ? (
+                        <LoadingAnimation size="sm" />
+                      ) : (
+                        <Upload className="h-3.5 w-3.5" />
+                      )}
+                      {logoBusy === cfg.variant
+                        ? t('admin.settings.logoUploading')
+                        : cfg.current
+                          ? t('admin.settings.logoReplace')
+                          : t('admin.settings.logoUpload')}
+                    </span>
+                  </label>
+                  {cfg.current && (
+                    <button
+                      type="button"
+                      onClick={() => handleLogoReset(cfg.variant)}
+                      disabled={logoBusy !== null}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-destructive disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('admin.settings.logoReset')}
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">{t('admin.settings.logoSvgHint')}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer always renders the dark variant — no separate footer upload exists */}
+          <p className="mt-4 text-[11px] text-muted-foreground flex items-center gap-1.5">
+            <Moon className="h-3.5 w-3.5 shrink-0" />
+            {t('admin.settings.logoFooterNote')}
+          </p>
         </SolidCard>
 
         {/* ── General Settings ── */}
@@ -2666,6 +2867,123 @@ function SettingsPanel() {
               )}
               Save Footer
             </Button>
+          </div>
+        </SolidCard>
+
+        {/* ── Payment Gateway Icons (Footer Badges) ── */}
+        <SolidCard>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CreditCard className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">{t('admin.settings.gatewaysTitle')}</p>
+              <p className="text-[11px] text-muted-foreground">{t('admin.settings.gatewaysDesc')}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {gateways.map((gw, i) => {
+              const icon = resolveGatewayIcon(gw);
+              return (
+                <div
+                  key={gw.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/20 p-3 sm:flex-row sm:items-center"
+                >
+                  {/* Icon preview — white chip, same as footer rendering */}
+                  <div className="h-11 w-11 shrink-0 rounded-lg bg-white ring-1 ring-border/40 shadow-sm flex items-center justify-center overflow-hidden">
+                    {icon ? (
+                      <img
+                        src={cdnUrl(icon) || ''}
+                        alt={gw.name}
+                        className="h-8 w-8 object-contain"
+                        loading="lazy" decoding="async"
+                      />
+                    ) : (
+                      <CreditCard className="h-5 w-5 text-muted-foreground/40" />
+                    )}
+                  </div>
+
+                  {/* Display name */}
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      type="text"
+                      value={gw.name}
+                      onChange={(e) => updateGateway(gw.id, { name: e.target.value })}
+                      placeholder={t('admin.settings.gatewayNamePlaceholder')}
+                      className="max-w-[220px]"
+                    />
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleGatewayIconUpload(e, gw)}
+                      />
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-accent">
+                        {uploadingIconId === gw.id ? (
+                          <LoadingAnimation size="sm" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        {t('admin.settings.gatewayUpload')}
+                      </span>
+                    </label>
+                    <Switch
+                      checked={gw.enabled}
+                      onCheckedChange={(v) => updateGateway(gw.id, { enabled: v })}
+                      aria-label={gw.name}
+                    />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={i === 0}
+                        onClick={() => moveGateway(i, -1)}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        disabled={i === gateways.length - 1}
+                        onClick={() => moveGateway(i, 1)}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        onClick={() => removeGateway(gw.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="outline" onClick={addGateway} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {t('admin.settings.gatewayAdd')}
+            </Button>
+            <div className="flex flex-col items-center gap-1 sm:items-end">
+              <span className="text-[10px] text-muted-foreground">{t('admin.settings.gatewayUploadHint')}</span>
+              <Button onClick={handleGatewaysSave} disabled={gatewaysSaving} className="gap-2">
+                {gatewaysSaving ? <LoadingAnimation size="sm" /> : <Save className="h-4 w-4" />}
+                {t('admin.settings.gatewaysSave')}
+              </Button>
+            </div>
           </div>
         </SolidCard>
       </motion.div>
@@ -3242,7 +3560,7 @@ function DisputesPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{selectedDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{selectedDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {selectedDeal.buyer?.name} — {selectedDeal.seller?.name || 'N/A'} · {formatAmount(selectedDeal.amount)}
             </p>
@@ -3423,7 +3741,7 @@ function DisputesPanel() {
                   {deals.map((deal) => (
                     <tr key={deal.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedDeal(deal)}>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">{deal.title}</p>
+                        <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                         <p className="text-[10px] text-muted-foreground">DL-{deal.id.slice(-5)}</p>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{deal.buyer?.name || 'N/A'}</td>
@@ -3448,7 +3766,7 @@ function DisputesPanel() {
               <SolidCard key={deal.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedDeal(deal)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
+                    <p className="text-sm font-bold text-foreground break-words">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>
@@ -3615,7 +3933,7 @@ function AdminCallsPanel() {
             <ArrowLeft className="h-4 w-4 text-foreground" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{selectedDeal.title}</p>
+            <p className="text-sm font-bold text-foreground break-words">{selectedDeal.title}</p>
             <p className="text-xs text-muted-foreground">
               {selectedDeal.buyer?.name} — {selectedDeal.seller?.name || 'N/A'} · {formatAmount(selectedDeal.amount)}
             </p>
@@ -3724,7 +4042,7 @@ function AdminCallsPanel() {
                   {deals.map((deal) => (
                     <tr key={deal.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setSelectedDeal(deal)}>
                       <td className="px-4 py-3">
-                        <p className="text-sm font-semibold text-foreground truncate max-w-[180px]">{deal.title}</p>
+                        <p className="text-sm font-semibold text-foreground break-words">{deal.title}</p>
                         <p className="text-[10px] text-muted-foreground">DL-{deal.id.slice(-5)}</p>
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">{deal.buyer?.name || 'N/A'}</td>
@@ -3749,7 +4067,7 @@ function AdminCallsPanel() {
               <SolidCard key={deal.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedDeal(deal)}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{deal.title}</p>
+                    <p className="text-sm font-bold text-foreground break-words">{deal.title}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">DL-{deal.id.slice(-5)}</p>
                     <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{t("admin.chat.buyerLabel")} {deal.buyer?.name || 'N/A'}</span>
@@ -3785,6 +4103,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <PaymentVerifyPanel />;
     case 'payouts':
       return <PayoutsPanel />;
+    case 'seller-withdrawals':
+      return <AdminSellerWithdrawalsPanel />;
     case 'payment-methods':
       return <PaymentMethodsPanel />;
     case 'fee-rules':
@@ -3857,7 +4177,7 @@ export function AdminMain() {
 
   // ── Role-based permission guard ──
   const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile']);
-  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
 
   const hasPanelAccess = (panel: string): boolean => {
     if (!user || user.adminRole === 'super_admin') return true;

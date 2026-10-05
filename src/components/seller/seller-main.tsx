@@ -10,13 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { SellerDealTracker } from './seller-deal-tracker';
 import { NewDealForm } from '@/components/dashboard/new-deal-form';
+import { DealUnreadBadge } from '@/components/dashboard/deal-unread-badge';
 import { BackButton } from '@/components/shared/back-button';
+import { ProductTypeSelector } from '@/components/shared/product-type-selector';
+import {
+  ProductOptionsEditor, createEmptyOption, validateOptionRows, optionRowsToPayload,
+  type OptionRow,
+} from '@/components/shared/product-options-editor';
 import { useT } from '@/lib/i18n';
 import {
-  Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X,
+  Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye, Layers,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X, FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -28,6 +35,170 @@ import {
 
 const emptySubscribe = () => () => {};
 
+/* ═══════════════════════════════════════════════════════════
+   Digital product file uploader (PDF / ZIP / DOC … → R2)
+   Upload goes DIRECTLY to R2 with a presigned URL (XHR for
+   progress) — no serverless body-size limit.
+   ═══════════════════════════════════════════════════════════ */
+
+export interface DigitalFileInfo {
+  /** R2 key for NEW uploads; for an already-saved file we only know it exists (`existing: true`) */
+  key: string | null;
+  name: string;
+  size: number | null;
+  type: string | null;
+  /** true when this is the product's current server-side file (key unknown client-side) */
+  existing?: boolean;
+}
+
+const FILE_INPUT_ACCEPT = '.pdf,.zip,.rar,.7z,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.epub,.mobi,.mp3,.mp4,.wav,.psd,.ai,.fig,.sketch,.apk,.png,.jpg,.jpeg,.webp';
+
+function formatBytes(bytes: number | null): string {
+  if (!bytes) return '';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
+}
+
+function DigitalFileUploader({ value, onChange, onUploading, t }: {
+  value: DigitalFileInfo | null;
+  onChange: (f: DigitalFileInfo | null) => void;
+  onUploading?: (busy: boolean) => void;
+  t: (k: string) => string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const setBusyState = (b: boolean) => { setBusy(b); onUploading?.(b); };
+
+  const handlePick = async (file: File) => {
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error(t('seller.fileTooLarge'));
+      return;
+    }
+    setBusyState(true);
+    setProgress(0);
+    // Serverless request bodies cap at ~4.5MB — files up to 4MB go THROUGH
+    // the server (no R2 bucket CORS needed). Larger files use the presigned
+    // browser→R2 PUT, which requires the bucket to serve CORS preflights.
+    const DIRECT_MAX = 4 * 1024 * 1024;
+    try {
+      if (file.size <= DIRECT_MAX) {
+        // 1. Direct server upload (works even when bucket CORS is broken)
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/upload/product-file/direct', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          toast.error(data.error || t('seller.fileUploadFailed'));
+          return;
+        }
+        onChange({ key: data.key, name: file.name, size: file.size, type: file.type || null });
+        setProgress(100);
+        toast.success(t('seller.fileUploaded'));
+        return;
+      }
+
+      // 2. Presigned browser→R2 upload (with progress) for large files
+      const res = await fetch('/api/upload/product-file', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileSize: file.size, fileType: file.type || null }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        toast.error(data.error || `Upload failed (${res.status})`);
+        return;
+      }
+      const { key, uploadUrl }: { key: string; uploadUrl: string } = data;
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl);
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 ${xhr.status}`)));
+        xhr.onerror = () => reject(new Error('network'));
+        xhr.send(file);
+      });
+
+      onChange({ key, name: file.name, size: file.size, type: file.type || null });
+      toast.success(t('seller.fileUploaded'));
+    } catch {
+      toast.error(t('seller.fileUploadFailedLarge'));
+    } finally {
+      setBusyState(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handleRemove = () => {
+    // Best-effort server delete for freshly uploaded (not yet saved) files
+    if (value?.key) {
+      fetch('/api/upload/product-file', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: value.key }),
+      }).catch(() => {});
+    }
+    onChange(null);
+    if (inputRef.current) inputRef.current.value = '';
+  };
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/30 p-3.5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <FileText className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[13px] font-semibold text-foreground" dir="ltr">{value.name}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {value.size ? formatBytes(value.size) : ''}{value.existing ? ` · ${t('seller.fileAttached')}` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          aria-label={t('seller.fileRemove')}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handlePick(f); }}
+      onClick={() => inputRef.current?.click()}
+      className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-[12px] font-medium text-primary">{t('seller.fileUploading')} {progress}%</p>
+          <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </>
+      ) : (
+        <>
+          <Upload className="h-7 w-7 text-muted-foreground" />
+          <p className="text-[13px] text-muted-foreground">{t('seller.fileDragDrop')}</p>
+          <p className="text-[11px] text-muted-foreground/60">{t('seller.fileMaxSize')}</p>
+        </>
+      )}
+      <input ref={inputRef} type="file" accept={FILE_INPUT_ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePick(f); }} />
+    </div>
+  );
+}
+
+
 const CATEGORIES = [
   { key: 'design', bn: '\u09A1\u09BF\u099C\u09BE\u0987\u09A8', en: 'Design' },
   { key: 'development', bn: '\u09A1\u09C7\u09AD\u09C7\u09B2\u09AA\u09AE\u09C7\u09A8\u09CD\u099F', en: 'Development' },
@@ -37,19 +208,30 @@ const CATEGORIES = [
   { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software' },
   { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media' },
   { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID' },
+  { key: 'facebook', bn: 'ফেসবুক', en: 'Facebook' },
+  { key: 'instagram', bn: 'ইনস্টাগ্রাম', en: 'Instagram' },
+  { key: 'subscription', bn: 'সাবস্ক্রিপশন', en: 'Subscription' },
+  { key: 'free_service', bn: 'ফ্রি সার্ভিস', en: 'Free Service' },
   { key: 'other', bn: '\u0985\u09A8\u09CD\u09AF\u09BE\u09A8\u09CD\u09AF', en: 'Other' },
 ];
 
 interface DealRow {
   id: string; title: string; amount: number; status: string; createdAt: string;
+  updatedAt?: string; unreadCount?: number; hasUpdate?: boolean;
   buyer?: { id: string; name: string; email: string; phone: string } | null;
   seller?: { id: string; name: string; email: string; phone: string } | null;
   creator?: { id: string; name: string; email: string } | null;
   product?: { id: string; title: string; image: string | null } | null;
 }
 
+interface SellerProductOption {
+  id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
+}
+
 interface SellerProduct {
   id: string; title: string; description: string; price: number; category: string; image: string | null; status: string; createdAt: string;
+  productType?: string;
+  options?: SellerProductOption[];
 }
 
 function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -237,7 +419,14 @@ export function AddProductPanel() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
+  /* Multi-price support: product type decides which fields show below */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
   const fileRef = useRef<HTMLInputElement>(null);
+  /* Digital product file + free toggle */
+  const [isFree, setIsFree] = useState(false);
+  const [fileInfo, setFileInfo] = useState<DigitalFileInfo | null>(null);
+  const [fileBusy, setFileBusy] = useState(false);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
@@ -293,26 +482,67 @@ export function AddProductPanel() {
       toast.error(t('seller.imageUploading'));
       return;
     }
+    if (fileBusy) {
+      toast.error(t('seller.fileUploading'));
+      return;
+    }
     // Block if upload failed (localPreview was shown but image CDN URL never set)
     if (uploadError) {
       toast.error(t('seller.imageUploadFailed'));
       return;
     }
-    if (!title.trim() || !description.trim() || !price || Number(price) <= 0) {
+    if (!title.trim() || !description.trim()) {
       toast.error(t('seller.fillAllFields'));
       return;
     }
+
+    /* ── Type-specific client validation (server re-validates everything) ──
+       Free products are always single + price 0 — no options, no price needed. */
+    let payloadOptions: OptionRow[] | undefined;
+    if (isFree) {
+      // free product — nothing else to validate
+    } else if (productType === 'multi') {
+      const errorKey = validateOptionRows(options);
+      if (errorKey) {
+        toast.error(t(errorKey));
+        return;
+      }
+      payloadOptions = options;
+    } else {
+      if (!price || Number(price) <= 0) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), description: description.trim(), price: Number(price), category, image: image.trim() || null }),
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          ...(isFree
+            ? { productType: 'single', price: 0 }
+            : productType === 'multi'
+              ? { productType, options: optionRowsToPayload(payloadOptions!) }
+              : { productType, price: Number(price) }),
+          category,
+          image: image.trim() || null,
+          isFree,
+          fileKey: fileInfo?.key || null,
+          fileName: fileInfo?.name || null,
+          fileSize: fileInfo?.size || null,
+          fileType: fileInfo?.type || null,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setShowPendingDialog(true);
         setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
+        setProductType('single'); setOptions([createEmptyOption()]);
+        setIsFree(false); setFileInfo(null);
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -333,6 +563,9 @@ export function AddProductPanel() {
       </div>
 
       <SolidCard className="space-y-5">
+        {/* Step 1: Product type — decides which fields appear below */}
+        <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
+
         <div className="space-y-2">
           <Label className="text-sm font-semibold">{t('seller.productTitle')}</Label>
           <Input placeholder={t('seller.productTitlePh')} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -343,28 +576,39 @@ export function AddProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Step 2: type-specific pricing fields */}
+        {productType === 'single' ? (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
-            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setCategory(cat.key)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    category === cat.key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                  }`}
-                >
-                  {locale === 'en' ? cat.en : cat.bn}
-                </button>
-              ))}
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
+              <div className="flex items-center gap-2">
+                <Switch id="free-toggle" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
+                <Label htmlFor="free-toggle" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+              </div>
             </div>
+            <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
+            {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
+          </div>
+        ) : (
+          <ProductOptionsEditor options={options} onChange={setOptions} />
+        )}
+
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setCategory(cat.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  category === cat.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {locale === 'en' ? cat.en : cat.bn}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -404,8 +648,15 @@ export function AddProductPanel() {
           <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
         </div>
 
+        {/* Digital product file — buyers download it after payment verification (or free) */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+        </div>
+
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSubmit} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+          <Button onClick={handleSubmit} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {submitting ? t('seller.adding') : uploading ? t('seller.imageUploading') : t('seller.addProductBtn')}
           </Button>
@@ -461,7 +712,16 @@ export function EditProductPanel() {
   const [uploadError, setUploadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /* Multi-price support — type is locked after creation, options are editable */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  /* Digital product file + free toggle */
+  const [isFree, setIsFree] = useState(false);
+  const [fileInfo, setFileInfo] = useState<DigitalFileInfo | null>(null);
+  const [fileBusy, setFileBusy] = useState(false);
+  /** Snapshot of the file state as loaded from the server — to know if it changed */
+  const [originalHadFile, setOriginalHadFile] = useState(false);
 
   useEffect(() => {
     if (!editingProductId) { setNotFound(true); setLoading(false); return; }
@@ -477,6 +737,23 @@ export function EditProductPanel() {
           setPrice(String(p.price));
           setCategory(p.category || 'other');
           setImage(p.image || '');
+          const type: 'single' | 'multi' = p.productType === 'multi' ? 'multi' : 'single';
+          setProductType(type);
+          setOptions(
+            type === 'multi' && Array.isArray(p.options) && p.options.length > 0
+              ? p.options.map((o: { id: string; name: string; price: number; isAvailable: boolean }) => ({
+                  id: o.id, name: o.name, price: String(o.price), isAvailable: o.isAvailable,
+                }))
+              : [createEmptyOption()]
+          );
+          setIsFree(!!p.isFree);
+          if (p.hasFile && p.fileName) {
+            setFileInfo({ key: null, name: p.fileName, size: p.fileSize ?? null, type: p.fileType ?? null, existing: true });
+            setOriginalHadFile(true);
+          } else {
+            setFileInfo(null);
+            setOriginalHadFile(false);
+          }
         } else {
           setNotFound(true);
         }
@@ -526,18 +803,63 @@ export function EditProductPanel() {
 
   const handleSave = async () => {
     if (uploading) { toast.error(t('seller.imageUploading')); return; }
+    if (fileBusy) { toast.error(t('seller.fileUploading')); return; }
     if (uploadError) { toast.error(t('seller.imageUploadFailed')); return; }
-    if (!description.trim() || !price || Number(price) <= 0) {
+    if (!description.trim()) {
       toast.error(t('seller.fillAllFields'));
       return;
     }
+
+    /* Multi: validate options — price is derived from them server-side (free not allowed).
+       Single: free toggle wins over price; paid needs price > 0. */
+    let payload: Record<string, unknown>;
+    if (productType === 'multi') {
+      if (isFree) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+      const errorKey = validateOptionRows(options);
+      if (errorKey) {
+        toast.error(t(errorKey));
+        return;
+      }
+      payload = {
+        description: description.trim(),
+        category,
+        image: image.trim() || null,
+        options: optionRowsToPayload(options),
+      };
+    } else {
+      payload = {
+        description: description.trim(),
+        category,
+        image: image.trim() || null,
+        isFree,
+        ...(isFree ? { price: 0 } : { price: Number(price) }),
+      };
+      if (!isFree && (!price || Number(price) <= 0)) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+    }
+
+    // File changed? (new upload → key set; removed → null; untouched existing → omit)
+    if (fileInfo?.key) {
+      payload.fileKey = fileInfo.key;
+      payload.fileName = fileInfo.name;
+      payload.fileSize = fileInfo.size;
+      payload.fileType = fileInfo.type;
+    } else if (fileInfo === null && originalHadFile) {
+      payload.fileKey = null; // removal — server deletes the old object
+    }
+
     setSubmitting(true);
     try {
       // Title intentionally not sent — locked after creation
       const res = await fetch('/api/products/' + editingProductId, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: description.trim(), price: Number(price), category, image: image.trim() || null }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -603,28 +925,59 @@ export function EditProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
-            <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+        {/* Product type — locked after creation (shown read-only) */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold flex items-center gap-1.5">
+            {t('seller.productType')}
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+              <Lock className="h-3 w-3" />
+              {t('seller.titleNotEditable')}
+            </span>
+          </Label>
+          <div className="flex items-center gap-2">
+            <Badge className={productType === 'multi' ? 'gap-1.5 bg-primary/10 text-primary border-0' : 'gap-1.5 bg-muted text-muted-foreground border-0'}>
+              {productType === 'multi' ? <Layers className="h-3 w-3" /> : null}
+              {productType === 'multi' ? t('seller.typeMulti') : t('seller.typeSingle')}
+            </Badge>
+            {productType === 'multi' && (
+              <span className="text-xs text-muted-foreground">{t('seller.optionsCount', { count: options.length })}</span>
+            )}
           </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.key}
-                  onClick={() => setCategory(cat.key)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                    category === cat.key
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-accent'
-                  }`}
-                >
-                  {locale === 'en' ? cat.en : cat.bn}
-                </button>
-              ))}
+        </div>
+
+        {productType === 'multi' ? (
+          /* Multi: options editor — price derived from options server-side */
+          <ProductOptionsEditor options={options} onChange={setOptions} />
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+              <div className="flex items-center gap-2">
+                <Switch id="free-toggle-edit" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
+                <Label htmlFor="free-toggle-edit" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+              </div>
             </div>
+            <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
+            {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
+          </div>
+        )}
+
+        <div className="space-y-2 sm:space-y-3">
+          <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setCategory(cat.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  category === cat.key
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
+              >
+                {locale === 'en' ? cat.en : cat.bn}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -657,8 +1010,15 @@ export function EditProductPanel() {
           )}
         </div>
 
+        {/* Digital product file */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+        </div>
+
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} disabled={submitting || uploading} className="gap-2 shadow-lg shadow-primary/25">
+          <Button onClick={handleSave} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {submitting ? t('seller.saving') : uploading ? t('seller.imageUploading') : t('seller.saveChanges')}
           </Button>
@@ -806,10 +1166,29 @@ export function MyProductsPanel() {
                 </div>
               )}
               <div>
-                <h3 className="font-semibold text-sm text-foreground truncate">{p.title}</h3>
+                <h3 className="font-semibold text-sm text-foreground truncate pr-14">{p.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{p.description}</p>
+                {/* Product type line */}
+                {p.productType === 'multi' && p.options && p.options.length > 0 && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Badge className="gap-1 bg-primary/10 text-primary border-0 text-[10px] font-semibold">
+                      <Layers className="h-3 w-3" />
+                      {t('seller.multipleOptions')}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{t('seller.optionsCount', { count: p.options.length })}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-sm font-bold text-primary">{formatTaka(p.price)}</span>
+                  <span className="text-sm font-bold text-primary">
+                    {p.productType === 'multi' && p.options && p.options.length > 0
+                      ? (() => {
+                          const prices = p.options.map((o) => o.price);
+                          const min = Math.min(...prices);
+                          const max = Math.max(...prices);
+                          return min === max ? formatTaka(min) : `${formatTaka(min)} – ${formatTaka(max)}`;
+                        })()
+                      : formatTaka(p.price)}
+                  </span>
                   <Badge className={p.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0'}>
                     {p.status === 'active' ? t('seller.active') : p.status}
                   </Badge>
@@ -1034,12 +1413,17 @@ export function ActiveDealsPanel() {
                 {deals.map((deal) => (
                   <tr key={deal.id} className="border-b border-border/30 transition-colors hover:bg-accent/30 last:border-0">
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">DL-{deal.id.slice(-5)}</td>
-                    <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap max-w-[180px]">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="truncate">{deal.title}</span>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      <div className="flex items-start gap-1.5 min-w-0">
+                        <span className="break-words">{deal.title}</span>
                         {deal.product && (
                           <Badge variant="secondary" className="shrink-0 text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 font-medium">মার্কেটপ্লেস</Badge>
                         )}
+                        <DealUnreadBadge
+                          unreadCount={deal.unreadCount ?? 0}
+                          hasUpdate={!!deal.hasUpdate}
+                          updateLabel={t('deals.unreadUpdate')}
+                        />
                       </div>
                     </td>
                     <td className="px-4 py-3 text-foreground whitespace-nowrap">{deal.buyer?.name || '---'}</td>

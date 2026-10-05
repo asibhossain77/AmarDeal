@@ -1,12 +1,14 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { attachUnreadMeta } from '@/lib/deal-read'
 
 /**
  * POST /api/user/deals
  * Body: { userId: string }
  *
- * Returns all deals the user is involved in (buyer, seller, or creator).
+ * Returns all deals the user is involved in (buyer, seller, or creator),
+ * each with { unreadCount, hasUpdate } for the list unread badge.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(deals)
+    return NextResponse.json(await attachUnreadMeta(deals, userId))
   } catch {
     return NextResponse.json({ error: 'ডিল লোড করতে সমস্যা' }, { status: 500 })
   }

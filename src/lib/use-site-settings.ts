@@ -2,15 +2,25 @@
 
 import { useEffect } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  DEFAULT_GATEWAYS,
+  type PaymentGateway,
+} from '@/lib/payment-gateways';
 
 interface SiteSettings {
   siteName: string;
   siteNameEn: string;
   siteTitle: string;
   siteLogo: string;
+  /** Admin-uploaded brand logo URLs (R2 /cdn/ paths). null ⇒ MidmanLogo falls back to the bundled brand SVGs. */
+  logoLight: string | null;
+  /** Admin-uploaded dark-variant logo URL. The footer always renders this variant. */
+  logoDark: string | null;
   footerDescription: string;
   footerCopyrightText: string;
   footerMadeIn: string;
+  /** Footer payment gateway badges (bKash/Nagad by default, admin-managed) */
+  paymentGateways: PaymentGateway[];
 }
 
 const FALLBACK: SiteSettings = {
@@ -18,10 +28,24 @@ const FALLBACK: SiteSettings = {
   siteNameEn: 'Midman',
   siteTitle: '',
   siteLogo: '/logo.svg',
+  logoLight: null,
+  logoDark: null,
   footerDescription: '',
   footerCopyrightText: '',
   footerMadeIn: '',
+  paymentGateways: DEFAULT_GATEWAYS,
 };
+
+/** Old localStorage caches predate paymentGateways/logo fields — normalize on read. */
+function normalize(raw: SiteSettings | null): SiteSettings | null {
+  if (!raw) return null;
+  return {
+    ...raw,
+    logoLight: raw.logoLight ?? null,
+    logoDark: raw.logoDark ?? null,
+    paymentGateways: raw.paymentGateways ?? DEFAULT_GATEWAYS,
+  };
+}
 
 const STORAGE_KEY = 'midman-site-settings';
 const CHANNEL_NAME = 'midman-site-settings';
@@ -31,7 +55,7 @@ function readFromStorage(): SiteSettings | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as SiteSettings;
+    return normalize(JSON.parse(raw) as SiteSettings);
   } catch {
     return null;
   }
@@ -67,8 +91,9 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
       .then((r) => (r.ok ? r.json() : FALLBACK))
       .catch(() => FALLBACK)
       .then((data) => {
-        writeToStorage(data); // Persist for instant paint on next visit
-        return data;
+        const normalized = normalize(data);
+        writeToStorage(normalized as SiteSettings); // Persist for instant paint on next visit
+        return normalized;
       })
       .finally(() => {
         fetchPromise = null; // settled — next call must hit the network again

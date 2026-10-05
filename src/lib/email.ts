@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { keepAlive } from '@/lib/server-keepalive';
 
 /* ═══════════════════════════════════════════════════════════════
    DEFAULTS — overridden by PlatformSetting DB values
@@ -286,6 +287,32 @@ export function deliveryStartedEmail(toName: string, dealTitle: string, amount: 
       ])}
       <p>দয়া করে পণ্য/সেবা যাচাই করুন এবং কনফার্ম করুন। কোনো সমস্যা হলে বিরোধ দায়ের করুন।</p>
       <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি কনফার্ম করুন</a></div>
+    `),
+  };
+}
+
+export function deliveryReminderEmail(
+  toName: string,
+  dealTitle: string,
+  amount: number,
+  sellerName: string,
+  autoCompleteLabel: string
+) {
+  return {
+    subject: `রিমাইন্ডার: ডেলিভারি নিশ্চিত করুন — "${dealTitle}" — ${s('email_site_name')}`,
+    html: wrap(`
+      <h2>ডেলিভারি রিমাইন্ডার</h2>
+      <p class="greeting">প্রিয় ${toName},</p>
+      <p><strong>${sellerName}</strong> আপনার "${dealTitle}" ডিলের কাজ ডেলিভারি করেছেন, কিন্তু আপনি এখনো ডেলিভারি নিশ্চিত করেননি।</p>
+      ${infoTable([
+        infoRow('ডিল', dealTitle),
+        infoRow('পরিমাণ', `৳${amount.toLocaleString('en')}`),
+        infoRow('বিক্রেতা', sellerName),
+        infoRow('স্বয়ংক্রিয় সম্পন্নের তারিখ', autoCompleteLabel),
+      ])}
+      <div class="alert alert-warn"><strong>গুরুত্বপূর্ণ:</strong> ${autoCompleteLabel} তারিখের মধ্যে "পণ্য/সার্ভিস পেয়েছি" বাটনে ক্লিক না করলে ডিলটি স্বয়ংক্রিয়ভাবে সম্পন্ন হয়ে বিক্রেতার পেমেন্ট মুক্ত হয়ে যাবে।</div>
+      <p>পণ্য/সেবা ঠিক থাকলে দয়া করে ডেলিভারি নিশ্চিত করুন। কোনো সমস্যা থাকলে দেরি না করে ডিলের ভেতরে বিরোধ (Dispute) দায়ের করুন — অ্যাডমিন পর্যালোচনা করবেন।</p>
+      <div class="btn-wrap"><a href="${s('email_site_url')}" class="btn">ডেলিভারি নিশ্চিত করুন</a></div>
     `),
   };
 }
@@ -581,7 +608,7 @@ export async function isTemplateEnabled(type: string): Promise<boolean> {
   return !disabled.has(type);
 }
 
-export async function sendEmail(to: string, input: EmailInput, templateType?: string): Promise<void> {
+async function sendEmailImpl(to: string, input: EmailInput, templateType?: string): Promise<void> {
   // Check if template is disabled
   if (templateType) {
     const enabled = await isTemplateEnabled(templateType);
@@ -606,10 +633,22 @@ export async function sendEmail(to: string, input: EmailInput, templateType?: st
 }
 
 /**
+ * Vercel-safe send: the promise is registered with after() (see
+ * server-keepalive.ts) so fire-and-forget call sites (`sendEmail(...).catch()`
+ * without await) complete even after the route returns its response.
+ * Returned promise semantics are unchanged — callers' .catch still works.
+ */
+export function sendEmail(to: string, input: EmailInput, templateType?: string): Promise<void> {
+  const p = sendEmailImpl(to, input, templateType);
+  keepAlive(p);
+  return p;
+}
+
+/**
  * Fast-track email for OTP/critical emails — skips disabled-template DB check
  * and uses env vars directly to avoid DB round-trip on cold start.
  */
-export async function sendOtpEmail(to: string, input: EmailInput): Promise<void> {
+async function sendOtpEmailImpl(to: string, input: EmailInput): Promise<void> {
   // Use env vars directly — skip DB query for settings
   const smtpKey = process.env.BREVO_SMTP_KEY;
   if (!smtpKey) throw new Error('BREVO_SMTP_KEY সেট করা নেই। .env ফাইলে যোগ করুন।');
@@ -628,6 +667,13 @@ export async function sendOtpEmail(to: string, input: EmailInput): Promise<void>
     html: payload.html,
   });
   console.log(`[OTP EMAIL SENT] → ${to}: ${payload.subject}`);
+}
+
+/** Vercel-safe OTP send — see sendEmail wrapper note above. */
+export function sendOtpEmail(to: string, input: EmailInput): Promise<void> {
+  const p = sendOtpEmailImpl(to, input);
+  keepAlive(p);
+  return p;
 }
 
 export function fireEmails(emails: Array<{ to: string; payload: EmailInput; type?: string }>) {

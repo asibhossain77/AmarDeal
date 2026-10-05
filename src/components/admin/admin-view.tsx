@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { LogOut, Menu, Sun, Moon, Globe, Home, ChevronDown } from 'lucide-react';
 import { getAdminNavGroups, filterTranslatedNavGroups, ALL_NAV_ITEMS } from './admin-nav-config';
 import { AnimatePresence, motion } from 'framer-motion';
+import { NotificationBell } from '@/components/shared/notification-bell';
 
 const emptySubscribe = () => () => {};
 
@@ -137,6 +138,9 @@ export function AdminView() {
             >
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
+
+            {/* Admin notification bell with unread badge */}
+            <NotificationBell />
 
             <button
               onClick={() => setView('landing')}

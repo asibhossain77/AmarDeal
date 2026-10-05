@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
       exclude: ['warn', 'error'],
     } : false,
   },
-  // Tree-shake heavy packages so only imported sub-paths are bundled
+  // Tree-shake heavy packages so only imported sub-path imports are bundled
   experimental: {
     optimizePackageImports: [
       'lucide-react',
@@ -35,20 +35,62 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-icons',
       'react-syntax-highlighter',
     ],
+    // NOTE: cssChunking is a Webpack-only knob — Next 16 builds with Turbopack
+    // by default, which silently ignores it (verified 2026-09: with 'strict'
+    // set the build still emitted two root-layout CSS chunks — Tailwind
+    // globals + next/font @font-face). Merging/inlining them via
+    // experimental.inlineCss was evaluated and rejected: it embeds ~270KB of
+    // CSS into every dynamic (nonce-CSP, uncacheable) HTML response —
+    // repeat visitors pay ~38KB gzip per page view — and inlined @font-face
+    // uses ../media/* relative URLs that resolve against the page URL.
+    // The two render-blocking stylesheets stay; they are platform behavior.
+  },
+  // Shrink the traced function bundle: Vercel Functions Storage keeps every
+  // deployment's bundle (~was 134MB each → 11GB across retained deployments,
+  // exceeding the 10GB free limit). Typescript and musl/Alpine native
+  // binaries are never needed at runtime (Vercel runs glibc linux x64).
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/typescript/**',
+      'node_modules/@img/sharp-libvips-linuxmusl-*/**',
+      'node_modules/@img/sharp-linuxmusl-*/**',
+      'node_modules/@libsql/*musl*/**',
+    ],
   },
   async headers() {
-    return [{
-      source: '/(.*)',
-      headers: securityHeaders,
-    }];
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
+      },
+      // NOTE: /cdn/* cache headers are set by the route handler at
+      // src/app/cdn/[...path]/route.ts — next.config headers() does not
+      // merge into rewrite responses, which is why the handler exists.
+    ];
   },
   async rewrites() {
     return {
-      // CDN image proxy must run before everything else.
+      // NOTE: /cdn/:path* is NO LONGER an external rewrite — it moved to a
+      // real route handler (src/app/cdn/[...path]/route.ts) so responses
+      // carry immutable Cache-Control and stop re-downloading every image
+      // through Vercel on every page view.
       beforeFiles: [
+        // Dev-only: proxy a local fake S3/R2 server for E2E of presigned
+        // uploads (headless Chrome blocks cross-port loopback requests).
+        // Same-origin /fake-s3/* → 127.0.0.1:3199 keeps the browser happy.
+        ...(process.env.NODE_ENV === 'development' && process.env.E2E_FAKE_S3
+          ? [{ source: '/fake-s3/:path*', destination: 'http://127.0.0.1:3199/:path*' }]
+          : []),
+        // ARD / ai-catalog discovery manifests (agenticresourcediscovery.org):
+        // static JSON lives in public/ard.json + public/ai-catalog.json — the
+        // App Router cannot serve dot-folders (src/app/.well-known) as routes.
         {
-          source: '/cdn/:path*',
-          destination: 'https://cdn.midman.bd/:path*',
+          source: '/.well-known/ard.json',
+          destination: '/ard.json',
+        },
+        {
+          source: '/.well-known/ai-catalog.json',
+          destination: '/ai-catalog.json',
         },
       ],
       afterFiles: [],

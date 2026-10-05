@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
+import { LinkifyText } from '@/components/ui/linkify-text';
 import {
   ArrowLeft,
   FileCheck,
@@ -22,13 +23,18 @@ import {
   User,
   CalendarDays,
   ScrollText,
+  ChevronDown,
+  ChevronUp,
   SendHorizonal,
   Shield,
   PackageCheck,
   AlertTriangle,
   XCircle,
   Ban,
+  Timer,
 } from 'lucide-react';
+import { WorkDeadlineSelector, toBn } from '@/components/dashboard/work-deadline';
+import { DeliveryReminderCard } from '@/components/dashboard/auto-complete';
 
 const emptySubscribe = () => () => {};
 
@@ -265,6 +271,13 @@ interface DealData {
   senderNumber?: string | null;
   transactionId?: string | null;
   paymentAmount?: number | null;
+  /* Seller work-duration commitment (set after payment verification) */
+  workDays?: number | null;
+  workDeadlineAt?: string | null;
+  /* Unresponsive-buyer auto-complete flow */
+  deliveredAt?: string | null;
+  reminderEmailSentAt?: string | null;
+  autoCompleteAt?: string | null;
   buyer: { id: string; name: string; email: string; phone: string } | null;
   seller: { id: string; name: string; email: string; phone: string } | null;
   creator: { id: string; name: string; email: string } | null;
@@ -279,6 +292,7 @@ export function SellerDealTracker() {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const trackerAvatarUrl = cdnUrl(user?.imageLink);
   const [trackerAvatarLoaded, setTrackerAvatarLoaded] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
   useEffect(() => { setTrackerAvatarLoaded(false); if (!trackerAvatarUrl) return; const img = new Image(); img.onload = () => setTrackerAvatarLoaded(true); img.src = trackerAvatarUrl; }, [trackerAvatarUrl]);
 
   const [dealData, setDealData] = useState<DealData | null>(null);
@@ -417,12 +431,10 @@ export function SellerDealTracker() {
             >
               <ArrowLeft className="h-4 w-4" style={{ color: 'var(--foreground)' }} />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg shadow-md" style={{ backgroundColor: '#84CC16' }}>
-                <span className="text-sm font-bold" style={{ color: '#18181b' }}>আ</span>
-              </div>
+            {/* "আ" logo badge removed (user request) — title only */}
+            <div className="flex items-center">
               <span className="text-base font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
-                আমার ডিল
+                অ্যাডমিন ডিল
               </span>
             </div>
           </div>
@@ -443,8 +455,11 @@ export function SellerDealTracker() {
           </div>
         </div>
 
-        {/* ── Deal Info Content ── */}
-        <div className="p-4 sm:p-6 space-y-6">
+        {/* ── Deal Info Content — flex-col so the terms card can drop to the
+            bottom on mobile (touch drags landing on the scrollable terms box
+            scroll the box, not the page; with terms above the action buttons
+            the buttons sat below the fold and the page appeared scroll-locked) */}
+        <div className="flex flex-col p-4 sm:p-6 space-y-6">
           {/* Deal title + status badge */}
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -474,16 +489,51 @@ export function SellerDealTracker() {
             <DetailCard icon={User} label="ক্রেতা" value={buyerName} />
             <DetailCard icon={User} label="বিক্রেতা" value={sellerName} />
             <DetailCard icon={CalendarDays} label="তৈরির তারিখ" value={dealDate} />
+            {dealData?.workDays != null && (
+              <DetailCard icon={Timer} label="প্রতিশ্রুত সময়" value={`${toBn(dealData.workDays)} দিন`} />
+            )}
           </div>
 
-          {/* Deal Terms */}
+          {/* Deal Terms — height-capped with an inner scroll so very long terms
+              can't push the seller action buttons below the unreachable fold.
+              Mobile: rendered LAST (after the action buttons) and COLLAPSED to a
+              140px peek with an expand toggle — no touch scroll container here
+              (see buyer tracker for the full trap note); desktop keeps the
+              40vh inner-scroll panel */}
           {dealTerms && (
-            <div className="rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
+            <div className="order-last sm:order-none rounded-xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--muted)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <ScrollText className="h-4 w-4" style={{ color: '#84CC16' }} />
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>ডিলের শর্তাবলী</h3>
               </div>
-              <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}>{dealTerms}</p>
+              <div
+                className={
+                  termsExpanded
+                    ? 'pr-1'
+                    : 'max-h-[40vh] overflow-y-auto pr-1 max-sm:max-h-[140px] max-sm:overflow-hidden'
+                }
+              >
+                <p className="text-xs leading-relaxed whitespace-pre-line" style={{ color: 'var(--muted-foreground)' }}><LinkifyText text={dealTerms} /></p>
+              </div>
+              {dealTerms.length > 280 && (
+                <button
+                  onClick={() => setTermsExpanded((v) => !v)}
+                  className="mt-2 flex items-center gap-1 text-[11px] font-semibold transition-colors"
+                  style={{ color: 'var(--muted-foreground)' }}
+                >
+                  {termsExpanded ? (
+                    <>
+                      <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+                      শর্ত গুটিয়ে নিন
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      সম্পূর্ণ শর্ত দেখুন
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
 
@@ -521,6 +571,12 @@ export function SellerDealTracker() {
               <p className="text-sm text-center font-medium text-muted-foreground">
                 পেমেন্ট ভেরিফাই হয়েছে। পণ্য/সেবা ডেলিভারি করুন।
               </p>
+              <WorkDeadlineSelector
+                dealId={dealData?.id || activeDeal?.id || ''}
+                workDays={dealData?.workDays}
+                workDeadlineAt={dealData?.workDeadlineAt}
+                onSet={() => fetchDeal()}
+              />
               <div className="flex gap-3">
                 <Button
                   onClick={handleDeliver}
@@ -556,6 +612,15 @@ export function SellerDealTracker() {
                 <p className="text-sm font-medium text-foreground">
                   ক্রেতার নিশ্চিতকরণের অপেক্ষায় আছে
                 </p>
+              </div>
+              <div className="w-full text-left">
+                <DeliveryReminderCard
+                  dealId={dealData?.id || activeDeal?.id || ''}
+                  deliveredAt={dealData?.deliveredAt}
+                  reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                  autoCompleteAt={dealData?.autoCompleteAt}
+                  onUpdated={fetchDeal}
+                />
               </div>
             </div>
           )}

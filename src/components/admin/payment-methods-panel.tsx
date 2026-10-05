@@ -620,11 +620,11 @@ export function PaymentMethodsPanel() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
               <div
-                className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none"
+                className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Modal Header */}
-                <div className="mb-5 flex items-center justify-between">
+                <div className="flex shrink-0 items-center justify-between border-b border-border/40 px-6 py-4">
                   <h3 className="text-base font-bold text-foreground">
                     {editingId ? t('admin.payments.editGateway') : t('admin.payments.addGatewayTitle')}
                   </h3>
@@ -636,8 +636,8 @@ export function PaymentMethodsPanel() {
                   </button>
                 </div>
 
-                {/* Modal Form */}
-                <div className="space-y-4">
+                {/* Modal Form — scrollable between sticky header and footer */}
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-5">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">{t("admin.payments.gatewayName")}</Label>
                     <Input
@@ -838,7 +838,7 @@ export function PaymentMethodsPanel() {
                 </div>
 
                 {/* Modal Actions */}
-                <div className="mt-6 flex items-center justify-end gap-3">
+                <div className="flex shrink-0 items-center justify-end gap-3 border-t border-border/40 px-6 py-4">
                   <Button
                     variant="outline"
                     onClick={() => setDialogOpen(false)}

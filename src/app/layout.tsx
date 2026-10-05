@@ -1,31 +1,48 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri } from "next/font/google";
+import { cache } from "react";
+import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
+import { DEFAULT_META_PIXEL_ID } from "@/lib/meta-pixel-id";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
 import { LocaleEffect } from "@/components/shared/locale-effect";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
+// Must mirror the pixel resolution in MetaPixel — used only for a preconnect hint.
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || DEFAULT_META_PIXEL_ID;
 
 const SITE_URL = "https://midman.bd";
 const FALLBACK_LOGO = "/logo.svg";
 
-async function getSiteLogo(): Promise<string> {
+// React cache(): generateMetadata AND buildJsonLd both need the logo on EVERY
+// request — without dedupe that was 2 sequential Turso round trips added to
+// server TTFB for every page view. cache() collapses them into one query
+// per request (dedupe is per-render, so logo changes still show instantly).
+const getSiteLogo = cache(async (): Promise<string> => {
   try {
     const row = await db.platformSetting.findUnique({ where: { key: 'site_logo' } });
     if (row?.value && row.value !== '/logo.png' && !row.value.startsWith('data:')) return row.value;
   } catch { /* fallback */ }
   return FALLBACK_LOGO;
-}
+});
 
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
   subsets: ["bengali", "latin"],
   weight: ["400", "500", "700"],
+  display: "swap",
+});
+
+/* Display face for hero headlines / brand marks — standard clean Bangla Google font */
+const notoSansBengali = Noto_Sans_Bengali({
+  variable: "--font-noto-bengali",
+  subsets: ["bengali", "latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -276,11 +293,14 @@ export default async function RootLayout({
         {/* Resource hints — preconnect to 3rd-party origins for faster fetch */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {GA_ID && <link rel="preconnect" href="https://www.googletagmanager.com" />}
+        {PIXEL_ID && <link rel="preconnect" href="https://connect.facebook.net" />}
         <meta name="geo.region" content="BD" />
         <meta name="geo.country" content="BD" />
         <meta name="geo.placename" content="Dhaka" />
         <meta name="language" content="bn-BD" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        {/* ARD (Agentic Resource Discovery) — spec §5.1: publishers emit rel="ard" */}
+        <link rel="ard" href="/.well-known/ard.json" />
         {/* JSON-LD: CSP script-src does NOT apply to application/ld+json
             (non-JS MIME type), so no nonce is needed here. */}
         <script
@@ -288,7 +308,8 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(await buildJsonLd()) }}
         />
       </head>
-      <body className={`${hindSiliguri.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${hindSiliguri.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning>
+        <MetaPixel nonce={nonce} />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

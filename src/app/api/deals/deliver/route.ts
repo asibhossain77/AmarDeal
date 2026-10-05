@@ -35,7 +35,11 @@ export async function POST(req: NextRequest) {
 
     const updated = await db.deal.update({
       where: { id: dealId },
-      data: { status: 'in_delivery' },
+      // deliveredAt stamp is REQUIRED: it starts the unresponsive-buyer flow
+      // (cron reminder at +3d → auto-complete at reminder+30d). Without it the
+      // cron never matches the deal (legacy trap: [id]/deliver had the stamp,
+      // this route didn't) and escrow money stays held forever.
+      data: { status: 'in_delivery', deliveredAt: new Date() },
       include: {
         buyer: { select: { name: true, email: true, phone: true } },
         seller: { select: { name: true, email: true, phone: true } },

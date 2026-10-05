@@ -2,9 +2,9 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
-import { useAppStore, type DashboardPanel, type AdminPanel } from '@/lib/store';
-import { useSiteSettings } from '@/lib/use-site-settings';
+import { useAppStore, type DashboardPanel, type AdminPanel, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -36,6 +36,7 @@ import {
   MessageSquare,
   Bell,
   Store,
+  Gavel,
 } from 'lucide-react';
 import { NotificationBell } from '@/components/shared/notification-bell';
 import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
@@ -44,7 +45,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
 
@@ -74,54 +74,22 @@ function ThemeToggle() {
 }
 
 function LogoButton({ onClick }: { onClick: () => void }) {
-  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
-    <button onClick={onClick} className="flex items-center gap-2.5">
-      {siteLogo ? (
-        <img
-          src={cdnUrl(siteLogo) || ''}
-          alt={displayName}
-          fetchPriority="high"
-          className="h-9 w-9 rounded-lg object-contain"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
-        </div>
-      )}
-      <span className="text-lg font-bold tracking-tight text-foreground">{displayName}</span>
+    <button onClick={onClick} className="flex items-center" aria-label="Midman">
+      {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+      <MidmanLogo className="h-9 rounded-lg" priority />
     </button>
   );
 }
 
 function MobileBrandHeader({ sub }: { sub?: string }) {
-  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const displayName = locale === 'en' ? siteNameEn : siteName;
   return (
     <div className="mb-4 flex items-center gap-2.5 px-1">
-      {siteLogo ? (
-        <img
-          src={cdnUrl(siteLogo) || ''}
-          alt={displayName}
-          fetchPriority="high"
-          className="h-9 w-9 rounded-lg object-contain"
-        />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-          <span className="text-sm font-bold text-primary">{displayName?.charAt(0) || 'M'}</span>
-        </div>
-      )}
+      {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+      <MidmanLogo className="h-9 rounded-lg" priority />
       {sub ? (
-        <div>
-          <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
-          <p className="text-[10px] font-semibold tracking-widest text-primary">{sub}</p>
-        </div>
-      ) : (
-        <p className="text-base font-bold tracking-tight text-foreground">{displayName}</p>
-      )}
+        <p className="text-[10px] font-semibold tracking-widest text-primary">{sub}</p>
+      ) : null}
     </div>
   );
 }
@@ -200,14 +168,14 @@ export function Navbar() {
       className={
         isSidebarView
           ? 'sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl'
-          : 'sticky top-0 z-50 w-full pt-3 pb-1 px-3 sm:px-6 lg:px-8 transition-all'
+          : 'sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl transition-all'
       }
     >
       <nav
         className={
           isSidebarView
             ? 'relative flex h-16 items-center justify-between px-4 sm:px-6 md:pl-0'
-            : 'relative mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 rounded-2xl sm:rounded-full bg-gradient-to-r from-background/80 via-primary/5 to-background/80 dark:from-zinc-900/85 dark:via-primary/10 dark:to-zinc-900/85 backdrop-blur-xl backdrop-saturate-150 border border-white/40 dark:border-white/10 shadow-xl shadow-primary/5 dark:shadow-primary/10 transition-all duration-300 hover:border-primary/30'
+            : 'relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8 transition-all'
         }
       >
         {/* ── Desktop: Logo aligned with sidebar (dashboard / admin) ── */}
@@ -302,6 +270,7 @@ export function Navbar() {
               { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
               { href: '/how-it-works', viewKey: 'page-how-it-works', label: t('nav.howItWorks'), Icon: ListChecks },
               { href: '/marketplace', viewKey: 'page-marketplace', label: t('nav.marketplace'), Icon: Store },
+              { href: '/nilam', viewKey: 'page-auction', label: t('nav.auction'), Icon: Gavel },
               { href: '/faq', viewKey: 'page-faq', label: t('nav.faq'), Icon: CircleHelp },
               { href: '/blog', viewKey: 'blog', label: t('nav.blog'), Icon: BookOpen },
               { href: '/about', viewKey: 'page-about', label: t('nav.about'), Icon: Users },
@@ -311,7 +280,7 @@ export function Navbar() {
                 <TooltipTrigger asChild>
                   <a
                     href={item.href}
-                    onClick={(e) => { e.preventDefault(); setView(item.viewKey); }}
+                    onClick={(e) => { e.preventDefault(); setView(item.viewKey as AppView); }}
                     aria-label={item.label}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-primary hover:bg-background/80 hover:scale-105 hover:shadow-sm"
                   >
@@ -501,6 +470,9 @@ export function Navbar() {
                       </a>
                       <a href="/marketplace" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-marketplace'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <Store className="h-[18px] w-[18px] shrink-0" /> {t('nav.marketplace')}
+                      </a>
+                      <a href="/nilam" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-auction'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
+                        <Gavel className="h-[18px] w-[18px] shrink-0" /> {t('nav.auction')}
                       </a>
                       <a href="/faq" onClick={(e) => { e.preventDefault(); setOpen(false); setView('page-faq'); }} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-accent">
                         <CircleHelp className="h-[18px] w-[18px] shrink-0" /> {t('nav.faq')}

@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Search, X, MessageCircle, Package, Plus, Loader2, User,
+  Search, X, MessageCircle, Package, Plus, Loader2, User, Layers,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
-  ChevronLeft, ChevronRight, Zap, ArrowRight, Clock, Star, Upload, ImageIcon,
+  ChevronLeft, ChevronRight, ChevronDown, Zap, ArrowRight, Clock, Star, Upload, ImageIcon, FileDown,
+  Facebook, Instagram, Repeat, Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,25 +15,43 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
-import { useT } from '@/lib/i18n';
+import { useT, type TranslationKey } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
+import { ProductTypeSelector } from '@/components/shared/product-type-selector';
+import {
+  ProductOptionsEditor, createEmptyOption, validateOptionRows, optionRowsToPayload,
+  type OptionRow,
+} from '@/components/shared/product-options-editor';
 
 interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; }
 interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
+  productType?: string;
+  optionsCount?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  isFree?: boolean; hasFile?: boolean;
 }
 
+// Admin-uploaded ad banner (see /api/marketplace/banners)
+interface AdBanner { id: string; title: string; subtitle: string | null; image: string; link: string | null; }
+
 const CATEGORIES = [
-  { key: 'all', bn: '\u09B8\u09AC', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
-  { key: 'design', bn: '\u09A1\u09BF\u099C\u09BE\u0987\u09A8', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
-  { key: 'development', bn: '\u09A1\u09C7\u09AD\u09C7\u09B2\u09AA\u09AE\u09C7\u09A8\u09CD\u099F', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
-  { key: 'content', bn: '\u0995\u09A8\u09CD\u099F\u09C7\u09A8\u09CD\u099F', en: 'Content', Icon: PenTool, color: 'text-orange-500 dark:text-orange-400' },
-  { key: 'marketing', bn: '\u09AE\u09BE\u09B0\u09CD\u0995\u09C7\u099F\u09BF\u0982', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
-  { key: 'education', bn: '\u09B6\u09BF\u0995\u09CD\u09B7\u09BE', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
-  { key: 'software', bn: '\u09B8\u09AB\u099F\u0993\u09AF\u09BC\u09CD\u09AF\u09BE\u09B0', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
-  { key: 'social_media', bn: '\u09B8\u09CB\u09B6\u09B2 \u09AE\u09BF\u09A1\u09BF\u09AF\u09BC\u09BE', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
-  { key: 'id', bn: '\u0986\u0987\u09A1\u09BF', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
+  { key: 'all', bn: 'সব', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
+  { key: 'design', bn: 'ডিজাইন', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
+  { key: 'development', bn: 'ডেভেলপমেন্ট', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
+  { key: 'content', bn: 'কন্টেন্ট', en: 'Content', Icon: PenTool, color: 'text-orange-500 dark:text-orange-400' },
+  { key: 'marketing', bn: 'মার্কেটিং', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
+  { key: 'education', bn: 'শিক্ষা', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
+  { key: 'software', bn: 'সফটওয়্যার', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
+  { key: 'social_media', bn: 'সোশ্যাল মিডিয়া', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
+  { key: 'id', bn: 'আইডি', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
+  { key: 'facebook', bn: 'ফেসবুক', en: 'Facebook', Icon: Facebook, color: 'text-blue-600 dark:text-blue-400' },
+  { key: 'instagram', bn: 'ইনস্টাগ্রাম', en: 'Instagram', Icon: Instagram, color: 'text-fuchsia-500 dark:text-fuchsia-400' },
+  { key: 'subscription', bn: 'সাবস্ক্রিপশন', en: 'Subscription', Icon: Repeat, color: 'text-violet-500 dark:text-violet-400' },
+  { key: 'free_service', bn: 'ফ্রি সার্ভিস', en: 'Free Service', Icon: Gift, color: 'text-emerald-500 dark:text-emerald-400' },
+  { key: 'other', bn: 'অন্যান্য', en: 'Other', Icon: Package, color: 'text-zinc-500 dark:text-zinc-400' },
 ];
 
 const CATEGORY_BG: Record<string, string> = {
@@ -44,6 +63,10 @@ const CATEGORY_BG: Record<string, string> = {
   software: 'from-cyan-500/10 to-cyan-500/5 dark:from-cyan-500/15 dark:to-cyan-500/5',
   social_media: 'from-green-500/10 to-green-500/5 dark:from-green-500/15 dark:to-green-500/5',
   id: 'from-rose-500/10 to-rose-500/5 dark:from-rose-500/15 dark:to-rose-500/5',
+  facebook: 'from-blue-500/10 to-blue-500/5 dark:from-blue-500/15 dark:to-blue-500/5',
+  instagram: 'from-fuchsia-500/10 to-fuchsia-500/5 dark:from-fuchsia-500/15 dark:to-fuchsia-500/5',
+  subscription: 'from-violet-500/10 to-violet-500/5 dark:from-violet-500/15 dark:to-violet-500/5',
+  free_service: 'from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/15 dark:to-emerald-500/5',
   other: 'from-zinc-500/10 to-zinc-500/5 dark:from-zinc-500/15 dark:to-zinc-500/5',
 };
 
@@ -80,6 +103,85 @@ function getCategoryIcon(category: string) {
 function getCategoryColor(category: string) {
   const cat = CATEGORIES.find(c => c.key === category);
   return cat?.color || 'text-muted-foreground';
+}
+
+// -- AdBannerSlider --
+// Renders the admin-uploaded ad banners (Admin → Marketplace → Banners tab).
+// The slot keeps a FIXED 3:1 aspect ratio on every breakpoint, and the image
+// is shown with object-CONTAIN — never zoomed/cropped: an uploaded creative
+// always displays at its own uploaded ratio, identically on mobile and
+// desktop, and any leftover blank space is WHITE (ad-slot letterbox).
+// Until any active banner exists, the built-in promo slider stays in place.
+function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () => void }) {
+  const [banners, setBanners] = useState<AdBanner[] | null>(null); // null = loading
+  const [current, setCurrent] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/marketplace/banners')
+      .then(r => r.json())
+      .then(d => { if (alive) setBanners(Array.isArray(d?.banners) ? d.banners : []); })
+      .catch(() => { if (alive) setBanners([]); });
+    return () => { alive = false; };
+  }, []);
+
+  // Preload every banner image up-front — otherwise each slide change mounts a
+  // fresh <img> that pops in only after the network delivers it (the "jump"
+  // the user saw). Preloaded = crossfade is instantaneous and smooth.
+  useEffect(() => {
+    if (!banners) return;
+    banners.forEach(b => { const img = new Image(); img.src = cdnUrl(b.image) || b.image; });
+  }, [banners]);
+
+  useEffect(() => {
+    if (!banners || banners.length < 2) return;
+    intervalRef.current = setInterval(() => setCurrent(p => (p + 1) % banners.length), 5000);
+    return () => clearInterval(intervalRef.current);
+  }, [banners]);
+
+  // Loading skeleton (same 3:1 footprint → no layout shift when data arrives)
+  if (banners === null) return (
+    <div aria-hidden className="aspect-[3/1] w-full animate-pulse rounded-2xl border border-border/40 bg-muted/50 sm:rounded-3xl dark:border-border/25" />
+  );
+
+  // No active banners → keep the built-in promo slider, the slot is never empty
+  if (banners.length === 0) return <PromoSlider locale={locale} onExplore={onExplore} />;
+
+  const banner = banners[Math.min(current, banners.length - 1)];
+  const image = cdnUrl(banner.image) || banner.image;
+
+  return (
+    <div aria-label="Ads banner">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-white sm:rounded-3xl">
+        <div className="relative aspect-[3/1] w-full">
+          <AnimatePresence initial={false}>
+            <motion.a
+              key={banner.id}
+              href={banner.link || undefined}
+              target={banner.link ? '_blank' : undefined}
+              rel={banner.link ? 'noopener noreferrer' : undefined}
+              aria-label={banner.title}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              className={`absolute inset-0 z-10 block ${banner.link ? 'cursor-pointer' : 'pointer-events-none'}`}
+            >
+              <img src={image} alt={banner.subtitle || banner.title} className="h-full w-full object-contain" loading="eager" decoding="async" />
+            </motion.a>
+          </AnimatePresence>
+        </div>
+      </div>
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-1.5 pt-3">
+          {banners.map((b, i) => (
+            <button key={b.id} onClick={() => { setCurrent(i); clearInterval(intervalRef.current); }} aria-label={`Banner ${i + 1}`} className={`h-2 rounded-full transition-all duration-300 ${i === current ? 'w-6 bg-primary' : 'w-2 bg-primary/20 hover:bg-primary/40'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // -- PromoSlider --
@@ -126,20 +228,88 @@ function PromoSlider({ locale, onExplore }: { locale: string; onExplore: () => v
 }
 
 // -- CategoryGrid --
-function CategoryGrid({ active, onSelect, locale }: { active: string; onSelect: (k: string) => void; locale: string }) {
+// staggered=true (popup): tiles cascade in one-by-one for a smoother open feel
+function CategoryGrid({ active, onSelect, locale, staggered }: { active: string; onSelect: (k: string) => void; locale: string; staggered?: boolean }) {
   return (
     <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
-      {CATEGORIES.map(cat => {
+      {CATEGORIES.map((cat, i) => {
         const isActive = active === cat.key;
         return (
-          <button key={cat.key} onClick={() => onSelect(cat.key)} className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 sm:rounded-2xl sm:p-4 ${isActive ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}>
+          <motion.button
+            key={cat.key}
+            onClick={() => onSelect(cat.key)}
+            initial={staggered ? { opacity: 0, y: 14, scale: 0.9 } : false}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={staggered ? { delay: 0.04 + i * 0.028, type: 'spring', stiffness: 480, damping: 28 } : { duration: 0 }}
+            whileTap={{ scale: 0.94 }}
+            className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-colors duration-200 sm:rounded-2xl sm:p-4 ${isActive ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}
+          >
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 transition-colors sm:h-11 sm:w-11 sm:rounded-2xl group-hover:bg-muted ${isActive ? 'bg-primary/15' : ''}`}>
               <cat.Icon className={`h-5 w-5 sm:h-[22px] sm:w-[22px] ${isActive ? 'text-primary' : cat.color}`} strokeWidth={1.8} />
             </div>
             <span className={`text-[11px] font-semibold leading-tight sm:text-[12px] ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>{cat[locale === 'bn' ? 'bn' : 'en']}</span>
-          </button>
+          </motion.button>
         );
       })}
+    </div>
+  );
+}
+
+// -- CategoryPicker --
+// Compact trigger + popup selector — the full category grid no longer sits
+// permanently on the marketplace page (13 tiles looked cluttered); the user
+// opens the popup, taps a category, and the popup closes with the filter set.
+function CategoryPicker({ active, onSelect, locale, t }: { active: string; onSelect: (k: string) => void; locale: string; t: (key: TranslationKey, vars?: Record<string, string | number>) => string }) {
+  const [open, setOpen] = useState(false);
+  const activeCat = CATEGORIES.find(c => c.key === active);
+  const ActiveIcon = activeCat?.Icon ?? LayoutGrid;
+  // Smooth-open helpers: Esc closes, background scroll locked while popup is up
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prevOverflow; };
+  }, [open]);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={`group inline-flex h-12 items-center gap-2.5 rounded-full border pl-2 pr-4 text-[13px] font-semibold shadow-sm transition-all duration-300 hover:-translate-y-px hover:shadow-md hover:shadow-primary/10 dark:border-border/25 ${activeCat && activeCat.key !== 'all' ? 'border-primary/40 bg-primary/[0.06] text-primary' : 'border-border/40 bg-background text-foreground hover:border-primary/35'}`}
+      >
+        <span className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors duration-300 ${activeCat && activeCat.key !== 'all' ? 'bg-primary/15' : 'bg-muted/80 group-hover:bg-primary/10'}`}>
+          <ActiveIcon className={`h-4 w-4 ${activeCat && activeCat.key !== 'all' ? 'text-primary' : (activeCat?.color ?? 'text-primary')}`} strokeWidth={2.2} />
+        </span>
+        <span className="whitespace-nowrap">{activeCat ? activeCat[locale === 'bn' ? 'bn' : 'en'] : CATEGORIES[0][locale === 'bn' ? 'bn' : 'en']}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onClick={() => setOpen(false)} className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, y: -16, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.85 }}
+              style={{ transformOrigin: '50% 0%' }}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('marketplace.selectCategory')}
+              className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[80vh] max-w-md overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl shadow-black/20 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground">{t('marketplace.selectCategory')}</h3>
+                <button onClick={() => setOpen(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90"><X className="h-4.5 w-4.5" /></button>
+              </div>
+              <CategoryGrid staggered active={active} onSelect={(k) => { onSelect(k); setOpen(false); }} locale={locale} />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -149,35 +319,56 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
   const CatIcon = getCategoryIcon(product.category);
   const catColor = getCategoryColor(product.category);
   const gradientBg = CATEGORY_BG[product.category] || CATEGORY_BG.other;
+  const isMulti = product.productType === 'multi' && (product.optionsCount ?? 0) > 0;
+  const hasRange = isMulti && product.minPrice !== undefined && product.maxPrice !== undefined && product.minPrice !== product.maxPrice;
   return (
     <motion.article role="listitem" custom={index} variants={cardVariant} initial="hidden" animate="visible" onClick={onClick} className="group cursor-pointer overflow-hidden rounded-2xl border border-border/30 bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/[0.07] hover:border-primary/25 hover:-translate-y-1 dark:border-border/20">
-      <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${gradientBg}`}>
+      {/* Product image: full image, no zoom/crop — native ratio kept on all devices, blank space white */}
+      <div className={`relative aspect-[16/10] overflow-hidden ${product.image ? 'bg-white' : `bg-gradient-to-br ${gradientBg}`}`}>
         {product.image ? (
-          <img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={cdnUrl(product.image) || ''} alt={product.title} className="h-full w-full object-contain" loading="lazy" decoding="async" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <CatIcon className={`h-12 w-12 ${catColor} opacity-30 transition-opacity group-hover:opacity-50 sm:h-14 sm:w-14`} strokeWidth={1.2} />
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />
-        <div className="absolute left-3 top-3">
-          <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
-            <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
-            {CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}
+        {!product.image && <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/10 to-transparent" />}
+        <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1.5 sm:left-3 sm:top-3">
+          <Badge variant="secondary" className="gap-1 bg-background/80 px-1.5 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
+            <CatIcon className={`h-3.5 w-3.5 ${catColor}`} strokeWidth={2.5} />
+            <span className="hidden sm:inline">{CATEGORIES.find(c => c.key === product.category)?.[locale === 'bn' ? 'bn' : 'en'] || product.category}</span>
           </Badge>
+          {isMulti && (
+            <Badge variant="secondary" className="gap-1 bg-primary/90 px-1.5 text-primary-foreground text-[10px] font-semibold shadow-sm backdrop-blur-lg">
+              <Layers className="h-3.5 w-3.5" strokeWidth={2.5} />
+              <span className="hidden sm:inline">{t('seller.multipleOptions')}</span>
+            </Badge>
+          )}
+          {product.hasFile && (
+            <Badge variant="secondary" className="gap-1 bg-background/80 px-1.5 text-[10px] font-bold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
+              <FileDown className="h-3 w-3 text-primary" strokeWidth={2.5} />
+              <span className="hidden sm:inline">{t('marketplace.digitalProduct')}</span>
+            </Badge>
+          )}
         </div>
       </div>
       <div className="p-3.5 sm:p-4">
         <h3 className="line-clamp-1 text-[14px] font-semibold text-foreground transition-colors group-hover:text-primary sm:text-[15px]">{product.title}</h3>
         <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">{product.description}</p>
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <span className="text-lg font-extrabold text-primary sm:text-xl">{formatPrice(product.price, locale)}</span>
+        <div className="mt-3 flex items-end justify-between gap-1.5 sm:gap-2">
+          <span className="text-base font-extrabold text-primary sm:text-xl">
+            {product.isFree
+              ? <span className="text-emerald-600 dark:text-emerald-400">{t('marketplace.free')}</span>
+              : hasRange
+                ? `${formatPrice(product.minPrice!, locale)} – ${formatPrice(product.maxPrice!, locale)}`
+                : formatPrice(product.price, locale)}
+          </span>
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Avatar className="h-4 w-4"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
-              <span className="max-w-[70px] truncate text-[10px] font-medium sm:text-[11px]">{product.seller.name}</span>
+              <Avatar className="h-4 w-4 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
+              <span className="max-w-[52px] truncate text-[10px] font-medium sm:max-w-[70px] sm:text-[11px]">{product.seller.name}</span>
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground/60">
+            <div className="hidden items-center gap-1 text-muted-foreground/60 sm:flex">
               <Clock className="h-2.5 w-2.5" />
               <span className="text-[9px] sm:text-[10px]">{timeAgo(product.createdAt, locale)}</span>
             </div>
@@ -196,7 +387,7 @@ function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: str
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) onUpload(f); };
   if (image && !image.startsWith('data:')) return (
     <div className="relative group">
-      <img src={cdnUrl(image) || ''} alt="Product" className="w-full h-40 object-cover rounded-xl border border-border/40" />
+      <img src={cdnUrl(image) || ''} alt="Product" className="h-40 w-full rounded-xl border border-border/40 bg-white object-contain" />
       <button type="button" onClick={() => { onChange(''); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><X className="h-3.5 w-3.5" /></button>
     </div>
   );
@@ -218,6 +409,9 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
   const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [price, setPrice] = useState(''); const [category, setCategory] = useState('other'); const [image, setImage] = useState('');
   const [submitting, setSubmitting] = useState(false); const [uploading, setUploading] = useState(false);
+  /* Multi-price support */
+  const [productType, setProductType] = useState<'single' | 'multi'>('single');
+  const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -236,12 +430,22 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim() || !price) return;
+    if (!title.trim() || !description.trim()) return;
+    /* Type-specific validation (server re-validates) */
+    let body: Record<string, unknown>;
+    if (productType === 'multi') {
+      const errorKey = validateOptionRows(options);
+      if (errorKey) { toast.error(t(errorKey)); return; }
+      body = { title, description, productType, options: optionRowsToPayload(options), category, image: image.trim() || undefined };
+    } else {
+      if (!price) return;
+      body = { title, description, productType, price: Number(price), category, image: image.trim() || undefined };
+    }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description, price: Number(price), category, image: image.trim() || undefined }) });
+      const res = await fetch('/api/products', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
-      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); }
+      if (data.success && data.product) { toast.success(t('marketplace.productAdded')); onCreated(data.product); onClose(); setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setProductType('single'); setOptions([createEmptyOption()]); }
       else toast.error(data.error || t('marketplace.addFailed'));
     } catch { toast.error(t('marketplace.addFailed')); } finally { setSubmitting(false); }
   };
@@ -253,12 +457,20 @@ function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boole
           <motion.div initial={{ opacity: 0, y: 40, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }} transition={{ duration: 0.3 }} className="fixed inset-x-4 top-[8%] z-50 mx-auto max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl border border-border/40 bg-card p-5 shadow-2xl sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:p-6 dark:border-border/25">
             <div className="flex items-center justify-between"><h2 className="text-lg font-bold text-foreground">{t('marketplace.addProduct')}</h2><button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button></div>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formTitle')}</label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('marketplace.formTitlePh')} required /></div>
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formDesc')}</label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('marketplace.formDescPh')} rows={3} required /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
+              {productType === 'multi' ? (
+                <ProductOptionsEditor options={options} onChange={setOptions} />
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formPrice')} (&#x09F3;)</label><Input type="number" min="1" value={price} onChange={e => setPrice(e.target.value)} placeholder="500" required /></div>
+                  <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
+                </div>
+              )}
+              {productType === 'multi' && (
                 <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formCategory')}</label><select value={category} onChange={e => setCategory(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">{CATEGORIES.filter(c => c.key !== 'all').map(c => (<option key={c.key} value={c.key}>{c[locale === 'bn' ? 'bn' : 'en']}</option>))}</select></div>
-              </div>
+              )}
               <div><label className="mb-1.5 block text-[13px] font-medium text-foreground">{t('marketplace.formImage')} <span className="text-muted-foreground">({t('marketplace.optional')})</span></label><ImageUploader image={image} onChange={setImage} t={t} uploading={uploading} onUpload={handleImageUpload} /></div>
               <Button type="submit" disabled={submitting} className="w-full gap-2 rounded-xl py-5 text-[14px] font-semibold">{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}{t('marketplace.submitProduct')}</Button>
             </form>
@@ -293,38 +505,52 @@ export function MarketplaceSection() {
 
   return (
     <section aria-label={t('page.marketplace.title')} className="space-y-6 sm:space-y-8">
-      <PromoSlider locale={locale} onExplore={() => {}} />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} aria-label={t('marketplace.searchPlaceholder')} className="h-11 w-full rounded-xl border border-border/40 bg-background pl-10 pr-4 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all dark:border-border/25" />
+      <AdBannerSlider locale={locale} onExplore={() => {}} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="group relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors duration-300 group-focus-within:text-primary" />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder={t('marketplace.searchPlaceholder')} aria-label={t('marketplace.searchPlaceholder')} className="h-12 w-full rounded-full border border-border/40 bg-muted/30 pl-11 pr-10 text-[13px] font-medium text-foreground shadow-sm placeholder:font-normal placeholder:text-muted-foreground focus:border-primary/40 focus:bg-background focus:shadow-lg focus:shadow-primary/10 focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all duration-300 dark:border-border/25 dark:bg-muted/20" />
+          {search && (
+            <button onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
-        {user?.isSeller && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-2 rounded-xl text-[13px] font-semibold shadow-md shadow-primary/20"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
-        )}
+        <div className="flex items-center gap-3">
+          <nav aria-label={locale === 'bn' ? 'ক্যাটাগরি ফিল্টার' : 'Category filter'}>
+            <CategoryPicker active={activeCategory} onSelect={setActiveCategory} locale={locale} t={t} />
+          </nav>
+          {user?.isSeller && (
+            <Button onClick={() => setShowAddDialog(true)} className="h-12 gap-2 rounded-full px-5 text-[13px] font-semibold shadow-md shadow-primary/20 transition-all hover:-translate-y-px hover:shadow-lg hover:shadow-primary/25"><Plus className="h-4 w-4" /> {t('marketplace.addProduct')}</Button>
+          )}
+        </div>
       </div>
-      <nav aria-label={locale === 'bn' ? '\u0995\u09CD\u09AF\u09BE\u099F\u09C7\u0997\u09B0\u09BF \u09AB\u09BF\u09B2\u09CD\u099F\u09BE\u09B0' : 'Category filter'}>
-        <CategoryGrid active={activeCategory} onSelect={setActiveCategory} locale={locale} />
-      </nav>
       <div className="flex items-center gap-2">
         <Package className="h-4.5 w-4.5 text-primary" strokeWidth={2} />
         <h2 className="text-[15px] font-bold text-foreground sm:text-base">{locale === 'bn' ? '\u09B8\u0995\u09B2 \u09AA\u09A3\u09CD\u09AF' : 'All Products'} {!loading && <span className="ml-2 text-[13px] font-normal text-muted-foreground">({filtered.length})</span>}</h2>
       </div>
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[...Array(6)].map((_, i) => (
+      {/* No-jump refetch: skeleton ONLY on the very first load. When switching
+          category, the old grid stays in place (dimmed while fetching) instead
+          of collapsing to skeletons — that collapse was yanking the page up/down. */}
+      {loading && products.length === 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">{[...Array(6)].map((_, i) => (
           <div key={i} className="animate-pulse overflow-hidden rounded-2xl border border-border/30 bg-card">
             <div className="aspect-[16/10] bg-muted/50" />
             <div className="space-y-2.5 p-4"><div className="h-4 w-3/4 rounded bg-muted" /><div className="h-3 w-full rounded bg-muted" /><div className="flex justify-between pt-2"><div className="h-5 w-20 rounded bg-muted" /><div className="h-4 w-16 rounded bg-muted" /></div></div>
           </div>
         ))}</div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10"><Package className="h-7 w-7 text-primary" /></div>
-          <p className="mt-4 text-sm font-semibold text-foreground">{t('marketplace.noProducts')}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
-        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
+        <div className={`transition-opacity duration-200 ${loading ? 'pointer-events-none opacity-40' : 'opacity-100'}`}>
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10"><Package className="h-7 w-7 text-primary" /></div>
+              <p className="mt-4 text-sm font-semibold text-foreground">{t('marketplace.noProducts')}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" role="list">{filtered.map((product, i) => (<ProductCard key={product.id} product={product} index={i} onClick={() => openProductPage(product.id)} t={t} locale={locale} />))}</div>
+          )}
+        </div>
       )}
       {user?.isSeller && <AddProductDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} onCreated={(p) => setProducts(prev => [p, ...prev])} t={t} locale={locale} />}
     </section>

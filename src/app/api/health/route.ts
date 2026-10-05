@@ -1,5 +1,6 @@
 import { createClient } from '@libsql/client'
 import { NextResponse } from 'next/server'
+import { AUCTION_TABLE_DDL } from '@/lib/auction'
 
 /**
  * Health + DB diagnostic + auto-setup endpoint.
@@ -120,6 +121,13 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     ['Deal', 'productId', 'TEXT', 'NULL'],
     ['Deal', 'adminCalled', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
     ['Deal', 'adminCalledAt', 'DATETIME', 'NULL'],
+    // Seller work-duration commitment (set after payment verification)
+    ['Deal', 'workDays', 'INTEGER', 'NULL'],
+    ['Deal', 'workDeadlineAt', 'DATETIME', 'NULL'],
+    // Unresponsive-buyer auto-complete flow (seller reminder → 30-day grace)
+    ['Deal', 'deliveredAt', 'DATETIME', 'NULL'],
+    ['Deal', 'reminderEmailSentAt', 'DATETIME', 'NULL'],
+    ['Deal', 'autoCompleteAt', 'DATETIME', 'NULL'],
     // Admin table columns
     ['Admin', 'permissions', 'TEXT NOT NULL DEFAULT \'[]\'', '\'[]\''],
     ['Admin', 'totpSecret', 'TEXT', 'NULL'],
@@ -129,6 +137,12 @@ async function autoFixSchema(client: ReturnType<typeof createClient>): Promise<s
     ['PaymentMethod', 'qrImage', 'TEXT', 'NULL'],
     // SellerApplication verification code (WhatsApp code verification flow)
     ['SellerApplication', 'verificationCode', 'TEXT', 'NULL'],
+    // Digital product file columns (file upload + free download system)
+    ['DigitalProduct', 'isFree', 'BOOLEAN NOT NULL DEFAULT 0', '0'],
+    ['DigitalProduct', 'fileKey', 'TEXT', 'NULL'],
+    ['DigitalProduct', 'fileName', 'TEXT', 'NULL'],
+    ['DigitalProduct', 'fileSize', 'INTEGER', 'NULL'],
+    ['DigitalProduct', 'fileType', 'TEXT', 'NULL'],
   ]
 
   for (const [table, column, colType, defaultVal] of checks) {
@@ -205,6 +219,39 @@ CREATE TABLE IF NOT EXISTS "MarketplaceBanner" (
   "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS "MarketplaceBanner_isActive_sortOrder_idx" ON "MarketplaceBanner"("isActive", "sortOrder");`,
+    // Deal chat attachments — files are auto-deleted 3 days after send;
+    // rows are kept so the chat UI can show the expired-file placeholder.
+    'ChatFile': `
+CREATE TABLE IF NOT EXISTS "ChatFile" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "dealId" TEXT NOT NULL,
+  "messageId" TEXT NOT NULL,
+  "key" TEXT NOT NULL,
+  "fileName" TEXT NOT NULL,
+  "fileSize" INTEGER NOT NULL,
+  "fileType" TEXT,
+  "expiresAt" DATETIME NOT NULL,
+  "deletedAt" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "ChatFile_dealId_idx" ON "ChatFile"("dealId");
+CREATE INDEX IF NOT EXISTS "ChatFile_expiresAt_idx" ON "ChatFile"("expiresAt");
+CREATE UNIQUE INDEX IF NOT EXISTS "ChatFile_messageId_key" ON "ChatFile"("messageId");`,
+    // Deal read states — per-user "seen" markers powering the unread badge on
+    // the deal lists. Safe to recreate: worst case badges reset to unread.
+    'DealReadState': `
+CREATE TABLE IF NOT EXISTS "DealReadState" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "dealId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "lastReadAt" DATETIME NOT NULL,
+  "lastSeenDealUpdated" DATETIME,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "DealReadState_dealId_userId_key" ON "DealReadState"("dealId", "userId");
+CREATE INDEX IF NOT EXISTS "DealReadState_userId_idx" ON "DealReadState"("userId");`,
     'SellerApplication': `
 CREATE TABLE IF NOT EXISTS "SellerApplication" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -221,6 +268,18 @@ CREATE TABLE IF NOT EXISTS "SellerApplication" (
 );
 CREATE INDEX IF NOT EXISTS "SellerApplication_status_idx" ON "SellerApplication"("status");
 CREATE INDEX IF NOT EXISTS "SellerApplication_userId_idx" ON "SellerApplication"("userId");`,
+    'ProductDownload': `
+CREATE TABLE IF NOT EXISTS "ProductDownload" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "productId" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "dealId" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ProductDownload_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ProductDownload_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductDownload_productId_userId_key" ON "ProductDownload"("productId", "userId");
+CREATE INDEX IF NOT EXISTS "ProductDownload_userId_idx" ON "ProductDownload"("userId");`,
     'AffiliateEarning': `
 CREATE TABLE IF NOT EXISTS "AffiliateEarning" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -314,6 +373,8 @@ CREATE TABLE IF NOT EXISTS "SellerReview" (
 CREATE UNIQUE INDEX IF NOT EXISTS "SellerReview_sellerId_userId_key" ON "SellerReview"("sellerId", "userId");
 CREATE INDEX IF NOT EXISTS "SellerReview_sellerId_idx" ON "SellerReview"("sellerId");
 CREATE INDEX IF NOT EXISTS "SellerReview_userId_idx" ON "SellerReview"("userId");`,
+    'Auction': AUCTION_TABLE_DDL.Auction,
+    'Bid': AUCTION_TABLE_DDL.Bid,
   }
 
   for (const [tableName, sql] of Object.entries(missingTableSQLs)) {

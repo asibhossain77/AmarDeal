@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin-guard';
 import { deleteFromR2 } from '@/lib/r2';
+import { isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe';
 
 // GET - admin only, returns all products with seller name
 export async function GET(req: NextRequest) {
@@ -18,23 +19,51 @@ export async function GET(req: NextRequest) {
       where.status = status.trim();
     }
 
-    const products = await db.digitalProduct.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        price: true,
-        category: true,
-        image: true,
-        status: true,
-        createdAt: true,
-        seller: {
-          select: { name: true },
+    let products;
+    try {
+      products = await db.digitalProduct.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          price: true,
+          category: true,
+          image: true,
+          status: true,
+          createdAt: true,
+          productType: true,
+          options: {
+            select: { id: true, name: true, price: true, isAvailable: true, sortOrder: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+          seller: {
+            select: { name: true },
+          },
         },
-      },
-    });
+      });
+    } catch (err) {
+      if (!isMissingProductOptionsSupportError(err)) throw err;
+      // multi-price support not migrated yet (production) — fall back without it
+      products = await db.digitalProduct.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          price: true,
+          category: true,
+          image: true,
+          status: true,
+          createdAt: true,
+          seller: {
+            select: { name: true },
+          },
+        },
+      });
+    }
 
     return NextResponse.json(products);
   } catch (e: unknown) {

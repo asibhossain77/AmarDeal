@@ -9,6 +9,8 @@ import { useTheme } from 'next-themes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, Menu, Sun, Moon, Globe, Home, ShoppingCart } from 'lucide-react';
 import { SellerApplyButton } from './seller-apply-dialog';
+import { NotificationBell } from '@/components/shared/notification-bell';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 
 const emptySubscribe = () => () => {};
 
@@ -136,8 +138,9 @@ export function DashboardView() {
 
             {/* Dashboard label - show on all screens */}
             <div className="flex items-center gap-2 min-w-0">
-              <div className="h-7 w-7 rounded-lg bg-primary/15 hidden md:flex items-center justify-center">
-                <span className="text-xs font-bold text-primary">M</span>
+              {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+              <div className="hidden md:flex items-center">
+                <MidmanLogo className="h-7 rounded-lg" alt="Midman" />
               </div>
               <h1 className="text-sm font-bold tracking-tight text-foreground hidden md:block">{t('nav.dashboard')}</h1>
               {/* Mobile: current panel label (replaces Dashboard text on mobile) */}
@@ -166,6 +169,9 @@ export function DashboardView() {
               {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
             </button>
 
+            {/* Notification bell with unread badge */}
+            <NotificationBell />
+
             <button
               onClick={() => setView('landing')}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -184,8 +190,11 @@ export function DashboardView() {
           <DashboardSidebar />
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 md:pl-64 overflow-x-hidden">
+        {/* Main Content — overflow-x-clip (NOT -hidden): hidden computes
+            overflow-y to auto, making this wrapper a ghost page-wide scroll
+            container that can trap touch gestures on mobile; clip clips
+            without creating a scroller */}
+        <div className="flex-1 md:pl-64 overflow-x-clip">
           <DashboardMain />
         </div>
       </div>

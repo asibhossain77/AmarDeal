@@ -19,12 +19,21 @@ const settingKeys = [
   'admin_display_name',
   'admin_image_url',
   'contact_map_url',
+  'payment_gateway_icons',
 ]
+
+/**
+ * Brand logo URLs (light/dark variants) are READ here for the admin panel
+ * preview but are WRITTEN only by /api/admin/upload-logo — which validates
+ * + sanitizes the SVG. They are deliberately NOT part of `settingKeys`, so
+ * the bulk settings save can never clobber a freshly uploaded logo URL.
+ */
+const LOGO_KEYS = ['site_logo_light', 'site_logo_dark'] as const
 
 export async function GET() {
   try {
     const rows = await db.platformSetting.findMany({
-      where: { key: { in: settingKeys } },
+      where: { key: { in: [...settingKeys, ...LOGO_KEYS] } },
     })
 
     const map: Record<string, string> = {}
@@ -49,6 +58,9 @@ export async function GET() {
       admin_display_name: map.admin_display_name || '',
       admin_image_url: map.admin_image_url || '',
       contact_map_url: map.contact_map_url || '',
+      payment_gateway_icons: map.payment_gateway_icons || '',
+      site_logo_light: map.site_logo_light || '',
+      site_logo_dark: map.site_logo_dark || '',
     })
   } catch {
     return NextResponse.json(

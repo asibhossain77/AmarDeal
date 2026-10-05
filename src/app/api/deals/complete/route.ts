@@ -4,6 +4,7 @@ import { sendEmail, dealCompletedEmail } from '@/lib/email'
 import { sendWhatsApp, dealCompletedWa } from '@/lib/whatsapp'
 import { requireAuth } from '@/lib/deal-guard'
 import { processAffiliateCommission } from '@/lib/affiliate-commission'
+import { notifyUser } from '@/lib/push'
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ডিল পাওয়া যায়নি' }, { status: 404 })
     }
 
+    // Only the buyer can confirm completion of the deal
+    if (deal.buyerId !== guard.userId) {
+      return NextResponse.json({ error: 'আপনি এই ডিলের ক্রেতা নন' }, { status: 403 })
+    }
+
     if (deal.status !== 'in_delivery') {
       return NextResponse.json(
         { error: 'শুধুমাত্র ডেলিভারি পর্যায়ের ডিল সম্পন্ন করা যায়' },
@@ -36,6 +42,18 @@ export async function POST(req: NextRequest) {
         seller: { select: { name: true, email: true, phone: true } },
       },
     })
+
+    // Notify the seller that the buyer completed the deal
+    if (updated.buyerId && updated.sellerId) {
+      await notifyUser({
+        userId: updated.sellerId,
+        dealId: updated.id,
+        type: 'deal_completed',
+        title: 'ডিল সম্পন্ন',
+        message: `ডিল #${updated.id} সফলভাবে সম্পন্ন হয়েছে। পেমেন্ট আপনার অ্যাকাউন্টে প্রক্রিয়া হচ্ছে।`,
+        pushUrl: '/dashboard',
+      }).catch(() => {})
+    }
 
     // Email: deal completed
     if (updated.buyer?.email) {

@@ -1,11 +1,13 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product'
-export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail'
+export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
-export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
+export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
+/* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
+export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 
 /** All possible deal statuses in the escrow flow */
 export type DealStatus =
@@ -35,6 +37,11 @@ export interface DealPreFill {
   title: string
   amount: number
   partyEmail: string
+  /* Product-verified order fields — the server re-verifies product/option and
+     recomputes the amount from the database; client values are only a preview. */
+  productId?: string
+  optionId?: string
+  quantity?: number
 }
 
 export interface DealInfo {
@@ -58,11 +65,16 @@ interface AppState {
   dashboardPanel: DashboardPanel
   sellerPanel: SellerPanel
   adminPanel: AdminPanel
+  adminMarketplaceTab: AdminMarketplaceTab
   activeDeal: DealInfo | null
   dealPreFill: DealPreFill | null
   locale: Locale
   sellerProfileId: string | null
   productDetailId: string | null
+  /* Auction detail page (/nilam/[id]) */
+  auctionDetailId: string | null
+  /* Digital product download page (/download/[id]) */
+  downloadProductId: string | null
   /* Product being edited in the seller dashboard edit panel */
   editingProductId: string | null
   /* Navigation history (single-level) */
@@ -76,12 +88,15 @@ interface AppState {
   setDashboardPanel: (panel: DashboardPanel) => void
   setSellerPanel: (panel: SellerPanel) => void /* kept for compat */
   setAdminPanel: (panel: AdminPanel) => void
+  setAdminMarketplaceTab: (tab: AdminMarketplaceTab) => void
   setActiveDeal: (deal: DealInfo | null) => void
   setDealPreFill: (preFill: DealPreFill | null) => void
   setLocale: (locale: Locale) => void
   setSellerProfileId: (id: string | null) => void
   setEditingProductId: (id: string | null) => void
   setProductDetailId: (id: string | null) => void
+  setAuctionDetailId: (id: string | null) => void
+  setDownloadProductId: (id: string | null) => void
   /** Go back to previous page/panel */
   goBack: () => void
   /** Navigate to the user's main view (dashboard, seller, or admin) */
@@ -101,11 +116,14 @@ export const useAppStore = create<AppState>((set) => ({
   dashboardPanel: 'overview',
   sellerPanel: 'overview',
   adminPanel: 'dashboard',
+  adminMarketplaceTab: 'settings',
   activeDeal: null,
   dealPreFill: null,
   locale: getSavedLocale(),
   sellerProfileId: null,
   productDetailId: null,
+  auctionDetailId: null,
+  downloadProductId: null,
   editingProductId: null,
   _prevView: null,
   _prevDashPanel: null,
@@ -142,6 +160,7 @@ export const useAppStore = create<AppState>((set) => ({
     sellerPanel,
   })),
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
+  setAdminMarketplaceTab: (adminMarketplaceTab) => set({ adminMarketplaceTab }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
   setDealPreFill: (dealPreFill) => set({ dealPreFill }),
   setLocale: (locale) => {
@@ -152,6 +171,8 @@ export const useAppStore = create<AppState>((set) => ({
   setSellerProfileId: (sellerProfileId) => set({ sellerProfileId }),
   setEditingProductId: (editingProductId) => set({ editingProductId }),
   setProductDetailId: (productDetailId) => set({ productDetailId }),
+  setAuctionDetailId: (auctionDetailId) => set({ auctionDetailId }),
+  setDownloadProductId: (downloadProductId) => set({ downloadProductId }),
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {

@@ -37,6 +37,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Block deactivated accounts (admin-panel deactivation must actually
+    // revoke access — previously only the client UI checked this)
+    if (!user.isActive) {
+      return NextResponse.json(
+        { error: 'আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে। সাপোর্টের সাথে যোগাযোগ করুন।', code: 'ACCOUNT_INACTIVE' },
+        { status: 403 }
+      )
+    }
+
     // Block unverified users
     if (!user.emailVerified) {
       return NextResponse.json(

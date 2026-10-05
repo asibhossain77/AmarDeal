@@ -28,6 +28,8 @@ import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
+import { WithdrawPanel } from '@/components/seller/withdraw-panel';
+import { AuctionsPanel } from '@/components/seller/auctions-panel';
 
 
 const emptySubscribe = () => () => {};
@@ -485,7 +487,7 @@ function OverviewPanel() {
                         <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground whitespace-nowrap">
                           {deal.id.slice(0, 10)}…
                         </td>
-                        <td className="px-5 py-3.5 font-medium text-foreground max-w-[180px] truncate">
+                        <td className="px-5 py-3.5 font-medium text-foreground break-words">
                           {deal.title}
                         </td>
                         <td className="px-5 py-3.5 text-right font-semibold text-foreground whitespace-nowrap">
@@ -529,7 +531,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail';
 
   // Show seller disabled message
-  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile'].includes(dashboardPanel)) {
+  if (user?.sellerDisabled && ['seller-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-auctions'].includes(dashboardPanel)) {
     return (
       <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
@@ -555,7 +557,11 @@ export function DashboardMain() {
   }
 
   return (
-    <div className={`${isImmersive ? 'flex-1 min-h-0 flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 h-[calc(100vh-4rem)] sm:h-auto' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
+    /* Immersive (deal-detail): on mobile the panel grows with its content and the
+       PAGE scrolls — a fixed h-[100vh-...] box forced an inner-scroll area that real
+       devices couldn't reach (100vh ignores the URL bar, clipping the bottom). sm+
+       keeps the capped desktop layout via the tracker's own sm:max-h. */
+    <div className={`${isImmersive ? 'flex flex-col p-3 sm:p-6 lg:px-6 lg:py-8 min-h-[calc(100dvh-3.5rem)] sm:min-h-0' : 'flex-1 p-4 sm:p-6 lg:px-6 lg:py-8'}`}>
       {/* Back button for sub-panels (not overview, not immersive) */}
       {!isImmersive && dashboardPanel !== 'overview' && (
         <div className="mb-4">
@@ -577,6 +583,8 @@ export function DashboardMain() {
       {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
       {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}
       {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
+      {dashboardPanel === 'seller-withdraw' && <WithdrawPanel />}
+      {dashboardPanel === 'seller-auctions' && <AuctionsPanel />}
     </div>
   );
 }

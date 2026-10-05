@@ -1,6 +1,9 @@
 import { db } from '@/lib/db'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { requireDealAccess } from '@/lib/deal-guard'
+import { markDealRead } from '@/lib/deal-read'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
@@ -33,12 +36,18 @@ export async function GET(
         seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
         creator: { select: { id: true, name: true, email: true } },
         paymentMethod: { select: { id: true, name: true, accountType: true } },
+        // Digital file meta for the buyer's download button (fileKey is NOT exposed here)
+        product: { select: { id: true, title: true, fileName: true, fileSize: true, isFree: true } },
       },
     })
 
     if (!deal) {
       return NextResponse.json({ error: 'ডিল পাওয়া যায়নি' }, { status: 404 })
     }
+
+    // Viewing the deal clears the unread badge — snapshot the updatedAt we
+    // just served so only FUTURE changes by others re-flag it.
+    after(() => markDealRead(dealId, guard.userId))
 
     return NextResponse.json(deal)
   } catch {

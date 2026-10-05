@@ -8,7 +8,24 @@ export async function POST(req: NextRequest) {
   try {
     const guard = await requireAdmin(req);
     if (!guard.ok) return guard.response;
+    const caller = guard.admin;
     const { userId, action, value } = await req.json()
+
+    // ── Server-side role hierarchy (the UI gates panels client-side only —
+    // the API is what actually matters) ──
+    // super_admin: everything. support: plain-user management. staff: only
+    // plain-user management when they hold the 'users' permission.
+    const callerIsSuper = caller.role === 'super_admin'
+    let staffHasUsersPerm = false
+    if (caller.role === 'staff') {
+      try { staffHasUsersPerm = (JSON.parse(caller.permissions || '[]') as string[]).includes('users') } catch { staffHasUsersPerm = false }
+    }
+    const canManagePlainUsers = callerIsSuper || caller.role === 'support' || staffHasUsersPerm
+    const forbidden = (extra?: string) =>
+      NextResponse.json(
+        { error: extra ?? 'এই কাজের জন্য সুপার অ্যাডমিন অনুমতি প্রয়োজন', code: 'FORBIDDEN' },
+        { status: 403 }
+      )
 
     if (!userId || !action) {
       return NextResponse.json(
@@ -17,7 +34,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const user = await db.user.findUnique({ where: { id: userId } })
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      // admin relation is needed by the delete_user super-admin check below —
+      // without include it is undefined at runtime and the check never fires.
+      include: { admin: true },
+    })
     if (!user) {
       return NextResponse.json(
         { error: 'ইউজার পাওয়া যায়নি' },
@@ -27,6 +49,9 @@ export async function POST(req: NextRequest) {
 
     /* ─── Toggle Active/Deactive ─── */
     if (action === 'toggle_active') {
+      // Deactivating an admin (incl. self) is super_admin territory
+      if (user.admin && !callerIsSuper) return forbidden()
+      if (!canManagePlainUsers && !user.admin) return forbidden()
       const newStatus = value === true || value === 'true'
       await db.user.update({
         where: { id: userId },
@@ -40,6 +65,8 @@ export async function POST(req: NextRequest) {
 
     /* ─── Toggle Seller Disabled ─── */
     if (action === 'toggle_seller_disabled') {
+      if (user.admin && !callerIsSuper) return forbidden()
+      if (!canManagePlainUsers && !user.admin) return forbidden()
       if (!user.isSeller) {
         return NextResponse.json(
           { error: 'এই ইউজার সেলার নয়' },
@@ -59,6 +86,9 @@ export async function POST(req: NextRequest) {
 
     /* ─── Change Password ─── */
     if (action === 'change_password') {
+      // Resetting an ADMIN's password = account takeover vector → super only
+      if (user.admin && !callerIsSuper) return forbidden()
+      if (!canManagePlainUsers && !user.admin) return forbidden()
       const newPassword = typeof value === 'string' ? value.trim() : ''
       if (!newPassword || newPassword.length < 8) {
         return NextResponse.json(
@@ -78,7 +108,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'set_admin') {
-      const adminRole = value || 'support'
+      // Only super_admin may create/modify admins — otherwise any staff member
+      // could elevate themselves (verified exploitable before this fix).
+      if (!callerIsSuper) return forbidden()
+
+      const ALLOWED_ROLES = ['super_admin', 'support', 'staff'] as const
+      const adminRole = ALLOWED_ROLES.includes(value) ? value : 'support'
 
       // ── Safeguard: prevent downgrading the LAST super admin ──
       const existingAdmin = await db.admin.findUnique({ where: { userId } })
@@ -115,6 +150,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'set_staff_permissions') {
+      // Granting permissions is super_admin-only (staff could otherwise
+      // grant themselves any permission)
+      if (!callerIsSuper) return forbidden()
       const permissions = Array.isArray(value) ? value : []
       const existing = await db.admin.findUnique({ where: { userId } })
 
@@ -137,6 +175,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'remove_admin') {
+      if (!callerIsSuper) return forbidden()
       // ── Safeguard: prevent removing the LAST super admin ──
       const targetAdmin = await db.admin.findUnique({ where: { userId } })
       if (targetAdmin?.role === 'super_admin') {
@@ -158,7 +197,10 @@ export async function POST(req: NextRequest) {
 
     /* ─── Delete User ─── */
     if (action === 'delete_user') {
-      // Prevent deleting admin users through this action
+      if (user.admin && !callerIsSuper) return forbidden()
+      if (!canManagePlainUsers && !user.admin) return forbidden()
+      // Prevent deleting admin users through this action (user.admin is
+      // reliably loaded via include above)
       if (user.admin?.role === 'super_admin') {
         const superAdminCount = await db.admin.count({ where: { role: 'super_admin' } })
         if (superAdminCount <= 1) {

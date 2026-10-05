@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { useSiteSettings } from '@/lib/use-site-settings';
 import { useTranslation } from '@/lib/i18n';
+import { MidmanLogo } from '@/components/shared/midman-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +30,18 @@ import {
   Phone,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cdnUrl } from '@/lib/cdn-url';
+import { sanitizeNextParam } from '@/lib/bridge-origins';
+
+/**
+ * Validated post-login redirect target from ?next= (used by the SSO bridge
+ * for verify.midman.bd). Only allowlisted bridge origins or same-origin
+ * relative paths survive sanitisation (open-redirect guard) — normal logins
+ * without ?next= behave exactly as before.
+ */
+function getLoginNextTarget(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sanitizeNextParam(new URLSearchParams(window.location.search).get('next'));
+}
 
 const emptySubscribe = () => () => {};
 
@@ -493,6 +505,8 @@ function ManualLoginForm({
       }
       toast.success(t('auth.loginSuccess'));
       setUser(data, { isLogin: true });
+      const nextTarget = getLoginNextTarget();
+      if (nextTarget) { window.location.href = nextTarget; return; } // SSO bridge return
     } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
   }, [identifier, password, setUser, onNeedsVerification, t]);
@@ -519,6 +533,8 @@ function ManualLoginForm({
       }
       toast.success(t('auth.loginSuccess'));
       setUser(data, { isLogin: true });
+      const nextTarget2FA = getLoginNextTarget();
+      if (nextTarget2FA) { window.location.href = nextTarget2FA; return; } // SSO bridge return
       setPending2FA(null);
       setTotpCode('');
     } catch {
@@ -880,7 +896,7 @@ type AuthMode = 'auth' | 'email-login' | 'manual' | 'forgot' | 'verify' | 'compl
 export function AuthView() {
   const setView = useAppStore((s) => s.setView);
   const setUser = useAppStore((s) => s.setUser);
-  const { siteName, siteLogo } = useSiteSettings();
+  const { siteName } = useSiteSettings();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useT();
   const [mode, setMode] = useState<AuthMode>('auth');
@@ -970,13 +986,8 @@ export function AuthView() {
           <div className="relative rounded-3xl border border-border/40 bg-white p-6 shadow-2xl shadow-gray-300/50 dark:border-zinc-800/60 dark:bg-zinc-900 dark:shadow-none sm:p-8">
             {/* ── Header ── */}
             <div className="mb-6 flex flex-col items-center gap-3 text-center">
-              {siteLogo ? (
-                <img src={cdnUrl(siteLogo) || ''} alt={siteName} className="h-11 w-11 rounded-xl object-contain shadow-lg" />
-              ) : (
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 shadow-lg">
-                  <span className="text-base font-bold text-primary">{siteName?.charAt(0) || 'M'}</span>
-                </div>
-              )}
+              {/* Full brand SVG (icon + wordmark) — theme-switches light/dark automatically */}
+              <MidmanLogo className="h-11 rounded-xl shadow-lg" alt={siteName} />
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">{getHeaderTitle()}</h1>
                 <p className="mt-1 text-sm text-muted-foreground">{getHeaderDesc()}</p>
