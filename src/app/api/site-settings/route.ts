@@ -20,6 +20,9 @@ export async function GET() {
       footerDescription: map.footer_description || '',
       footerCopyrightText: map.footer_copyright_text || '',
       footerMadeIn: map.footer_made_in || '',
+    }, {
+      // never cached — admin logo/name changes must reach every browser immediately
+      headers: { 'Cache-Control': 'no-store, must-revalidate' },
     })
   } catch {
     return NextResponse.json(
@@ -32,7 +35,7 @@ export async function GET() {
         footerCopyrightText: '',
         footerMadeIn: '',
       },
-      { status: 200 }
+      { status: 200, headers: { 'Cache-Control': 'no-store, must-revalidate' } }
     )
   }
 }

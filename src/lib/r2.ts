@@ -31,13 +31,26 @@ const ALLOWED_TYPES = new Set([
 
 const MAX_SIZE = 2 * 1024 * 1024 // 2MB
 
+export interface UploadToR2Options {
+  /** Allow image/svg+xml uploads (used for the site logo). SVG is rejected by default. */
+  allowSvg?: boolean
+}
+
 export async function uploadToR2(
   file: File,
-  prefix: string = 'products'
+  prefix: string = 'products',
+  opts?: UploadToR2Options
 ): Promise<{ url: string; key: string }> {
-  assertR2Configured()
+  // Validate type BEFORE asserting config so invalid input fails fast with the right error
+  const isSvg =
+    file.type === 'image/svg+xml' ||
+    (!file.type && file.name.toLowerCase().endsWith('.svg'))
 
-  if (!ALLOWED_TYPES.has(file.type)) {
+  if (isSvg && !opts?.allowSvg) {
+    throw new Error('আপলোডের জন্য JPEG, PNG, WebP অথবা GIF ফাইল হতে হবে')
+  }
+
+  if (!isSvg && !ALLOWED_TYPES.has(file.type)) {
     throw new Error('আপলোডের জন্য JPEG, PNG, WebP অথবা GIF ফাইল হতে হবে')
   }
 
@@ -45,7 +58,9 @@ export async function uploadToR2(
     throw new Error('ফাইল সর্বোচ্চ 2MB হতে পারবে')
   }
 
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  assertR2Configured()
+
+  const ext = isSvg ? 'svg' : (file.name.split('.').pop()?.toLowerCase() || 'png')
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 8)
   const key = `${prefix}/${timestamp}-${random}.${ext}`
@@ -57,7 +72,7 @@ export async function uploadToR2(
     Bucket: R2_BUCKET,
     Key: key,
     Body: buffer,
-    ContentType: file.type,
+    ContentType: isSvg ? 'image/svg+xml' : file.type,
   }))
 
   if (!R2_PUBLIC_URL) {

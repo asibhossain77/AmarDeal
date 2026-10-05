@@ -24,6 +24,7 @@ const FALLBACK: SiteSettings = {
 };
 
 const STORAGE_KEY = 'midman-site-settings';
+const CHANNEL_NAME = 'midman-site-settings';
 
 function readFromStorage(): SiteSettings | null {
   if (typeof window === 'undefined') return null;
@@ -39,14 +40,18 @@ function readFromStorage(): SiteSettings | null {
 function writeToStorage(data: SiteSettings) {
   if (typeof window === 'undefined') return;
   try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === JSON.stringify(data)) return; // unchanged — skip write
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // Ignore storage quota errors
   }
 }
 
-// Global cache outside React — shared across all components
-let cachedSettings: SiteSettings | null = null;
+// Dedupe only IN-FLIGHT requests. Resolved data is deliberately NOT cached at
+// module level — caching it here made every React Query refetch return the
+// same frozen object, so browsers that had the page open never saw admin
+// logo/settings changes (they kept showing the old/default logo).
 let fetchPromise: Promise<SiteSettings> | null = null;
 
 // Module-level query client ref for invalidation from non-hook code
@@ -57,15 +62,16 @@ function captureQueryClient(client: QueryClient) {
 }
 
 async function fetchSiteSettings(): Promise<SiteSettings> {
-  if (cachedSettings) return cachedSettings;
   if (!fetchPromise) {
-    fetchPromise = fetch('/api/site-settings')
+    fetchPromise = fetch('/api/site-settings', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : FALLBACK))
       .catch(() => FALLBACK)
       .then((data) => {
-        cachedSettings = data;
-        writeToStorage(data); // Persist to localStorage for instant reload
+        writeToStorage(data); // Persist for instant paint on next visit
         return data;
+      })
+      .finally(() => {
+        fetchPromise = null; // settled — next call must hit the network again
       });
   }
   return fetchPromise;
@@ -80,16 +86,34 @@ export function useSiteSettings(): SiteSettings {
     captureQueryClient(queryClient);
   }, [queryClient]);
 
+  // Cross-tab instant sync: when the admin panel (another tab) updates the
+  // settings, every other tab in this browser invalidates + refetches at once.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    channel.onmessage = () => {
+      queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+    };
+    return () => channel.close();
+  }, [queryClient]);
+
   // Read persisted settings instantly (no loading flash of old logo)
   const persisted = typeof window !== 'undefined' ? readFromStorage() : null;
 
   const { data } = useQuery<SiteSettings>({
     queryKey: ['site-settings'],
     queryFn: fetchSiteSettings,
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 60 * 1000, // trust a real network fetch for 60s
     gcTime: 10 * 60 * 1000,
-    // Use localStorage data as initial value — logo appears instantly on reload
+    // localStorage data paints instantly, but initialDataUpdatedAt: 0 marks it
+    // STALE, so a background refetch runs on EVERY mount. This is what makes
+    // other browsers pick up an admin logo change on their very next visit
+    // (previously initialData was treated as fresh for 5 min → stale logo).
     initialData: persisted || undefined,
+    initialDataUpdatedAt: persisted ? 0 : undefined,
+    // Global default disables focus refetch — re-enable for settings only so
+    // tabs left open also refresh when the user returns to them.
+    refetchOnWindowFocus: true,
   });
 
   return data || persisted || FALLBACK;
@@ -97,10 +121,19 @@ export function useSiteSettings(): SiteSettings {
 
 /** Invalidate the site-settings cache (call after admin updates) */
 export function invalidateSiteSettingsCache() {
-  cachedSettings = null;
   fetchPromise = null;
-  // Also invalidate React Query cache so components refetch immediately
+  // Invalidate React Query cache so this tab refetches immediately
   if (_queryClient) {
     _queryClient.invalidateQueries({ queryKey: ['site-settings'] });
+  }
+  // Notify all OTHER tabs in the same browser instantly
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const channel = new BroadcastChannel(CHANNEL_NAME);
+      channel.postMessage('site-settings-updated');
+      channel.close();
+    } catch {
+      // ignore — other tabs still refetch on their next mount/focus
+    }
   }
 }
