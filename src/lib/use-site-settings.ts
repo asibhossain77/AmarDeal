@@ -91,8 +91,8 @@ async function fetchSiteSettings(): Promise<SiteSettings> {
       .then((r) => (r.ok ? r.json() : FALLBACK))
       .catch(() => FALLBACK)
       .then((data) => {
-        const normalized = normalize(data);
-        writeToStorage(normalized as SiteSettings); // Persist for instant paint on next visit
+        const normalized = normalize(data) ?? FALLBACK;
+        writeToStorage(normalized); // Persist for instant paint on next visit
         return normalized;
       })
       .finally(() => {
