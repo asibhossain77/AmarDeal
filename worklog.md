@@ -1273,3 +1273,64 @@ Work Log:
 Stage Summary:
 - Midman commit 25862fa pushed origin/main (25862fa = bridge); Vercel auto-deploys
 - Architecture live: ONE midman account + ONE auth system + separate Verify DB referencing user_id; verify project at /home/z/my-project/verify (README.md has deploy checklist: Turso DB, env vars, Vercel project, DNS CNAME verify.midman.bd, shared VERIFY_BRIDGE_SECRET)
+
+---
+Task ID: 56
+Agent: Main
+Task: Fix "admin logo upload only visible in admin's own browser — other browsers show default logo" (worklog entry re-created after sandbox rollback)
+
+Work Log:
+- Root cause (use-site-settings.ts): module-level frozen cache fed every React Query refetch; localStorage initialData treated as fresh for 5 min; global refetchOnWindowFocus:false; no Cache-Control on /api/site-settings
+- Fix: dedupe in-flight only, cache:'no-store' fetch, initialDataUpdatedAt:0 (always-stale → refetch on every mount), per-query refetchOnWindowFocus:true, BroadcastChannel cross-tab sync, no-store header on the API
+- Also: SVG-first logo upload (uploadSvgToR2 + validateSvgLogoUpload sanitization, /cdn/ CSP for SVGs), upload-then-delete ordering
+- Recovered from full sandbox repo rollback (HEAD reverted to 04c6757, objects GC'd): re-fetched origin (6a2c749 = logo sync work, safe on GitHub), hard reset, re-stacked user WIP via stash pop with 2 conflicts resolved (banner-image rm per user intent, auth-view kept redesign base)
+- Tests: 13/13 API assertions (no-store header, logoLight/logoDark, live DB→API freshness, 401/400 gates, PNG regression); tsc 168; build ✓
+- Pushed: 2bc6ca8 → merge 000c9dd → 6a2c749 (origin/main)
+
+Stage Summary:
+- Logo/settings changes now propagate to every browser on next load/focus; cross-tab instant via BroadcastChannel
+- Light/dark Logo Settings system (f7b13db) fully intact and preserved
+
+---
+Task ID: 57
+Agent: Main
+Task: Auth UI/UX redesign — premium minimal fintech look, zero functional changes
+
+Work Log:
+- Surveyed existing auth: auth-view.tsx (1113 lines, single component, modes: auth/email-login/manual/forgot/verify/complete-profile), APIs /api/auth/{login,register,google,google-status,magic-link,complete-profile,check-email,forgot-password,verify-otp,reset-password,verify-email,resend-verify-email}, 2FA via /api/admin/2fa/login-verify, session via store.setUser, Hind Siliguri font, oklch green primary (oklch 0.768 0.189 131), next-themes class dark mode
+- Discovered committed auth-view had corrupted lines (`const ode, setMode]`, `const agicUserId`) at 04c6757 — full rewrite fixes them + the 2 TS2367 step-comparison errors
+- CRITICAL recovery mid-task: sandbox had rolled the repo back to 04c6757 (f7b13db light/dark logo system + Task 56 fix missing locally, safe on GitHub as 6a2c749). Re-fetched, reset --hard origin/main, re-stacked work via stash pop; resolved UD banner-image (git rm, user intent) + UU auth-view (took redesign, then re-integrated the SSO bridge ?next= redirect from 25862fa into handleLogin + handle2FAVerify — sanitizeNextParam/bridge-origins preserved)
+- Rewrote auth-view.tsx: two-column desktop card (left trust panel: MidmanLogo, Bengali headline নিরাপদে কেনাবেচা করুন মিডম্যানের সাথে, desc, 3 Lucide value points ShieldCheck/UserCheck/LifeBuoy, bg-secondary/40 tint, midman.bd footer; right form column max-w-sm), mobile-first single column with centered logo
+- Modes: login (default, Google+divider when enabled, manual form, register link, magic-link tertiary), register (first-class mode replacing collapse-toggle UX), forgot (3-step with polished indicator), verify (MailCheck header + desc), email-login, complete-profile — ALL handlers/fetches/validation/2FA/redirects preserved verbatim
+- New shared UI atoms: FormError (role=alert + AlertCircle pill), PasswordToggle (aria-label/aria-pressed, focusable — was tabIndex=-1), FieldLabel (label + trailing forgot link), OrDivider, GoogleIcon; modeTransition (200ms fade+8px slide, no springs)
+- a11y: htmlFor/id everywhere, autoComplete (username/current-password/new-password/name/tel/email/one-time-code), aria-hidden on decorative icons, visible focus rings, 48px CTAs
+- i18n: 21 new keys in bn.ts + en.ts (auth.trust.*, welcomeBack, loginSubtitle, continueWithGoogle, or, registerTitle/Subtitle, verifyEmailDesc, show/hidePassword); removed 🎉 emoji from verificationSuccess
+- 'Remember me' omitted deliberately: /api/auth/login has no remember-me field — no fake UI (session cookie behavior unchanged)
+- Fixes during review: orphan 'or' divider when Google disabled (divider now renders only with Google button)
+- Verification: tsc 166 (baseline 170; rewrite fixed 4 pre-existing auth errors); next build ✓ (139 pages); 12 browser screenshots (desktop/mobile × light/dark × login/register/forgot/error-state, zero console errors, live login error state confirmed via API round-trip) → /home/z/my-project/download/task57/
+- Committed e1a756c (auth-view.tsx + bn.ts + en.ts only — user WIP untouched) → pushed origin/main
+
+Stage Summary:
+- Production-ready premium auth surface; every existing flow intact (manual login, 2FA, register→verify→resend, Google, magic link, forgot/reset, ?next= bridge redirect)
+- origin/main = e1a756c; user WIP still uncommitted in worktree (11 files)
+
+---
+Task ID: 58
+Agent: Main
+Task: Deal List UI enhancement — show the OTHER participant (profile image + name + role) per deal; zero functional changes
+
+Work Log:
+- Surveyed: Deal List = src/components/dashboard/my-deals-panel.tsx (client cards + filter tabs/search/copy/unread/View/Review); data = POST /api/user/deals (requireAuth, single findMany with buyer/seller/creator include → no N+1); Deal.buyerId required / sellerId nullable (both create paths always set seller); avatar field = User.imageLink rendered via cdnUrl() with initial fallback (existing admin pattern); /dashboard/my-deals is a valid URL deep link (url-sync.ts parseUrl)
+- API: additive `imageLink: true` on buyer/seller select in /api/user/deals only (public profile field, already exposed on seller pages//api/me; email/phone participant exposure untouched); no migration, no new user fields
+- Panel: getDealPartner() — buyer→seller, seller→buyer, legacy creator-only→buyer, self-guard (never shows viewer), seller-less→'awaiting' state; PartnerAvatar (36px table / 40px card, cdnUrl, onError→initial, bg-primary/15 design-system fallback); PartnerInfo (name truncate + role pill ক্রেতা/বিক্রেতা; em-dash defensive null)
+- Desktop lg+: shadcn Table in the same card token (bg-white dark:bg-zinc-900 shadow-lg rounded-2xl) — Deal ID | Date | Deal Title | Deal Partner | Amount | Status | Action; unread badge moved inline on title; completed deals get compact review icon-button alongside View
+- Mobile/tablet <lg: cards restructured to spec — top row ID chip+unread|status, title+amount, participant band (bg-muted/40), bottom row date + 44px (h-11) View/Review buttons; CopyIdChip min-h 32px
+- i18n: 12 new deals.* keys in bn.ts + en.ts (col*, roleBuyer/roleSeller, awaitingSeller, fallbackName)
+- Tests: 22/22 API assertions (task58-tests.sh + task58-assert.py: buyer sees seller name+imageLink, seller sees buyer, seller-null deal → awaiting, seller-less deal excluded from seller list, no password/resetToken/totpSecret in payloads, participant keys ⊆ {id,name,email,phone,imageLink}, no-cookie → 401 NO_SESSION); tsc 166 = baseline (stash-compare, zero new; pre-existing adminAff.date duplicate in en.ts untouched); next build ✓; 19/19 browser DOM assertions + 5 screenshots (desktop/mobile × light/dark × buyer/seller via midman_session cookie + /dashboard/my-deals deep link, next-themes via localStorage 'theme', avatar <img> asserted via data-URI fixture) → /home/z/my-project/download/task58/
+- Notes: querySelector('table') finds the DOM-hidden lg table on mobile — visibility must use offsetWidth; next-themes defaultTheme=light ignores prefers-color-scheme → emulate toggles via localStorage; fixture task58-db.ts deleted after tests; db/custom.db restored via git checkout
+- Pushed 4f595cc (4 files: user/deals route, my-deals-panel, bn.ts, en.ts) — user WIP (12 files) untouched
+
+Stage Summary:
+- Buyer sees seller, seller sees buyer, on every deal row, desktop table + mobile cards, light/dark correct
+- Zero changes to deal creation/ID/assignment/payment/escrow/status transitions/disputes/navigation/permissions
+- origin/main = 4f595cc
