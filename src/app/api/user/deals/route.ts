@@ -25,8 +25,11 @@ export async function POST(req: NextRequest) {
         ],
       },
       include: {
-        buyer: { select: { id: true, name: true, email: true, phone: true } },
-        seller: { select: { id: true, name: true, email: true, phone: true } },
+        // imageLink = public profile avatar only (already exposed on seller
+        // pages / /api/me); email/phone exposure to deal participants is
+        // pre-existing behavior, unchanged.
+        buyer: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
+        seller: { select: { id: true, name: true, email: true, phone: true, imageLink: true } },
         creator: { select: { id: true, name: true, email: true } },
         paymentMethod: { select: { id: true, name: true, accountNumber: true, accountType: true, color: true, image: true } },
         product: { select: { id: true, title: true, image: true } },

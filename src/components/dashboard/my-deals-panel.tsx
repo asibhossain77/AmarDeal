@@ -6,11 +6,21 @@ import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Inbox, Copy, Check, Search, X, MessageSquare } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Eye, Inbox, Copy, Check, Search, X, MessageSquare, User } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { DealUnreadBadge } from '@/components/dashboard/deal-unread-badge';
+import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
+
+interface DealParticipant {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  imageLink?: string | null;
+}
 
 interface DealRow {
   id: string;
@@ -22,9 +32,58 @@ interface DealRow {
   unreadCount?: number;
   hasUpdate?: boolean;
   rejectionReason?: string | null;
-  buyer?: { id: string; name: string; email: string; phone: string } | null;
-  seller?: { id: string; name: string; email: string; phone: string } | null;
+  buyerId?: string;
+  sellerId?: string | null;
+  creatorId?: string;
+  buyer?: DealParticipant | null;
+  seller?: DealParticipant | null;
   creator?: { id: string; name: string; email: string } | null;
+}
+
+/**
+ * The other participant of a deal, from the viewer's perspective.
+ * - kind 'partner'  → avatar + name + role to render
+ * - kind 'awaiting' → deal has no counterparty assigned yet
+ * - null            → no displayable counterparty (defensive; never the viewer themself)
+ */
+type DealPartnerInfo =
+  | { kind: 'partner'; name: string; imageLink: string | null; role: 'buyer' | 'seller' }
+  | { kind: 'awaiting' }
+  | null;
+
+/**
+ * Resolve the OTHER participant of a deal for the logged-in viewer:
+ * buyer sees the seller, seller sees the buyer. Legacy creator-only rows
+ * fall back to the buyer. Never returns the viewer's own identity.
+ */
+function getDealPartner(deal: DealRow, viewerId?: string): DealPartnerInfo {
+  if (!viewerId) return null;
+  const buyerId = deal.buyerId ?? deal.buyer?.id;
+  const sellerId = deal.sellerId ?? deal.seller?.id ?? null;
+
+  // Viewer is the buyer → the other party is the seller.
+  if (buyerId === viewerId) {
+    if (deal.seller && deal.seller.id !== viewerId) {
+      return { kind: 'partner', name: deal.seller.name, imageLink: deal.seller.imageLink ?? null, role: 'seller' };
+    }
+    return { kind: 'awaiting' };
+  }
+  // Viewer is the seller → the other party is the buyer.
+  if (sellerId && sellerId === viewerId) {
+    if (deal.buyer && deal.buyer.id !== viewerId) {
+      return { kind: 'partner', name: deal.buyer.name, imageLink: deal.buyer.imageLink ?? null, role: 'buyer' };
+    }
+    return null;
+  }
+  // Legacy creator-only row (viewer is neither buyer nor seller) → buyer is the counterparty.
+  if (deal.buyer && deal.buyer.id !== viewerId) {
+    return { kind: 'partner', name: deal.buyer.name, imageLink: deal.buyer.imageLink ?? null, role: 'buyer' };
+  }
+  return null;
+}
+
+function formatDealDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
 function getStatusBadge(status: string, t: (key: any) => string) {
@@ -46,6 +105,99 @@ function getStatusBadge(status: string, t: (key: any) => string) {
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
+}
+
+/**
+ * Circular profile image of the deal partner with a clean initial-letter
+ * fallback (same design language as the admin UserAvatar) and a broken-image
+ * safety net. 36px in tables, 40px in cards.
+ */
+function PartnerAvatar({ name, imageLink, size }: { name: string; imageLink: string | null; size: 'sm' | 'md' }) {
+  const [broken, setBroken] = useState(false);
+  const src = broken ? null : cdnUrl(imageLink);
+  const dim = size === 'md' ? 'h-10 w-10 text-sm' : 'h-9 w-9 text-xs';
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`shrink-0 rounded-full object-cover ring-1 ring-border/60 ${dim}`}
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+  return (
+    <div
+      aria-hidden="true"
+      className={`flex shrink-0 items-center justify-center rounded-full bg-primary/15 font-bold text-primary ring-1 ring-inset ring-primary/20 ${dim}`}
+    >
+      {(name || '?').trim().charAt(0).toUpperCase() || '?'}
+    </div>
+  );
+}
+
+function AwaitingAvatar() {
+  return (
+    <div
+      aria-hidden="true"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-border/70 bg-muted/30 text-muted-foreground/60"
+    >
+      <User className="h-4 w-4" />
+    </div>
+  );
+}
+
+/**
+ * Partner cell content: avatar + name + role pill, or the awaiting/empty
+ * placeholder. `compact` = table row sizing, default = card sizing.
+ */
+function PartnerInfo({ partner, t, compact }: { partner: DealPartnerInfo; t: (key: any) => string; compact?: boolean }) {
+  if (!partner) {
+    return <span className={compact ? 'text-xs text-muted-foreground' : 'text-sm text-muted-foreground'}>—</span>;
+  }
+  if (partner.kind === 'awaiting') {
+    return (
+      <div className="flex items-center gap-2.5">
+        <AwaitingAvatar />
+        <span className={compact ? 'text-xs text-muted-foreground' : 'text-sm text-muted-foreground'}>
+          {t('deals.awaitingSeller')}
+        </span>
+      </div>
+    );
+  }
+  const name = partner.name?.trim() || t('deals.fallbackName');
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <PartnerAvatar name={name} imageLink={partner.imageLink} size={compact ? 'sm' : 'md'} />
+      <div className="min-w-0 leading-tight">
+        <p className={`truncate font-semibold text-foreground ${compact ? 'max-w-[120px] text-xs' : 'max-w-[150px] text-sm'}`} title={name}>
+          {name}
+        </p>
+        <span className="mt-0.5 inline-flex items-center rounded-full bg-muted px-1.5 py-px text-[10px] font-semibold leading-none text-muted-foreground">
+          {partner.role === 'seller' ? t('deals.roleSeller') : t('deals.roleBuyer')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CopyIdChip({ deal, copied, onCopy, title }: { deal: DealRow; copied: boolean; onCopy: (id: string) => void; title: string }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onCopy(deal.id); }}
+      title={title}
+      aria-label={`${title} DL-${deal.id.slice(-5)}`}
+      className="group inline-flex min-h-[32px] items-center gap-1.5 rounded-md bg-muted/60 px-2 py-0.5 transition-colors hover:bg-muted"
+    >
+      <span className="font-mono text-xs font-semibold text-primary">{`DL-${deal.id.slice(-5)}`}</span>
+      {copied ? (
+        <Check className="h-3 w-3 text-emerald-500" />
+      ) : (
+        <Copy className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-foreground" />
+      )}
+    </button>
+  );
 }
 
 export function MyDealsPanel() {
@@ -146,6 +298,8 @@ export function MyDealsPanel() {
     }
   };
 
+  const tableHeadCls = 'text-[11px] font-semibold uppercase tracking-wider text-muted-foreground';
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-6">
       <div className="text-center lg:text-left">
@@ -167,6 +321,7 @@ export function MyDealsPanel() {
           <button
             onClick={() => setSearch('')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={t('deals.searchPlaceholder')}
           >
             <X className="h-4 w-4" />
           </button>
@@ -220,68 +375,151 @@ export function MyDealsPanel() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredDeals.map((deal, i) => (
-            <motion.div
-              key={deal.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.05 }}
-              className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-4 sm:p-5 border border-border/50"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleCopyId(deal.id); }}
-                      className="inline-flex items-center gap-1.5 rounded-md bg-muted/60 hover:bg-muted px-2 py-0.5 transition-colors group"
-                      title={t('deals.copy')}
-                    >
-                      <span className="font-mono text-xs font-semibold text-primary">{`DL-${deal.id.slice(-5)}`}</span>
-                      {copiedId === deal.id ? (
-                        <Check className="h-3 w-3 text-emerald-500" />
-                      ) : (
-                        <Copy className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
-                      )}
-                    </button>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(deal.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                    </span>
-                    <DealUnreadBadge
-                      unreadCount={deal.unreadCount ?? 0}
-                      hasUpdate={!!deal.hasUpdate}
-                      updateLabel={t('deals.unreadUpdate')}
-                    />
+        <>
+          {/* ── Desktop (lg+): responsive table ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="hidden overflow-hidden rounded-2xl border border-border/50 bg-white shadow-lg lg:block dark:bg-zinc-900"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead className={`h-11 pl-5 ${tableHeadCls}`}>{t('deals.colDealId')}</TableHead>
+                  <TableHead className={`h-11 ${tableHeadCls}`}>{t('deals.colDate')}</TableHead>
+                  <TableHead className={`h-11 ${tableHeadCls}`}>{t('deals.colTitle')}</TableHead>
+                  <TableHead className={`h-11 ${tableHeadCls}`}>{t('deals.colPartner')}</TableHead>
+                  <TableHead className={`h-11 text-right ${tableHeadCls}`}>{t('deals.colAmount')}</TableHead>
+                  <TableHead className={`h-11 ${tableHeadCls}`}>{t('deals.colStatus')}</TableHead>
+                  <TableHead className={`h-11 pr-5 text-right ${tableHeadCls}`}>{t('deals.colAction')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredDeals.map((deal) => {
+                  const partner = getDealPartner(deal, user?.id);
+                  return (
+                    <TableRow key={deal.id} className="border-border/50">
+                      <TableCell className="pl-5">
+                        <CopyIdChip deal={deal} copied={copiedId === deal.id} onCopy={handleCopyId} title={t('deals.copy')} />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                        {formatDealDate(deal.createdAt)}
+                      </TableCell>
+                      <TableCell className="max-w-[220px]">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-foreground" title={deal.title}>{deal.title}</p>
+                          <DealUnreadBadge
+                            unreadCount={deal.unreadCount ?? 0}
+                            hasUpdate={!!deal.hasUpdate}
+                            updateLabel={t('deals.unreadUpdate')}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <PartnerInfo partner={partner} t={t} compact />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right text-sm font-bold text-primary">
+                        ৳{deal.amount.toLocaleString('en')}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(deal.status, t)}</TableCell>
+                      <TableCell className="pr-5">
+                        <div className="flex items-center justify-end gap-2">
+                          {deal.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setDashboardPanel('review')}
+                              title={t('review.leaveReview')}
+                              aria-label={t('review.leaveReview')}
+                              className="h-8 w-8 rounded-lg p-0"
+                            >
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleOpenDeal(deal)}
+                            className="h-8 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            {t('deals.view')}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </motion.div>
+
+          {/* ── Mobile / tablet (< lg): cards ── */}
+          <div className="space-y-3 lg:hidden">
+            {filteredDeals.map((deal, i) => {
+              const partner = getDealPartner(deal, user?.id);
+              return (
+                <motion.div
+                  key={deal.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.05 }}
+                  className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-4 sm:p-5 border border-border/50"
+                >
+                  {/* Top row: deal ID + status */}
+                  <div className="mb-2.5 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <CopyIdChip deal={deal} copied={copiedId === deal.id} onCopy={handleCopyId} title={t('deals.copy')} />
+                      <DealUnreadBadge
+                        unreadCount={deal.unreadCount ?? 0}
+                        hasUpdate={!!deal.hasUpdate}
+                        updateLabel={t('deals.unreadUpdate')}
+                      />
+                    </div>
+                    {getStatusBadge(deal.status, t)}
                   </div>
-                  <p className="text-base font-semibold text-foreground break-words">{deal.title}</p>
-                  <p className="text-lg font-bold text-primary mt-1">৳{deal.amount.toLocaleString('en')}</p>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {getStatusBadge(deal.status, t)}
-                  <Button
-                    size="sm"
-                    onClick={() => handleOpenDeal(deal)}
-                    className="h-8 gap-1.5 rounded-lg text-xs font-semibold shadow-md shadow-primary/20"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    {t('deals.view')}
-                  </Button>
-                  {deal.status === 'completed' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDashboardPanel('review')}
-                      className="h-8 gap-1.5 rounded-lg text-xs font-semibold"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      {t('review.leaveReview')}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                  {/* Main row: title + amount */}
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 break-words text-base font-semibold leading-snug text-foreground">{deal.title}</p>
+                    <p className="shrink-0 text-lg font-bold text-primary">৳{deal.amount.toLocaleString('en')}</p>
+                  </div>
+
+                  {/* Participant row: the OTHER party of this deal */}
+                  <div className="mt-3 rounded-xl bg-muted/40 p-2.5 dark:bg-zinc-800/60">
+                    <PartnerInfo partner={partner} t={t} />
+                  </div>
+
+                  {/* Bottom row: date + actions (44px touch targets) */}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatDealDate(deal.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      {deal.status === 'completed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setDashboardPanel('review')}
+                          className="h-11 gap-1.5 rounded-lg px-3 text-xs font-semibold"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          {t('review.leaveReview')}
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenDeal(deal)}
+                        className="h-11 gap-1.5 rounded-lg px-4 text-xs font-semibold shadow-md shadow-primary/20"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {t('deals.view')}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </>
       )}
     </motion.div>
   );

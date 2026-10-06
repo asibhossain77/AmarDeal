@@ -378,6 +378,17 @@ export const en: Record<TranslationKey, string> = {
   'deals.view': 'View',
   'deals.unreadUpdate': 'New update',
   'deals.copy': 'Copy',
+  'deals.colDealId': 'Deal ID',
+  'deals.colDate': 'Date',
+  'deals.colTitle': 'Deal Title',
+  'deals.colPartner': 'Deal Partner',
+  'deals.colAmount': 'Amount',
+  'deals.colStatus': 'Status',
+  'deals.colAction': 'Action',
+  'deals.roleBuyer': 'Buyer',
+  'deals.roleSeller': 'Seller',
+  'deals.awaitingSeller': 'Awaiting seller',
+  'deals.fallbackName': 'User',
 
   // ── Deal Form (New Deal) ──
   'deal.createTitle': 'Create Admin Deal',

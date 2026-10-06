@@ -375,6 +375,17 @@ export const bn = {
   'deals.view': 'দেখুন',
   'deals.unreadUpdate': 'নতুন আপডেট',
   'deals.copy': 'কপি করুন',
+  'deals.colDealId': 'ডিল আইডি',
+  'deals.colDate': 'তারিখ',
+  'deals.colTitle': 'ডিল টাইটেল',
+  'deals.colPartner': 'ডিল পার্টনার',
+  'deals.colAmount': 'পরিমাণ',
+  'deals.colStatus': 'স্ট্যাটাস',
+  'deals.colAction': 'অ্যাকশন',
+  'deals.roleBuyer': 'ক্রেতা',
+  'deals.roleSeller': 'বিক্রেতা',
+  'deals.awaitingSeller': 'বিক্রেতার অপেক্ষায়',
+  'deals.fallbackName': 'ইউজার',
 
   // ── Deal Form (New Deal) ──
   'deal.createTitle': 'অ্যাডমিন ডিল তৈরি করুন',
