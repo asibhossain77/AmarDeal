@@ -56,6 +56,7 @@ model User {
   auctionBids        Bid[]     @relation("AuctionBids")
   auctionsWon        Auction[] @relation("AuctionWinner")
   topBidAuctions     Auction[] @relation("AuctionTopBidder")
+  oauthAuthCodes     OAuthAuthorizationCode[]
 }
 
 model Admin {
@@ -554,4 +555,26 @@ model SellerWithdrawal {
 
   @@index([userId, status])
   @@index([status])
+}
+
+// ── OAuth 2.0 Authorization Code (single-use, short-lived) ──
+// Used by the "Continue with Midman" provider for verify.midman.bd.
+// Only a SHA-256 hash of each code is stored — raw codes never touch the DB.
+model OAuthAuthorizationCode {
+  id                  String    @id @default(cuid())
+  codeHash            String    @unique
+  clientId            String
+  userId              String
+  redirectUri         String
+  scope               String
+  codeChallenge       String
+  codeChallengeMethod String    @default("S256")
+  expiresAt           DateTime
+  usedAt              DateTime?
+  createdAt           DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

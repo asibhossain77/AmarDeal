@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { sanitizeNextParam } from '@/lib/bridge-origins';
+import { consumePendingReturnTo } from '@/lib/login-redirect';
 
 const emptySubscribe = () => () => {};
 
@@ -594,6 +595,9 @@ function ManualLoginForm({
       setUser(data, { isLogin: true });
       const nextTarget = getLoginNextTarget();
       if (nextTarget) { window.location.href = nextTarget; return; } // SSO bridge return
+      // "Continue with Midman": resume the /oauth/authorize flow if pending
+      const pending = consumePendingReturnTo();
+      if (pending) { window.location.assign(pending); return; }
     } catch { setError(t('auth.serverProblem')); }
     finally { setLoading(false); }
   }, [identifier, password, setUser, onNeedsVerification, t]);
@@ -622,6 +626,9 @@ function ManualLoginForm({
       setUser(data, { isLogin: true });
       const nextTarget2FA = getLoginNextTarget();
       if (nextTarget2FA) { window.location.href = nextTarget2FA; return; } // SSO bridge return
+      // "Continue with Midman": resume the /oauth/authorize flow if pending
+      const pending2FAOauth = consumePendingReturnTo();
+      if (pending2FAOauth) { window.location.assign(pending2FAOauth); return; }
       setPending2FA(null);
       setTotpCode('');
     } catch {

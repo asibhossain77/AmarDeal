@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useAppStore, type UserInfo, type AppView } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { initUrlSync, reapplyUrlAfterLogin, applyUrlAfterAuth, parseUrl } from '@/lib/url-sync';
+import { setPendingReturnTo, consumePendingReturnTo, isValidReturnTo } from '@/lib/login-redirect';
 import { toast } from 'sonner';
 import { DeferredStyles } from '@/components/shared/deferred-styles';
 
@@ -288,6 +289,14 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
     const magic = params.get('magic');
     const magicUid = params.get('uid');
     const magicComplete = params.get('complete');
+    const nextParam = params.get('next');
+
+    // "Continue with Midman": /login?next=/oauth/authorize?... —
+    // stash the validated return-to so any login method (password,
+    // 2FA, Google, magic link) resumes the authorization flow after.
+    if (nextParam && isValidReturnTo(nextParam)) {
+      setPendingReturnTo(nextParam);
+    }
 
     const cleanup = () => {
       const url = new URL(window.location.href);
@@ -298,6 +307,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       url.searchParams.delete('magic');
       url.searchParams.delete('uid');
       url.searchParams.delete('complete');
+      url.searchParams.delete('next');
       window.history.replaceState({}, '', url.pathname);
     };
 
@@ -342,10 +352,23 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
           // Fresh login (Google OAuth, PipraPay) → go to landing page
           setUser(user, { isLogin: true });
           setTimeout(() => reapplyUrlAfterLogin(), 0);
+          // "Continue with Midman": resume the pending authorize flow
+          const pending = consumePendingReturnTo();
+          if (pending) {
+            window.location.assign(pending);
+            return;
+          }
         } else {
           // Session restore (page refresh) → restore the view from URL
           setUser(user);
           setTimeout(() => applyUrlAfterAuth(), 0);
+          // Resume a stashed /oauth/authorize return-to if present
+          // (e.g. magic-link completion in the same tab)
+          const pending = consumePendingReturnTo();
+          if (pending) {
+            window.location.assign(pending);
+            return;
+          }
         }
         if (googleLogin === 'success') {
           toast.success('Google দিয়ে লগইন সফল!');

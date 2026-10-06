@@ -58,22 +58,24 @@ const store = new Map<string, Bucket>();
 /* ------------------------------------------------------------------ */
 
 function getCategory(pathname: string, method: string): LimitCategory {
-  // Auth — strict (login, register, password reset, 2FA)
+  // Auth — strict (login, register, password reset, 2FA, OAuth token exchange)
   if (
     (pathname === '/api/auth/login' && method === 'POST') ||
     (pathname === '/api/auth/register' && method === 'POST') ||
     (pathname === '/api/auth/forgot-password' && method === 'POST') ||
     (pathname === '/api/auth/reset-password' && method === 'POST') ||
-    (pathname === '/api/admin/2fa/login-verify' && method === 'POST')
+    (pathname === '/api/admin/2fa/login-verify' && method === 'POST') ||
+    (pathname === '/api/oauth/token' && method === 'POST')
   ) {
     return 'auth-strict';
   }
 
-  // Auth — moderate (OTP verify, email check, resend)
+  // Auth — moderate (OTP verify, email check, resend, OAuth consent submit)
   if (
     (pathname === '/api/auth/verify-otp' && method === 'POST') ||
     (pathname === '/api/auth/check-email' && method === 'POST') ||
-    (pathname === '/api/auth/resend-verify-email' && method === 'POST')
+    (pathname === '/api/auth/resend-verify-email' && method === 'POST') ||
+    (pathname === '/api/oauth/authorize' && method === 'POST')
   ) {
     return 'auth-moderate';
   }

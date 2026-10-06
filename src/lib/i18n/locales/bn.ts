@@ -2277,6 +2277,26 @@ export const bn = {
   'seller.auction.errPrice': 'সঠিক শুরুর মূল্য দিন — ১ টাকা বা বেশি',
   'seller.auction.errTime': 'নিলামের সময় নির্বাচন করুন — কমপক্ষে ১০ মিনিট পরে',
   'seller.auction.errImage': 'ছবি আপলোড ব্যর্থ হয়েছে',
+
+  // ── OAuth consent ("Continue with Midman" / verify.midman.bd) ──
+  'oauth.title': 'Midman দিয়ে সাইন ইন করুন',
+  'oauth.wantsAccess': '{app} আপনার Midman অ্যাকাউন্টে অ্যাক্সেস চাইছে',
+  'oauth.signedInAs': 'সাইন ইন করেছেন',
+  'oauth.allowListTitle': '{app} কে এগুলো করতে অনুমতি দেবে:',
+  'oauth.scopeOpenid': 'আপনার Midman ইউজার আইডি দিয়ে পরিচয় যাচাই করা',
+  'oauth.scopeProfile': 'আপনার নাম এবং প্রোফাইল ছবি দেখা',
+  'oauth.scopeEmail': 'আপনার ইমেইল ঠিকানা দেখা',
+  'oauth.continue': 'চালিয়ে যান',
+  'oauth.cancel': 'বাতিল করুন',
+  'oauth.securityNote': 'Midman কখনো আপনার পাসওয়ার্ড বা আর্থিক তথ্য কোনো অ্যাপের সাথে শেয়ার করে না।',
+  'oauth.processing': 'প্রসেস হচ্ছে...',
+  'oauth.signedInNote': 'চালিয়ে গেলে আপনি এই অ্যাপটিকে আপনার Midman আইডেন্টিটি ব্যবহারের অনুমতি দিচ্ছেন।',
+  'oauth.errorTitle': 'অনুমোদনে সমস্যা',
+  'oauth.backHome': 'মিডম্যানে ফিরে যান',
+  'oauth.error.invalid_client': 'এই অ্যাপটি অজানা অথবা অনুমোদিত নয়।',
+  'oauth.error.invalid_redirect': 'এই অ্যাপের জন্য রিডাইরেক্ট ঠিকানাটি নিবন্ধিত নয়।',
+  'oauth.error.invalid_scope': 'অনুরোধ করা তথ্যের অনুমতি নেই।',
+  'oauth.error.invalid_request': 'সাইন ইন অনুরোধটি অসম্পূর্ণ বা সঠিক নয়।',
 } as const;
 
 export type TranslationKey = keyof typeof bn;
