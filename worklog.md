@@ -1334,3 +1334,31 @@ Stage Summary:
 - Buyer sees seller, seller sees buyer, on every deal row, desktop table + mobile cards, light/dark correct
 - Zero changes to deal creation/ID/assignment/payment/escrow/status transitions/disputes/navigation/permissions
 - origin/main = 4f595cc
+
+---
+Task ID: 59
+Agent: Main
+Task: "Continue with Midman" — OAuth 2.0 Authorization Code provider (PKCE) so verify.midman.bd can use midman.bd as its central identity provider
+
+Work Log:
+- Inspected existing auth (midman_session cookie = userId, /api/auth/login|logout|me, Google/magic/2FA, proxy.ts CSP+rate-limit) and prisma schema before writing any code
+- Added Prisma model OAuthAuthorizationCode (codeHash unique SHA-256, clientId, userId, redirectUri, scope, codeChallenge, codeChallengeMethod, expiresAt, usedAt) + User.oauthAuthCodes relation; prisma db push
+- Created src/lib/oauth/: clients.ts (trusted client registry — only "midman-verify" with exact redirect https://verify.midman.bd/auth/callback, secret from env, fail-closed), crypto.ts (b64url, HMAC-SHA256 compact tokens, hash-then-compare constant-time equal, PKCE S256 RFC 7636), service.ts (scopes openid/profile/email, consent token issue/verify 5min, access token issue/verify 10min, single-use code create/atomic consume, redirect builder, same-origin check)
+- GET /oauth/authorize implemented as a ROUTE HANDLER (root loading.tsx boundary turns page-component redirects into RSC client redirects — route handler guarantees real HTTP 302s): validates client_id → exact-match redirect_uri (fail closed to /oauth/error page on midman.bd, never an open redirect) → response_type=code → scope subset → PKCE S256 mandatory → state cap; no session → 302 to EXISTING /login?next=... (validated by isValidReturnTo); session → 302 to /oauth/consent?ct=<HMAC consent token>
+- /oauth/consent page: professional "Sign in with Midman" consent UI (bn/en i18n, dark mode, site logo, avatar w/ initial fallback, scope list, security note, Continue/Cancel, processing states)
+- /oauth/error page: renders invalid_client/invalid_redirect/invalid_scope/invalid_request on midman.bd
+- POST /api/oauth/authorize: Origin/Host same-origin check + HMAC consent token (bound to user+client+redirect+PKCE+state, 5min) + session re-verification; deny → RFC access_denied redirect; continue → create single-use code → 302 to redirect_uri with code+state
+- POST /api/oauth/token: grant_type check → constant-time client_secret auth (env OAUTH_CLIENT_VERIFY_SECRET) → code lookup → binding mismatch burns code → atomic single-use consume (updateMany usedAt:null) → expiry check → PKCE verify → issues 10-min HMAC bearer token; Cache-Control no-store; RFC 6749 §5.2 error codes
+- GET /api/oauth/userinfo: Bearer token → verify sig+exp+scope → returns only sub/name/email/picture per granted scope; 401 + WWW-Authenticate otherwise; no CORS by design (server-to-server only)
+- Login return-to: new src/lib/login-redirect.ts (sessionStorage-stashed, strictly-validated /oauth/authorize paths); app-shell stashes ?next= on mount and consumes after Google/magic callbacks; auth-view consumes after password + 2FA logins — coexists with the parallel-session SSO bridge getLoginNextTarget (bridge target checked first)
+- Rate limiting: /api/oauth/token POST → auth-strict, /api/oauth/authorize POST → auth-moderate; existing auth endpoints untouched
+- i18n: 19 oauth.* keys added to bn + en locales; .env.example documents OAUTH_SECRET + OAUTH_CLIENT_VERIFY_SECRET
+- Rebased onto parallel-session commits (auth UI redesign e1a756c, deal list 4f595cc, auctions); resolved conflicts in schema.prisma/.env.example/auth-view/locales as unions; user WIP stash-popped back untouched
+- Tests: scripts/task57-oauth-tests.sh — 45/45 PASS (single bash call: seed user → server → unauth bounce, evil client/redirect fail-closed, consent render, 4 CSRF cases, approve→code→exchange→userinfo, code reuse, wrong verifier/redirect/secret/grant, deny flow, protocol error redirects, DB rollback)
+
+Stage Summary:
+- Zero changes to existing /api/auth/login|logout|me, Google, magic link, 2FA, password hashing, session cookie, or any deal/payment logic
+- Session cookie never crosses to Verify; only a 2-minute single-use, PKCE-bound, hashed-at-rest authorization code does
+- Env vars required in production: OAUTH_SECRET (token signing, openssl rand -base64 48) and OAUTH_CLIENT_VERIFY_SECRET (must match Verify's server env)
+- tsc: no errors in any new file; next build green with all /oauth/* routes; 45/45 runtime tests
+- origin/main = 0c63263
