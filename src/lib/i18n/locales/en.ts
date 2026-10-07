@@ -2300,4 +2300,5 @@ export const en: Record<TranslationKey, string> = {
   'oauth.error.invalid_redirect': 'The redirect address is not registered for this app.',
   'oauth.error.invalid_scope': 'The requested information access is not available.',
   'oauth.error.invalid_request': 'The sign-in request is invalid or incomplete.',
+  'oauth.error.server_error': 'Sign-in is temporarily unavailable due to a server configuration issue. Please try again later.',
 } as const;

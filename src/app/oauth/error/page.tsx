@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const VALID_CODES: OAuthErrorCode[] = ['invalid_client', 'invalid_redirect', 'invalid_scope', 'invalid_request'];
+const VALID_CODES: OAuthErrorCode[] = ['invalid_client', 'invalid_redirect', 'invalid_scope', 'invalid_request', 'server_error'];
 
 export default async function OAuthErrorPage({
   searchParams,

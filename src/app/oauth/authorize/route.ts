@@ -138,8 +138,10 @@ export async function GET(req: NextRequest) {
   });
   if (!consentToken) {
     // Provider misconfiguration (OAUTH_SECRET missing) — fail closed.
+    // Distinct from invalid_request: the CLIENT request already passed every
+    // validation above; this is a server-side configuration problem.
     console.error('[oauth/authorize] OAUTH_SECRET is missing or too short — consent disabled');
-    return toInternal(req, '/oauth/error?code=invalid_request');
+    return toInternal(req, '/oauth/error?code=server_error');
   }
 
   const res = toInternal(req, '/oauth/consent?ct=' + encodeURIComponent(consentToken));

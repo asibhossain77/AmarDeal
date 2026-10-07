@@ -1362,3 +1362,22 @@ Stage Summary:
 - Env vars required in production: OAUTH_SECRET (token signing, openssl rand -base64 48) and OAUTH_CLIENT_VERIFY_SECRET (must match Verify's server env)
 - tsc: no errors in any new file; next build green with all /oauth/* routes; 45/45 runtime tests
 - origin/main = 0c63263
+
+---
+Task ID: 60
+Agent: Main (Super Z)
+Task: Investigate production /oauth/error?code=invalid_request reported by verify.midman.bd (Verify confirmed its wire request well-formed) — find the failing validation on the Midman OAuth provider side ONLY
+
+Work Log:
+- Full branch map of GET /oauth/authorize (bf93a1a): exactly 3 fail-closed /oauth/error producers — invalid_client (unknown client), invalid_redirect (redirect_uri mismatch), invalid_request (ONLY when issueConsentToken() returns null = OAUTH_SECRET missing/<32 chars); scope/PKCE/state/response_type failures redirect to the CLIENT callback, never the error page
+- ⇒ The observed URL /oauth/error?code=invalid_request UNIQUELY identifies the OAUTH_SECRET branch: client lookup, redirect exact-match, response_type, scope, PKCE S256 (43-char challenge accepted by ^[A-Za-z0-9\-_]{43,128}$) and state cap all passed before it — their failures emit different codes/destinations
+- Cross-checked and cleared: clients.ts registry exact (midman-verify + https://verify.midman.bd/auth/callback), parseScope /\s+/ subset of {openid,profile,email}, consent POST never emits /oauth/error, login return-to NOT the cause (params preserved, proven below)
+- Root cause: OAUTH_SECRET missing or shorter than 32 chars in the amardeal Vercel Production environment (dashboard-only; status UNKNOWN since Task 59; consistent with Attack Challenge Mode also being active on the project = env setup never finished)
+- Proof (git worktree oauth-diag @ bf93a1a, single-bash-call scripts/task60-flow.sh): Phase 1 no-secret → EXACT production repro (logged-in + valid request → 302 /oauth/error?code=invalid_request + "[oauth/authorize] OAUTH_SECRET is missing or too short" console.error in server log); negative controls emit invalid_client/invalid_redirect as designed; login round-trip preserves client_id/redirect_uri/code_challenge (alternative hypothesis ruled out). Phase 2 with both secrets → 12 assertions green: authorize→/oauth/consent, consent page 200, consent POST→registered callback with code+verbatim state, token mt_ bearer/600s/scope echo, userinfo sub/name/email, code reuse → invalid_grant, wrong client_secret → invalid_client
+- Minimal safe fix: relabel provider-misconfiguration branch → /oauth/error?code=server_error (+ VALID_CODES, OAuthErrorCode union, oauth.error.server_error i18n en+bn). Zero contract impact (render-only page, Verify never parses it), fail-closed unchanged, console.error breadcrumb kept
+- Fix verified (task60-verify-fix.sh 3/3): no-secret → code=server_error; unknown client still invalid_client; tsc 166 = worktree baseline, zero new errors
+
+Stage Summary:
+- Production fix is a CONFIG action (no Vercel dashboard access from agent side): set OAUTH_SECRET (openssl rand -base64 48) + OAUTH_CLIENT_VERIFY_SECRET in amardeal Vercel Production env → redeploy → one live exchange
+- Fast confirm without redeploy: amardeal Vercel runtime logs show "[oauth/authorize] OAUTH_SECRET is missing or too short" on every failed authorize
+- After this deploy: missing-env state now renders code=server_error (deploy canary); flow goes green once env is set

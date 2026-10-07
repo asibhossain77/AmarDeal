@@ -2297,6 +2297,7 @@ export const bn = {
   'oauth.error.invalid_redirect': 'এই অ্যাপের জন্য রিডাইরেক্ট ঠিকানাটি নিবন্ধিত নয়।',
   'oauth.error.invalid_scope': 'অনুরোধ করা তথ্যের অনুমতি নেই।',
   'oauth.error.invalid_request': 'সাইন ইন অনুরোধটি অসম্পূর্ণ বা সঠিক নয়।',
+  'oauth.error.server_error': 'সার্ভার কনফিগারেশন সমস্যার কারণে সাইন ইন সাময়িকভাবে বন্ধ আছে। কিছুক্ষণ পর আবার চেষ্টা করুন।',
 } as const;
 
 export type TranslationKey = keyof typeof bn;

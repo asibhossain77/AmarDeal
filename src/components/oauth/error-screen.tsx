@@ -17,7 +17,7 @@ import { XCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 
-export type OAuthErrorCode = 'invalid_client' | 'invalid_redirect' | 'invalid_scope' | 'invalid_request';
+export type OAuthErrorCode = 'invalid_client' | 'invalid_redirect' | 'invalid_scope' | 'invalid_request' | 'server_error';
 
 export function OAuthErrorScreen({ code }: { code: OAuthErrorCode }) {
   const locale = useAppStore((s) => s.locale);
