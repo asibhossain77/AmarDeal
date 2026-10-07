@@ -23,6 +23,25 @@
 import { db } from '@/lib/db'
 import { b64url, b64urlDecodeString, hmacSign, randomToken, safeEqual, sha256Hex } from './crypto'
 
+/* ── TEMPORARY structured debug logging ── */
+
+/**
+ * TEMPORARY — remove after production flow verification.
+ *
+ * Structured, flat, safe-fields-only logging for the OAuth flow.
+ * Callers may ONLY pass: ids (client_id), booleans, enum reasons,
+ * lengths, hosts, and TTLs. NEVER pass codes, tokens, secrets,
+ * cookies, PKCE verifiers, passwords, or full state values —
+ * enforce this at call sites.
+ */
+export function oauthDebug(stage: string, fields: Record<string, string | number | boolean | null>): void {
+  try {
+    console.log(`[oauth:debug] ${stage} ${JSON.stringify(fields)}`)
+  } catch {
+    /* logging must never break the flow */
+  }
+}
+
 /* ── Tuning constants ── */
 
 /** Authorization code TTL — deliberately short (single-use, 2 minutes) */

@@ -4,6 +4,7 @@ import { verifyPkceS256, safeEqual } from '@/lib/oauth/crypto';
 import {
   consumeAuthorizationCode,
   issueAccessToken,
+  oauthDebug,
   ACCESS_TOKEN_TTL_S,
 } from '@/lib/oauth/service';
 
@@ -71,6 +72,13 @@ async function parseParams(req: NextRequest): Promise<RequestParams> {
 
 export async function POST(req: NextRequest) {
   const params = await parseParams(req);
+  oauthDebug('token_request', {
+    client_id: params.client_id ?? null,
+    grant_type: params.grant_type ?? null,
+    redirect_uri_present: !!params.redirect_uri,
+    verifier_present: !!params.code_verifier,
+    content_type: (req.headers.get('content-type') ?? '').split(';')[0],
+  });
 
   // ── 1) grant_type ──
   if (params.grant_type !== 'authorization_code') {
@@ -80,18 +88,22 @@ export async function POST(req: NextRequest) {
   // ── 2) Confidential client authentication (constant-time) ──
   const client = getOAuthClient(params.client_id);
   if (!client) {
+    oauthDebug('client_auth_failed', { reason: 'unknown_client' });
     return oauthError('invalid_client', 'unknown client', 401);
   }
   const expectedSecret = getClientSecret(client);
   if (!expectedSecret) {
     // Server misconfiguration — fail closed, never echo the reason.
     console.error(`[oauth/token] env ${client.secretEnvVar} is not set or too short`);
+    oauthDebug('client_auth_failed', { reason: 'client_secret_env_missing' });
     return oauthError('server_error', undefined, 500);
   }
   if (!params.client_secret) {
+    oauthDebug('client_auth_failed', { reason: 'secret_not_provided' });
     return oauthError('invalid_client', 'client authentication required', 401);
   }
   if (!safeEqual(params.client_secret, expectedSecret)) {
+    oauthDebug('client_auth_failed', { reason: 'secret_mismatch' });
     return oauthError('invalid_client', 'client authentication failed', 401);
   }
 
@@ -109,11 +121,13 @@ export async function POST(req: NextRequest) {
 
   if (!result.ok) {
     // Uniform invalid_grant — never leak which check failed.
+    oauthDebug('code_validation', { result: result.reason });
     return oauthError('invalid_grant', 'authorization code is invalid, expired, or already used');
   }
 
   // ── 5) PKCE verification (code already consumed → no retry probing) ──
   if (!params.code_verifier || !verifyPkceS256(params.code_verifier, result.row.codeChallenge)) {
+    oauthDebug('code_validation', { result: 'pkce_failed' });
     return oauthError('invalid_grant', 'PKCE verification failed');
   }
 
@@ -125,8 +139,12 @@ export async function POST(req: NextRequest) {
   });
   if (!accessToken) {
     console.error('[oauth/token] OAUTH_SECRET is missing or too short');
+    oauthDebug('token_error', { reason: 'oauth_secret_missing' });
     return oauthError('server_error', undefined, 500);
   }
+
+  oauthDebug('code_validation', { result: 'ok' });
+  oauthDebug('token_issued', { client_id: client.id, scope: result.row.scope, expires_in: ACCESS_TOKEN_TTL_S });
 
   return NextResponse.json(
     {

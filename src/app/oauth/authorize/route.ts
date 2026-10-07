@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { getOAuthClient } from '@/lib/oauth/clients';
 import { isValidPkceChallenge } from '@/lib/oauth/crypto';
-import { buildRedirectUrl, issueConsentToken, parseScope } from '@/lib/oauth/service';
+import { buildRedirectUrl, issueConsentToken, oauthDebug, parseScope } from '@/lib/oauth/service';
 
 /**
  * ─────────────────────────────────────────────────────────────────
@@ -57,22 +57,36 @@ export async function GET(req: NextRequest) {
 
   // ── 1) Registered client only ──
   const client = getOAuthClient(sp.client_id);
+  oauthDebug('authorize_request', {
+    client_id: sp.client_id ?? null,
+    client_found: !!client,
+    response_type: sp.response_type ?? null,
+    scope_received: sp.scope ?? null,
+    state_present: !!sp.state,
+    state_len: sp.state?.length ?? 0,
+    challenge_present: !!sp.code_challenge,
+    challenge_method: sp.code_challenge_method ?? null,
+  });
   if (!client) {
+    oauthDebug('authorize_rejected', { reason: 'unknown_client' });
     return toInternal(req, '/oauth/error?code=invalid_client');
   }
 
   // ── 2) Exact-match redirect URI, fail closed ──
   if (!sp.redirect_uri || !client.redirectUris.includes(sp.redirect_uri)) {
+    oauthDebug('authorize_rejected', { reason: 'unregistered_redirect_uri' });
     return toInternal(req, '/oauth/error?code=invalid_redirect');
   }
 
   // Client + redirect are now validated → protocol errors are
   // redirected back to the client app per RFC 6749 §4.1.2.1.
-  const errRedirect = (error: string): NextResponse =>
-    NextResponse.redirect(
+  const errRedirect = (error: string): NextResponse => {
+    oauthDebug('authorize_rejected', { reason: `protocol_${error}` });
+    return NextResponse.redirect(
       buildRedirectUrl(sp.redirect_uri as string, { error, state: sp.state ?? '' }),
       302
     );
+  };
 
   // ── 3) response_type ──
   if (sp.response_type !== 'code') {
@@ -112,6 +126,7 @@ export async function GET(req: NextRequest) {
   if (!user || !user.isActive) {
     // Not logged in → existing Midman login page, then return here.
     // `next` is strictly validated by isValidReturnTo() after login.
+    oauthDebug('login_redirect', { session_present: !!sessionUserId, user_active: !!(user && user.isActive) });
     const returnTo =
       '/oauth/authorize?' +
       new URLSearchParams({
@@ -141,10 +156,15 @@ export async function GET(req: NextRequest) {
     // Distinct from invalid_request: the CLIENT request already passed every
     // validation above; this is a server-side configuration problem.
     console.error('[oauth/authorize] OAUTH_SECRET is missing or too short — consent disabled');
+    oauthDebug('authorize_rejected', { reason: 'oauth_secret_missing' });
     return toInternal(req, '/oauth/error?code=server_error');
   }
 
+  oauthDebug('user_detected', { client_id: client.id, session_present: !!sessionUserId });
+  oauthDebug('consent_issued', { client_id: client.id });
+
   const res = toInternal(req, '/oauth/consent?ct=' + encodeURIComponent(consentToken));
   res.headers.set('Cache-Control', 'no-store');
+  oauthDebug('redirect_sent', { kind: 'consent', status: 302 });
   return res;
 }
