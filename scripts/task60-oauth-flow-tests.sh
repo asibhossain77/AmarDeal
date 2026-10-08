@@ -45,6 +45,10 @@ sleep 1
 rm -f "$COOKIES" "$LOG"
 
 echo "→ seeding test user"
+# The teardown restores db/custom.db to the committed state each run — the
+# committed SQLite file predates the OAuth tables, so push the schema first
+# to keep this suite self-contained and re-runnable.
+bunx prisma db push --skip-generate >/dev/null 2>&1
 bun scripts/task60-helpers.ts seed >/dev/null || { echo "seed failed"; exit 1; }
 
 echo "→ starting next dev on :$PORT"

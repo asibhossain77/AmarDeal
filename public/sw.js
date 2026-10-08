@@ -17,9 +17,28 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request));
-});
+// ─── Intentionally NO fetch handler ───
+// A previous version had:  event.respondWith(fetch(event.request));
+// That passthrough intercepted EVERY request in scope (including document
+// navigations) with no origin/mode/path filtering, and it must stay removed:
+//
+// 1. It implemented no caching at all (nothing is ever cache.put() here), so
+//    it only added an interception layer that returned exactly what the
+//    browser would have fetched anyway.
+// 2. FATAL for OAuth: the consent form POST /api/oauth/authorize is a
+//    navigation request. When the server answers 303 with a cross-origin
+//    Location (https://verify.midman.bd/auth/callback?code=...&state=...),
+//    fetch() inside the SW cannot follow a cross-origin redirect for a
+//    navigate-mode request — the promise REJECTS ("The FetchEvent ... the
+//    promise was rejected", stack at the old sw.js:21) and the browser gets
+//    a network error instead of performing the redirect. "Login with
+//    Midman" therefore died on Continue and never reached the Verify callback.
+// 3. Same-origin POST navigations (the consent form) must be handled by the
+//    browser's normal navigation pipeline so the 303 can navigate the tab.
+//
+// Keep it this way unless a real offline/caching strategy is designed —
+// and if one ever is, it MUST bypass: navigations, non-GET methods,
+// cross-origin requests, /oauth/*, and /api/oauth/*.
 
 // ─── Push Notification Handler ───
 self.addEventListener('push', (event) => {
