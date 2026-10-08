@@ -1402,3 +1402,23 @@ Stage Summary:
 - Zero changes to login/session/Google/magic/2FA/bridge, client registry, scope/PKCE/state validation strictness, TTLs, or DB schema
 - After deploy: watch Vercel runtime logs for [oauth:debug] redirect_sent {"kind":"code","status":303} on Continue; remove oauthDebug logging once production flow confirmed (marked TEMPORARY in code)
 - Remaining env risk (unchanged): Vercel Attack Challenge Mode can still break server-to-server token exchange from Verify — if the callback now GETs but the token POST 429s, disable challenge for verify.midman.bd API paths
+
+---
+Task ID: 62
+Agent: Main (Super Z)
+Task: Midman-side Service Worker investigation — verify-side evidence showed sw.js:21 (midman.bd origin) FetchEvent rejected during the OAuth consent flow; fix the SW without touching OAuth or Verify
+
+Work Log:
+- Located the only SW: public/sw.js (registered globally at scope / by src/components/shared/pwa-install-button.tsx:35, mounted via app-shell.tsx; no next-pwa/serwist/workbox anywhere)
+- ROOT CAUSE at sw.js line 21: self.addEventListener('fetch', e => e.respondWith(fetch(e.request))) — a PURE PASSTHROUGH (CACHE_NAME never populated; no cache.put/caches.match anywhere) intercepting EVERY request incl. document navigations
+- Rejection mechanism: the consent form POST /api/oauth/authorize is a navigate-mode request; after commit 0078561 the server answers 303 with the CROSS-ORIGIN Location (https://verify.midman.bd/auth/callback?code=...&state=...); fetch() inside a SW cannot follow a cross-origin redirect for a navigate-mode request → TypeError → respondWith promise rejected → network error response → browser never navigates (exactly the reported console error + stack)
+- MINIMAL FIX: removed the fetch handler entirely (push + notificationclick handlers untouched; skipWaiting/clients.claim kept → updated SW takes control on next navigation, no manual unregister required though DevTools unregister works for a controlled test). In-file guard note: any future caching strategy MUST bypass navigations / non-GET / cross-origin / /oauth/* / /api/oauth/*
+- Suite hardening: scripts/task60-oauth-flow-tests.sh now runs `prisma db push` in setup (committed db/custom.db predates OAuth tables; the teardown's git checkout reverted my earlier push → P2021 500s mid-suite)
+- Validation: task60 suite 41/41 PASS (incl. D4 303-not-307, D7 mo_ code, D8 verbatim state, D13 single-use); tsc 166 = exact pre-existing baseline (0 in OAuth/SW files); eslint — 1 pre-existing react-hooks/set-state-in-effect error in pwa-install-button.tsx (file unmodified at HEAD, not mine); next build green
+- Production probes (server-side): POST /api/oauth/token → 400 (bypass rule WORKS — app-level response, no 429); POST /api/oauth/authorize + GET /sw.js + /api/health → 429 x-vercel-mitigated=challenge for S2S (browsers with clearance unaffected; reported separately per instructions). Headless-browser attempt to read prod sw.js failed at the Vercel checkpoint (Code 21, automated browser blocked) — prod SW content canary must be done in a real browser
+
+Stage Summary:
+- One-line essence: a no-op "network passthrough" fetch handler in the PWA service worker intercepted the OAuth consent navigation and died on the cross-origin 303 — removed the handler; OAuth now rides default browser navigation
+- Commit 00e71e1 (origin/main): public/sw.js + scripts/task60-oauth-flow-tests.sh; zero changes to OAuth routes, Verify, auth, or validation strictness; 303 fix 0078561 kept
+- Production canary for the user: open https://midman.bd/sw.js in a normal browser → must contain "Intentionally NO fetch handler" and NO event.respondWith( call; then DevTools → Application → Service Workers → Unregister + reload once for an immediate clean test
+- Remaining: /api/oauth/authorize still 429-challenged for non-browser traffic (browser flow unaffected once challenge passed); token endpoint bypass confirmed working for Verify's server
