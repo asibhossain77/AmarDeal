@@ -1422,3 +1422,14 @@ Stage Summary:
 - Commit 00e71e1 (origin/main): public/sw.js + scripts/task60-oauth-flow-tests.sh; zero changes to OAuth routes, Verify, auth, or validation strictness; 303 fix 0078561 kept
 - Production canary for the user: open https://midman.bd/sw.js in a normal browser → must contain "Intentionally NO fetch handler" and NO event.respondWith( call; then DevTools → Application → Service Workers → Unregister + reload once for an immediate clean test
 - Remaining: /api/oauth/authorize still 429-challenged for non-browser traffic (browser flow unaffected once challenge passed); token endpoint bypass confirmed working for Verify's server
+
+---
+Task 63 — Deal Details page: complete UI/UX redesign (desktop + mobile)
+Agent: Super Z
+Stage Summary:
+- One-line essence: rebuilt the DealWorkflowTracker (dashboard deal-detail panel) into a premium 3-tab fintech layout — Deal তথ্য / চ্যাট / Deal Terms — while preserving 100% of the current backend behaviour including the newest upstream features (chat attachments, work deadlines, auto-complete, digital downloads, pool withdrawals)
+- Commit d6995c6 (origin/main): src/components/dashboard/deal-workflow-tracker.tsx rewritten; new src/components/dashboard/deal-detail/{dialogs,parts}.tsx (payment dialogs migrated verbatim; shared design parts)
+- Redesign: header (back-to-list + Midman brand + status badge + 3 tabs with unread dot), 5-step escrow tracker, prominent Deal Amount card with "Midman সুরক্ষায়", buyer/seller profile cards, backend-driven payment & actions card, activity timeline from real fields only, collapsible terms preview + dedicated full terms tab with LinkifyText URLs, immersive chat with day dividers/role chips/attachment rendering, desktop two-column layout, mobile fixed sticky action bar (primary action + chat shortcut, safe-area) with native page scroll
+- Preserved: payment dialog + PipraPay, submitted payment info display, deadline selector + countdown, deliver/cancel (confirm dialog), accept/dispute (confirm dialog), digital product download page nav, pool-withdrawal navigation, buyer refund dialog, rejected no-refund rule, admin call, chat upload (4MB) + expired placeholder, polling (3s chat / 9s deal+payout), unread detection, scroll contract (mobile page-scroll, sm+ inner-scroll)
+- Verified in browser on the production build: created/pending/verified/completed/cancelled/rejected × buyer/seller, mobile 390px, dark mode, deep links /dashboard/deals/[id]; tsc/eslint clean on touched files
+- Env note: sandbox OOM-kills dev compiles → dev.sh now builds once + serves the standalone production server (touch .rebuild to force rebuild); stash 'pre-existing WIP during redesign push' holds the old unstaged WIP from earlier sessions
