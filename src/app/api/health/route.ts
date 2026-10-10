@@ -325,6 +325,14 @@ CREATE TABLE IF NOT EXISTS "MarketplaceOrderEvent" (
   CONSTRAINT "MarketplaceOrderEvent_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "MarketplaceOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE INDEX IF NOT EXISTS "MarketplaceOrderEvent_orderId_createdAt_idx" ON "MarketplaceOrderEvent"("orderId", "createdAt");`,
+    'MarketplaceCategorySetting': `
+CREATE TABLE IF NOT EXISTS "MarketplaceCategorySetting" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "categoryId" TEXT NOT NULL,
+  "enabled" BOOLEAN NOT NULL DEFAULT 1,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "MarketplaceCategorySetting_categoryId_key" ON "MarketplaceCategorySetting"("categoryId");`,
     'SellerApplication': `
 CREATE TABLE IF NOT EXISTS "SellerApplication" (
   "id" TEXT NOT NULL PRIMARY KEY,

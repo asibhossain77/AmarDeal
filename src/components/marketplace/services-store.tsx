@@ -39,9 +39,10 @@ export interface StorefrontService {
  * Storefront category grid — one tile per social platform.
  * Keys mirror SERVICE_CATEGORIES (canonical list in
  * marketplace-pricing.ts); labels come from the shared
- * SERVICE_CATEGORY_LABELS map.
+ * SERVICE_CATEGORY_LABELS map. Exported so the admin
+ * Categories tab renders the exact same platform icons.
  */
-const CATEGORY_META: Record<string, { Icon: React.ElementType; color: string }> = {
+export const CATEGORY_META: Record<string, { Icon: React.ElementType; color: string }> = {
   facebook: { Icon: Facebook, color: 'text-blue-600 dark:text-blue-400' },
   instagram: { Icon: Instagram, color: 'text-pink-600 dark:text-pink-400' },
   youtube: { Icon: Youtube, color: 'text-red-600 dark:text-red-400' },
@@ -184,6 +185,8 @@ export function ServicesStoreSection() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  /** Category keys the admin left switched ON (null = not loaded → show all). */
+  const [enabledCategories, setEnabledCategories] = useState<string[] | null>(null);
 
   const fetchServices = useCallback(async (cat?: string) => {
     setLoading(true);
@@ -199,9 +202,33 @@ export function ServicesStoreSection() {
     }
   }, []);
 
+  // Admin-controlled category switches — tiles for OFF categories
+  // are not rendered at all (server keeps filtering them out too).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/marketplace/categories');
+        const data = await res.json();
+        if (!cancelled && data.success && Array.isArray(data.categories)) {
+          setEnabledCategories(data.categories as string[]);
+        }
+      } catch {
+        // fallback: keep showing the canonical list
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     fetchServices(activeCategory);
   }, [activeCategory, fetchServices]);
+
+  /** Derived: if the selected filter was switched OFF server-side, treat as All. */
+  const effectiveActive =
+    enabledCategories && activeCategory !== 'all' && !enabledCategories.includes(activeCategory)
+      ? 'all'
+      : activeCategory;
 
   const filtered = services.filter(
     (s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()),
@@ -236,10 +263,10 @@ export function ServicesStoreSection() {
             label={locale === 'bn' ? 'সব' : 'All'}
             Icon={LayoutGrid}
             color="text-primary"
-            active={activeCategory === 'all'}
+            active={effectiveActive === 'all'}
             onClick={() => setActiveCategory('all')}
           />
-          {SERVICE_CATEGORIES.map((key) => {
+          {(enabledCategories ?? (SERVICE_CATEGORIES as readonly string[])).map((key) => {
             const meta = CATEGORY_META[key] || CATEGORY_META.other;
             return (
               <CategoryTile
@@ -248,7 +275,7 @@ export function ServicesStoreSection() {
                 label={categoryLabel(key, locale)}
                 Icon={meta.Icon}
                 color={meta.color}
-                active={activeCategory === key}
+                active={effectiveActive === key}
                 onClick={() => setActiveCategory(key)}
               />
             );

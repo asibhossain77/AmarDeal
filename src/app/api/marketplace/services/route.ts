@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { parseLinkTypes, SERVICE_CATEGORIES } from '@/lib/marketplace-pricing'
+import { getDisabledCategories } from '@/lib/marketplace-categories'
 
 /* ═══════════════════════════════════════════════════════════
    GET /api/marketplace/services
    Public catalog of ADMIN-OWNED SMM services.
 
-   Only published + active services are listed. Internal fields
+   Only published + active services are listed. Categories the
+   admin has switched OFF are excluded entirely — a request for
+   a disabled category returns an empty list. Internal fields
    are never exposed. There is no POST/PUT/DELETE here on
    purpose — services can only be managed via
    /api/admin/marketplace/services (requireAdmin).
@@ -20,12 +23,19 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category')
     const search = (searchParams.get('search') || '').trim().slice(0, 100)
 
+    const disabled = await getDisabledCategories()
+    if (category && category !== 'all' && disabled.has(category)) {
+      return NextResponse.json({ success: true, services: [] })
+    }
+
     const where: Record<string, unknown> = {
       status: 'published',
       isActive: true,
     }
     if (category && category !== 'all' && VALID_CATEGORIES.includes(category)) {
       where.category = category
+    } else if (disabled.size > 0) {
+      where.category = { notIn: [...disabled] }
     }
 
     const services = await db.marketplaceService.findMany({

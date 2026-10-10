@@ -1469,3 +1469,25 @@ Stage Summary:
 - Provider API integration fully removed; manual admin fulfilment is the only path
 - Categories are social media platforms (17 + All) across admin form, storefront and APIs
 - db/custom.db left modified locally (test data; not committed); pre-existing WIP untouched
+---
+Task ID: 65
+Agent: main (Super Z)
+Task: SMM panel — admin-controlled category ON/OFF switches
+
+Work Log:
+- User (Banglish): "smm panel e catagori ami chaile on off kore rakhte parbo" — admin wants per-category enable/disable
+- Schema: added MarketplaceCategorySetting (categoryId unique, enabled default true, additive) — no row = enabled (default-on contract, zero seed needed); prisma db push into amardeal/db/custom.db (NOTE: shell DATABASE_URL pointed at outer sandbox DB — always pass DATABASE_URL explicitly for db push)
+- Production migration: DDL block added to missingTableSQLs in api/health/route.ts (auto-creates on Turso at first health check)
+- New server-only lib src/lib/marketplace-categories.ts — getDisabledCategories() fails OPEN (empty set) on transient DB error
+- New APIs: GET/PATCH /api/admin/marketplace/categories (requireAdmin; GET returns all 17 platforms + enabled flag + published/total service counts; PATCH validates categoryId in SERVICE_CATEGORIES + boolean enabled, upserts) and public GET /api/marketplace/categories (enabled keys only)
+- Storefront enforcement (server-side, not just UI): public services list excludes disabled categories (notIn filter; disabled category param → empty list); service detail returns 404 for disabled-category services (same as draft/paused); order POST rejects with "এই ক্যাটাগরিটি সাময়িকভাবে বন্ধ আছে" — existing orders unaffected
+- Storefront UI: category grid fetches enabled keys (fallback = canonical list on API failure); tiles for OFF platforms not rendered; derived effectiveActive resets filter if it was switched off (no lint-violating effect)
+- Admin UI: third tab "ক্যাটাগরি" in services-panel — 17 platform cards with brand icon, ON/OFF badge, published/total service count, toggle switch (busy spinner), summary line "N/17 চালু"; disabling a category with visible services shows AlertDialog confirm explaining hiding + order block; service form category select hides disabled platforms (keeps current one marked "(বন্ধ)" when editing)
+- Tests: +21 assertions in scripts/marketplace-direct-order-tests.sh [T9b] — admin GET (17 categories, counts), auth (401/403), invalid payload 400s, disable → public exclude/list/detail-404/order-reject, re-enable → full recovery; suite = 104/104 PASS (incl. T9 Admin Deal regression)
+- Lint note: react-hooks/set-state-in-effect fires on PRE-EXISTING fetch effects (2 errors = HEAD baseline after plugin upgrade); new code uses async-await callbacks + deferred setTimeout pattern (zero new errors); tsc 165 (baseline, 0 in touched files); next build GREEN (standalone served after cp static+public — chunks 404 otherwise)
+- Browser verified on production server (fresh port): storefront 18 tiles → 17 after spotify off (tile gone), /service/[id] shows "সার্ভিসটি পাওয়া যায়নি" state, admin tab 17 switches + counts + toast + confirm dialog, toggle round-trip 16/17↔17/17, public API reflects instantly, mobile 390px no overflow; test data cleaned after verification
+
+Stage Summary:
+- Category ON/OFF shipped: admin → এসএমএম সার্ভিস → ক্যাটাগরি tab → per-platform switches
+- OFF = hidden from storefront grid + listing + 404 detail + order-blocked; existing orders/fulfilment untouched
+- Changes uncommitted (pre-existing unrelated WIP in tree) — commit selectively

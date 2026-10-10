@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { parseLinkTypes } from '@/lib/marketplace-pricing'
+import { getDisabledCategories } from '@/lib/marketplace-categories'
 
 /* ═══════════════════════════════════════════════════════════
    GET /api/marketplace/services/[id]
    Public detail of a single published service.
    Draft / paused services return 404 — they cannot be ordered
-   or discovered. No admin-only fields are exposed.
+   or discovered. Services whose category the admin switched
+   OFF return 404 too (same reasoning). No admin-only fields
+   are exposed.
    ═══════════════════════════════════════════════════════════ */
 
 export async function GET(
@@ -34,6 +37,15 @@ export async function GET(
     })
 
     if (!service) {
+      return NextResponse.json(
+        { success: false, error: 'Service not found or not available' },
+        { status: 404 },
+      )
+    }
+
+    // Category switched off by the admin → not available to customers
+    const disabled = await getDisabledCategories()
+    if (disabled.has(service.category)) {
       return NextResponse.json(
         { success: false, error: 'Service not found or not available' },
         { status: 404 },

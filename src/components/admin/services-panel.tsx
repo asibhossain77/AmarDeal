@@ -5,7 +5,8 @@
  * Marketplace services can be created, edited, priced, published,
  * paused or removed (enforced server-side via requireAdmin).
  *
- * Tabs: Services (CRUD) · Orders (customer orders + manual fulfilment)
+ * Tabs: Services (CRUD) · Categories (platform ON/OFF switches) ·
+ * Orders (customer orders + manual fulfilment)
  * There is NO provider API integration — fulfilment is manual.
  */
 
@@ -14,7 +15,7 @@ import { toast } from 'sonner';
 import {
   Zap, Plus, Loader2, Pencil, Trash2, Eye, EyeOff, Pause, Play,
   Search, Package, RefreshCw, CheckCircle2, XCircle, Wallet,
-  CreditCard, Ban, ChevronDown, Save, X, ArrowDownUp,
+  CreditCard, Ban, ChevronDown, Save, X, ArrowDownUp, LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ import { useT, type TranslationKey } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
 import { formatMoney, formatDate, truncateLink, OrderStatusBadge } from '@/components/dashboard/my-orders-panel';
 import { SERVICE_CATEGORIES, SERVICE_CATEGORY_LABELS } from '@/lib/marketplace-pricing';
+import { CATEGORY_META } from '@/components/marketplace/services-store';
 
 /* ── Types ── */
 
@@ -94,7 +96,7 @@ const EMPTY_FORM = {
   sortOrder: 0,
 };
 
-type Tab = 'services' | 'orders';
+type Tab = 'services' | 'categories' | 'orders';
 
 /* ══════════════ Services tab ══════════════ */
 
@@ -111,6 +113,8 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<AdminService | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** categoryId → enabled, from the admin category switches (missing = enabled). */
+  const [categoryStates, setCategoryStates] = useState<Record<string, boolean>>({});
 
   const fetchServices = useCallback(async () => {
     setLoading(true);
@@ -127,6 +131,26 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
   }, []);
 
   useEffect(() => { fetchServices(); }, [fetchServices]);
+
+  // Category ON/OFF switches — a disabled platform is hidden from the
+  // customer storefront, so it should not be offered for NEW services.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/marketplace/categories');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.categories)) {
+          const states: Record<string, boolean> = {};
+          for (const c of data.categories as Array<{ categoryId: string; enabled: boolean }>) {
+            states[c.categoryId] = c.enabled;
+          }
+          setCategoryStates(states);
+        }
+      } catch {
+        // default-on contract: missing state = enabled
+      }
+    })();
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -348,8 +372,18 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
               <div>
                 <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'ক্যাটাগরি' : 'Category'}</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{SERVICE_CATEGORY_LABELS[c]?.[bn ? 'bn' : 'en'] || c}</option>)}
+                  {(SERVICE_CATEGORIES as readonly string[])
+                    .filter((c) => categoryStates[c] !== false || (editing && c === editing.category))
+                    .map((c) => (
+                      <option key={c} value={c}>
+                        {SERVICE_CATEGORY_LABELS[c]?.[bn ? 'bn' : 'en'] || c}
+                        {categoryStates[c] === false ? (bn ? ' (বন্ধ)' : ' (off)') : ''}
+                      </option>
+                    ))}
                 </select>
+                <p className="mt-1 text-[10px] leading-snug text-muted-foreground">
+                  {bn ? 'বন্ধ করা প্ল্যাটফর্ম স্টোরে দেখায় না — ক্যাটাগরি ট্যাবে চালু করুন' : 'Off platforms are hidden from the store — re-enable in Categories tab'}
+                </p>
               </div>
               <div>
                 <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'দাম (৳ / 1,000)' : 'Price (৳ / 1,000)'} *</label>
@@ -436,6 +470,183 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">{bn ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="rounded-xl bg-destructive text-white hover:bg-destructive/90">{bn ? 'মুছে ফেলুন' : 'Delete'}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+/* ══════════════ Categories tab ══════════════ */
+
+interface AdminCategory {
+  categoryId: string;
+  enabled: boolean;
+  serviceCount: number; // published + active (storefront-visible)
+  totalServiceCount: number;
+}
+
+function CategoriesTab({ bn }: { bn: boolean }) {
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+  /** Category pending an OFF toggle that owns visible services → confirm first. */
+  const [confirmDisable, setConfirmDisable] = useState<AdminCategory | null>(null);
+
+  const fetchCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/marketplace/categories');
+      const data = await res.json();
+      if (data.success) setCategories(data.categories || []);
+      else toast.error(data.error || 'Failed');
+    } catch {
+      toast.error(bn ? 'ক্যাটাগরি লোড করা যায়নি' : 'Failed to load categories');
+    } finally {
+      setLoading(false);
+    }
+  }, [bn]);
+
+  useEffect(() => {
+    // deferred (setTimeout) so state updates never fire synchronously
+    // inside the effect body — matches the OrdersTab fetch pattern
+    const timer = setTimeout(() => fetchCategories(), 0);
+    return () => clearTimeout(timer);
+  }, [fetchCategories]);
+
+  const applyToggle = async (c: AdminCategory, enabled: boolean) => {
+    setBusy(c.categoryId);
+    try {
+      const res = await fetch('/api/admin/marketplace/categories', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId: c.categoryId, enabled }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(bn
+          ? (enabled ? `${SERVICE_CATEGORY_LABELS[c.categoryId]?.bn || c.categoryId} চালু হয়েছে` : `${SERVICE_CATEGORY_LABELS[c.categoryId]?.bn || c.categoryId} বন্ধ হয়েছে`)
+          : (enabled ? `${SERVICE_CATEGORY_LABELS[c.categoryId]?.en || c.categoryId} enabled` : `${SERVICE_CATEGORY_LABELS[c.categoryId]?.en || c.categoryId} disabled`));
+        fetchCategories();
+      } else {
+        toast.error(data.error || 'Failed');
+      }
+    } catch {
+      toast.error('Failed');
+    } finally {
+      setBusy(null);
+      setConfirmDisable(null);
+    }
+  };
+
+  const onToggle = (c: AdminCategory) => {
+    if (c.enabled && c.serviceCount > 0) {
+      // Turning OFF a platform that still shows services → warn first
+      setConfirmDisable(c);
+    } else {
+      applyToggle(c, !c.enabled);
+    }
+  };
+
+  const enabledCount = categories.filter((c) => c.enabled).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Explanation banner */}
+      <div className="rounded-2xl border border-border/40 bg-muted/30 p-4 dark:border-border/25">
+        <div className="flex items-start gap-2.5">
+          <LayoutGrid className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="text-[12px] leading-relaxed text-muted-foreground">
+            <p className="font-semibold text-foreground">
+              {bn ? 'ক্যাটাগরি চালু / বন্ধ' : 'Category switches'}
+            </p>
+            <p className="mt-0.5">
+              {bn
+                ? 'বন্ধ করা প্ল্যাটফর্ম কাস্টমারের স্টোর থেকে লুকানো থাকে এবং তার সার্ভিসে নতুন অর্ডার নেওয়া যায় না। চলমান অর্ডার ও পুরোনো অর্ডার ইতিহাস অপরিবর্তিত থাকে।'
+                : 'Switched-off platforms are hidden from the customer store and their services cannot receive new orders. In-flight and past orders are unaffected.'}
+            </p>
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] font-medium text-foreground">
+          {bn ? `${enabledCount}/${categories.length || 17} টি ক্যাটাগরি চালু আছে` : `${enabledCount}/${categories.length || 17} categories enabled`}
+        </p>
+      </div>
+
+      {/* Category cards */}
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted/50" />)}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((c) => {
+            const meta = CATEGORY_META[c.categoryId] || CATEGORY_META.other;
+            const { Icon } = meta;
+            const label = SERVICE_CATEGORY_LABELS[c.categoryId]?.[bn ? 'bn' : 'en'] || c.categoryId;
+            const busyThis = busy === c.categoryId;
+            return (
+              <div key={c.categoryId} className={`flex items-center gap-3 rounded-2xl border bg-card p-3.5 transition-opacity dark:border-border/20 ${c.enabled ? 'border-border/30' : 'border-border/30 opacity-70'}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/60 ${c.enabled ? '' : 'grayscale'}`}>
+                  <Icon className={`h-5 w-5 ${c.enabled ? meta.color : 'text-muted-foreground'}`} strokeWidth={1.8} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h3 className="truncate text-[13px] font-bold text-foreground">{label}</h3>
+                    {c.enabled ? (
+                      <Badge variant="secondary" className="gap-1 border-0 bg-primary/15 text-[9px] font-bold text-primary"><CheckCircle2 className="h-2.5 w-2.5" />{bn ? 'চালু' : 'ON'}</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="gap-1 border-0 bg-zinc-200 text-[9px] font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"><XCircle className="h-2.5 w-2.5" />{bn ? 'বন্ধ' : 'OFF'}</Badge>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground" dir="ltr">
+                    {c.serviceCount} {bn ? 'টি প্রকাশিত সার্ভিস' : 'published service(s)'}
+                    {c.totalServiceCount > c.serviceCount && ` · ${c.totalServiceCount} ${bn ? 'মোট' : 'total'}`}
+                  </p>
+                </div>
+                {/* Switch */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={c.enabled}
+                  aria-label={label}
+                  disabled={busyThis}
+                  onClick={() => onToggle(c)}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${c.enabled ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                >
+                  {busyThis ? (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className={`h-3.5 w-3.5 animate-spin ${c.enabled ? 'text-primary-foreground' : 'text-zinc-600 dark:text-zinc-300'}`} />
+                    </span>
+                  ) : (
+                    <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${c.enabled ? 'left-[22px]' : 'left-0.5'}`} />
+                  )}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Confirm disable (category still has visible services) */}
+      <AlertDialog open={!!confirmDisable} onOpenChange={(open) => !open && setConfirmDisable(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bn
+                ? `${SERVICE_CATEGORY_LABELS[confirmDisable?.categoryId || '']?.bn || confirmDisable?.categoryId} বন্ধ করবেন?`
+                : `Disable ${SERVICE_CATEGORY_LABELS[confirmDisable?.categoryId || '']?.en || confirmDisable?.categoryId}?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bn
+                ? `এই ক্যাটাগরিতে ${confirmDisable?.serviceCount || 0}টি প্রকাশিত সার্ভিস আছে। বন্ধ করলে সেগুলো স্টোর থেকে লুকানো হবে এবং নতুন অর্ডার নেওয়া যাবে না। চলমান ও পুরোনো অর্ডার অপরিবর্তিত থাকবে — যেকোনো সময় আবার চালু করতে পারবেন।`
+                : `This category has ${confirmDisable?.serviceCount || 0} published service(s). Disabling hides them from the store and blocks new orders. In-flight and past orders are unaffected — you can re-enable any time.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">{bn ? 'বাতিল' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmDisable && applyToggle(confirmDisable, false)} className="rounded-xl bg-destructive text-white hover:bg-destructive/90">
+              {bn ? 'বন্ধ করুন' : 'Disable'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -727,6 +938,7 @@ export function AdminServicesPanel() {
 
   const tabs: Array<{ key: Tab; label: string; Icon: React.ElementType }> = [
     { key: 'services', label: bn ? 'সার্ভিস' : 'Services', Icon: Zap },
+    { key: 'categories', label: bn ? 'ক্যাটাগরি' : 'Categories', Icon: LayoutGrid },
     { key: 'orders', label: bn ? 'অর্ডার' : 'Orders', Icon: Package },
   ];
 
@@ -757,6 +969,7 @@ export function AdminServicesPanel() {
       </div>
 
       {tab === 'services' && <ServicesTab t={t} bn={bn} />}
+      {tab === 'categories' && <CategoriesTab bn={bn} />}
       {tab === 'orders' && <OrdersTab t={t} bn={bn} />}
     </div>
   );

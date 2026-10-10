@@ -381,6 +381,69 @@ assert_eq "T9.3 products API still works" "200" "$code"
 body=$(http_body "$BASE/api/marketplace/orders")
 if echo "$body" | rg -q "Deal|escrow"; then fail "T9.4 no deal rows in marketplace orders" "mixed"; else pass "T9.4 marketplace orders separate from deals"; fi
 
+# ── 10b. Category ON/OFF switches ─────────────────────────────
+say ""
+say "── [T9b] category on/off switches (admin-controlled) ──"
+# clean slate — no row for a category means enabled (default-on contract)
+dbx "DELETE FROM MarketplaceCategorySetting"
+
+body=$(http_body -X POST "$BASE/api/admin/marketplace/services" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"name":"Spotify Plays","category":"spotify","description":"Premium plays","pricePerThousand":200,"minQuantity":100,"maxQuantity":50000,"status":"published"}')
+assert_contains "T9b.1 admin creates published spotify service" '"success":true' "$body"
+SVC_SPOTIFY=$(echo "$body" | jqval "d['service']['id']" | tr -d '\r')
+
+body=$(http_body "$BASE/api/admin/marketplace/categories" -H "$ADMIN_COOKIE")
+assert_contains "T9b.2 admin GET categories" '"success":true' "$body"
+CNT=$(echo "$body" | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d['categories']))" 2>/dev/null)
+assert_eq "T9b.3 all 17 platform categories returned" "17" "$CNT"
+SPOT=$(echo "$body" | python3 -c "import sys,json;d=json.load(sys.stdin);c=[x for x in d['categories'] if x['categoryId']=='spotify'][0];print(c['enabled'],c['serviceCount'],sep='|')" 2>/dev/null)
+assert_eq "T9b.4 spotify enabled with 1 visible service" "True|1" "$SPOT"
+
+code=$(http_code "$BASE/api/admin/marketplace/categories")
+assert_eq "T9b.5 anonymous admin categories denied (401)" "401" "$code"
+code=$(http_code "$BASE/api/admin/marketplace/categories" -H "$USER1_COOKIE")
+assert_eq "T9b.6 user admin categories denied (403)" "403" "$code"
+
+code=$(http_code -X PATCH "$BASE/api/admin/marketplace/categories" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"categoryId":"not_a_platform","enabled":false}')
+assert_eq "T9b.7 invalid category rejected (400)" "400" "$code"
+code=$(http_code -X PATCH "$BASE/api/admin/marketplace/categories" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"categoryId":"spotify","enabled":"yes"}')
+assert_eq "T9b.8 non-boolean enabled rejected (400)" "400" "$code"
+code=$(http_code -X PATCH "$BASE/api/admin/marketplace/categories" -H "$USER1_COOKIE" -H 'Content-Type: application/json' -d '{"categoryId":"spotify","enabled":false}')
+assert_eq "T9b.9 user cannot toggle category (403)" "403" "$code"
+
+body=$(http_body -X PATCH "$BASE/api/admin/marketplace/categories" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"categoryId":"spotify","enabled":false}')
+assert_contains "T9b.10 admin disables spotify" '"enabled":false' "$body"
+
+body=$(http_body "$BASE/api/marketplace/categories")
+if echo "$body" | rg -q '"spotify"'; then fail "T9b.11 public categories excludes spotify" "leaked"; else pass "T9b.11 public categories excludes spotify"; fi
+assert_contains "T9b.12 public categories still lists facebook" '"facebook"' "$body"
+
+body=$(http_body "$BASE/api/marketplace/services")
+if echo "$body" | rg -q 'Spotify Plays'; then fail "T9b.13 disabled category excluded from catalog" "leaked"; else pass "T9b.13 disabled category excluded from catalog"; fi
+body=$(http_body "$BASE/api/marketplace/services?category=spotify")
+assert_eq "T9b.14 disabled category filter returns empty" "[]" "$(echo "$body" | jqval "d['services']" | tr -d '\r' | head -c 2)"
+
+code=$(http_code "$BASE/api/marketplace/services/$SVC_SPOTIFY")
+assert_eq "T9b.15 disabled category service detail 404" "404" "$code"
+
+code=$(http_code -X POST "$BASE/api/marketplace/orders" -H "$USER1_COOKIE" -H 'Content-Type: application/json' -d "{\"serviceId\":\"$SVC_SPOTIFY\",\"quantity\":500,\"link\":\"https://open.spotify.com/x\",\"idempotencyKey\":\"idk-spotify-$RANDOM\"}")
+assert_eq "T9b.16 order for disabled category rejected (400)" "400" "$code"
+body=$(http_body -X POST "$BASE/api/marketplace/orders" -H "$USER1_COOKIE" -H 'Content-Type: application/json' -d "{\"serviceId\":\"$SVC_SPOTIFY\",\"quantity\":500,\"link\":\"https://open.spotify.com/x\",\"idempotencyKey\":\"idk-spotify2-$RANDOM\"}")
+assert_contains "T9b.17 rejection explains category closed" 'ক্যাটাগরি' "$body"
+
+# re-enable → everything comes back
+body=$(http_body -X PATCH "$BASE/api/admin/marketplace/categories" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"categoryId":"spotify","enabled":true}')
+assert_contains "T9b.18 admin re-enables spotify" '"enabled":true' "$body"
+code=$(http_code "$BASE/api/marketplace/services/$SVC_SPOTIFY")
+assert_eq "T9b.19 service detail available again (200)" "200" "$code"
+body=$(http_body "$BASE/api/marketplace/categories")
+assert_contains "T9b.20 public categories includes spotify again" '"spotify"' "$body"
+body=$(place_order "$USER1_COOKIE" "$SVC_SPOTIFY" 500 "https://open.spotify.com/x" "idk-spotify3-$RANDOM" "")
+assert_contains "T9b.21 order succeeds after re-enable" '"success":true' "$body"
+
+# leave a clean state: default-on contract restored
+dbx "DELETE FROM MarketplaceCategorySetting"
+dbx "UPDATE MarketplaceService SET status='draft' WHERE id='$SVC_SPOTIFY'"
+
 # ── 11. Health auto-create + summary ───────────────────────────
 say ""
 say "── [T10] summary ──"

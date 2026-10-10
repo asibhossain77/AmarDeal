@@ -398,6 +398,17 @@ model MarketplaceBanner {
   @@index([isActive, sortOrder])
 }
 
+// Admin-controlled ON/OFF switch for each SMM service category
+// (social media platform). No row for a category = enabled.
+// Disabled categories are hidden from the storefront and their
+// services cannot be ordered; existing orders are unaffected.
+model MarketplaceCategorySetting {
+  id         String   @id @default(cuid())
+  categoryId String   @unique
+  enabled    Boolean  @default(true)
+  updatedAt  DateTime @updatedAt
+}
+
 model SellerApplication {
   id              String   @id @default(cuid())
   userId          String

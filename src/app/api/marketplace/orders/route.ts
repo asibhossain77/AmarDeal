@@ -9,6 +9,7 @@ import {
   validateLinkUrl,
   generateOrderNumber,
 } from '@/lib/marketplace-pricing'
+import { getDisabledCategories } from '@/lib/marketplace-categories'
 
 /* ═══════════════════════════════════════════════════════════
    GET  /api/marketplace/orders — the current user's own orders
@@ -132,6 +133,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'এই সার্ভিসটি এখন গ্রহণযোগ্য নয়' },
         { status: 404 },
+      )
+    }
+
+    // Its category must be switched ON by the admin.
+    // (Existing orders are unaffected — this only gates NEW orders.)
+    const disabledCategories = await getDisabledCategories()
+    if (disabledCategories.has(service.category)) {
+      return NextResponse.json(
+        { success: false, error: 'এই ক্যাটাগরিটি সাময়িকভাবে বন্ধ আছে — অর্ডার নেওয়া যাচ্ছে না' },
+        { status: 400 },
       )
     }
 
