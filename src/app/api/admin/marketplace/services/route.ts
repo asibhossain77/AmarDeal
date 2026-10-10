@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-guard'
-import { LINK_TYPES, parseLinkTypes, validateServicePayload } from '@/lib/marketplace-pricing'
+import { LINK_TYPES, parseLinkTypes, validateServicePayload, SERVICE_CATEGORIES } from '@/lib/marketplace-pricing'
 
 /* ═══════════════════════════════════════════════════════════
    GET  /api/admin/marketplace/services — list all services + stats
@@ -13,10 +13,7 @@ import { LINK_TYPES, parseLinkTypes, validateServicePayload } from '@/lib/market
    Marketplace services through ANY endpoint.
    ═══════════════════════════════════════════════════════════ */
 
-const VALID_CATEGORIES = [
-  'design', 'development', 'content', 'marketing', 'education',
-  'software', 'social_media', 'id', 'other',
-]
+const VALID_CATEGORIES: readonly string[] = SERVICE_CATEGORIES
 
 function sanitizeText(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
@@ -96,8 +93,6 @@ export async function POST(req: NextRequest) {
         instructions: sanitizeText(b.instructions, 2000) || null,
         status,
         isActive: b.isActive === undefined ? true : Boolean(b.isActive),
-        providerName: sanitizeText(b.providerName, 100) || null,
-        providerServiceId: sanitizeText(b.providerServiceId, 100) || null,
         sortOrder: Number.isInteger(Number(b.sortOrder)) ? Number(b.sortOrder) : 0,
         createdById: guard.admin.userId,
       },

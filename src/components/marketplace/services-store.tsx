@@ -10,13 +10,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, Package, Zap, LayoutGrid, Palette, Code2, PenTool, Megaphone,
-  GraduationCap, Wrench, TrendingUp, Star, Clock, ShieldCheck, ArrowRight,
+  Search, Package, Zap, LayoutGrid, Facebook, Instagram, Youtube, Twitter,
+  Send, MessageCircle, Linkedin, Pin, Ghost, Gamepad2, Twitch, Music2,
+  Music, AtSign, Star, Globe, ShieldCheck, ArrowRight, Clock,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
-import { calculateOrderTotal } from '@/lib/marketplace-pricing';
+import { calculateOrderTotal, SERVICE_CATEGORIES, SERVICE_CATEGORY_LABELS } from '@/lib/marketplace-pricing';
 
 export interface StorefrontService {
   id: string;
@@ -34,27 +35,49 @@ export interface StorefrontService {
   updatedAt: string;
 }
 
-const CATEGORIES = [
-  { key: 'all', bn: 'সব', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
-  { key: 'social_media', bn: 'সোশ্যাল মিডিয়া', en: 'Social Media', Icon: TrendingUp, color: 'text-green-500 dark:text-green-400' },
-  { key: 'marketing', bn: 'মার্কেটিং', en: 'Marketing', Icon: Megaphone, color: 'text-purple-500 dark:text-purple-400' },
-  { key: 'content', bn: 'কন্টেন্ট', en: 'Content', Icon: PenTool, color: 'text-orange-500 dark:text-orange-400' },
-  { key: 'design', bn: 'ডিজাইন', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
-  { key: 'development', bn: 'ডেভেলপমেন্ট', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
-  { key: 'education', bn: 'শিক্ষা', en: 'Education', Icon: GraduationCap, color: 'text-amber-500 dark:text-amber-400' },
-  { key: 'software', bn: 'সফটওয়্যার', en: 'Software', Icon: Wrench, color: 'text-cyan-500 dark:text-cyan-400' },
-  { key: 'id', bn: 'আইডি', en: 'ID', Icon: Star, color: 'text-rose-500 dark:text-rose-400' },
-];
+/**
+ * Storefront category grid — one tile per social platform.
+ * Keys mirror SERVICE_CATEGORIES (canonical list in
+ * marketplace-pricing.ts); labels come from the shared
+ * SERVICE_CATEGORY_LABELS map.
+ */
+const CATEGORY_META: Record<string, { Icon: React.ElementType; color: string }> = {
+  facebook: { Icon: Facebook, color: 'text-blue-600 dark:text-blue-400' },
+  instagram: { Icon: Instagram, color: 'text-pink-600 dark:text-pink-400' },
+  youtube: { Icon: Youtube, color: 'text-red-600 dark:text-red-400' },
+  tiktok: { Icon: Music2, color: 'text-foreground' },
+  twitter_x: { Icon: Twitter, color: 'text-sky-600 dark:text-sky-400' },
+  telegram: { Icon: Send, color: 'text-cyan-500 dark:text-cyan-400' },
+  whatsapp: { Icon: MessageCircle, color: 'text-green-600 dark:text-green-400' },
+  linkedin: { Icon: Linkedin, color: 'text-blue-700 dark:text-blue-400' },
+  pinterest: { Icon: Pin, color: 'text-rose-600 dark:text-rose-400' },
+  snapchat: { Icon: Ghost, color: 'text-yellow-500 dark:text-yellow-400' },
+  discord: { Icon: Gamepad2, color: 'text-indigo-500 dark:text-indigo-400' },
+  twitch: { Icon: Twitch, color: 'text-purple-600 dark:text-purple-400' },
+  spotify: { Icon: Music, color: 'text-emerald-500 dark:text-emerald-400' },
+  threads: { Icon: AtSign, color: 'text-zinc-600 dark:text-zinc-300' },
+  google_review: { Icon: Star, color: 'text-amber-500 dark:text-amber-400' },
+  website_traffic: { Icon: Globe, color: 'text-teal-600 dark:text-teal-400' },
+  other: { Icon: Package, color: 'text-muted-foreground' },
+};
 
 const CATEGORY_BG: Record<string, string> = {
-  design: 'from-pink-500/10 to-pink-500/5 dark:from-pink-500/15 dark:to-pink-500/5',
-  development: 'from-blue-500/10 to-blue-500/5 dark:from-blue-500/15 dark:to-blue-500/5',
-  content: 'from-orange-500/10 to-orange-500/5 dark:from-orange-500/15 dark:to-orange-500/5',
-  marketing: 'from-purple-500/10 to-purple-500/5 dark:from-purple-500/15 dark:to-purple-500/5',
-  education: 'from-amber-500/10 to-amber-500/5 dark:from-amber-500/15 dark:to-amber-500/5',
-  software: 'from-cyan-500/10 to-cyan-500/5 dark:from-cyan-500/15 dark:to-cyan-500/5',
-  social_media: 'from-green-500/10 to-green-500/5 dark:from-green-500/15 dark:to-green-500/5',
-  id: 'from-rose-500/10 to-rose-500/5 dark:from-rose-500/15 dark:to-rose-500/5',
+  facebook: 'from-blue-500/10 to-blue-500/5 dark:from-blue-500/15 dark:to-blue-500/5',
+  instagram: 'from-pink-500/10 to-pink-500/5 dark:from-pink-500/15 dark:to-pink-500/5',
+  youtube: 'from-red-500/10 to-red-500/5 dark:from-red-500/15 dark:to-red-500/5',
+  tiktok: 'from-zinc-500/10 to-zinc-500/5 dark:from-zinc-500/15 dark:to-zinc-500/5',
+  twitter_x: 'from-sky-500/10 to-sky-500/5 dark:from-sky-500/15 dark:to-sky-500/5',
+  telegram: 'from-cyan-500/10 to-cyan-500/5 dark:from-cyan-500/15 dark:to-cyan-500/5',
+  whatsapp: 'from-green-500/10 to-green-500/5 dark:from-green-500/15 dark:to-green-500/5',
+  linkedin: 'from-blue-600/10 to-blue-600/5 dark:from-blue-600/15 dark:to-blue-600/5',
+  pinterest: 'from-rose-500/10 to-rose-500/5 dark:from-rose-500/15 dark:to-rose-500/5',
+  snapchat: 'from-yellow-500/10 to-yellow-500/5 dark:from-yellow-500/15 dark:to-yellow-500/5',
+  discord: 'from-indigo-500/10 to-indigo-500/5 dark:from-indigo-500/15 dark:to-indigo-500/5',
+  twitch: 'from-purple-500/10 to-purple-500/5 dark:from-purple-500/15 dark:to-purple-500/5',
+  spotify: 'from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/15 dark:to-emerald-500/5',
+  threads: 'from-zinc-400/10 to-zinc-400/5 dark:from-zinc-400/15 dark:to-zinc-400/5',
+  google_review: 'from-amber-500/10 to-amber-500/5 dark:from-amber-500/15 dark:to-amber-500/5',
+  website_traffic: 'from-teal-500/10 to-teal-500/5 dark:from-teal-500/15 dark:to-teal-500/5',
   other: 'from-zinc-500/10 to-zinc-500/5 dark:from-zinc-500/15 dark:to-zinc-500/5',
 };
 
@@ -63,15 +86,13 @@ function formatPrice(price: number): string {
   return '৳' + price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-function getCategoryColor(category: string) {
-  const cat = CATEGORIES.find((c) => c.key === category);
-  return cat?.color || 'text-muted-foreground';
+function categoryMeta(category: string) {
+  return CATEGORY_META[category] || CATEGORY_META.other;
 }
 
-// Direct icon map — plain member access avoids creating components during render
-const CATEGORY_ICONS: Record<string, React.ElementType> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.key, c.Icon]),
-);
+function categoryLabel(category: string, locale: string): string {
+  return SERVICE_CATEGORY_LABELS[category]?.[locale === 'bn' ? 'bn' : 'en'] || category;
+}
 
 const cardVariant = {
   hidden: { opacity: 0, y: 24 },
@@ -80,8 +101,7 @@ const cardVariant = {
 
 // -- ServiceCard --
 function ServiceCard({ service, index, onClick, locale }: { service: StorefrontService; index: number; onClick: () => void; locale: string }) {
-  const CatIcon = CATEGORY_ICONS[service.category] || Package;
-  const catColor = getCategoryColor(service.category);
+  const { Icon: CatIcon, color: catColor } = categoryMeta(service.category);
   const gradientBg = CATEGORY_BG[service.category] || CATEGORY_BG.other;
   // Preview total at the service's minimum quantity
   const minTotal = calculateOrderTotal(service.pricePerThousand, service.minQuantity);
@@ -101,7 +121,7 @@ function ServiceCard({ service, index, onClick, locale }: { service: StorefrontS
         <div className="absolute left-3 top-3">
           <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
             <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
-            {CATEGORIES.find((c) => c.key === service.category)?.[locale === 'bn' ? 'bn' : 'en'] || service.category}
+            {categoryLabel(service.category, locale)}
           </Badge>
         </div>
         <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-semibold text-primary backdrop-blur shadow-sm dark:bg-zinc-900/80">
@@ -134,6 +154,25 @@ function ServiceCard({ service, index, onClick, locale }: { service: StorefrontS
         </div>
       </div>
     </motion.article>
+  );
+}
+
+// -- CategoryTile --
+function CategoryTile({ catKey, label, Icon, color, active, onClick }: {
+  catKey: string; label: string; Icon: React.ElementType; color: string; active: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      key={catKey}
+      onClick={onClick}
+      aria-pressed={active}
+      className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 sm:rounded-2xl sm:p-4 ${active ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}
+    >
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 transition-colors sm:h-11 sm:w-11 sm:rounded-2xl group-hover:bg-muted ${active ? 'bg-primary/15' : ''}`}>
+        <Icon className={`h-5 w-5 sm:h-[22px] sm:w-[22px] ${active ? 'text-primary' : color}`} strokeWidth={1.8} />
+      </div>
+      <span className={`text-[11px] font-semibold leading-tight sm:text-[12px] ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>{label}</span>
+    </button>
   );
 }
 
@@ -189,22 +228,29 @@ export function ServicesStoreSection() {
         />
       </div>
 
-      {/* Category grid */}
+      {/* Category grid — social media platforms */}
       <nav aria-label={locale === 'bn' ? 'ক্যাটাগরি ফিল্টার' : 'Category filter'}>
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-7">
-          {CATEGORIES.map((cat) => {
-            const isActive = activeCategory === cat.key;
+        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-6">
+          <CategoryTile
+            catKey="all"
+            label={locale === 'bn' ? 'সব' : 'All'}
+            Icon={LayoutGrid}
+            color="text-primary"
+            active={activeCategory === 'all'}
+            onClick={() => setActiveCategory('all')}
+          />
+          {SERVICE_CATEGORIES.map((key) => {
+            const meta = CATEGORY_META[key] || CATEGORY_META.other;
             return (
-              <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={`group relative flex flex-col items-center gap-2 rounded-xl p-3 transition-all duration-200 sm:rounded-2xl sm:p-4 ${isActive ? 'bg-primary/10 border-2 border-primary/30 shadow-md shadow-primary/10' : 'bg-card border border-border/30 hover:border-primary/20 hover:shadow-sm dark:border-border/20'}`}
-              >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-muted/60 transition-colors sm:h-11 sm:w-11 sm:rounded-2xl group-hover:bg-muted ${isActive ? 'bg-primary/15' : ''}`}>
-                  <cat.Icon className={`h-5 w-5 sm:h-[22px] sm:w-[22px] ${isActive ? 'text-primary' : cat.color}`} strokeWidth={1.8} />
-                </div>
-                <span className={`text-[11px] font-semibold leading-tight sm:text-[12px] ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>{cat[locale === 'bn' ? 'bn' : 'en']}</span>
-              </button>
+              <CategoryTile
+                key={key}
+                catKey={key}
+                label={categoryLabel(key, locale)}
+                Icon={meta.Icon}
+                color={meta.color}
+                active={activeCategory === key}
+                onClick={() => setActiveCategory(key)}
+              />
             );
           })}
         </div>

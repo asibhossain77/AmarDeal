@@ -113,7 +113,7 @@ ADMIN_COOKIE="Cookie: midman_session=$ADMIN_ID"
 USER1_COOKIE="Cookie: midman_session=$USER1_ID"
 USER2_COOKIE="Cookie: midman_session=$USER2_ID"
 
-body=$(http_body -X POST "$BASE/api/admin/marketplace/services" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"name":"Facebook Page Likes","category":"social_media","description":"High quality page likes","pricePerThousand":150,"minQuantity":100,"maxQuantity":100000,"linkTypes":["profile","page"],"deliveryEstimate":"0-6 hours","instructions":"Do not change page name while processing.","status":"published"}')
+body=$(http_body -X POST "$BASE/api/admin/marketplace/services" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"name":"Facebook Page Likes","category":"facebook","description":"High quality page likes","pricePerThousand":150,"minQuantity":100,"maxQuantity":100000,"linkTypes":["profile","page"],"deliveryEstimate":"0-6 hours","instructions":"Do not change page name while processing.","status":"published"}')
 assert_contains "T1.1 admin creates service" '"success":true' "$body"
 SVC_PUBLISHED=$(echo "$body" | jqval "d['service']['id']" | tr -d '\r')
 
@@ -167,10 +167,10 @@ assert_eq "T2.5 user cannot change status (403)" "403" "$code"
 code=$(http_code -X DELETE "$BASE/api/admin/marketplace/services/$SVC_PUBLISHED" -H "$USER1_COOKIE")
 assert_eq "T2.6 user cannot delete service (403)" "403" "$code"
 
-# public catalog must not leak provider fields
+# public catalog must not leak internal fields (provider system removed)
 body=$(http_body "$BASE/api/marketplace/services")
 assert_contains "T2.7 catalog lists published services" "Facebook Page Likes" "$body"
-if echo "$body" | rg -q 'providerServiceId|providerName'; then fail "T2.8 no provider fields leaked" "leaked"; else pass "T2.8 no provider fields leaked"; fi
+if echo "$body" | rg -q 'providerServiceId|providerName|providerOrderId'; then fail "T2.8 no internal fields leaked" "leaked"; else pass "T2.8 no internal fields leaked"; fi
 
 # ── 4. Order validation & server-side pricing ──────────────────
 say ""
@@ -348,11 +348,11 @@ assert_contains "T7.4 completed→queued rejected (guarded)" 'অনুমোদ
 ST=$(dbq "SELECT startCount||'/'||remains FROM MarketplaceOrder WHERE id='$ORDER1'")
 assert_eq "T7.5 start/remains stored" "500/1500" "$ST"
 
-# provider submit guard (no provider mapping on the service — paid order required)
+# provider API removed — unknown/legacy actions must be rejected and leave the order untouched
 body=$(http_body -X PATCH "$BASE/api/admin/marketplace/orders/$ORDER_FRAC" -H "$ADMIN_COOKIE" -H 'Content-Type: application/json' -d '{"action":"provider_submit"}')
-assert_contains "T7.6 provider submit without provider mapping → guarded" 'ম্যাপিং' "$body"
+assert_contains "T7.6 legacy provider_submit action rejected" 'Unknown action' "$body"
 ST=$(dbq "SELECT status FROM MarketplaceOrder WHERE id='$ORDER_FRAC'")
-assert_eq "T7.7 order unchanged after provider failure" "queued" "$ST"
+assert_eq "T7.7 order unchanged after unknown action" "queued" "$ST"
 
 # ── 9. Customer cancel ─────────────────────────────────────────
 say ""

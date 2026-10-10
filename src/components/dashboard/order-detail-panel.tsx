@@ -51,7 +51,6 @@ interface OrderDetail {
   fulfilmentNote: string | null;
   startCount: number | null;
   remains: number | null;
-  providerStatus: string | null;
   cancelReason: string | null;
   createdAt: string;
   updatedAt: string;
@@ -417,7 +416,7 @@ export function OrderDetailPanel() {
         </div>
 
         {/* Fulfilment info */}
-        {(order.fulfilmentNote || order.startCount !== null || order.remains !== null || order.providerStatus) && (
+        {(order.fulfilmentNote || order.startCount !== null || order.remains !== null) && (
           <div className="mt-4 rounded-xl border border-border/30 p-3.5 dark:border-border/20">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <LayoutList className="h-3 w-3" />{t('orderDetail.fulfilment')}
@@ -428,9 +427,6 @@ export function OrderDetailPanel() {
               )}
               {order.remains !== null && (
                 <span className="text-muted-foreground">{t('orderDetail.remains')}: <span className="font-semibold text-foreground tabular-nums">{order.remains.toLocaleString('en-BD')}</span></span>
-              )}
-              {order.providerStatus && (
-                <span className="text-muted-foreground" dir="ltr">Provider: <span className="font-semibold text-foreground">{order.providerStatus}</span></span>
               )}
             </div>
             {order.fulfilmentNote && (
@@ -489,7 +485,6 @@ function eventDotColor(type: string): string {
     case 'status_changed':
       return 'border-primary text-primary bg-primary/10';
     case 'payment_failed':
-    case 'provider_error':
       return 'border-destructive text-destructive bg-destructive/10';
     case 'cancelled':
       return 'border-zinc-400 text-zinc-500 bg-zinc-200/40 dark:bg-zinc-700/40';

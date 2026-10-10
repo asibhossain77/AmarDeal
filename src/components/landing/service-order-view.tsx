@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
-import { calculateOrderTotal } from '@/lib/marketplace-pricing';
+import { calculateOrderTotal, SERVICE_CATEGORY_LABELS } from '@/lib/marketplace-pricing';
 import { PageWrapper } from './page-wrapper';
 import { Footer } from './footer';
 
@@ -47,18 +47,6 @@ interface ManualMethod {
   color: string;
   status?: string;
 }
-
-const CATEGORY_NAMES: Record<string, { bn: string; en: string }> = {
-  design: { bn: 'ডিজাইন', en: 'Design' },
-  development: { bn: 'ডেভেলপমেন্ট', en: 'Development' },
-  content: { bn: 'কন্টেন্ট', en: 'Content' },
-  marketing: { bn: 'মার্কেটিং', en: 'Marketing' },
-  education: { bn: 'শিক্ষা', en: 'Education' },
-  software: { bn: 'সফটওয়্যার', en: 'Software' },
-  social_media: { bn: 'সোশ্যাল মিডিয়া', en: 'Social Media' },
-  id: { bn: 'আইডি', en: 'ID' },
-  other: { bn: 'অন্যান্য', en: 'Other' },
-};
 
 function formatPrice(price: number): string {
   return '৳' + price.toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -142,7 +130,7 @@ export function ServiceOrderView() {
     return calculateOrderTotal(service.pricePerThousand, Math.min(Math.max(qty, 1), service.maxQuantity));
   }, [service, qty, isIntegerQty]);
 
-  const catName = service ? CATEGORY_NAMES[service.category]?.[bn ? 'bn' : 'en'] || service.category : '';
+  const catName = service ? SERVICE_CATEGORY_LABELS[service.category]?.[bn ? 'bn' : 'en'] || service.category : '';
 
   const handlePlaceOrder = async () => {
     if (!user) {

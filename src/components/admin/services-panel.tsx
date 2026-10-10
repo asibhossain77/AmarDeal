@@ -5,15 +5,16 @@
  * Marketplace services can be created, edited, priced, published,
  * paused or removed (enforced server-side via requireAdmin).
  *
- * Tabs: Services (CRUD) · Orders (customer orders + fulfilment) · Provider
+ * Tabs: Services (CRUD) · Orders (customer orders + manual fulfilment)
+ * There is NO provider API integration — fulfilment is manual.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   Zap, Plus, Loader2, Pencil, Trash2, Eye, EyeOff, Pause, Play,
-  Search, Package, RefreshCw, Send, CheckCircle2, XCircle, Wallet,
-  CreditCard, Ban, ChevronDown, Save, X, Server, ArrowDownUp,
+  Search, Package, RefreshCw, CheckCircle2, XCircle, Wallet,
+  CreditCard, Ban, ChevronDown, Save, X, ArrowDownUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ import {
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
 import { formatMoney, formatDate, truncateLink, OrderStatusBadge } from '@/components/dashboard/my-orders-panel';
-import { SERVICE_CATEGORIES } from '@/lib/marketplace-pricing';
+import { SERVICE_CATEGORIES, SERVICE_CATEGORY_LABELS } from '@/lib/marketplace-pricing';
 
 /* ── Types ── */
 
@@ -46,8 +47,6 @@ interface AdminService {
   instructions: string | null;
   status: string;
   isActive: boolean;
-  providerName: string | null;
-  providerServiceId: string | null;
   sortOrder: number;
   orderCount: number;
   createdAt: string;
@@ -75,28 +74,14 @@ interface AdminOrderDetail extends AdminOrder {
   fulfilmentNote: string | null;
   startCount: number | null;
   remains: number | null;
-  providerOrderId: string | null;
-  providerStatus: string | null;
-  providerError: string | null;
   events: Array<{ id: string; type: string; message: string | null; actorName: string | null; createdAt: string }>;
 }
 
 const LINK_TYPE_OPTIONS = ['profile', 'post', 'video', 'page', 'channel', 'website', 'other'];
-const CATEGORY_LABELS: Record<string, { bn: string; en: string }> = {
-  design: { bn: 'ডিজাইন', en: 'Design' },
-  development: { bn: 'ডেভেলপমেন্ট', en: 'Development' },
-  content: { bn: 'কন্টেন্ট', en: 'Content' },
-  marketing: { bn: 'মার্কেটিং', en: 'Marketing' },
-  education: { bn: 'শিক্ষা', en: 'Education' },
-  software: { bn: 'সফটওয়্যার', en: 'Software' },
-  social_media: { bn: 'সোশ্যাল মিডিয়া', en: 'Social Media' },
-  id: { bn: 'আইডি', en: 'ID' },
-  other: { bn: 'অন্যান্য', en: 'Other' },
-};
 
 const EMPTY_FORM = {
   name: '',
-  category: 'social_media',
+  category: 'facebook',
   description: '',
   pricePerThousand: '',
   minQuantity: '100',
@@ -106,12 +91,10 @@ const EMPTY_FORM = {
   instructions: '',
   status: 'draft',
   isActive: true,
-  providerName: '',
-  providerServiceId: '',
   sortOrder: 0,
 };
 
-type Tab = 'services' | 'orders' | 'provider';
+type Tab = 'services' | 'orders';
 
 /* ══════════════ Services tab ══════════════ */
 
@@ -165,8 +148,6 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
       instructions: s.instructions || '',
       status: s.status,
       isActive: s.isActive,
-      providerName: s.providerName || '',
-      providerServiceId: s.providerServiceId || '',
       sortOrder: s.sortOrder || 0,
     });
     setDialogOpen(true);
@@ -191,8 +172,6 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
         instructions: form.instructions.trim() || null,
         status: form.status,
         isActive: form.isActive,
-        providerName: form.providerName.trim() || null,
-        providerServiceId: form.providerServiceId.trim() || null,
         sortOrder: form.sortOrder,
       };
       const res = await fetch(
@@ -317,9 +296,6 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
                     {!s.isActive && (
                       <Badge variant="secondary" className="gap-1 border-0 bg-amber-100 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"><Pause className="h-2.5 w-2.5" />{bn ? 'বন্ধ' : 'Paused'}</Badge>
                     )}
-                    {s.providerServiceId && (
-                      <Badge variant="secondary" className="gap-1 border-0 bg-violet-100 text-[10px] font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"><Server className="h-2.5 w-2.5" />{s.providerName || 'Provider'}</Badge>
-                    )}
                   </div>
                   <p className="mt-1 line-clamp-1 text-[12px] text-muted-foreground">{s.description}</p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
@@ -327,7 +303,7 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
                     <span dir="ltr">{bn ? 'পরিসর' : 'Range'}: {s.minQuantity.toLocaleString('en-BD')}–{s.maxQuantity.toLocaleString('en-BD')}</span>
                     {s.deliveryEstimate && <span dir="ltr">⏱ {s.deliveryEstimate}</span>}
                     <span>{s.orderCount} {bn ? 'অর্ডার' : 'orders'}</span>
-                    <span>{CATEGORY_LABELS[s.category]?.[bn ? 'bn' : 'en'] || s.category}</span>
+                    <span>{SERVICE_CATEGORY_LABELS[s.category]?.[bn ? 'bn' : 'en'] || s.category}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -372,7 +348,7 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
               <div>
                 <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'ক্যাটাগরি' : 'Category'}</label>
                 <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="h-10 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]?.[bn ? 'bn' : 'en'] || c}</option>)}
+                  {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{SERVICE_CATEGORY_LABELS[c]?.[bn ? 'bn' : 'en'] || c}</option>)}
                 </select>
               </div>
               <div>
@@ -425,14 +401,6 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
             <div>
               <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'গ্রাহকের নির্দেশনা' : 'Service instructions (customer-facing)'}</label>
               <Textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={2} placeholder={bn ? 'অর্ডারের আগে গ্রাহক যা জানা দরকার...' : 'What customers should know before ordering...'} className="text-[13px]" />
-            </div>
-            {/* Provider mapping */}
-            <div className="rounded-xl border border-border/40 p-3 dark:border-border/25">
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground"><Server className="h-3 w-3" />{bn ? 'প্রোভাইডার ম্যাপিং (ঐচ্ছিক)' : 'Provider mapping (optional)'}</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Input value={form.providerName} onChange={(e) => setForm({ ...form, providerName: e.target.value })} placeholder={bn ? 'প্রোভাইডার নাম' : 'Provider name'} className="text-[12px]" dir="ltr" />
-                <Input value={form.providerServiceId} onChange={(e) => setForm({ ...form, providerServiceId: e.target.value })} placeholder={bn ? 'প্রোভাইডার সার্ভিস আইডি' : 'Provider service ID'} className="text-[12px]" dir="ltr" />
-              </div>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-zinc-800/40">
               <span className="text-[12px] font-medium text-foreground">{bn ? 'সক্রিয় (অর্ডারযোগ্য)' : 'Enabled (orderable)'}</span>
@@ -677,25 +645,10 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
                 <p className="text-[10px] font-semibold text-muted-foreground">{bn ? 'ফালফিলমেন্ট' : 'Fulfilment'}</p>
                 <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
                   <span dir="ltr">Status: <span className="font-semibold text-foreground">{detail.status}</span></span>
-                  {detail.providerOrderId && <span dir="ltr">Provider ref: <span className="font-mono font-semibold text-foreground">{detail.providerOrderId}</span></span>}
-                  {detail.providerStatus && <span dir="ltr">Provider: <span className="font-semibold text-foreground">{detail.providerStatus}</span></span>}
                   {detail.startCount !== null && <span dir="ltr">Start: {detail.startCount.toLocaleString('en-BD')}</span>}
                   {detail.remains !== null && <span dir="ltr">Remains: {detail.remains.toLocaleString('en-BD')}</span>}
                 </div>
-                {detail.providerError && (
-                  <p className="mt-1.5 rounded-lg bg-red-500/10 p-2 text-[11px] font-medium text-destructive" dir="ltr">Provider error: {detail.providerError}</p>
-                )}
                 <div className="mt-2.5 flex flex-wrap gap-2">
-                  {detail.paymentStatus === 'paid' && ['queued', 'failed'].includes(detail.status) && !detail.providerOrderId && (
-                    <Button size="sm" className="h-9 gap-1.5 rounded-xl text-[11px] font-semibold" disabled={actionBusy === 'provider_submit' + detail.id} onClick={() => orderAction(detail.id, 'provider_submit')}>
-                      {actionBusy === 'provider_submit' + detail.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}{bn ? 'প্রোভাইডারে পাঠান' : 'Submit to provider'}
-                    </Button>
-                  )}
-                  {detail.providerOrderId && (
-                    <Button size="sm" variant="outline" className="h-9 gap-1.5 rounded-xl text-[11px] font-semibold" disabled={actionBusy === 'provider_sync' + detail.id} onClick={() => orderAction(detail.id, 'provider_sync')}>
-                      {actionBusy === 'provider_sync' + detail.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}{bn ? 'প্রোভাইডার স্ট্যাটাস সিঙ্ক' : 'Sync provider status'}
-                    </Button>
-                  )}
                   <Button size="sm" variant="outline" className="h-9 gap-1.5 rounded-xl text-[11px] font-semibold" onClick={() => { setStatusDialogFor(detail); setStatusForm({ status: detail.status === 'queued' ? 'processing' : 'in_progress', note: '', startCount: detail.startCount?.toString() || '', remains: detail.remains?.toString() || '' }); }}>
                     <ArrowDownUp className="h-3 w-3" />{bn ? 'স্ট্যাটাস পরিবর্তন' : 'Change status'}
                   </Button>
@@ -764,110 +717,6 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
   );
 }
 
-/* ══════════════ Provider tab ══════════════ */
-
-function ProviderTab({ bn }: { bn: boolean }) {
-  const [form, setForm] = useState({ name: '', apiUrl: '', apiKey: '', enabled: false });
-  const [hasKey, setHasKey] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const fetchProvider = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/marketplace/provider');
-      const data = await res.json();
-      if (data.success) {
-        setForm({ name: data.provider.name || '', apiUrl: data.provider.apiUrl || '', apiKey: '', enabled: data.provider.enabled });
-        setHasKey(data.provider.hasKey);
-      }
-    } catch {
-      toast.error('Failed to load provider settings');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchProvider(); }, [fetchProvider]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const payload: Record<string, unknown> = { name: form.name, apiUrl: form.apiUrl, enabled: form.enabled };
-      if (form.apiKey.trim()) payload.apiKey = form.apiKey.trim();
-      const res = await fetch('/api/admin/marketplace/provider', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(bn ? 'প্রোভাইডার সেটিংস সেভ হয়েছে' : 'Provider settings saved');
-        setForm({ ...form, apiKey: '' });
-        fetchProvider();
-      } else {
-        toast.error(data.error || 'Failed');
-      }
-    } catch {
-      toast.error('Failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
-  return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <div className="rounded-2xl border border-border/30 bg-card p-5 dark:border-border/20">
-        <h3 className="flex items-center gap-2 text-[14px] font-bold text-foreground">
-          <Server className="h-4 w-4 text-primary" />{bn ? 'SMM প্রোভাইডার ইন্টিগ্রেশন' : 'SMM Provider Integration'}
-        </h3>
-        <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-          {bn
-            ? 'ঐচ্ছিক — কনফিগার করলে অর্ডার স্বয়ংক্রিয়ভাবে প্রোভাইডারে জমা ও সিঙ্ক করা যাবে। API কী কখনো ব্রাউজারে পাঠানো হয় না। প্রোভাইডার ছাড়া ম্যানুয়াল ফালফিলমেন্ট ব্যবহার করুন।'
-            : 'Optional — when configured, orders can be submitted to and synced from your SMM provider. The API key is never exposed to the browser. Without a provider, use manual fulfilment.'}
-        </p>
-        <div className="mt-4 space-y-3.5">
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'প্রোভাইডার নাম' : 'Provider name'}</label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="My SMM Provider" className="text-[13px]" dir="ltr" />
-          </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'API URL' : 'API URL'}</label>
-            <Input value={form.apiUrl} onChange={(e) => setForm({ ...form, apiUrl: e.target.value })} placeholder="https://provider.example/api/v2" className="text-[13px]" dir="ltr" />
-          </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-foreground">
-              {bn ? 'API কী' : 'API key'}
-              {hasKey && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">{bn ? 'সংরক্ষিত আছে' : 'saved'}</span>}
-            </label>
-            <Input type="password" value={form.apiKey} onChange={(e) => setForm({ ...form, apiKey: e.target.value })} placeholder={hasKey ? (bn ? 'নতুন কী দিলে পরিবর্তন হবে' : 'Enter a new key to replace') : 'API key'} className="text-[13px]" dir="ltr" />
-          </div>
-          <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-zinc-800/40">
-            <span className="text-[12px] font-medium text-foreground">{bn ? 'প্রোভাইডার সক্রিয়' : 'Provider enabled'}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={form.enabled}
-              onClick={() => setForm({ ...form, enabled: !form.enabled })}
-              className={`relative h-6 w-11 rounded-full transition-colors ${form.enabled ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-700'}`}
-            >
-              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${form.enabled ? 'left-[22px]' : 'left-0.5'}`} />
-            </button>
-          </div>
-          <Button onClick={handleSave} disabled={saving} className="h-11 w-full gap-2 rounded-xl text-[13px] font-semibold">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {bn ? 'সেভ করুন' : 'Save settings'}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ══════════════ Panel shell ══════════════ */
 
 export function AdminServicesPanel() {
@@ -879,7 +728,6 @@ export function AdminServicesPanel() {
   const tabs: Array<{ key: Tab; label: string; Icon: React.ElementType }> = [
     { key: 'services', label: bn ? 'সার্ভিস' : 'Services', Icon: Zap },
     { key: 'orders', label: bn ? 'অর্ডার' : 'Orders', Icon: Package },
-    { key: 'provider', label: bn ? 'প্রোভাইডার' : 'Provider', Icon: Server },
   ];
 
   return (
@@ -910,7 +758,6 @@ export function AdminServicesPanel() {
 
       {tab === 'services' && <ServicesTab t={t} bn={bn} />}
       {tab === 'orders' && <OrdersTab t={t} bn={bn} />}
-      {tab === 'provider' && <ProviderTab bn={bn} />}
     </div>
   );
 }

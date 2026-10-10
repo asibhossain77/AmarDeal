@@ -196,12 +196,40 @@ export function generateOrderNumber(): string {
   return `MP-${suffix}`
 }
 
-/* ── Admin service field validation (shared create/update) ── */
+/* ── Admin service field validation (shared create/update) ──
+
+   Categories are SOCIAL MEDIA PLATFORMS — the storefront, the
+   admin service form and both API routes all derive from this
+   single canonical list, so a new platform only ever needs to
+   be added here.
+   ───────────────────────────────────────────────────────── */
 
 export const SERVICE_CATEGORIES = [
-  'design', 'development', 'content', 'marketing', 'education',
-  'software', 'social_media', 'id', 'other',
-]
+  'facebook', 'instagram', 'youtube', 'tiktok', 'twitter_x', 'telegram',
+  'whatsapp', 'linkedin', 'pinterest', 'snapchat', 'discord', 'twitch',
+  'spotify', 'threads', 'google_review', 'website_traffic', 'other',
+] as const
+
+/** Shared bn/en labels for every service category. */
+export const SERVICE_CATEGORY_LABELS: Record<string, { bn: string; en: string }> = {
+  facebook: { bn: 'ফেসবুক', en: 'Facebook' },
+  instagram: { bn: 'ইনস্টাগ্রাম', en: 'Instagram' },
+  youtube: { bn: 'ইউটিউব', en: 'YouTube' },
+  tiktok: { bn: 'টিকটক', en: 'TikTok' },
+  twitter_x: { bn: 'টুইটার (X)', en: 'Twitter (X)' },
+  telegram: { bn: 'টেলিগ্রাম', en: 'Telegram' },
+  whatsapp: { bn: 'হোয়াটসঅ্যাপ', en: 'WhatsApp' },
+  linkedin: { bn: 'লিঙ্কডইন', en: 'LinkedIn' },
+  pinterest: { bn: 'পিন্টারেস্ট', en: 'Pinterest' },
+  snapchat: { bn: 'স্ন্যাপচ্যাট', en: 'Snapchat' },
+  discord: { bn: 'ডিসকর্ড', en: 'Discord' },
+  twitch: { bn: 'টুইচ', en: 'Twitch' },
+  spotify: { bn: 'স্পটিফাই', en: 'Spotify' },
+  threads: { bn: 'থ্রেডস', en: 'Threads' },
+  google_review: { bn: 'গুগল রিভিউ', en: 'Google Review' },
+  website_traffic: { bn: 'ওয়েবসাইট ট্রাফিক', en: 'Website Traffic' },
+  other: { bn: 'অন্যান্য', en: 'Other' },
+}
 
 function isValidPrice(value: unknown): value is number {
   return (
@@ -234,7 +262,7 @@ export function validateServicePayload(body: Record<string, unknown>, partial: b
   }
   if (!partial || has('category')) {
     const category = sanitizeText(body.category, 32) || 'other'
-    if (!SERVICE_CATEGORIES.includes(category)) return 'Invalid category'
+    if (!(SERVICE_CATEGORIES as readonly string[]).includes(category)) return 'Invalid category'
   }
   if (!partial || has('pricePerThousand')) {
     const price = body.pricePerThousand
@@ -266,12 +294,6 @@ export function validateServicePayload(body: Record<string, unknown>, partial: b
   if (has('status')) {
     const status = sanitizeText(body.status, 16)
     if (!['draft', 'published'].includes(status)) return 'Invalid status'
-  }
-  if (has('providerName')) {
-    if (body.providerName !== null && typeof body.providerName !== 'string') return 'Invalid provider name'
-  }
-  if (has('providerServiceId')) {
-    if (body.providerServiceId !== null && typeof body.providerServiceId !== 'string') return 'Invalid provider service id'
   }
   return null
 }

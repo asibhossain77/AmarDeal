@@ -1450,3 +1450,22 @@ Work Log:
 Stage Summary:
 - Marketplace Direct Orders live on origin/main (191e391); Task 63 Deal Details redesign + SW fix untouched
 - Admin adds SMM services at: /admin → ডিল ও ইউজার → এসএমএম সার্ভিস → + নতুন সার্ভিস
+
+---
+Task ID: 64
+Agent: main (Super Z)
+Task: Remove SMM provider API system + category list → social media platforms
+
+Work Log:
+- User request: "smm panel e api provider system remove kore daw ar smm service add korar somoy catagori te sob dhoroner social media list thakbe jemon facebook, instagram"
+- Removed provider system end-to-end: deleted src/lib/smm-provider.ts + /api/admin/marketplace/provider route; stripped provider_submit/provider_sync actions from admin orders API; removed providerName/providerServiceId (MarketplaceService) and providerOrderId/providerStatus/providerSyncedAt/providerError (MarketplaceOrder) from schema + health DDL + all service API whitelists; removed Provider tab, provider-mapping form section, provider badges/buttons (admin panel) and provider status display (customer order detail); dropped orderEvent.provider_* i18n keys (bn/en)
+- Fulfilment is now manual-only by design (set_status guarded transitions), no auto-delivery path exists
+- Categories replaced with social platforms — canonical list in marketplace-pricing.ts: facebook, instagram, youtube, tiktok, twitter_x, telegram, whatsapp, linkedin, pinterest, snapchat, discord, twitch, spotify, threads, google_review, website_traffic, other (+ shared SERVICE_CATEGORY_LABELS bn/en); admin form select, storefront tile grid (brand icons/colors via CategoryTile) and service detail badge all derive from it; both API routes now import the canonical list (no duplicated arrays)
+- Fixed new-category typing (readonly string[] in both API routes); test script: legacy provider_submit assertions → Unknown-action assertions; test service category social_media → facebook
+- Synced local tree from stale 04c6757 to origin/main 5b6a3a4 (stashed WIP, ff merge, stash pop, one "deleted by them" conflict on upload/banner-image resolved as deletion); installed missing local deps (npm install --legacy-peer-deps, no lockfile in repo)
+- Validation: prisma validate + generate + db push (test DB now has marketplace tables; provider columns dropped); tsc diff vs pristine 5b6a3a4 worktree = 0 new errors (15 provider-field errors removed); eslint clean; next build GREEN; API suite 83/83 PASS (incl. Admin Deal regression T9); prod-server browser verify: storefront grid (17 platforms + All), category filter active-state + filtering, /service/[id] badge, admin SMM panel tabs = Services|Orders only (no Provider), new-service dialog shows all platform options and no provider mapping, orders tab free of provider strings
+
+Stage Summary:
+- Provider API integration fully removed; manual admin fulfilment is the only path
+- Categories are social media platforms (17 + All) across admin form, storefront and APIs
+- db/custom.db left modified locally (test data; not committed); pre-existing WIP untouched

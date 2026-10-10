@@ -7,9 +7,8 @@ import { parseLinkTypes } from '@/lib/marketplace-pricing'
 /* ═══════════════════════════════════════════════════════════
    GET /api/marketplace/orders/[id]
    Order details + status history. Access: owner or admin only
-   (IDOR protection — everyone else gets 404-style 403).
-   Provider internals (providerOrderId) are never sent to the
-   customer — only admins see them.
+   (IDOR protection — everyone else gets 403).
+   Internal payment/invoice fields are only sent to admins.
    ═══════════════════════════════════════════════════════════ */
 
 export async function GET(
@@ -67,7 +66,6 @@ export async function GET(
       fulfilmentNote: order.fulfilmentNote,
       startCount: order.startCount,
       remains: order.remains,
-      providerStatus: order.providerStatus,
       cancelReason: order.cancelReason,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
@@ -88,10 +86,6 @@ export async function GET(
         success: true,
         order: {
           ...base,
-          providerOrderId: order.providerOrderId,
-          providerName: order.providerStatus,
-          providerSyncedAt: order.providerSyncedAt,
-          providerError: order.providerError,
           paymentMethodId: order.paymentMethodId,
           invoiceId: order.piprapayInvoiceId,
         },

@@ -2328,9 +2328,6 @@ export const en: Record<TranslationKey, string> = {
   'orderEvent.payment_failed': 'Payment failed',
   'orderEvent.status_changed': 'Status changed',
   'orderEvent.note': 'Note',
-  'orderEvent.provider_submitted': 'Submitted to provider',
-  'orderEvent.provider_synced': 'Provider synced',
-  'orderEvent.provider_error': 'Provider error',
   'orderEvent.cancelled': 'Cancelled',
 
   // ── My Orders panel ──

@@ -2325,9 +2325,6 @@ export const bn = {
   'orderEvent.payment_failed': 'পেমেন্ট ব্যর্থ',
   'orderEvent.status_changed': 'স্ট্যাটাস পরিবর্তন',
   'orderEvent.note': 'নোট',
-  'orderEvent.provider_submitted': 'প্রোভাইডারে জমা',
-  'orderEvent.provider_synced': 'প্রোভাইডার সিঙ্ক',
-  'orderEvent.provider_error': 'প্রোভাইডার ত্রুটি',
   'orderEvent.cancelled': 'বাতিল',
 
   // ── My Orders panel ──

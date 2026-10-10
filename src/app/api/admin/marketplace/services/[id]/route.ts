@@ -78,8 +78,6 @@ export async function PATCH(
     if (b.instructions !== undefined) data.instructions = sanitizeText(b.instructions, 2000) || null
     if (b.status !== undefined) data.status = sanitizeText(b.status, 16)
     if (b.isActive !== undefined) data.isActive = Boolean(b.isActive)
-    if (b.providerName !== undefined) data.providerName = sanitizeText(b.providerName, 100) || null
-    if (b.providerServiceId !== undefined) data.providerServiceId = sanitizeText(b.providerServiceId, 100) || null
     if (b.sortOrder !== undefined) data.sortOrder = Number.isInteger(Number(b.sortOrder)) ? Number(b.sortOrder) : 0
 
     const service = await db.marketplaceService.update({ where: { id }, data })

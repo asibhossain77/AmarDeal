@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { parseLinkTypes } from '@/lib/marketplace-pricing'
+import { parseLinkTypes, SERVICE_CATEGORIES } from '@/lib/marketplace-pricing'
 
 /* ═══════════════════════════════════════════════════════════
    GET /api/marketplace/services
    Public catalog of ADMIN-OWNED SMM services.
 
-   Only published + active services are listed. Provider mapping
-   and other internal fields are never exposed. There is no
-   POST/PUT/DELETE here on purpose — services can only be managed
-   via /api/admin/marketplace/services (requireAdmin).
+   Only published + active services are listed. Internal fields
+   are never exposed. There is no POST/PUT/DELETE here on
+   purpose — services can only be managed via
+   /api/admin/marketplace/services (requireAdmin).
    ═══════════════════════════════════════════════════════════ */
 
-const VALID_CATEGORIES = [
-  'design', 'development', 'content', 'marketing', 'education',
-  'software', 'social_media', 'id', 'other',
-]
+const VALID_CATEGORIES: readonly string[] = SERVICE_CATEGORIES
 
 export async function GET(req: NextRequest) {
   try {

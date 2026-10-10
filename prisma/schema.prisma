@@ -599,8 +599,6 @@ model MarketplaceService {
   instructions      String?
   status            String   @default("draft")
   isActive          Boolean  @default(true)
-  providerName      String?
-  providerServiceId String?
   sortOrder         Int      @default(0)
   createdById       String?
   createdAt         DateTime @default(now())
@@ -638,10 +636,6 @@ model MarketplaceOrder {
   fulfilmentNote    String?
   startCount        Int?
   remains           Int?
-  providerOrderId   String?
-  providerStatus    String?
-  providerSyncedAt  DateTime?
-  providerError     String?
   idempotencyKey    String    @unique
   cancelReason      String?
   createdAt         DateTime  @default(now())
