@@ -1491,3 +1491,21 @@ Stage Summary:
 - Category ON/OFF shipped: admin → এসএমএম সার্ভিস → ক্যাটাগরি tab → per-platform switches
 - OFF = hidden from storefront grid + listing + 404 detail + order-blocked; existing orders/fulfilment untouched
 - Changes uncommitted (pre-existing unrelated WIP in tree) — commit selectively
+---
+Task ID: 66
+Agent: main (Super Z)
+Task: "Git push koro" — sandbox sync + spec-compliant SEO metadata restore
+
+Work Log:
+- Sandbox was stale: local main at 04c6757 (ancestor of origin/main) with uncommitted homepage-redesign WIP from an old session (hero/navbar/footer/i18n drafts + untracked home-sections/marketplace-preview/service-cards + upload-route deletions); origin/main was 127 commits ahead (hero v2 + OAuth + SMM marketplace + Deal Details redesign, all already pushed by parallel sessions)
+- Verified via remote worklog that the homepage redesign was already shipped and refined on origin/main (hero v2 theme-driven rewrite, hero2.* i18n keys, brand text মিডম্যান, Noto Sans Bengali) — local WIP was a superseded older draft
+- Safety: committed ALL local WIP to local-only branch backup/homepage-redesign-wip (a7f66f1) — nothing lost, not pushed
+- main fast-forwarded 04c6757 → f66129c (ff-only, zero conflicts); db/custom.db left modified locally (test data, not committed — Task 63-b convention)
+- Identified the one valuable piece in the stale WIP missing from origin/main: layout.tsx metadata still claimed "টাকা ও পণ্য ১০০% সুরক্ষিত", "সম্পূর্ণ সুরক্ষিত", "প্রতারণার ঝুঁকি শূন্য" — absolute-protection claims the homepage spec explicitly forbids
+- Restored the WIP's metadata fix onto the new base via scripts/fix_layout_metadata.py (line-anchored, bottom-up; kept remote-only additions: Noto Sans Bengali font, MetaPixel, cache() logo, ARD link): title/template, meta description, OG title/description/alt, Twitter title/description, JSON-LD WebSite/WebPage/Organization/Service descriptions → branding "Midman — Marketplace, Admin Deal ও Business Verification" + claim-free descriptions; Service description now describes the escrow process (deal terms + transaction steps) instead of promising protection
+- Validation: quote/brace balance sanity, tsc --noEmit → 0 errors in layout.tsx; no behavior change (string literals only)
+
+Stage Summary:
+- origin/main now has spec-compliant SEO metadata; Vercel redeploys automatically
+- Stale WIP preserved at local branch backup/homepage-redesign-wip (delete anytime)
+- Layout metadata is the ONLY content change; hero v2 / landing / workflows untouched

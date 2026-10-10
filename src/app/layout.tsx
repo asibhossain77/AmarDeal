@@ -51,12 +51,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Midman মিডম্যান | বাংলাদেশের সেরা এসক্রো সার্ভিস - নিরাপদ অনলাইন লেনদেন",
-    template: "%s | Midman মিডম্যান",
+    default: "Midman — Marketplace, Admin Deal ও Business Verification",
+    template: "%s | Midman",
   },
 
   description:
-    "Midman (মিডম্যান) বাংলাদেশের সবচেয়ে নিরাপদ এসক্রো সার্ভিস ও অনলাইন লেনদেন প্ল্যাটফর্ম। Midman দিয়ে ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য ১০০% সুরক্ষিত। বিকাশ, নগদ, রকেট দিয়ে পেমেন্ট করুন। মিডম্যানে প্রতারণার ঝুঁকি শূন্য。",
+    "Midman-এ পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, Admin Deal পরিচালনা করুন এবং Midman Verify-তে ব্র্যান্ড ও ব্যবসার তথ্য দেখুন।",
 
   keywords: [
     "midman",
@@ -141,9 +141,9 @@ export async function generateMetadata(): Promise<Metadata> {
   },
 
   openGraph: {
-    title: "Midman মিডম্যান - বাংলাদেশের সেরা এসক্রো সার্ভিস | নিরাপদ অনলাইন লেনদেন",
+    title: "Midman — Marketplace, Admin Deal ও Business Verification",
     description:
-      "Midman (মিডম্যান) দিয়ে নিরাপদে অনলাইনে লেনদেন করুন। এসক্রো সার্ভিসের মাধ্যমে ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য সম্পূর্ণ সুরক্ষিত। বিকাশ, নগদ, রকেট পেমেন্ট সাপোর্ট।",
+      "Midman-এ পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, Admin Deal পরিচালনা করুন এবং Midman Verify-তে ব্র্যান্ড ও ব্যবসার তথ্য দেখুন।",
     type: "website",
     locale: "bn_BD",
     url: SITE_URL,
@@ -153,16 +153,16 @@ export async function generateMetadata(): Promise<Metadata> {
         url: logo,
         width: 1000,
         height: 1000,
-        alt: "Midman মিডম্যান - বাংলাদেশের সেরা এসক্রো সার্ভিস",
+        alt: "Midman — Marketplace, Admin Deal ও Business Verification",
       },
     ],
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Midman মিডম্যান - নিরাপদ অনলাইন লেনদেন",
+    title: "Midman — Marketplace, Admin Deal ও Business Verification",
     description:
-      "Midman (মিডম্যান) বাংলাদেশের সবচেয়ে নিরাপদ অনলাইন লেনদেন প্ল্যাটফর্ম। এসক্রো সার্ভিস দিয়ে প্রতারণামুক্ত লেনদেন।",
+      "Midman-এ পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, Admin Deal পরিচালনা করুন এবং Midman Verify-তে ব্র্যান্ড ও ব্যবসার তথ্য দেখুন।",
     images: [logo],
   },
 
@@ -194,7 +194,7 @@ async function buildJsonLd() {
       name: "Midman মিডম্যান",
       alternateName: ["মিডম্যান", "Midman", "midman.bd"],
       description:
-        "Midman (মিডম্যান) - বাংলাদেশের সবচেয়ে নিরাপদ অনলাইন লেনদেন ও এসক্রো সার্ভিস প্ল্যাটফর্ম। ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য ১০০% সুরক্ষিত।",
+        "Midman-এ পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, Admin Deal পরিচালনা করুন এবং Midman Verify-তে ব্র্যান্ড ও ব্যবসার তথ্য দেখুন।",
       inLanguage: ["bn-BD", "en"],
       potentialAction: {
         "@type": "SearchAction",
@@ -215,7 +215,7 @@ async function buildJsonLd() {
         height: 1000,
       },
       description:
-        "Midman (মিডম্যান) বাংলাদেশের প্রথম ও সবচেয়ে নিরাপদ বাংলা ভাষার Escrow ও P2P লেনদেন প্ল্যাটফর্ম। এসক্রো সার্ভিসের মাধ্যমে অনলাইন লেনদেনে প্রতারণার ঝুঁকি শূন্য করুন।",
+        "Midman (মিডম্যান) বাংলাদেশের বাংলা ভাষার Escrow ও P2P লেনদেন প্ল্যাটফর্ম। এসক্রো সার্ভিসের মাধ্যমে অনলাইন লেনদেনে প্রতারণার ঝুঁকি কমাতে সাহায্য করে।",
       address: {
         "@type": "PostalAddress",
         addressCountry: "BD",
@@ -228,7 +228,7 @@ async function buildJsonLd() {
       "@type": "WebPage",
       "@id": `${SITE_URL}/#webpage`,
       url: SITE_URL,
-      name: "Midman মিডম্যান - বাংলাদেশের সেরা এসক্রো সার্ভিস",
+      name: "Midman — Marketplace, Admin Deal ও Business Verification",
       isPartOf: {
         "@id": `${SITE_URL}/#website`,
       },
@@ -237,14 +237,14 @@ async function buildJsonLd() {
       },
       inLanguage: "bn-BD",
       description:
-        "Midman (মিডম্যান) দিয়ে নিরাপদে অনলাইনে লেনদেন করুন। এসক্রো সার্ভিসের মাধ্যমে ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য সম্পূর্ণ সুরক্ষিত।",
+        "Midman-এ পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, Admin Deal পরিচালনা করুন এবং Midman Verify-তে ব্র্যান্ড ও ব্যবসার তথ্য দেখুন।",
     },
     {
       "@type": "Service",
       "@id": `${SITE_URL}/#service`,
       name: "Escrow ও P2P লেনদেন সার্ভিস - Midman মিডম্যান",
       description:
-        "Midman (মিডম্যান) বাংলাদেশের সেরা Escrow ও P2P লেনদেন প্ল্যাটফর্ম। ক্রেতা ও বিক্রেতা উভয়ের টাকা ও পণ্য এসক্রোতে সম্পূর্ণ সুরক্ষিত। bKash, Nagad, Rocket পেমেন্ট সাপোর্ট। Peer to peer নিরাপদ লেনদেন।",
+        "Midman (মিডম্যান) বাংলাদেশের Escrow ও P2P লেনদেন প্ল্যাটফর্ম। এসক্রো প্রক্রিয়ার মাধ্যমে ডিলের শর্ত ও লেনদেনের ধাপগুলো সুস্পষ্টভাবে পরিচালিত হয়। bKash, Nagad, Rocket পেমেন্ট সাপোর্ট।",
       provider: {
         "@id": `${SITE_URL}/#organization`,
       },
