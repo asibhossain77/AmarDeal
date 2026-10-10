@@ -51,6 +51,7 @@ const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payou
 const AdminSellerWithdrawalsPanel = dynamic(() => import('./admin-seller-withdrawals-panel').then(m => ({ default: m.AdminSellerWithdrawalsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
+const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
   ShieldCheck,
   ShieldX,
@@ -4149,6 +4150,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminMarketplacePanel />;
     case 'pending-products':
       return <PendingProductsPanel />;
+    case 'services':
+      return <AdminServicesPanel />;
     default:
       return null;
   }

@@ -57,6 +57,7 @@ model User {
   auctionsWon        Auction[] @relation("AuctionWinner")
   topBidAuctions     Auction[] @relation("AuctionTopBidder")
   oauthAuthCodes     OAuthAuthorizationCode[]
+  marketplaceOrders  MarketplaceOrder[]
 }
 
 model Admin {
@@ -577,4 +578,95 @@ model OAuthAuthorizationCode {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ═══════════════════════════════════════════════════════════
+// Marketplace Direct Orders — admin-owned SMM service store.
+// Fully separate from Deal (escrow): no Deal rows are created
+// for marketplace orders. Only admins manage services.
+// ═══════════════════════════════════════════════════════════
+
+model MarketplaceService {
+  id                String   @id @default(cuid())
+  name              String
+  category          String   @default("other")
+  description       String
+  pricePerThousand  Float
+  minQuantity       Int      @default(100)
+  maxQuantity       Int      @default(100000)
+  linkTypes         String   @default("[]")
+  deliveryEstimate  String?
+  instructions      String?
+  status            String   @default("draft")
+  isActive          Boolean  @default(true)
+  providerName      String?
+  providerServiceId String?
+  sortOrder         Int      @default(0)
+  createdById       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orders MarketplaceOrder[]
+
+  @@index([status, isActive, sortOrder])
+  @@index([category])
+}
+
+model MarketplaceOrder {
+  id                String    @id @default(cuid())
+  orderNumber       String    @unique
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  serviceId         String
+  service           MarketplaceService @relation(fields: [serviceId], references: [id])
+  serviceName       String
+  linkUrl           String
+  linkType          String?
+  quantity          Int
+  pricingUnit       String    @default("per_1000")
+  unitPriceAtOrder  Float
+  totalAmount       Float
+  status            String    @default("pending_payment")
+  paymentStatus     String    @default("unpaid")
+  paymentMethodName String?
+  paymentMethodId   String?
+  senderNumber      String?
+  transactionId     String?
+  piprapayInvoiceId String?   @unique
+  paidAt            DateTime?
+  paymentVerifiedBy String?
+  fulfilmentNote    String?
+  startCount        Int?
+  remains           Int?
+  providerOrderId   String?
+  providerStatus    String?
+  providerSyncedAt  DateTime?
+  providerError     String?
+  idempotencyKey    String    @unique
+  cancelReason      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  events MarketplaceOrderEvent[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([serviceId])
+  @@index([transactionId])
+}
+
+model MarketplaceOrderEvent {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type       String
+  fromStatus String?
+  toStatus   String?
+  message    String?
+  actorType  String   @default("system")
+  actorId    String?
+  actorName  String?
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }

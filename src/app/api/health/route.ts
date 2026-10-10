@@ -252,6 +252,85 @@ CREATE TABLE IF NOT EXISTS "DealReadState" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "DealReadState_dealId_userId_key" ON "DealReadState"("dealId", "userId");
 CREATE INDEX IF NOT EXISTS "DealReadState_userId_idx" ON "DealReadState"("userId");`,
+    'MarketplaceService': `
+CREATE TABLE IF NOT EXISTS "MarketplaceService" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "name" TEXT NOT NULL,
+  "category" TEXT NOT NULL DEFAULT 'other',
+  "description" TEXT NOT NULL,
+  "pricePerThousand" REAL NOT NULL,
+  "minQuantity" INTEGER NOT NULL DEFAULT 100,
+  "maxQuantity" INTEGER NOT NULL DEFAULT 100000,
+  "linkTypes" TEXT NOT NULL DEFAULT '[]',
+  "deliveryEstimate" TEXT,
+  "instructions" TEXT,
+  "status" TEXT NOT NULL DEFAULT 'draft',
+  "isActive" BOOLEAN NOT NULL DEFAULT 1,
+  "providerName" TEXT,
+  "providerServiceId" TEXT,
+  "sortOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdById" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS "MarketplaceService_status_isActive_sortOrder_idx" ON "MarketplaceService"("status", "isActive", "sortOrder");
+CREATE INDEX IF NOT EXISTS "MarketplaceService_category_idx" ON "MarketplaceService"("category");`,
+    'MarketplaceOrder': `
+CREATE TABLE IF NOT EXISTS "MarketplaceOrder" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "orderNumber" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "serviceId" TEXT NOT NULL,
+  "serviceName" TEXT NOT NULL,
+  "linkUrl" TEXT NOT NULL,
+  "linkType" TEXT,
+  "quantity" INTEGER NOT NULL,
+  "pricingUnit" TEXT NOT NULL DEFAULT 'per_1000',
+  "unitPriceAtOrder" REAL NOT NULL,
+  "totalAmount" REAL NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'pending_payment',
+  "paymentStatus" TEXT NOT NULL DEFAULT 'unpaid',
+  "paymentMethodName" TEXT,
+  "paymentMethodId" TEXT,
+  "senderNumber" TEXT,
+  "transactionId" TEXT,
+  "piprapayInvoiceId" TEXT,
+  "paidAt" DATETIME,
+  "paymentVerifiedBy" TEXT,
+  "fulfilmentNote" TEXT,
+  "startCount" INTEGER,
+  "remains" INTEGER,
+  "providerOrderId" TEXT,
+  "providerStatus" TEXT,
+  "providerSyncedAt" DATETIME,
+  "providerError" TEXT,
+  "idempotencyKey" TEXT NOT NULL,
+  "cancelReason" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "MarketplaceOrder_orderNumber_key" ON "MarketplaceOrder"("orderNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "MarketplaceOrder_piprapayInvoiceId_key" ON "MarketplaceOrder"("piprapayInvoiceId");
+CREATE UNIQUE INDEX IF NOT EXISTS "MarketplaceOrder_idempotencyKey_key" ON "MarketplaceOrder"("idempotencyKey");
+CREATE INDEX IF NOT EXISTS "MarketplaceOrder_userId_createdAt_idx" ON "MarketplaceOrder"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "MarketplaceOrder_status_idx" ON "MarketplaceOrder"("status");
+CREATE INDEX IF NOT EXISTS "MarketplaceOrder_serviceId_idx" ON "MarketplaceOrder"("serviceId");
+CREATE INDEX IF NOT EXISTS "MarketplaceOrder_transactionId_idx" ON "MarketplaceOrder"("transactionId");`,
+    'MarketplaceOrderEvent': `
+CREATE TABLE IF NOT EXISTS "MarketplaceOrderEvent" (
+  "id" TEXT NOT NULL PRIMARY KEY,
+  "orderId" TEXT NOT NULL,
+  "type" TEXT NOT NULL,
+  "fromStatus" TEXT,
+  "toStatus" TEXT,
+  "message" TEXT,
+  "actorType" TEXT NOT NULL DEFAULT 'system',
+  "actorId" TEXT,
+  "actorName" TEXT,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "MarketplaceOrderEvent_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "MarketplaceOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "MarketplaceOrderEvent_orderId_createdAt_idx" ON "MarketplaceOrderEvent"("orderId", "createdAt");`,
     'SellerApplication': `
 CREATE TABLE IF NOT EXISTS "SellerApplication" (
   "id" TEXT NOT NULL PRIMARY KEY,

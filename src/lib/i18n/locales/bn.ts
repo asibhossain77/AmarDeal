@@ -28,6 +28,7 @@ export const bn = {
   'nav.asBuyer': 'বায়ার হিসেবে',
   'nav.sellerMode': 'সেলার',
   'nav.marketplace': 'মার্কেটপ্লেস',
+  'nav.myOrders': 'আমার অর্ডার',
 
   // ── Admin Nav ──
   'adminNav.dashboard': 'ড্যাশবোর্ড',
@@ -41,6 +42,7 @@ export const bn = {
   'adminNav.sellerRequests': 'সেলার রিকোয়েস্ট',
   'adminNav.google-oauth': 'Google OAuth',
   'adminNav.push': 'পুশ নোটিফিকেশন',
+  'adminNav.services': 'এসএমএম সার্ভিস',
   'adminNav.contact': 'যোগাযোগ',
   'adminNav.websiteSettings': 'ওয়েবসাইট সেটিংস',
   'adminNav.contract': 'চুক্তি পেজ',
@@ -2298,6 +2300,82 @@ export const bn = {
   'oauth.error.invalid_scope': 'অনুরোধ করা তথ্যের অনুমতি নেই।',
   'oauth.error.invalid_request': 'সাইন ইন অনুরোধটি অসম্পূর্ণ বা সঠিক নয়।',
   'oauth.error.server_error': 'সার্ভার কনফিগারেশন সমস্যার কারণে সাইন ইন সাময়িকভাবে বন্ধ আছে। কিছুক্ষণ পর আবার চেষ্টা করুন।',
+
+  // ── Marketplace Direct Orders — order statuses ──
+  'orderStatus.pending_payment': 'পেমেন্ট বাকি',
+  'orderStatus.queued': 'কিউতে আছে',
+  'orderStatus.processing': 'প্রসেসিং',
+  'orderStatus.in_progress': 'চলমান',
+  'orderStatus.completed': 'সম্পন্ন',
+  'orderStatus.partial': 'আংশিক',
+  'orderStatus.cancelled': 'বাতিল',
+  'orderStatus.failed': 'ব্যর্থ',
+  'orderStatus.refunded': 'রিফান্ড',
+
+  // ── Payment statuses ──
+  'orderPayment.unpaid': 'অপরিশোধিত',
+  'orderPayment.awaiting_verification': 'যাচাইয়ের অপেক্ষায়',
+  'orderPayment.paid': 'পরিশোধিত',
+  'orderPayment.failed': 'পেমেন্ট ব্যর্থ',
+
+  // ── Order event types ──
+  'orderEvent.created': 'অর্ডার তৈরি',
+  'orderEvent.payment_submitted': 'পেমেন্ট তথ্য জমা',
+  'orderEvent.payment_verified': 'পেমেন্ট ভেরিফাইড',
+  'orderEvent.payment_failed': 'পেমেন্ট ব্যর্থ',
+  'orderEvent.status_changed': 'স্ট্যাটাস পরিবর্তন',
+  'orderEvent.note': 'নোট',
+  'orderEvent.provider_submitted': 'প্রোভাইডারে জমা',
+  'orderEvent.provider_synced': 'প্রোভাইডার সিঙ্ক',
+  'orderEvent.provider_error': 'প্রোভাইডার ত্রুটি',
+  'orderEvent.cancelled': 'বাতিল',
+
+  // ── My Orders panel ──
+  'myOrders.title': 'আমার অর্ডার',
+  'myOrders.subtitle': 'মার্কেটপ্লেস ডিরেক্ট অর্ডারসমূহ',
+  'myOrders.newOrder': 'নতুন অর্ডার',
+  'myOrders.empty': 'কোনো অর্ডার নেই',
+  'myOrders.emptyDesc': 'মার্কেটপ্লেস থেকে সার্ভিস অর্ডার করলে এখানে দেখা যাবে',
+  'myOrders.browseServices': 'সার্ভিস দেখুন',
+  'myOrders.quantity': 'পরিমাণ',
+  'myOrders.cancel': 'বাতিল',
+  'myOrders.cancelled': 'অর্ডার বাতিল হয়েছে',
+  'myOrders.cancelFailed': 'বাতিল করা যায়নি',
+  'myOrders.payNow': 'পেমেন্ট করুন',
+  'myOrders.details': 'বিস্তারিত',
+  'myOrders.loadError': 'অর্ডার লোড করা যায়নি',
+  'myOrders.retry': 'আবার চেষ্টা করুন',
+  'myOrders.autoRefresh': 'স্ট্যাটাস স্বয়ংক্রিয়ভাবে আপডেট হয়',
+  'myOrders.loading': 'লোড হচ্ছে...',
+
+  // ── Order detail panel ──
+  'orderDetail.backToOrders': 'অর্ডার তালিকায় ফিরুন',
+  'orderDetail.targetLink': 'টার্গেট লিংক',
+  'orderDetail.placedAt': 'অর্ডারের সময়',
+  'orderDetail.estimate': 'ডেলিভারি',
+  'orderDetail.paymentInfo': 'পেমেন্ট তথ্য',
+  'orderDetail.paymentStatus': 'স্ট্যাটাস',
+  'orderDetail.paidAt': 'পেমেন্টের সময়',
+  'orderDetail.gatewayPay': 'PipraPay দিয়ে পেমেন্ট',
+  'orderDetail.gatewayDesc': 'বিকাশ/নগদ/রকেট — অটো ভেরিফিকেশন',
+  'orderDetail.manualPay': 'ম্যানুয়াল পেমেন্ট',
+  'orderDetail.noMethods': 'কোনো পেমেন্ট মেথড পাওয়া যায়নি',
+  'orderDetail.senderNumber': 'সেন্ডার নম্বর',
+  'orderDetail.txnId': 'ট্রানজেকশন আইডি',
+  'orderDetail.submitPayment': 'পেমেন্ট তথ্য জমা দিন',
+  'orderDetail.closePayBox': 'বন্ধ করুন',
+  'orderDetail.fillAll': 'সব তথ্য পূরণ করুন',
+  'orderDetail.manualSubmitted': 'পেমেন্ট তথ্য জমা হয়েছে — যাচাইয়ের অপেক্ষায়',
+  'orderDetail.payFailed': 'পেমেন্ট প্রসেস করা যায়নি',
+  'orderDetail.copied': 'কপি হয়েছে',
+  'orderDetail.fulfilment': 'ফালফিলমেন্ট তথ্য',
+  'orderDetail.startCount': 'শুরুর কাউন্ট',
+  'orderDetail.remains': 'অবশিষ্ট',
+  'orderDetail.timeline': 'স্ট্যাটাস টাইমলাইন',
+  'orderDetail.noEvents': 'কোনো ইভেন্ট নেই',
+
+  // ── Admin SMM Services panel ──
+  'adminServices.newService': 'নতুন সার্ভিস',
 } as const;
 
 export type TranslationKey = keyof typeof bn;

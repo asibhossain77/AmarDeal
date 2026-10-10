@@ -21,6 +21,8 @@ import { NewDealForm } from './new-deal-form';
 import { DealWorkflowTracker } from './deal-workflow-tracker';
 import { UserPaymentView } from './user-payment-view';
 import { MyDealsPanel } from './my-deals-panel';
+import { MyOrdersPanel } from './my-orders-panel';
+import { OrderDetailPanel } from './order-detail-panel';
 import { ProfilePanel } from './profile-panel';
 import { SettingsPanel } from './settings-panel';
 import { AffiliatePanel } from './affiliate-panel';
@@ -572,6 +574,8 @@ export function DashboardMain() {
       {dashboardPanel === 'new-deal' && <NewDealForm />}
       {dashboardPanel === 'my-deals' && <MyDealsPanel />}
       {dashboardPanel === 'deal-detail' && <DealWorkflowTracker />}
+      {dashboardPanel === 'my-orders' && <MyOrdersPanel />}
+      {dashboardPanel === 'order-detail' && <OrderDetailPanel />}
       {dashboardPanel === 'payment' && <UserPaymentView />}
       {dashboardPanel === 'profile' && <ProfilePanel />}
       {dashboardPanel === 'affiliate' && <AffiliatePanel />}

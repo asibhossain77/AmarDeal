@@ -28,6 +28,7 @@ const VIEW_PATHS: Record<string, string> = {
   'page-download': 'download/__PRODUCT_ID__',
   'page-auction': 'nilam',
   'page-auction-detail': 'nilam/__AUCTION_ID__',
+  'page-service': 'service/__SERVICE_ID__',
 };
 
 const PATH_VIEWS: Record<string, AppView> = {
@@ -58,8 +59,10 @@ export function buildUrl(state: {
   productDetailId?: string | null;
   downloadProductId?: string | null;
   auctionDetailId?: string | null;
+  serviceDetailId?: string | null;
+  orderDetailId?: string | null;
 }): string {
-  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId, downloadProductId, auctionDetailId } = state;
+  const { view, dashboardPanel, adminPanel, activeDeal, sellerProfileId, productDetailId, downloadProductId, auctionDetailId, serviceDetailId, orderDetailId } = state;
 
   // Seller public profile
   if (view === 'page-seller-profile' && sellerProfileId) {
@@ -81,6 +84,11 @@ export function buildUrl(state: {
     return `/nilam/${auctionDetailId}`;
   }
 
+  // Service order page
+  if (view === 'page-service' && serviceDetailId) {
+    return `/service/${serviceDetailId}`;
+  }
+
   // Static pages
   const viewPath = VIEW_PATHS[view];
   if (viewPath !== undefined && view !== 'dashboard' && view !== 'admin') {
@@ -91,6 +99,9 @@ export function buildUrl(state: {
   if (view === 'dashboard') {
     if (dashboardPanel === 'deal-detail' && activeDeal?.id) {
       return `/dashboard/deals/${activeDeal.id}`;
+    }
+    if (dashboardPanel === 'order-detail' && orderDetailId) {
+      return `/dashboard/orders/${orderDetailId}`;
     }
     return dashboardPanel === 'overview' ? '/dashboard' : `/dashboard/${dashboardPanel}`;
   }
@@ -113,11 +124,13 @@ interface ParsedUrl {
   sellerId: string | null;
   productId: string | null;
   auctionId: string | null;
+  serviceId: string | null;
+  orderId: string | null;
 }
 
 export function parseUrl(pathname: string): ParsedUrl {
   const result: ParsedUrl = {
-    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null, productId: null, auctionId: null,
+    view: null, dashboardPanel: null, adminPanel: null, dealId: null, sellerId: null, productId: null, auctionId: null, serviceId: null, orderId: null,
   };
 
   const p = pathname.replace(/\/+$/, '') || '/';
@@ -169,6 +182,13 @@ export function parseUrl(pathname: string): ParsedUrl {
     }
   }
 
+  // /service/[serviceId] — SMM service order page
+  if (segments.length === 2 && segments[0] === 'service') {
+    result.view = 'page-service';
+    result.serviceId = segments[1];
+    return result;
+  }
+
   const [seg1, seg2] = segments;
 
   if (seg1 === 'dashboard') {
@@ -176,11 +196,14 @@ export function parseUrl(pathname: string): ParsedUrl {
     if (seg2 === 'deals' && segments[2]) {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
+    } else if (seg2 === 'orders' && segments[2]) {
+      result.dashboardPanel = 'order-detail';
+      result.orderId = segments[2];
     } else if (seg2 === 'seller-orders' && segments[2]) {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions', 'my-orders'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;
@@ -214,7 +237,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       'profile', 'contract', 'admin-calls', 'disputes', 'blog', 'email-settings',
       'whatsapp-settings',
       'two-factor', 'ai-prompt', 'popup', 'google-oauth', 'piprapay', 'affiliate',
-      'affiliate-payouts',
+      'affiliate-payouts', 'services',
     ];
     result.adminPanel = valid.includes(seg2 as AdminPanel) ? seg2 as AdminPanel : 'dashboard';
     return result;
@@ -237,7 +260,7 @@ function pushUrl(url: string) {
 
 /* ── Apply current URL to store (reusable) ── */
 
-const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product', 'page-download', 'page-auction', 'page-auction-detail']);
+const STATIC_VIEWS = new Set(['blog', 'page-how-it-works', 'page-fees', 'page-security', 'page-faq', 'page-about', 'page-privacy', 'page-terms', 'page-contact', 'page-marketplace', 'page-seller-profile', 'page-product', 'page-download', 'page-auction', 'page-auction-detail', 'page-service']);
 const PROTECTED_VIEWS = new Set(['admin', 'dashboard', 'auth']);
 
 function applyUrlToStore() {
@@ -271,6 +294,8 @@ function applyUrlToStore() {
     else updates.productDetailId = parsed.productId;
   }
   if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
+  if (parsed.serviceId) updates.serviceDetailId = parsed.serviceId;
+  if (parsed.orderId) updates.orderDetailId = parsed.orderId;
   if (parsed.dashboardPanel && state.view === 'dashboard' && parsed.dashboardPanel !== state.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
   if (parsed.adminPanel && state.view === 'admin' && parsed.adminPanel !== state.adminPanel) updates.adminPanel = parsed.adminPanel;
 
@@ -314,6 +339,7 @@ export function applyUrlAfterAuth() {
     if (parsed.dashboardPanel) updates.dashboardPanel = parsed.dashboardPanel;
     if (parsed.adminPanel) updates.adminPanel = parsed.adminPanel;
     if (parsed.dealId) updates.activeDeal = { id: parsed.dealId };
+    if (parsed.orderId) updates.orderDetailId = parsed.orderId;
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     updates.view = parsed.view;
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
@@ -322,6 +348,7 @@ export function applyUrlAfterAuth() {
       else updates.productDetailId = parsed.productId;
     }
     if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
+    if (parsed.serviceId) updates.serviceDetailId = parsed.serviceId;
   }
 
   if (Object.keys(updates).length > 0) {
@@ -364,7 +391,7 @@ export function initUrlSync() {
     }
   } else if (parsed.view && STATIC_VIEWS.has(parsed.view)) {
     // Anonymous visitor on a public page (marketplace, seller profile,
-    // product order page…) — apply the view AND its entity id so the
+    // product/service order page…) — apply the view AND its entity id so the
     // view component can fetch the right data.
     const updates: Record<string, unknown> = { view: parsed.view };
     if (parsed.sellerId) updates.sellerProfileId = parsed.sellerId;
@@ -373,6 +400,7 @@ export function initUrlSync() {
       else updates.productDetailId = parsed.productId;
     }
     if (parsed.auctionId) updates.auctionDetailId = parsed.auctionId;
+    if (parsed.serviceId) updates.serviceDetailId = parsed.serviceId;
     store.setState(updates);
     _lastUrl = window.location.pathname;
   } else if (parsed.view && PROTECTED_VIEWS.has(parsed.view)) {

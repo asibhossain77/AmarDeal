@@ -37,6 +37,7 @@ interface NavItem {
 export const navItems: NavItem[] = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, panel: 'overview' },
   { labelKey: 'nav.myDeals', icon: Handshake, panel: 'my-deals' },
+  { labelKey: 'nav.myOrders', icon: Package, panel: 'my-orders' },
   { labelKey: 'nav.transactions', icon: ArrowLeftRight, panel: 'payment' },
   { labelKey: 'nav.profile', icon: UserCircle, panel: 'profile' },
   { labelKey: 'nav.affiliate', icon: Users, panel: 'affiliate' },
@@ -90,6 +91,9 @@ export function DashboardSidebar() {
                 onClick={() => {
                   if (item.panel === 'my-deals') {
                     useAppStore.getState().setActiveDeal(null);
+                  }
+                  if (item.panel === 'my-orders') {
+                    useAppStore.getState().setOrderDetailId(null);
                   }
                   setDashboardPanel(item.panel);
                 }}

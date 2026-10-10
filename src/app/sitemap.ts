@@ -136,5 +136,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // skip products on db error
   }
 
-  return [...staticPages, ...categoryPages, ...productPages];
+  // Published SMM service order pages
+  let servicePages: MetadataRoute.Sitemap = [];
+  try {
+    const services = await db.marketplaceService.findMany({
+      where: { status: 'published', isActive: true },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 200,
+    });
+    servicePages = services.map(s => ({
+      url: `${baseUrl}/service/${s.id}`,
+      lastModified: new Date(s.updatedAt),
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    }));
+  } catch {
+    // skip services on db error
+  }
+
+  return [...staticPages, ...categoryPages, ...productPages, ...servicePages];
 }

@@ -28,7 +28,7 @@ interface Bucket {
   resetAt: number; // epoch ms when this bucket expires
 }
 
-type LimitCategory = 'auth-strict' | 'auth-moderate' | 'sensitive' | 'api-general' | 'page';
+type LimitCategory = 'auth-strict' | 'auth-moderate' | 'sensitive' | 'mp-orders' | 'api-general' | 'page';
 
 /* ------------------------------------------------------------------ */
 /*  Configuration                                                       */
@@ -41,6 +41,8 @@ const LIMITS: Record<LimitCategory, RateLimitConfig> = {
   'auth-moderate': { maxRequests: 10, windowMs: 60_000 },
   // Abuse prevention: 5 req/min
   'sensitive':     { maxRequests: 5,  windowMs: 60_000 },
+  // Marketplace order creation (authed): 30 req/min
+  'mp-orders':     { maxRequests: 30, windowMs: 60_000 },
   // General API safety net: 60 req/min
   'api-general':   { maxRequests: 60, windowMs: 60_000 },
   // Page loads: 120 req/min (very permissive)
@@ -87,6 +89,16 @@ function getCategory(pathname: string, method: string): LimitCategory {
     pathname === '/api/contact'
   ) {
     return 'sensitive';
+  }
+
+  // Marketplace Direct Orders — order creation (authed, anti-spam)
+  if (pathname === '/api/marketplace/orders' && method === 'POST') {
+    return 'mp-orders';
+  }
+
+  // Marketplace payment endpoints — moderate (verify retries, charge creation)
+  if (pathname.startsWith('/api/marketplace/payment/') && method === 'POST') {
+    return 'auth-moderate';
   }
 
   // API routes — general

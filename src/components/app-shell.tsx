@@ -33,6 +33,8 @@ const ProductOrderView = dynamic(() => import('@/components/landing/product-orde
 const DownloadView = dynamic(() => import('@/components/landing/download-view').then(m => ({ default: m.DownloadView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const AuctionListView = dynamic(() => import('@/components/landing/auction-list-view').then(m => ({ default: m.AuctionListView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const AuctionDetailView = dynamic(() => import('@/components/landing/auction-detail-view').then(m => ({ default: m.AuctionDetailView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const ServiceOrderView = dynamic(() => import('@/components/landing/service-order-view').then(m => ({ default: m.ServiceOrderView })), { ssr: false, loading: () => <SectionSkeleton /> });
+const MarketplaceTabs = dynamic(() => import('@/components/marketplace/marketplace-tabs').then(m => ({ default: m.MarketplaceTabs })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -231,9 +233,9 @@ function BlogPage() {
 function PageMarketplace() {
   return (
     /* No title/subtitle: user asked to drop the "ডিজিটাল মার্কেটপ্লেস" header —
-       the page now starts directly with the banner + toolbar */
+       the page now starts directly with the banner + toolbar (SMM + products dual-tab store) */
     <PageWrapper>
-      <MarketplaceSection />
+      <MarketplaceTabs />
     </PageWrapper>
   );
 }
@@ -250,6 +252,10 @@ function PageAuctionList() {
 
 function PageAuctionDetail() {
   return <AuctionDetailView />;
+}
+
+function PageService() {
+  return <ServiceOrderView />;
 }
 
 export function AppShell({ initialView }: { initialView?: AppView }) {
@@ -290,6 +296,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
     const magicUid = params.get('uid');
     const magicComplete = params.get('complete');
     const nextParam = params.get('next');
+    const mpPay = params.get('mp_pay');
 
     // "Continue with Midman": /login?next=/oauth/authorize?... —
     // stash the validated return-to so any login method (password,
@@ -308,6 +315,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       url.searchParams.delete('uid');
       url.searchParams.delete('complete');
       url.searchParams.delete('next');
+      url.searchParams.delete('mp_pay');
       window.history.replaceState({}, '', url.pathname);
     };
 
@@ -387,12 +395,39 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
         if (piprapay === 'cancel') {
           toast.error('পেমেন্ট বাতিল হয়েছে');
         }
+        // Marketplace Direct Order payment return (PipraPay)
+        if (mpPay === 'success' && ppId) {
+          toast.success('পেমেন্ট সফল! ভেরিফিকেশন চলছে...');
+          fetch('/api/marketplace/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pp_id: ppId }),
+          }).then((r) => r.json()).then((d) => {
+            if (d.success) {
+              toast.success('পেমেন্ট ভেরিফাইড! অর্ডার ফালফিলমেন্ট কিউতে আছে।');
+              if (d.orderId) {
+                const store = useAppStore.getState();
+                store.setOrderDetailId(d.orderId);
+                store.setDashboardPanel('order-detail');
+                store.setView('dashboard');
+              }
+            } else if (d.error === 'amount_mismatch' || d.error === 'not_completed') {
+              toast.error('পেমেন্ট যাচাইয়ে সমস্যা — সাপোর্টে যোগাযোগ করুন');
+            }
+          }).catch(() => {});
+        }
+        if (mpPay === 'cancel') {
+          toast.error('পেমেন্ট বাতিল হয়েছে — অর্ডারটি পেন্ডিং আছে, আবার চেষ্টা করতে পারেন');
+        }
       })
       .catch(() => {
         if (googleLogin === 'error') {
           toast.error('Google লগইন ব্যর্থ হয়েছে');
         }
         if (piprapay === 'success') {
+          toast.error('পেমেন্ট ভেরিফিকেশনে সমস্যা — লগইন করুন');
+        }
+        if (mpPay === 'success') {
           toast.error('পেমেন্ট ভেরিফিকেশনে সমস্যা — লগইন করুন');
         }
         // No session: if URL was protected, redirect to login
@@ -438,6 +473,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-download' && <DownloadView />}
       {view === 'page-auction' && <PageAuctionList />}
       {view === 'page-auction-detail' && <PageAuctionDetail />}
+      {view === 'page-service' && <PageService />}
       <DeferredStyles />
       <DynamicFavicon />
       <LiveSupportButton />

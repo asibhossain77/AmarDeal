@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail'
-export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail' | 'page-service'
+export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions' | 'my-orders' | 'order-detail'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
-export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products'
+export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products' | 'services'
 /* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
 export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 
@@ -75,6 +75,8 @@ interface AppState {
   auctionDetailId: string | null
   /* Digital product download page (/download/[id]) */
   downloadProductId: string | null
+  serviceDetailId: string | null
+  orderDetailId: string | null
   /* Product being edited in the seller dashboard edit panel */
   editingProductId: string | null
   /* Navigation history (single-level) */
@@ -97,6 +99,8 @@ interface AppState {
   setProductDetailId: (id: string | null) => void
   setAuctionDetailId: (id: string | null) => void
   setDownloadProductId: (id: string | null) => void
+  setServiceDetailId: (id: string | null) => void
+  setOrderDetailId: (id: string | null) => void
   /** Go back to previous page/panel */
   goBack: () => void
   /** Navigate to the user's main view (dashboard, seller, or admin) */
@@ -124,6 +128,8 @@ export const useAppStore = create<AppState>((set) => ({
   productDetailId: null,
   auctionDetailId: null,
   downloadProductId: null,
+  serviceDetailId: null,
+  orderDetailId: null,
   editingProductId: null,
   _prevView: null,
   _prevDashPanel: null,
@@ -173,6 +179,8 @@ export const useAppStore = create<AppState>((set) => ({
   setProductDetailId: (productDetailId) => set({ productDetailId }),
   setAuctionDetailId: (auctionDetailId) => set({ auctionDetailId }),
   setDownloadProductId: (downloadProductId) => set({ downloadProductId }),
+  setServiceDetailId: (serviceDetailId) => set({ serviceDetailId }),
+  setOrderDetailId: (orderDetailId) => set({ orderDetailId }),
   goBack: () => set((s) => {
     // Priority: panel-level back → view-level back
     if (s.view === 'dashboard' && s._prevDashPanel) {
