@@ -1509,3 +1509,18 @@ Stage Summary:
 - origin/main now has spec-compliant SEO metadata; Vercel redeploys automatically
 - Stale WIP preserved at local branch backup/homepage-redesign-wip (delete anytime)
 - Layout metadata is the ONLY content change; hero v2 / landing / workflows untouched
+---
+Task ID: 67
+Agent: main (Super Z)
+Task: Build error fix — "Module not found: @aws-sdk/s3-request-presigner"
+
+Work Log:
+- User reported Turbopack build error: r2.ts imports @aws-sdk/s3-request-presigner which was missing from node_modules (dependency arrived via the Task 66 fast-forward; local install never ran after it)
+- Audited package.json vs node_modules: exactly one missing dep (s3-request-presigner); @aws-sdk/client-s3 + sharp already present; repo uses bun.lock
+- bun install → +@aws-sdk/s3-request-presigner@3.1131.0 (2 packages, 2.82s); re-audit: MISSING none
+- Dev server restart hazards hit and documented: (a) `next` not on PATH in fresh shells — use npm run dev / node_modules/.bin; (b) inherited shell DATABASE_URL=file:/home/z/my-project/db/custom.db (stale outer db, worklog-documented pollution) — must start with env -u DATABASE_URL; (c) plain nohup/setsid children die when the tool shell exits — fixed with double-fork daemonization (scripts/start-dev-daemon.py: fork → setsid → fork → exec npm run dev, SIGHUP ignored, DATABASE_URL scrubbed)
+- Verified across separate tool calls: next-server pid stable, LISTEN *:3000, GET /api/products 200 (real data — imports r2.ts → the previously failing module), homepage 200, /nilam 200
+
+Stage Summary:
+- Build error resolved; no repo file changes (node_modules only — not tracked)
+- Canonical local dev restart: python3 /home/z/my-project/scripts/start-dev-daemon.py (clean env + survives shell exit)
