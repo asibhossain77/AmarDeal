@@ -202,6 +202,16 @@ html.dark {
 .blob-float-1 { animation: blob-float-1 8s ease-in-out infinite; }
 .blob-float-2 { animation: blob-float-2 10s ease-in-out infinite; }
 
+/* Headline highlight glow — soft primary halo behind the green headline span */
+.glow-text-lime {
+  text-shadow:
+    0 0 18px color-mix(in oklab, var(--primary) 28%, transparent),
+    0 0 44px color-mix(in oklab, var(--primary) 14%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .glow-text-lime { text-shadow: none; }
+}
+
 /* ══ Hero 3D floating composition ══
    Layered depth: page bg → tilt layer (JS parallax) → main card (float) →
    inner step cards (independent float + translateZ) → ground shadow. */

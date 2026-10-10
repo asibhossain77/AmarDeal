@@ -1524,3 +1524,21 @@ Work Log:
 Stage Summary:
 - Build error resolved; no repo file changes (node_modules only — not tracked)
 - Canonical local dev restart: python3 /home/z/my-project/scripts/start-dev-daemon.py (clean env + survives shell exit)
+---
+Task ID: 68
+Agent: main (Super Z)
+Task: "Hero section update hoi nai" — restore the 14-section homepage hero
+
+Work Log:
+- User reported the hero update was missing: live site showed hero v2 (escrow-card design from earlier parallel sessions) while the user's 14-section redesign hero (three-service visual) existed only in the stale WIP backup branch
+- Verified via headless browser (agent-browser screenshots: desktop light + 390px mobile + localStorage dark) that hero v2 rendered correctly — i.e. nothing was broken; the intended redesign simply was never applied on top of origin/main
+- Confirmed every WIP hero dependency still exists on current main: TranslationKey export, useTranslation(locale), setView('page-marketplace'), setDashboardPanel('new-deal'/'seller-business-profile'/'overview'), user.isSeller, and ALL custom CSS classes (main-card-float, card-body-glass, blob-float-1/2, float-card-2/3, badge-shimmer, progress-pulse) already in globals.css
+- Restored src/components/landing/hero.tsx from backup/homepage-redesign-wip (494 lines): badge "Marketplace · Admin Deal · Midman Verify", spec headline "কেনাকাটা, নিরাপদ ডিল ও ব্যবসার পরিচয় যাচাই—এক জায়গায়", spec subtitle, 3 CTAs (Marketplace দেখুন / Admin Deal করুন / Midman Verify দেখুন text link), trust chips, product-style visual (sample deal card ৳12,500 + ক্রেতা→Midman→বিক্রেতা flow + 4-stage progress + floating Marketplace & Verify mini-cards) — sample data only, no fabricated stats
+- i18n: current locales still had OLD hero.badge/hero.subtitle values (pre-v2) — updated both to spec copy; added 20 missing keys (headline.*/cta.*/chip.*/mock.*/stage.*) to bn.ts + en.ts; deliberately EXCLUDED unused WIP keys that contain absolute claims (hero.float.hundredSecure "100% নিরাপদ" etc.); hero2.* keys left in place (now unused by hero but harmless)
+- globals.css: added .glow-text-lime (subtle color-mix primary halo on the headline highlight, disabled under prefers-reduced-motion)
+- Validation: browser screenshots desktop/mobile/dark all correct; tsc --noEmit total = 165 = exact documented baseline (0 new errors; flagged bn.ts TS1117 duplicates are pre-existing union-merge artifacts in seller.*/common.* sections, untouched); hero2 keys unused-but-present is intentional for rollback safety
+
+Stage Summary:
+- The 14-section hero is now live on main; rollback = restore hero.tsx from backup/homepage-redesign-wip or git revert
+- Below-hero sections untouched (remote's how-it-works/trust-security/marketplace-section etc. all intact)
+- Old v2 escrow hero preserved in git history + hero2.* i18n keys for easy revert
