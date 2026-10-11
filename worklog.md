@@ -1542,3 +1542,27 @@ Stage Summary:
 - The 14-section hero is now live on main; rollback = restore hero.tsx from backup/homepage-redesign-wip or git revert
 - Below-hero sections untouched (remote's how-it-works/trust-security/marketplace-section etc. all intact)
 - Old v2 escrow hero preserved in git history + hero2.* i18n keys for easy revert
+
+---
+Task ID: 1
+Agent: Main
+Task: Homepage hero redesign — minimal, clean & modern (title + description + exactly 3 CTAs)
+
+Work Log:
+- Synced sandbox: backed up local WIP to branch backup/local-wip-pre-hero, then fast-forwarded main to origin/main (59af4fb, was 130 commits behind)
+- Installed missing deps from merge (bun install): @next/third-parties, dompurify, @prisma/adapter-libsql, @aws-sdk/* — restored /api/auth/me (was 404 from stale server) and fixed homepage 500
+- Rewrote src/components/landing/hero.tsx (~495 → ~100 lines): removed framer-motion animations, DealPreviewCard, FloatingMiniCards, TrustChips, badge, background auras/grid/glow, two-column grid, mounted/useSyncExternalStore hydration branch
+- New hero: centered single column — H1 (exact bn copy: কেনাকাটা, নিরাপদ ডিল ও ব্যবসার পরিচয় যাচাই—এক জায়গায়) → short description → exactly 3 CTAs
+- CTA 1 Marketplace: Button primary → existing setView('page-marketplace') (unchanged)
+- CTA 2 Admin Deal: Button outline → preserved auth workflow (logged-in → dashboard new-deal panel; visitor → auth view)
+- CTA 3 Midman Verify: real anchor <a href="https://verify.midman.bd" target="_blank" rel="noopener noreferrer"> via Button asChild
+- Updated i18n bn.ts + en.ts: hero.subtitle to exact user copy; CTA labels exact product names (Marketplace / Admin Deal / Midman Verify); removed 60+ dead hero/hero2 keys (verified unused: mock/stage/chip/status/stat/float/trust/flow/badge/heading.line*/startDeal/howWorks/escrowBalance/totalBalance/dealId/hero2.*)
+- Cleaned globals.css (−139 lines): removed hero-only dead styles (float-card-1..4, main-card-float, blob-float-1/2, card-body-glass, badge-shimmer+shimmer-sweep, glow-text-lime, soft-pulse, Hero 3D block incl. hero-main-float/step-float/ground-shadow/hero-tilt); kept progress-pulse (used by contact-section)
+- Verified via agent-browser: bn+en locales, light+dark themes, desktop (1440px one-row CTAs) + mobile (390px stacked, 44px touch targets, no horizontal overflow 390=390), Marketplace click → marketplace view, Admin Deal click (visitor) → /login, Verify anchor href/target/rel correct
+- tsc --noEmit: zero new errors (930 pre-existing sandbox Prisma/env errors unchanged before+after; TS1117 104 unchanged — all pre-existing seller.*/common.* duplicate keys unrelated to hero)
+
+Stage Summary:
+- Minimal premium hero: title top → description → exactly 3 CTAs; zero cards/mockups/gradients/animations/glassmorphism; theme-token-driven (auto light/dark)
+- 4 files changed: hero.tsx (rewrite), bn.ts, en.ts (copy + dead key cleanup), globals.css (dead style cleanup) — net −654 lines
+- Screenshots: download/hero-desktop-light.png, hero-desktop-dark.png, hero-mobile-light.png, hero-mobile-light2.png
+- Sandbox ops: dev server restart procedure (pkill next-server + setsid nohup npm run dev, log at /home/z/my-project/dev.log); after any ff-merge ALWAYS bun install before restarting dev server
