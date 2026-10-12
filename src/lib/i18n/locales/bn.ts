@@ -71,13 +71,13 @@ export const bn = {
   'settings.failed': 'ব্যর্থ হয়েছে',
 
   // ── Hero (minimal — title, description, three CTAs) ──
-  'hero.headline.start': 'কেনাকাটা, নিরাপদ ডিল ও',
+  'hero.headline.start': 'কেনাকাটা, অ্যাডমিন ডিল ও',
   'hero.headline.highlight': 'ব্যবসার পরিচয় যাচাই',
-  'hero.headline.end': '—এক জায়গায়',
-  'hero.subtitle': 'পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, ডিল পরিচালনা করুন এবং ব্র্যান্ড সম্পর্কে জানুন Midman-এর মাধ্যমে।',
+  'hero.headline.end': ' এক জায়গায়',
+  'hero.subtitle': 'পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, ডিল পরিচালনা করুন এবং বাংলাদেশি ব্র্যান্ড সম্পর্কে জানুন Midman-এর মাধ্যমে।',
   'hero.cta.marketplace': 'Marketplace',
-  'hero.cta.adminDeal': 'Admin Deal',
-  'hero.cta.verify': 'Midman Verify',
+  'hero.cta.adminDeal': 'Admin Deal করুন',
+  'hero.cta.verify': 'বাংলাদেশের ব্র্যান্ড যাচাই করুন',
 
   // ── Footer ──
   'footer.defaultDescription': 'বাংলাদেশের একটি নিরাপদ এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করতে সাহায্য করি।',

@@ -73,13 +73,13 @@ export const en: Record<TranslationKey, string> = {
   'settings.failed': 'Failed',
 
   // ── Hero (minimal — title, description, three CTAs) ──
-  'hero.headline.start': 'Shopping, secure deals &',
+  'hero.headline.start': 'Shopping, Admin Deal &',
   'hero.headline.highlight': 'business verification',
-  'hero.headline.end': '—all in one place',
-  'hero.subtitle': 'Find products and digital services, manage deals, and learn about brands — all with Midman.',
+  'hero.headline.end': ' in one place',
+  'hero.subtitle': 'Find products and digital services, manage deals, and learn about Bangladeshi brands with Midman.',
   'hero.cta.marketplace': 'Marketplace',
-  'hero.cta.adminDeal': 'Admin Deal',
-  'hero.cta.verify': 'Midman Verify',
+  'hero.cta.adminDeal': 'Start Admin Deal',
+  'hero.cta.verify': 'Verify Bangladeshi Brands',
 
   // ── Footer ──
   'footer.defaultDescription': "Bangladesh's most trusted escrow platform. We ensure safe online transactions so you can buy and sell with confidence.",
