@@ -264,7 +264,7 @@ export function Navbar() {
 
         {/* ── Center: Landing Desktop Nav Links (icons only + tooltip on hover) ── */}
         {!isSidebarView && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 p-1 rounded-full bg-accent/30 dark:bg-zinc-800/40 border border-border/40 backdrop-blur-md md:flex">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden items-center gap-1 md:flex">
             {[
               { href: '/security', viewKey: 'page-security', label: t('nav.features'), Icon: Sparkles },
               { href: '/fees', viewKey: 'page-fees', label: t('nav.feeStructure'), Icon: Calculator },
@@ -282,9 +282,9 @@ export function Navbar() {
                     href={item.href}
                     onClick={(e) => { e.preventDefault(); setView(item.viewKey as AppView); }}
                     aria-label={item.label}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-all hover:text-primary hover:bg-background/80 hover:scale-105 hover:shadow-sm"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
-                    <item.Icon className="h-4 w-4" />
+                    <item.Icon className="h-[18px] w-[18px]" />
                   </a>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs font-medium rounded-lg">
@@ -301,12 +301,12 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <Button size="sm" onClick={() => navigateToDashboard()} className="gap-2 rounded-full font-medium shadow-md shadow-primary/20 hover:scale-105 transition-all">
+              <Button onClick={() => navigateToDashboard()} className="gap-2 rounded-[9px] font-medium shadow-sm shadow-primary/15 transition-all hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]">
                 <LayoutDashboard className="h-4 w-4" />
                 {t('nav.dashboard')}
               </Button>
             ) : (
-              <Button size="sm" onClick={() => setView('auth')} className="gap-2 rounded-full font-medium shadow-md shadow-primary/20 hover:scale-105 transition-all">
+              <Button onClick={() => setView('auth')} className="gap-2 rounded-[9px] font-medium shadow-sm shadow-primary/15 transition-all hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]">
                 <LogIn className="h-4 w-4" />
                 {t('nav.loginRegister')}
               </Button>
