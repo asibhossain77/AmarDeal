@@ -1,9 +1,5 @@
 'use client';
 
-import { useSiteSettings } from '@/lib/use-site-settings';
-import { useAppStore } from '@/lib/store';
-import { cdnUrl } from '@/lib/cdn-url';
-
 /**
  * ─────────────────────────────────────────────────────────────────────────────
  * SmartphoneMockup — reusable hero phone for the Midman landing page
@@ -29,13 +25,26 @@ import { cdnUrl } from '@/lib/cdn-url';
  *
  * The planned automatic rotation needs NO changes inside this component —
  * just cycle the `screen` prop in the hero with a short interval and a
- * crossfade wrapper. Until then, the neutral <PhoneScreenPlaceholder /> is
- * rendered when no `screen` prop is given (no fabricated app data/screenshots).
+ * crossfade wrapper. Until then, the default <HeroScreenAsset /> (the
+ * designer-provided theme-aware SVG screens) is rendered when no `screen`
+ * prop is given.
+ *
+ * ── CURRENT DEFAULT SCREEN (designer SVG assets) ────────────────────────────
+ * The default screen is <HeroScreenAsset />: two designer-provided SVG files
+ * that swap automatically with the site theme via pure CSS (Tailwind `dark:`
+ * class variant — no JS, no reload, instant switching):
+ *
+ *     Light Mode → public/midman-hero-light.svg
+ *     Dark Mode  → public/midman-hero-dark.svg
+ *
+ * To replace either screen later, simply overwrite the corresponding file in
+ * public/ (keep the filename) — no code changes needed. The two assets are
+ * fully independent of each other.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 type SmartphoneMockupProps = {
-  /** Screen content rendered inside the display. Defaults to <PhoneScreenPlaceholder />. */
+  /** Screen content rendered inside the display. Defaults to <HeroScreenAsset /> (theme-aware SVG screens). */
   screen?: React.ReactNode;
   /** Extra classes for the outer wrapper (sizing/positioning from the parent). */
   className?: string;
@@ -72,7 +81,7 @@ export function SmartphoneMockup({ screen, className = '' }: SmartphoneMockupPro
                 3. Midman Verify screen → <MidmanVerifyScreen />
               Pass one via <SmartphoneMockup screen={...} /> in the hero.
               Nothing else in this component needs to change.               */}
-          {screen ?? <PhoneScreenPlaceholder />}
+          {screen ?? <HeroScreenAsset />}
         </div>
       </div>
     </div>
@@ -80,48 +89,46 @@ export function SmartphoneMockup({ screen, className = '' }: SmartphoneMockupPro
 }
 
 /**
- * PhoneScreenPlaceholder — clean, neutral stand-in displayed inside the phone
- * until the real Marketplace / Admin Deal / Midman Verify screens are added.
- * Deliberately uses only skeleton blocks and the real Midman brand mark —
- * no fabricated app data, numbers, or screenshots.
+ * HeroScreenAsset — the hero phone's default screen content.
+ *
+ * Renders the two designer-provided SVG screens (kept as separate, swappable
+ * files in public/) and picks one purely with CSS via the existing theme
+ * system (Tailwind `dark:` class variant on <html> — the same mechanism the
+ * rest of the site uses, no duplicate theme logic):
+ *
+ *   - public/midman-hero-light.svg → shown in Light Mode
+ *   - public/midman-hero-dark.svg  → shown in Dark Mode
+ *
+ * Both <img> layers stay mounted, so toggling the site theme swaps the screen
+ * instantly — no reload, no flash, and both assets are pre-warmed in cache.
+ * The SVGs keep their intrinsic aspect ratio via object-cover (centered,
+ * edge-to-edge fill of the screen container; the container's overflow-hidden
+ * + rounded corners clip the artwork to the phone's screen shape). No
+ * stretching, no whitespace bands, no overflow.
+ *
+ * The files are rendered with a plain <img> (not next/image) so the original
+ * SVG artwork is served byte-for-byte untouched — matching the project's
+ * existing pattern for static SVG assets.
  */
-export function PhoneScreenPlaceholder() {
-  const { siteName, siteNameEn, siteLogo } = useSiteSettings();
-  const locale = useAppStore((s) => s.locale);
-  const displayName = locale === 'en' ? siteNameEn : siteName;
-
+function HeroScreenAsset() {
   return (
-    <div className="flex h-full w-full flex-col bg-gradient-to-b from-primary/[0.05] via-transparent to-primary/[0.04] px-5 pb-3.5 pt-14 dark:from-primary/[0.07] dark:to-primary/[0.05]">
-      {/* Brand mark — centered in the upper half of the screen */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-2.5">
-        {siteLogo ? (
-          <img
-            src={cdnUrl(siteLogo) || ''}
-            alt={displayName}
-            className="h-14 w-14 rounded-2xl object-contain"
-          />
-        ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
-            {displayName?.charAt(0) || 'M'}
-          </div>
-        )}
-        <span className="text-sm font-bold tracking-tight text-foreground">{displayName}</span>
-      </div>
-
-      {/* Neutral skeleton blocks — intentionally unlabeled; real screens arrive later */}
-      <div className="w-full space-y-2.5">
-        <div className="h-2.5 w-2/3 rounded-full bg-foreground/[0.07] dark:bg-white/[0.07]" />
-        <div className="h-2.5 w-1/2 rounded-full bg-foreground/[0.05] dark:bg-white/[0.05]" />
-        <div className="mt-3.5 grid w-full grid-cols-2 gap-2.5">
-          <div className="h-[68px] rounded-2xl bg-foreground/[0.05] dark:bg-white/[0.05]" />
-          <div className="h-[68px] rounded-2xl bg-foreground/[0.05] dark:bg-white/[0.05]" />
-          <div className="h-[68px] rounded-2xl bg-foreground/[0.05] dark:bg-white/[0.05]" />
-          <div className="h-[68px] rounded-2xl bg-foreground/[0.05] dark:bg-white/[0.05]" />
-        </div>
-      </div>
-
-      {/* Home indicator */}
-      <div aria-hidden className="mt-4 h-1 w-24 shrink-0 self-center rounded-full bg-foreground/15 dark:bg-white/20" />
-    </div>
+    <>
+      {/* Light Mode screen — visible unless the .dark theme class is active */}
+      <img
+        src="/midman-hero-light.svg"
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="absolute inset-0 h-full w-full object-cover object-center dark:hidden"
+      />
+      {/* Dark Mode screen — visible only when the .dark theme class is active */}
+      <img
+        src="/midman-hero-dark.svg"
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="absolute inset-0 h-full w-full object-cover object-center hidden dark:block"
+      />
+    </>
   );
 }
