@@ -6,6 +6,7 @@ import { ArrowRight, FilePlus, ShieldCheck, Store } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 import { SmartphoneMockup } from '@/components/landing/smartphone-mockup';
+import { HeroScreenRotation } from '@/components/landing/hero-screen-rotation';
 
 // Entrance animations (subtle, premium fintech feel)
 // ease is typed as a cubic-bezier tuple to satisfy framer-motion's Easing type
@@ -167,10 +168,13 @@ export function Hero() {
               animate="visible"
               className="order-2 flex justify-center lg:order-1"
             >
-              {/* EDITABLE SCREEN: pass the future Marketplace / Admin Deal /
-                  Midman Verify screens via the `screen` prop of
-                  SmartphoneMockup — see smartphone-mockup.tsx for instructions. */}
-              <SmartphoneMockup className="w-full max-w-[250px] sm:max-w-[280px] lg:max-w-[310px] xl:max-w-[340px]" />
+              {/* EDITABLE SCREEN: rotates Marketplace ↔ Admin Deal (designer
+                  SVGs, theme-aware) every 4.5s with a subtle crossfade —
+                  see hero-screen-rotation.tsx. The frame itself stays static. */}
+              <SmartphoneMockup
+                screen={<HeroScreenRotation />}
+                className="w-full max-w-[250px] sm:max-w-[280px] lg:max-w-[310px] xl:max-w-[340px]"
+              />
             </motion.div>
           </div>
         </div>
