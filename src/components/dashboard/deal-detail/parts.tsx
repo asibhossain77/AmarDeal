@@ -35,6 +35,7 @@ import {
   Store,
   Bot,
   ChevronDown,
+  ChevronRight,
   History,
   FileText,
   Wallet,
@@ -434,11 +435,214 @@ export function DealStepper({ activeStep, isDisputed, isCancelled }: { activeSte
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Compact single-screen tracker (Task: compact Admin Deal UI)
+
+   Visual contract (per designer's screen-2-light.svg):
+   - ALL 5 stages on ONE horizontal line — never wraps
+   - Rounded-SQUARE icon tiles (8px radius), not circles
+   - Completed: solid brand green + white check
+   - Active: solid foreground (near-black in light / near-white in
+     dark — auto-inverts) + white/contrasting icon
+   - Pending: faint green tile + muted icon
+   - Thin progress connector between tiles
+   - Short single-word-ish labels under each tile, truncated safely
+   ═══════════════════════════════════════════════════════════ */
+
+/** Short labels for the compact one-line tracker (must never wrap) */
+export const COMPACT_STEPS = [
+  { num: '1', label: 'তৈরি', icon: FileCheck },
+  { num: '2', label: 'পেমেন্ট', icon: Send },
+  { num: '3', label: 'যাচাই', icon: ShieldCheck },
+  { num: '4', label: 'ডেলিভারি', icon: Truck },
+  { num: '5', label: 'সম্পন্ন', icon: ThumbsUp },
+];
+
+export function CompactDealTracker({ activeStep, isDisputed, isCancelled }: { activeStep: number; isDisputed: boolean; isCancelled: boolean }) {
+  if (isCancelled) {
+    return (
+      <div className="flex items-center justify-center py-1">
+        <div className="flex items-center gap-2.5 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 px-4 py-2.5">
+          <Ban className="h-5 w-5 shrink-0 text-red-500" />
+          <p className="text-[13px] font-bold text-red-700 dark:text-red-400">ডিল বাতিল হয়েছে — এই ডিল আর সক্রিয় নয়</p>
+        </div>
+      </div>
+    );
+  }
+
+  const accent = isDisputed ? '#EF4444' : 'var(--primary)';
+
+  return (
+    <div className="flex w-full items-start" role="list" aria-label="ডিল অগ্রগতি">
+      {COMPACT_STEPS.map((step, i) => {
+        const isCompleted = i < activeStep;
+        const isActive = i === activeStep;
+        const isLast = i === COMPACT_STEPS.length - 1;
+        const Icon = isCompleted ? Check : isActive && isDisputed ? AlertTriangle : step.icon;
+        return (
+          <div key={step.num} role="listitem" className="flex min-w-0 flex-1 items-start last:flex-none">
+            {/* Tile + label column (fixed square, no shrink) */}
+            <div className="flex w-11 shrink-0 flex-col items-center gap-1.5">
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors duration-300"
+                style={
+                  isCompleted
+                    ? { backgroundColor: accent, color: '#fff' }
+                    : isActive
+                      ? isDisputed
+                        ? { backgroundColor: '#EF4444', color: '#fff' }
+                        : { backgroundColor: 'var(--foreground)', color: 'var(--background)' }
+                      : { backgroundColor: 'color-mix(in oklab, var(--primary) 8%, transparent)', color: 'var(--muted-foreground)' }
+                }
+              >
+                <Icon className="h-[18px] w-[18px]" strokeWidth={isActive || isCompleted ? 2.4 : 2} />
+              </div>
+              <span
+                className="max-w-[44px] truncate text-center text-[10px] font-semibold leading-none"
+                style={{ color: isCompleted || isActive ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+              >
+                {step.label}
+              </span>
+            </div>
+            {/* Thin connector — flexes to fill, guarantees single line */}
+            {!isLast && (
+              <div
+                className="mx-0.5 mt-[18px] h-[3px] min-w-1 flex-1 rounded-full"
+                style={{ backgroundColor: i < activeStep ? accent : 'var(--border)' }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Compact buyer/seller cards (side-by-side, screen-2 style:
+   faint green tile surface + square avatar + tiny role label)
+   ═══════════════════════════════════════════════════════════ */
+
+function CompactPartyCard({
+  name,
+  role,
+  avatar,
+  isCurrentUser,
+}: {
+  name: string;
+  role: 'buyer' | 'seller';
+  avatar?: string | null;
+  isCurrentUser: boolean;
+}) {
+  const isBuyer = role === 'buyer';
+  const RoleIcon = isBuyer ? ShoppingBag : Store;
+  return (
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-primary/15 bg-primary/[0.06] p-2.5 dark:border-primary/15 dark:bg-primary/[0.08]">
+      {avatar ? (
+        <img
+          src={cdnUrl(avatar) || ''}
+          alt={name}
+          className="h-9 w-9 shrink-0 rounded-lg object-cover"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        />
+      ) : (
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <RoleIcon className="h-[18px] w-[18px]" />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {isBuyer ? 'ক্রেতা' : 'বিক্রেতা'}
+          {isCurrentUser && <span className="ml-1 normal-case text-primary">· আপনি</span>}
+        </p>
+        <p className="truncate text-[13px] font-bold leading-tight text-foreground">{name}</p>
+      </div>
+    </div>
+  );
+}
+
+export function CompactPartyCards({
+  deal,
+  currentUserId,
+  fallbackBuyerName,
+  fallbackSellerName,
+}: {
+  deal: DealData | null;
+  currentUserId?: string;
+  fallbackBuyerName?: string;
+  fallbackSellerName?: string;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2.5">
+      <CompactPartyCard
+        name={deal?.buyer?.name || fallbackBuyerName || 'ক্রেতা'}
+        role="buyer"
+        avatar={deal?.buyer?.imageLink}
+        isCurrentUser={!!currentUserId && currentUserId === deal?.buyerId}
+      />
+      <CompactPartyCard
+        name={deal?.seller?.name || fallbackSellerName || 'বিক্রেতা'}
+        role="seller"
+        avatar={deal?.seller?.imageLink}
+        isCurrentUser={!!currentUserId && currentUserId === deal?.sellerId}
+      />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Compact info rows — faint green panel, label left / value right
+   (screen-2 style). Only renders rows backed by real deal data.
+   ═══════════════════════════════════════════════════════════ */
+
+export function CompactInfoRows({ deal, fallbackCreatedAt }: { deal: DealData | null; fallbackCreatedAt?: string | null }) {
+  const rows: { label: string; value: string; mono?: boolean }[] = [
+    { label: 'ডিলের তারিখ', value: formatDealDate(deal?.createdAt || fallbackCreatedAt) },
+  ];
+  if (deal?.paymentMethod) rows.push({ label: 'পেমেন্ট মাধ্যম', value: deal.paymentMethod.name });
+  if (deal?.workDays != null) rows.push({ label: 'প্রতিশ্রুত কাজের সময়', value: `${toBn(deal.workDays)} দিন` });
+  if (deal?.platformFee != null && deal.platformFee > 0) rows.push({ label: 'প্ল্যাটফর্ম ফি', value: formatTaka(deal.platformFee) });
+  if (deal?.paymentAmount != null && deal.paymentAmount !== deal.amount) rows.push({ label: 'প্রকৃত পেমেন্ট', value: formatTaka(deal.paymentAmount) });
+
+  return (
+    <div className="space-y-2 rounded-xl border border-primary/10 bg-primary/[0.04] px-3.5 py-3 dark:border-primary/10 dark:bg-primary/[0.06]">
+      {rows.map((row) => (
+        <div key={row.label} className="flex items-center justify-between gap-3 text-[13px]">
+          <span className="shrink-0 text-muted-foreground">{row.label}</span>
+          <span className={`min-w-0 truncate text-right font-semibold text-foreground ${row.mono ? 'font-mono text-xs' : ''}`}>{row.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Deal Terms row — compact clickable row that opens the popup
+   ═══════════════════════════════════════════════════════════ */
+
+export function DealTermsRow({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center gap-2.5 rounded-xl border border-primary/30 bg-card px-3.5 py-3 text-left shadow-sm transition-colors hover:bg-primary/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-card"
+      aria-haspopup="dialog"
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+        <FileText className="h-4 w-4 text-primary" />
+      </span>
+      <span className="min-w-0 flex-1 text-[13px] font-bold text-foreground">ডিলের শর্তাবলী দেখুন</span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    Deal amount card
    ═══════════════════════════════════════════════════════════ */
 
 /** Status-driven escrow note — never claims money is secured unless the backend confirms it */
-function escrowNote(status: string): { icon: React.ElementType; text: string; className: string } {
+export function escrowNote(status: string): { icon: React.ElementType; text: string; className: string } {
   switch (status) {
     case 'created':
       return { icon: Clock, text: 'পেমেন্ট এখনো জমা হয়নি', className: 'text-muted-foreground' };

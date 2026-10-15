@@ -28,6 +28,14 @@ import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingAnimation } from '@/components/shared/loading-animation';
+import { LinkifyText } from '@/components/ui/linkify-text';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,19 +48,18 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
-import { useSiteSettings } from '@/lib/use-site-settings';
 import { WorkDeadlineSelector, WorkDeadlineCountdown } from './work-deadline';
 import { DeliveryReminderCard, AutoCompleteWarning } from './auto-complete';
 import {
   ArrowLeft,
   Banknote,
-  CalendarDays,
   Check,
   Clock,
   Copy,
   FileDown,
   FileText,
   Headphones,
+  History,
   Info,
   MessageCircle,
   PackageCheck,
@@ -79,15 +86,15 @@ import {
   type ChatFileMeta,
   dbToChatMsg,
   formatDealDate,
+  formatTaka,
   statusToActiveStep,
   StatusBadge,
-  DealStepper,
-  DealAmountCard,
-  PartyCards,
-  DealSummaryCard,
+  CompactDealTracker,
+  CompactPartyCards,
+  CompactInfoRows,
+  DealTermsRow,
+  escrowNote,
   ActivityTimeline,
-  TermsPreviewCard,
-  TermsFullView,
   TermsEmptyState,
   NoticeBanner,
   PayoutInfoBox,
@@ -105,7 +112,7 @@ import {
 
 const emptySubscribe = () => () => {};
 
-type DealTab = 'info' | 'chat' | 'terms';
+type DealTab = 'info' | 'chat';
 
 /* ═══════════════════════════════════════════════════════════
    Main Exported Component
@@ -115,8 +122,6 @@ export function DealWorkflowTracker() {
   const activeDeal = useAppStore((s) => s.activeDeal);
   const user = useAppStore((s) => s.user);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-
-  const { siteName, siteLogo } = useSiteSettings();
 
   /* ── Tab state ── */
   const [activeTab, setActiveTab] = useState<DealTab>('info');
@@ -160,6 +165,9 @@ export function DealWorkflowTracker() {
   const [payoutDialogOpen, setPayoutDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'dispute' | null>(null);
   const [copiedId, setCopiedId] = useState(false);
+  /* ── Compact UI popups: Deal Terms + details/timeline ── */
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   /* ── Derived state ── */
   const status = dealData?.status || activeDeal?.status || 'created';
@@ -388,7 +396,7 @@ export function DealWorkflowTracker() {
   /* ── Deal field fallbacks ── */
   const dealId = dealData?.id || activeDeal?.id || '';
   const dealTitle = dealData?.title || activeDeal?.title || 'ডিল';
-  const dealDate = formatDealDate(dealData?.createdAt || activeDeal?.createdAt);
+  const dealDate = dealData?.createdAt || activeDeal?.createdAt;
   const buyerName = dealData?.buyer?.name || activeDeal?.buyerName || user?.name || 'ক্রেতা';
   const sellerName = dealData?.seller?.name || activeDeal?.sellerName || 'বিক্রেতা';
   const counterpartyImage = isBuyer ? dealData?.seller?.imageLink : dealData?.buyer?.imageLink;
@@ -619,26 +627,6 @@ export function DealWorkflowTracker() {
     return groups;
   }, [messages]);
 
-  /* ── Primary action for the mobile sticky bar ── */
-  const primaryAction: { label: string; icon: React.ElementType; onClick: () => void; loading: boolean } | null = (() => {
-    if (isBuyer && status === 'created') {
-      return { label: 'পেমেন্ট করুন', icon: ShieldCheck, onClick: () => setPaymentDialogOpen(true), loading: false };
-    }
-    if (isSeller && status === 'payment_verified') {
-      return { label: 'কাজ সম্পন্ন', icon: PackageCheck, onClick: handleDeliver, loading: deliverLoading };
-    }
-    if (isBuyer && status === 'in_delivery') {
-      return { label: 'পণ্য/সার্ভিস পেয়েছি', icon: ThumbsUp, onClick: handleAccept, loading: acceptLoading };
-    }
-    if (isCompleted && isSeller && !payoutSubmitted && !payoutChecking) {
-      return { label: 'উত্তোলন পেজে যান', icon: Banknote, onClick: () => useAppStore.getState().setDashboardPanel('seller-withdraw'), loading: false };
-    }
-    if (isCancelled && status === 'cancelled' && isBuyer && !payoutSubmitted && !payoutChecking) {
-      return { label: 'ফেরতের অনুরোধ করুন', icon: RotateCcw, onClick: () => setPayoutDialogOpen(true), loading: false };
-    }
-    return null;
-  })();
-
   if (!mounted) return null;
 
   /* ── Empty state: no deal selected ── */
@@ -671,78 +659,34 @@ export function DealWorkflowTracker() {
     useAppStore.getState().goBack();
   };
 
-  const tabs: { key: DealTab; label: string; icon: React.ElementType; showDot?: boolean }[] = [
-    { key: 'info', label: 'Deal তথ্য', icon: Info },
-    { key: 'chat', label: 'চ্যাট', icon: MessageCircle, showDot: true },
-    { key: 'terms', label: 'Deal Terms', icon: FileText },
-  ];
-
   return (
     <div
       className={`w-full ${activeTab === 'chat' ? 'h-[calc(100dvh-7rem)] sm:h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-9rem)]' : 'flex-1 min-h-0 sm:max-h-[calc(100dvh-7rem)] lg:max-h-[calc(100dvh-8rem)]'} flex flex-col`}
       style={{ fontFamily: 'var(--font-noto-bengali), var(--font-hind-siliguri), sans-serif' }}
     >
-      {/* ═══════════ Header: back · brand · tabs ═══════════ */}
-      <div className="shrink-0 rounded-2xl border border-border/60 bg-card shadow-sm">
-        <div className="flex items-center justify-between gap-2 px-3 pb-1 pt-2.5 sm:px-4">
-          {/* Back */}
-          <button
-            onClick={goBackToList}
-            className="flex h-10 items-center gap-1.5 rounded-xl px-2 text-foreground transition-colors hover:bg-accent sm:px-3"
-            aria-label="ডিল তালিকায় ফিরুন"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden text-xs font-semibold md:inline">ডিল তালিকায় ফিরুন</span>
-          </button>
-
-          {/* Midman branding */}
-          <div className="flex min-w-0 items-center gap-2">
-            {siteLogo ? (
-              <img
-                src={cdnUrl(siteLogo) || ''}
-                alt={siteName}
-                className="h-7 w-7 shrink-0 rounded-lg object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : (
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">M</div>
-            )}
-            <span className="truncate text-sm font-bold tracking-tight text-foreground">{siteName}</span>
-          </div>
-
-          {/* Status badge (desktop) */}
-          <div className="hidden shrink-0 md:block">
-            <StatusBadge status={status} />
-          </div>
-        </div>
-
-        {/* Tabs — 3 equal columns, no horizontal overflow on mobile */}
-        <div className="grid grid-cols-3 border-t border-border/50" role="tablist" aria-label="ডিল সেকশন">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                role="tab"
-                aria-selected={isActive}
-                onClick={() => setActiveTab(tab.key)}
-                className={`relative flex h-11 items-center justify-center gap-1.5 px-1 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm ${
-                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{tab.label}</span>
-                {tab.showDot && hasUnreadChat && (
-                  <span className="absolute right-[18%] top-2.5 h-2 w-2 animate-pulse rounded-full bg-primary motion-reduce:animate-none" aria-label="নতুন মেসেজ" />
-                )}
-                {isActive && (
-                  <span className="absolute inset-x-4 bottom-0 h-0.5 rounded-full bg-primary" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* ═══════════ Compact header: back · "Admin Deal" · chat icon ═══════════ */}
+      <div className="flex shrink-0 items-center justify-between gap-2 rounded-2xl border border-border/60 bg-card px-2 py-2 shadow-sm sm:px-3">
+        <button
+          onClick={goBackToList}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-accent"
+          aria-label="ডিল তালিকায় ফিরুন"
+        >
+          <ArrowLeft className="h-[18px] w-[18px]" />
+        </button>
+        <h1 className="min-w-0 flex-1 truncate text-center text-[15px] font-bold tracking-tight text-foreground sm:text-base">
+          Admin Deal
+        </h1>
+        {/* Compact chat shortcut — existing chat route/view, unread dot preserved */}
+        <button
+          onClick={() => setActiveTab('chat')}
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+          aria-label="ডিল চ্যাট খুলুন"
+        >
+          <MessageCircle className="h-[18px] w-[18px]" />
+          {hasUnreadChat && (
+            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-card motion-reduce:animate-none animate-pulse" aria-label="নতুন মেসেজ" />
+          )}
+        </button>
       </div>
 
       {/* ═══════════ Load error banner (non-blocking) ═══════════ */}
@@ -770,384 +714,374 @@ export function DealWorkflowTracker() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
           /* Mobile: the PAGE is the only scroller (no ghost inner scroller —
-             upstream fix); sm+ inner-scrolls under the root's max-height cap. */
+             upstream fix); sm+ inner-scrolls under the root's max-height cap.
+             Compact single-screen layout: everything essential above the fold. */
           className="min-h-0 flex-1 max-sm:overflow-visible sm:overflow-y-auto sm:overscroll-contain"
         >
-          <div className={`mx-auto w-full max-w-6xl p-3 sm:p-5 lg:p-6 ${primaryAction ? 'pb-24 sm:pb-6' : ''}`}>
+          <div className="mx-auto w-full max-w-2xl space-y-3.5 p-3 sm:space-y-4 sm:p-5 lg:p-6">
             {loading && !dealData && !activeDeal ? (
               <DealDetailSkeleton />
             ) : (
-              <div className="grid min-w-0 gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-                {/* ── Main column ── */}
-                <div className="min-w-0 space-y-4 sm:space-y-5">
-                  {/* Title + status + meta */}
-                  <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-                      <h1 className="min-w-0 flex-1 text-lg font-bold leading-snug tracking-tight text-foreground sm:text-xl">
-                        {dealTitle}
-                      </h1>
-                      <div className="md:hidden">
-                        <StatusBadge status={status} />
-                      </div>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
-                      <button
-                        onClick={handleCopyId}
-                        className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-muted/60 px-2 font-mono text-xs font-semibold text-primary transition-colors hover:bg-muted"
-                        title="Deal ID কপি করুন"
-                      >
-                        DL-{dealId.slice(-5)}
-                        {copiedId ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                      </button>
-                      <span className="inline-flex items-center gap-1.5">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        {dealDate}
-                      </span>
-                    </div>
+              <>
+                {/* ── A/B. Deal ID + status · full title · amount ── */}
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                    <button
+                      onClick={handleCopyId}
+                      className="inline-flex h-7 items-center gap-1.5 rounded-lg bg-muted/60 px-2 font-mono text-[11px] font-semibold text-primary transition-colors hover:bg-muted"
+                      title="Deal ID কপি করুন"
+                    >
+                      DL-{dealId.slice(-5)}
+                      {copiedId ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    </button>
+                    <StatusBadge status={status} />
                   </div>
 
-                  {/* 5-step progress tracker */}
-                  <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-                    <DealStepper activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+                  {/* Full deal title — never truncated */}
+                  <h2 className="text-[17px] font-bold leading-snug tracking-tight text-foreground sm:text-xl">
+                    {dealTitle}
+                  </h2>
+
+                  {/* Deal amount — prominent, brand green (screen-2 style) */}
+                  <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1">
+                    <p className="text-[26px] font-bold leading-none tracking-tight text-primary sm:text-3xl">
+                      {formatTaka(dealData?.amount ?? activeDeal?.amount ?? 0)}
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                      <ShieldCheck className="h-3 w-3" />
+                      Midman সুরক্ষায়
+                    </span>
                   </div>
+                  {(() => {
+                    const note = escrowNote(status);
+                    const NoteIcon = note.icon;
+                    return note.text ? (
+                      <p className={`flex items-center gap-1.5 text-[11px] font-medium ${note.className}`}>
+                        <NoteIcon className="h-3 w-3 shrink-0" />
+                        {note.text}
+                      </p>
+                    ) : null;
+                  })()}
+                </div>
 
-                  {/* Seller work-duration countdown (buyer view, after verification) */}
-                  {dealData?.workDays != null && dealData?.workDeadlineAt && status === 'payment_verified' && (
-                    <WorkDeadlineCountdown
-                      workDays={dealData.workDays}
-                      workDeadlineAt={dealData.workDeadlineAt}
-                    />
-                  )}
+                {/* ── C. One-line 5-stage tracker (rounded-square tiles) ── */}
+                <div className="rounded-xl border border-border/50 bg-card px-2 pb-2.5 pt-3 shadow-sm sm:px-3">
+                  <CompactDealTracker activeStep={activeStep} isDisputed={isDisputed} isCancelled={isCancelled} />
+                </div>
 
-                  {/* Deal amount card */}
-                  <DealAmountCard deal={dealData} />
+                {/* Seller work-duration countdown (buyer view, after verification) */}
+                {dealData?.workDays != null && dealData?.workDeadlineAt && status === 'payment_verified' && (
+                  <WorkDeadlineCountdown
+                    workDays={dealData.workDays}
+                    workDeadlineAt={dealData.workDeadlineAt}
+                  />
+                )}
 
-                  {/* Buyer: digital product download — payment verified & product has a file */}
-                  {isBuyer && dealData?.product?.fileName && ['payment_verified', 'in_delivery', 'completed'].includes(status) && (
-                    <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-                      <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-3">
-                        <FileDown className="h-4 w-4 shrink-0 text-primary" />
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-bold text-foreground">
-                            ডিজিটাল পণ্য ডাউনলোড করুন
-                          </p>
-                          <p className="truncate text-[11px] text-muted-foreground" dir="ltr">
-                            {dealData.product.fileName}
-                          </p>
-                        </div>
-                      </div>
+                {/* ── D1. Buyer / Seller compact cards ── */}
+                <CompactPartyCards
+                  deal={dealData}
+                  currentUserId={userId}
+                  fallbackBuyerName={buyerName}
+                  fallbackSellerName={sellerName}
+                />
+
+                {/* Buyer: digital product download — payment verified & product has a file */}
+                {isBuyer && dealData?.product?.fileName && ['payment_verified', 'in_delivery', 'completed'].includes(status) && (
+                  <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+                    <FileDown className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-bold text-foreground">ডিজিটাল পণ্য ডাউনলোড</p>
+                      <p className="truncate text-[10px] text-muted-foreground" dir="ltr">{dealData.product.fileName}</p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        const s = useAppStore.getState();
+                        s.setDownloadProductId(dealData.product!.id);
+                        s.setView('page-download');
+                      }}
+                      className="h-9 shrink-0 gap-1.5 rounded-lg px-3 text-xs font-bold shadow-sm"
+                    >
+                      <Download className="h-4 w-4" />
+                      ডাউনলোড
+                    </Button>
+                  </div>
+                )}
+
+                {/* ── D2. Compact deal info rows (real backend data only) ── */}
+                <CompactInfoRows deal={dealData} fallbackCreatedAt={dealDate} />
+
+                {/* ── E. Deal Terms row → popup ── */}
+                <DealTermsRow onClick={() => setTermsOpen(true)} />
+
+                {/* ── Secondary metadata row → timeline/details popup ── */}
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen(true)}
+                  className="flex w-full items-center gap-2.5 rounded-xl border border-border/50 bg-card px-3.5 py-3 text-left shadow-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-haspopup="dialog"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <History className="h-4 w-4 text-primary" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[13px] font-bold text-foreground">ডিল টাইমলাইন ও বিস্তারিত</span>
+                  <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+
+                {/* ── F. Contextual actions (role/status-driven, backend rules) ── */}
+                <div className="space-y-2.5">
+                  {/* Buyer: pay (status = created) */}
+                  {isBuyer && status === 'created' && (
+                    <div className="space-y-2.5">
+                      {dealData?.rejectionReason === 'wrong_info' && (
+                        <NoticeBanner tone="amber" icon={AlertTriangle} title="আপনার পেমেন্ট তথ্যে ভুল পাওয়া গেছে">
+                          অনুগ্রহ করে সঠিক তথ্য দিয়ে আবার পেমেন্ট করুন। পূর্বের পেমেন্টের টাকা এই কারণে রিফান্ড হবে না।
+                        </NoticeBanner>
+                      )}
                       <Button
-                        onClick={() => {
-                          const s = useAppStore.getState();
-                          s.setDownloadProductId(dealData.product!.id);
-                          s.setView('page-download');
-                        }}
-                        className="mt-3 h-12 w-full gap-2 rounded-xl text-sm font-bold shadow-sm sm:w-auto sm:px-8"
+                        onClick={() => setPaymentDialogOpen(true)}
+                        className="h-11 w-full gap-2 rounded-xl text-sm font-bold shadow-sm"
                       >
-                        <Download className="h-[18px] w-[18px]" />
-                        ডাউনলোড পেজ খুলুন
+                        <ShieldCheck className="h-[18px] w-[18px]" />
+                        পেমেন্ট করুন
                       </Button>
+                      <PipraPayButton dealId={dealData?.id} />
+                      <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                        পেমেন্ট করলে টাকা Midman এসক্রোতে জমা হবে এবং যাচাইয়ের পর বিক্রেতা কাজ শুরু করবেন।
+                      </p>
                     </div>
                   )}
 
-                  {/* ── Payment information & dynamic actions (backend-driven) ── */}
-                  <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-                    <div className="mb-4 flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
-                        <Wallet className="h-4 w-4 text-primary" />
-                      </div>
-                      <h3 className="text-sm font-bold text-foreground">পেমেন্ট ও অ্যাকশন</h3>
+                  {/* Buyer: waiting for verification (status = payment_pending) */}
+                  {isBuyer && status === 'payment_pending' && (
+                    <div className="space-y-2.5">
+                      <NoticeBanner tone="amber" icon={Clock} title="পেমেন্ট যাচাইয়ের অপেক্ষায়">
+                        আপনার পেমেন্টের তথ্য জমা হয়েছে। অ্যাডমিন যাচাই করছেন — সাধারণত কয়েক মিনিট সময় লাগে।
+                      </NoticeBanner>
+                      <PaymentSubmittedInfo
+                        methodName={dealData?.paymentMethod?.name}
+                        senderNumber={dealData?.senderNumber}
+                        transactionId={dealData?.transactionId}
+                        paymentAmount={dealData?.paymentAmount}
+                      />
                     </div>
+                  )}
 
-                    {/* Buyer: pay (status = created) */}
-                    {isBuyer && status === 'created' && (
-                      <div className="space-y-3">
-                        {dealData?.rejectionReason === 'wrong_info' && (
-                          <NoticeBanner tone="amber" icon={AlertTriangle} title="আপনার পেমেন্ট তথ্যে ভুল পাওয়া গেছে">
-                            অনুগ্রহ করে সঠিক তথ্য দিয়ে আবার পেমেন্ট করুন। পূর্বের পেমেন্টের টাকা এই কারণে রিফান্ড হবে না।
-                          </NoticeBanner>
-                        )}
+                  {/* Seller: waiting for payment (status = created) */}
+                  {isSeller && status === 'created' && (
+                    <NoticeBanner tone="amber" icon={Clock} title="ক্রেতার পেমেন্টের অপেক্ষায় আছে">
+                      ক্রেতা পেমেন্ট করার পর আপনাকে জানানো হবে।
+                    </NoticeBanner>
+                  )}
+
+                  {/* Buyer: payment verified */}
+                  {isBuyer && status === 'payment_verified' && (
+                    <NoticeBanner tone="green" icon={ShieldCheck} title="পেমেন্ট ভেরিফাইড হয়েছে">
+                      আপনার টাকা Midman এসক্রোতে সুরক্ষিত আছে। বিক্রেতা কাজ সম্পন্ন করলে জানানো হবে।
+                    </NoticeBanner>
+                  )}
+
+                  {/* Seller: deliver + cancel (status = payment_verified) */}
+                  {isSeller && status === 'payment_verified' && (
+                    <div className="space-y-2.5">
+                      <NoticeBanner tone="green" icon={ShieldCheck} title="পেমেন্ট ভেরিফাইড — আপনি কাজ সম্পূর্ণ করুন">
+                        টাকা এসক্রোতে সুরক্ষিত। কাজ শেষ করে &quot;কাজ সম্পন্ন&quot; চাপুন।
+                      </NoticeBanner>
+                      <WorkDeadlineSelector
+                        dealId={dealData?.id || activeDeal?.id || ''}
+                        workDays={dealData?.workDays}
+                        workDeadlineAt={dealData?.workDeadlineAt}
+                        onSet={() => fetchDeal()}
+                      />
+                      <div className="flex gap-2.5">
                         <Button
-                          onClick={() => setPaymentDialogOpen(true)}
-                          className="h-12 w-full gap-2 rounded-xl text-sm font-bold shadow-sm sm:w-auto sm:px-8"
+                          onClick={handleDeliver}
+                          disabled={deliverLoading}
+                          className="h-11 min-w-0 flex-1 gap-2 rounded-xl text-sm font-bold shadow-sm"
                         >
-                          <ShieldCheck className="h-[18px] w-[18px]" />
-                          পেমেন্ট করুন
+                          {deliverLoading ? <LoadingAnimation size="sm" /> : <PackageCheck className="h-[18px] w-[18px]" />}
+                          কাজ সম্পন্ন
                         </Button>
-                        <PipraPayButton dealId={dealData?.id} />
-                        <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-                          পেমেন্ট করলে টাকা Midman এসক্রোতে জমা হবে এবং যাচাইয়ের পর বিক্রেতা কাজ শুরু করবেন।
-                        </p>
+                        <Button
+                          onClick={() => setConfirmAction('cancel')}
+                          disabled={cancelLoading}
+                          variant="outline"
+                          className="h-11 shrink-0 gap-2 rounded-xl border-destructive/30 px-4 text-sm font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <XCircle className="h-[18px] w-[18px]" />
+                          ক্যান্সেল
+                        </Button>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Buyer: waiting for verification (status = payment_pending) */}
-                    {isBuyer && status === 'payment_pending' && (
-                      <div className="space-y-3">
-                        <NoticeBanner tone="amber" icon={Clock} title="পেমেন্ট যাচাইয়ের অপেক্ষায়">
-                          আপনার পেমেন্টের তথ্য জমা হয়েছে। অ্যাডমিন যাচাই করছেন — সাধারণত কয়েক মিনিট সময় লাগে।
-                        </NoticeBanner>
-                        <PaymentSubmittedInfo
-                          methodName={dealData?.paymentMethod?.name}
-                          senderNumber={dealData?.senderNumber}
-                          transactionId={dealData?.transactionId}
-                          paymentAmount={dealData?.paymentAmount}
-                        />
-                      </div>
-                    )}
-
-                    {/* Seller: waiting for payment (status = created) */}
-                    {isSeller && status === 'created' && (
-                      <NoticeBanner tone="amber" icon={Clock} title="ক্রেতার পেমেন্টের অপেক্ষায় আছে">
-                        ক্রেতা পেমেন্ট করার পর আপনাকে জানানো হবে।
+                  {/* Buyer: accept + dispute (status = in_delivery) */}
+                  {isBuyer && status === 'in_delivery' && (
+                    <div className="space-y-2.5">
+                      <NoticeBanner tone="green" icon={Truck} title="বিক্রেতা ডেলিভারি দিয়েছেন">
+                        পণ্য/সেবা ঠিকভাবে পেয়ে থাকলে নিশ্চিত করুন। সমস্যা হলে বিরোধ দায়ের করুন।
                       </NoticeBanner>
-                    )}
-
-                    {/* Buyer: payment verified */}
-                    {isBuyer && status === 'payment_verified' && (
-                      <NoticeBanner tone="green" icon={ShieldCheck} title="পেমেন্ট ভেরিফাইড হয়েছে">
-                        আপনার টাকা Midman এসক্রোতে সুরক্ষিত আছে। বিক্রেতা কাজ সম্পন্ন করলে জানানো হবে।
-                      </NoticeBanner>
-                    )}
-
-                    {/* Seller: deliver + cancel (status = payment_verified) */}
-                    {isSeller && status === 'payment_verified' && (
-                      <div className="space-y-3">
-                        <NoticeBanner tone="green" icon={ShieldCheck} title="পেমেন্ট ভেরিফাইড — আপনি কাজ সম্পূর্ণ করুন">
-                          টাকা এসক্রোতে সুরক্ষিত। কাজ শেষ করে &quot;কাজ সম্পন্ন&quot; চাপুন।
-                        </NoticeBanner>
-                        <WorkDeadlineSelector
-                          dealId={dealData?.id || activeDeal?.id || ''}
-                          workDays={dealData?.workDays}
-                          workDeadlineAt={dealData?.workDeadlineAt}
-                          onSet={() => fetchDeal()}
-                        />
-                        <div className="flex flex-col gap-2.5 sm:flex-row">
-                          <Button
-                            onClick={handleDeliver}
-                            disabled={deliverLoading}
-                            className="h-12 flex-1 gap-2 rounded-xl text-sm font-bold shadow-sm"
-                          >
-                            {deliverLoading ? <LoadingAnimation size="sm" /> : <PackageCheck className="h-[18px] w-[18px]" />}
-                            কাজ সম্পন্ন
-                          </Button>
-                          <Button
-                            onClick={() => setConfirmAction('cancel')}
-                            disabled={cancelLoading}
-                            variant="outline"
-                            className="h-12 flex-1 gap-2 rounded-xl border-destructive/30 text-sm font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <XCircle className="h-[18px] w-[18px]" />
-                            ক্যান্সেল করুন
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Buyer: accept + dispute (status = in_delivery) */}
-                    {isBuyer && status === 'in_delivery' && (
-                      <div className="space-y-3">
-                        <NoticeBanner tone="green" icon={Truck} title="বিক্রেতা ডেলিভারি দিয়েছেন">
-                          পণ্য/সেবা ঠিকভাবে পেয়ে থাকলে নিশ্চিত করুন। সমস্যা হলে বিরোধ দায়ের করুন।
-                        </NoticeBanner>
-                        {(dealData?.reminderEmailSentAt || dealData?.autoCompleteAt) && (
-                          <AutoCompleteWarning
-                            reminderEmailSentAt={dealData?.reminderEmailSentAt}
-                            autoCompleteAt={dealData?.autoCompleteAt}
-                          />
-                        )}
-                        <div className="flex flex-col gap-2.5 sm:flex-row">
-                          <Button
-                            onClick={handleAccept}
-                            disabled={acceptLoading}
-                            className="h-12 flex-1 gap-2 rounded-xl text-sm font-bold shadow-sm"
-                          >
-                            {acceptLoading ? <LoadingAnimation size="sm" /> : <ThumbsUp className="h-[18px] w-[18px]" />}
-                            পণ্য/সার্ভিস পেয়েছি
-                          </Button>
-                          <Button
-                            onClick={() => setConfirmAction('dispute')}
-                            disabled={disputeLoading}
-                            variant="outline"
-                            className="h-12 flex-1 gap-2 rounded-xl border-destructive/30 text-sm font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <AlertTriangle className="h-[18px] w-[18px]" />
-                            বিরোধ জানান
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Seller: waiting for buyer (status = in_delivery) */}
-                    {isSeller && status === 'in_delivery' && (
-                      <div className="space-y-3">
-                        <NoticeBanner tone="green" icon={Clock} title="ক্রেতার নিশ্চিতকরণের অপেক্ষায়">
-                          ক্রেতা পণ্য/সেবা গ্রহণ করলে ডিল সম্পন্ন হবে।
-                        </NoticeBanner>
-                        <DeliveryReminderCard
-                          dealId={dealData?.id || activeDeal?.id || ''}
-                          deliveredAt={dealData?.deliveredAt}
-                          updatedAt={dealData?.updatedAt}
+                      {(dealData?.reminderEmailSentAt || dealData?.autoCompleteAt) && (
+                        <AutoCompleteWarning
                           reminderEmailSentAt={dealData?.reminderEmailSentAt}
                           autoCompleteAt={dealData?.autoCompleteAt}
-                          onUpdated={fetchDeal}
                         />
+                      )}
+                      <div className="flex gap-2.5">
+                        <Button
+                          onClick={handleAccept}
+                          disabled={acceptLoading}
+                          className="h-11 min-w-0 flex-[1.4] gap-2 rounded-xl text-sm font-bold shadow-sm"
+                        >
+                          {acceptLoading ? <LoadingAnimation size="sm" /> : <ThumbsUp className="h-[18px] w-[18px]" />}
+                          পণ্য/সার্ভিস পেয়েছি
+                        </Button>
+                        <Button
+                          onClick={() => setConfirmAction('dispute')}
+                          disabled={disputeLoading}
+                          variant="outline"
+                          className="h-11 min-w-0 flex-1 gap-2 rounded-xl border-destructive/30 text-[13px] font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <AlertTriangle className="h-4 w-4" />
+                          বিরোধ জানান
+                        </Button>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Disputed */}
-                    {isDisputed && (
-                      <NoticeBanner tone="red" icon={AlertTriangle} title="বিরোধ দায়ের করা হয়েছে">
-                        অ্যাডমিন উভয় পক্ষের তথ্য পর্যালোচনা করে সিদ্ধান্ত জানাবেন। প্রয়োজনে চ্যাটে অ্যাডমিনকে ডাকুন।
+                  {/* Seller: waiting for buyer (status = in_delivery) */}
+                  {isSeller && status === 'in_delivery' && (
+                    <div className="space-y-2.5">
+                      <NoticeBanner tone="green" icon={Clock} title="ক্রেতার নিশ্চিতকরণের অপেক্ষায়">
+                        ক্রেতা পণ্য/সেবা গ্রহণ করলে ডিল সম্পন্ন হবে।
                       </NoticeBanner>
-                    )}
+                      <DeliveryReminderCard
+                        dealId={dealData?.id || activeDeal?.id || ''}
+                        deliveredAt={dealData?.deliveredAt}
+                        updatedAt={dealData?.updatedAt}
+                        reminderEmailSentAt={dealData?.reminderEmailSentAt}
+                        autoCompleteAt={dealData?.autoCompleteAt}
+                        onUpdated={fetchDeal}
+                      />
+                    </div>
+                  )}
 
-                    {/* Completed — seller: pool-based withdrawal */}
-                    {isCompleted && isSeller && (
-                      <div className="space-y-3">
-                        <NoticeBanner tone="green" icon={Check} title="ডিল সফলভাবে সম্পন্ন হয়েছে!" />
-                        {payoutChecking ? (
-                          <div className="space-y-2.5">
-                            <div className="h-3 w-40 animate-pulse rounded bg-muted" />
-                            <div className="h-12 w-full animate-pulse rounded-xl bg-muted" />
-                          </div>
-                        ) : !payoutSubmitted ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-4 py-3">
-                              <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                              <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-                                ৳{Math.round(dealData?.paymentAmount || dealData?.amount || 0).toLocaleString('en')} আপনার উত্তোলনযোগ্য ব্যালেন্সে যোগ হয়েছে।
-                              </p>
-                            </div>
-                            <Button
-                              onClick={() => useAppStore.getState().setDashboardPanel('seller-withdraw')}
-                              className="h-12 w-full gap-2 rounded-xl text-sm font-bold shadow-sm sm:w-auto sm:px-8"
-                            >
-                              <Banknote className="h-[18px] w-[18px]" />
-                              উত্তোলন পেজে যান
-                            </Button>
-                            <p className="text-[11px] leading-relaxed text-muted-foreground">
-                              সম্পন্ন হওয়া সব ডিলের টাকা একসাথে উত্তোলন করতে ড্যাশবোর্ডের &quot;উত্তোলন&quot; পেজ ব্যবহার করুন।
+                  {/* Disputed */}
+                  {isDisputed && (
+                    <NoticeBanner tone="red" icon={AlertTriangle} title="বিরোধ দায়ের করা হয়েছে">
+                      অ্যাডমিন উভয় পক্ষের তথ্য পর্যালোচনা করে সিদ্ধান্ত জানাবেন। প্রয়োজনে চ্যাটে অ্যাডমিনকে ডাকুন।
+                    </NoticeBanner>
+                  )}
+
+                  {/* Completed — seller: pool-based withdrawal */}
+                  {isCompleted && isSeller && (
+                    <div className="space-y-2.5">
+                      <NoticeBanner tone="green" icon={Check} title="ডিল সফলভাবে সম্পন্ন হয়েছে!" />
+                      {payoutChecking ? (
+                        <div className="space-y-2.5">
+                          <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+                          <div className="h-11 w-full animate-pulse rounded-xl bg-muted" />
+                        </div>
+                      ) : !payoutSubmitted ? (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3.5 py-2.5">
+                            <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                              ৳{Math.round(dealData?.paymentAmount || dealData?.amount || 0).toLocaleString('en')} আপনার উত্তোলনযোগ্য ব্যালেন্সে যোগ হয়েছে।
                             </p>
                           </div>
-                        ) : payoutPaid ? (
-                          <div className="space-y-3">
-                            <NoticeBanner tone="green" icon={Check} title="পেআউট সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।" />
-                            {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <NoticeBanner tone="amber" icon={Clock} title="পেআউট অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।" />
-                            {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          <Button
+                            onClick={() => useAppStore.getState().setDashboardPanel('seller-withdraw')}
+                            className="h-11 w-full gap-2 rounded-xl text-sm font-bold shadow-sm"
+                          >
+                            <Banknote className="h-[18px] w-[18px]" />
+                            উত্তোলন পেজে যান
+                          </Button>
+                          <p className="text-[11px] leading-relaxed text-muted-foreground">
+                            সম্পন্ন হওয়া সব ডিলের টাকা একসাথে উত্তোলন করতে ড্যাশবোর্ডের &quot;উত্তোলন&quot; পেজ ব্যবহার করুন।
+                          </p>
+                        </div>
+                      ) : payoutPaid ? (
+                        <div className="space-y-2.5">
+                          <NoticeBanner tone="green" icon={Check} title="পেআউট সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।" />
+                          {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <NoticeBanner tone="amber" icon={Clock} title="পেআউট অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।" />
+                          {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Completed — buyer */}
-                    {isCompleted && isBuyer && (
-                      <NoticeBanner tone="green" icon={Check} title="ডিল সফলভাবে সম্পন্ন হয়েছে!">
-                        আপনার অভিজ্ঞতা শেয়ার করতে ডিল তালিকা থেকে রিভিউ দিন।
-                      </NoticeBanner>
-                    )}
+                  {/* Completed — buyer */}
+                  {isCompleted && isBuyer && (
+                    <NoticeBanner tone="green" icon={Check} title="ডিল সফলভাবে সম্পন্ন হয়েছে!">
+                      আপনার অভিজ্ঞতা শেয়ার করতে ডিল তালিকা থেকে রিভিউ দিন।
+                    </NoticeBanner>
+                  )}
 
-                    {/* Cancelled / rejected — buyer */}
-                    {isCancelled && isBuyer && (
-                      <div className="space-y-3">
-                        <NoticeBanner
-                          tone="red"
-                          icon={XCircle}
-                          title={status === 'rejected' ? 'পেমেন্ট রিজেক্ট হয়েছে' : 'ডিল বাতিল হয়েছে'}
-                        />
-                        {/* No refund for rejected deals — admin rejected = wrong/invalid transaction */}
-                        {status === 'rejected' ? (
-                          <NoticeBanner tone="amber" icon={AlertTriangle} title="রিফান্ড প্রযোজ্য নয়">
-                            অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে নতুন অ্যাডমিন ডিল তৈরি করুন।
-                          </NoticeBanner>
-                        ) : payoutChecking ? (
-                          <div className="space-y-2.5">
-                            <div className="h-3 w-40 animate-pulse rounded bg-muted" />
-                            <div className="h-12 w-full animate-pulse rounded-xl bg-muted" />
-                          </div>
-                        ) : !payoutSubmitted ? (
-                          <div className="space-y-3">
-                            <p className="text-xs font-medium text-muted-foreground">আপনার অর্থ ফেরত পেতে ফেরতের অনুরোধ করুন</p>
-                            <Button
-                              onClick={() => setPayoutDialogOpen(true)}
-                              variant="outline"
-                              className="h-12 w-full gap-2 rounded-xl border-destructive/30 text-sm font-bold text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto sm:px-8"
-                            >
-                              <RotateCcw className="h-[18px] w-[18px]" />
-                              ফেরতের অনুরোধ করুন
-                            </Button>
-                          </div>
-                        ) : payoutPaid ? (
-                          <div className="space-y-3">
-                            <NoticeBanner tone="green" icon={Check} title="ফেরত সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।" />
-                            {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <NoticeBanner tone="amber" icon={Clock} title="ফেরতের অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।" />
-                            {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Cancelled / rejected — seller */}
-                    {isCancelled && isSeller && (
+                  {/* Cancelled / rejected — buyer */}
+                  {isCancelled && isBuyer && (
+                    <div className="space-y-2.5">
                       <NoticeBanner
                         tone="red"
                         icon={XCircle}
                         title={status === 'rejected' ? 'পেমেন্ট রিজেক্ট হয়েছে' : 'ডিল বাতিল হয়েছে'}
                       />
-                    )}
+                      {/* No refund for rejected deals — admin rejected = wrong/invalid transaction */}
+                      {status === 'rejected' ? (
+                        <NoticeBanner tone="amber" icon={AlertTriangle} title="রিফান্ড প্রযোজ্য নয়">
+                          অ্যাডমিন পেমেন্ট ভেরিফিকেশন রিজেক্ট করেছেন। ভুল ট্রানজাকশনের কারণে রিফান্ড প্রযোজ্য নয়। সঠিক তথ্য দিয়ে নতুন অ্যাডমিন ডিল তৈরি করুন।
+                        </NoticeBanner>
+                      ) : payoutChecking ? (
+                        <div className="space-y-2.5">
+                          <div className="h-3 w-40 animate-pulse rounded bg-muted" />
+                          <div className="h-11 w-full animate-pulse rounded-xl bg-muted" />
+                        </div>
+                      ) : !payoutSubmitted ? (
+                        <div className="space-y-2.5">
+                          <p className="text-xs font-medium text-muted-foreground">আপনার অর্থ ফেরত পেতে ফেরতের অনুরোধ করুন</p>
+                          <Button
+                            onClick={() => setPayoutDialogOpen(true)}
+                            variant="outline"
+                            className="h-11 w-full gap-2 rounded-xl border-destructive/30 text-sm font-bold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <RotateCcw className="h-[18px] w-[18px]" />
+                            ফেরতের অনুরোধ করুন
+                          </Button>
+                        </div>
+                      ) : payoutPaid ? (
+                        <div className="space-y-2.5">
+                          <NoticeBanner tone="green" icon={Check} title="ফেরত সম্পন্ন হয়েছে! আপনার একাউন্টে টাকা পাঠানো হয়েছে।" />
+                          {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <NoticeBanner tone="amber" icon={Clock} title="ফেরতের অনুরোধ জমা হয়েছে। অ্যাডমিন প্রসেসিং করছেন।" />
+                          {submittedPayoutInfo && <PayoutInfoBox info={submittedPayoutInfo} />}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Fallback: viewer is neither buyer nor seller (e.g. admin preview) */}
-                    {!isBuyer && !isSeller && (
-                      <NoticeBanner tone="neutral" icon={Info} title="এই ডিলের কোনো পক্ষ আপনি নন">
-                        ডিলের তথ্য শুধু দেখার জন্য প্রদর্শিত হচ্ছে।
-                      </NoticeBanner>
-                    )}
-                  </div>
+                  {/* Cancelled / rejected — seller */}
+                  {isCancelled && isSeller && (
+                    <NoticeBanner
+                      tone="red"
+                      icon={XCircle}
+                      title={status === 'rejected' ? 'পেমেন্ট রিজেক্ট হয়েছে' : 'ডিল বাতিল হয়েছে'}
+                    />
+                  )}
 
-                  {/* Activity timeline (backend-confirmed events only) */}
-                  <ActivityTimeline deal={dealData} />
-
-                  {/* Deal Terms preview (collapsible) */}
-                  {dealTerms && dealTerms.trim() && (
-                    <TermsPreviewCard terms={dealTerms} onOpenFull={() => setActiveTab('terms')} />
+                  {/* Fallback: viewer is neither buyer nor seller (e.g. admin preview) */}
+                  {!isBuyer && !isSeller && (
+                    <NoticeBanner tone="neutral" icon={Info} title="এই ডিলের কোনো পক্ষ আপনি নন">
+                      ডিলের তথ্য শুধু দেখার জন্য প্রদর্শিত হচ্ছে।
+                    </NoticeBanner>
                   )}
                 </div>
-
-                {/* ── Side column (desktop) ── */}
-                <div className="min-w-0 space-y-4 sm:space-y-5">
-                  <PartyCards
-                    deal={dealData}
-                    currentUserId={userId}
-                    fallbackBuyerName={buyerName}
-                    fallbackSellerName={sellerName}
-                  />
-                  <DealSummaryCard deal={dealData} dealId={dealId} />
-
-                  {/* Support shortcut */}
-                  <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">সাপোর্ট</p>
-                    <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                      ডিল নিয়ে সমস্যা হলে চ্যাট থেকে অ্যাডমিনকে ডাকুন — Midman টিম সাহায্য করবে।
-                    </p>
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveTab('chat')}
-                      className="mt-3 h-11 w-full gap-2 rounded-xl text-sm font-semibold"
-                    >
-                      <Headphones className="h-4 w-4" />
-                      চ্যাটে যান
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              </>
             )}
           </div>
         </motion.div>
@@ -1166,6 +1100,14 @@ export function DealWorkflowTracker() {
             {/* Chat header */}
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/50 px-3 py-2.5 sm:px-4">
               <div className="flex min-w-0 items-center gap-2.5">
+                {/* Back to deal info (compact header replaced the old tab bar) */}
+                <button
+                  onClick={() => setActiveTab('info')}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-foreground transition-colors hover:bg-accent"
+                  aria-label="ডিল তথ্যে ফিরুন"
+                >
+                  <ArrowLeft className="h-[18px] w-[18px]" />
+                </button>
                 {counterpartyImage ? (
                   <img
                     src={cdnUrl(counterpartyImage) || ''}
@@ -1310,54 +1252,66 @@ export function DealWorkflowTracker() {
         </motion.div>
       )}
 
-      {/* ═══════════ TAB: Deal Terms ═══════════ */}
-      {activeTab === 'terms' && (
-        <motion.div
-          key="tab-terms"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="min-h-0 flex-1 max-sm:overflow-visible sm:overflow-y-auto sm:overscroll-contain"
-        >
-          <div className="mx-auto w-full max-w-3xl p-3 sm:p-5 lg:p-6">
+      {/* ═══════════ Popup: Deal Terms (long content scrolls internally) ═══════════ */}
+      <Dialog open={termsOpen} onOpenChange={setTermsOpen}>
+        <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-lg">
+          <DialogHeader className="shrink-0 border-b border-border/50 px-4 py-3.5 sm:px-5">
+            <DialogTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+              </span>
+              ডিলের শর্তাবলী
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">এই ডিলের সম্পূর্ণ শর্তাবলী</DialogDescription>
+          </DialogHeader>
+          {/* Internal scroller — the underlying deal page stays fixed */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent' }}>
             {dealTerms && dealTerms.trim() ? (
-              <TermsFullView terms={dealTerms} />
+              <p className="whitespace-pre-line break-words text-[13px] leading-relaxed text-foreground">
+                <LinkifyText text={dealTerms} />
+              </p>
             ) : (
               <TermsEmptyState />
             )}
           </div>
-        </motion.div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      {/* ═══════════ Mobile sticky action bar (fixed, safe-area aware) ═══════════ */}
-      {activeTab !== 'chat' && primaryAction && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-card/95 px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:hidden">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('chat')}
-              className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-colors hover:bg-accent"
-              aria-label="চ্যাট খুলুন"
-            >
-              <MessageCircle className="h-5 w-5" />
-              {hasUnreadChat && (
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-card" />
+      {/* ═══════════ Popup: timeline + secondary metadata (overflow strategy) ═══════════ */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-lg">
+          <DialogHeader className="shrink-0 border-b border-border/50 px-4 py-3.5 sm:px-5">
+            <DialogTitle className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                <History className="h-3.5 w-3.5 text-primary" />
+              </span>
+              ডিল টাইমলাইন ও বিস্তারিত
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">ব্যাকএন্ড নিশ্চিত ইভেন্টসমূহ ও অতিরিক্ত তথ্য</DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent' }}>
+            {/* Secondary metadata not shown on the main screen */}
+            <div className="space-y-2 rounded-xl border border-border/50 bg-muted/30 px-3.5 py-3">
+              {dealData?.creator?.name && (
+                <div className="flex items-center justify-between gap-3 text-[13px]">
+                  <span className="shrink-0 text-muted-foreground">তৈরি করেছেন</span>
+                  <span className="min-w-0 truncate text-right font-semibold text-foreground">{dealData.creator.name}</span>
+                </div>
               )}
-            </button>
-            <Button
-              onClick={primaryAction.onClick}
-              disabled={primaryAction.loading}
-              className="h-11 min-w-0 flex-1 gap-2 rounded-xl text-sm font-bold shadow-sm"
-            >
-              {primaryAction.loading ? (
-                <LoadingAnimation size="sm" />
-              ) : (
-                (() => { const Icon = primaryAction.icon; return <Icon className="h-[18px] w-[18px] shrink-0" />; })()
-              )}
-              <span className="truncate">{primaryAction.label}</span>
-            </Button>
+              <div className="flex items-center justify-between gap-3 text-[13px]">
+                <span className="shrink-0 text-muted-foreground">ডিল আইডি</span>
+                <span className="min-w-0 truncate text-right font-mono text-xs font-semibold text-foreground">DL-{dealId.slice(-5)}</span>
+              </div>
+            </div>
+            {/* Activity timeline (backend-confirmed events only) */}
+            <ActivityTimeline deal={dealData} />
+            {/* Support hint */}
+            <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">
+              ডিল নিয়ে সমস্যা হলে চ্যাট থেকে অ্যাডমিনকে ডাকুন — Midman টিম সাহায্য করবে।
+            </p>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* ═══════════ Dialogs (preserved flows) ═══════════ */}
       <PaymentDialog
