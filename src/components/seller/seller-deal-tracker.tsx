@@ -77,7 +77,7 @@ function getStatusBadge(status: string) {
     case 'completed':
       return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
     case 'disputed':
       return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ চলছে</Badge>;
     case 'rejected':

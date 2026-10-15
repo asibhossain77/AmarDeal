@@ -419,7 +419,7 @@ export function ServiceOrderView() {
                 )}
 
                 {/* Review box */}
-                <div className="mt-5 rounded-xl border border-border/40 bg-muted/30 p-4 dark:border-border/25 dark:bg-zinc-800/30">
+                <div className="mt-5 rounded-xl border border-border/40 bg-muted/30 p-4 dark:border-border/25 dark:bg-muted/30">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="text-muted-foreground">{bn ? 'মোট (সার্ভার-ক্যালকুলেটেড)' : 'Total (server-calculated)'}</span>
                     <span className="text-lg font-extrabold text-primary">{formatPrice(previewTotal)}</span>

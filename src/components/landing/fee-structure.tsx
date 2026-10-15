@@ -66,7 +66,7 @@ export function FeeStructure() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="h-8 w-48 animate-pulse rounded-lg bg-muted mx-auto mb-4" />
           <div className="h-4 w-80 animate-pulse rounded bg-muted mx-auto mb-12" />
-          <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl shadow-gray-300/50 dark:shadow-none overflow-hidden">
+          <div className="rounded-3xl bg-white dark:bg-card shadow-2xl shadow-gray-300/50 dark:shadow-none overflow-hidden">
             <div className="h-12 bg-primary/20 animate-pulse" />
             <div className="p-4 space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -96,7 +96,7 @@ export function FeeStructure() {
         </div>
 
         {/* Fee Table Card */}
-        <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl shadow-gray-300/50 dark:shadow-none overflow-hidden">
+        <div className="rounded-3xl bg-white dark:bg-card shadow-2xl shadow-gray-300/50 dark:shadow-none overflow-hidden">
           {/* Desktop Table */}
           <div className="hidden md:block">
             <table className="w-full">
@@ -125,7 +125,7 @@ export function FeeStructure() {
                     <tr
                       key={rule.id}
                       className={`border-b border-border/40 transition-colors hover:bg-muted/30 ${
-                        index % 2 === 0 ? 'bg-white dark:bg-zinc-900' : 'bg-muted/10'
+                        index % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-muted/10'
                       }`}
                     >
                       <td className="px-6 py-4">
@@ -161,7 +161,7 @@ export function FeeStructure() {
                   key={rule.id}
                   className={`flex items-center justify-between rounded-2xl p-4 ${
                     index % 2 === 0
-                      ? 'bg-white dark:bg-zinc-900 border border-border/40'
+                      ? 'bg-white dark:bg-card border border-border/40'
                       : 'bg-muted/10 border border-border/20'
                   }`}
                 >

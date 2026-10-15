@@ -24,7 +24,7 @@ import { motion } from 'framer-motion';
 
 function SolidCard({ children, className = '', ...props }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) {
   return (
-    <div className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-zinc-900 ${className}`} {...props}>
+    <div className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-card ${className}`} {...props}>
       {children}
     </div>
   );

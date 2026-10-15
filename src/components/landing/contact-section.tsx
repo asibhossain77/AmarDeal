@@ -91,7 +91,7 @@ function ChannelCard({
 }) {
   return (
     <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={viewportOnce}>
-      <div className="flex h-full flex-col rounded-2xl border border-border/40 bg-white p-5 shadow-lg shadow-gray-200/60 transition-all duration-300 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 dark:bg-zinc-900 dark:shadow-none">
+      <div className="flex h-full flex-col rounded-2xl border border-border/40 bg-white p-5 shadow-lg shadow-gray-200/60 transition-all duration-300 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 dark:bg-card dark:shadow-none">
         <div className="flex items-center gap-3">
           <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}>
             {icon}
@@ -241,7 +241,7 @@ export function ContactSection() {
           whileInView="visible"
           viewport={viewportOnce}
           aria-label={t('contact.admin')}
-          className="relative mx-auto mb-10 overflow-hidden rounded-3xl border border-border/40 bg-white p-6 shadow-xl shadow-gray-200/60 sm:p-8 dark:bg-zinc-900 dark:shadow-none"
+          className="relative mx-auto mb-10 overflow-hidden rounded-3xl border border-border/40 bg-white p-6 shadow-xl shadow-gray-200/60 sm:p-8 dark:bg-card dark:shadow-none"
         >
           {/* soft green gradient accent */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/[0.07] to-transparent" />
@@ -249,7 +249,7 @@ export function ContactSection() {
             {/* Avatar */}
             <div className="relative shrink-0">
               <div className="absolute -inset-2 rounded-full bg-primary/10 blur-lg" aria-hidden="true" />
-              <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow-lg shadow-gray-300/40 dark:border-zinc-800 dark:shadow-none sm:h-28 sm:w-28">
+              <div className="relative h-24 w-24 overflow-hidden rounded-full border-4 border-white shadow-lg shadow-gray-300/40 dark:border-border dark:shadow-none sm:h-28 sm:w-28">
                 {data?.adminImageUrl ? (
                   <img
                     src={cdnUrl(data.adminImageUrl) || ''}
@@ -268,7 +268,7 @@ export function ContactSection() {
               </div>
               {/* Availability indicator */}
               <span
-                className="absolute bottom-1 right-1 block h-5 w-5 rounded-full border-[3px] border-white bg-emerald-500 dark:border-zinc-800"
+                className="absolute bottom-1 right-1 block h-5 w-5 rounded-full border-[3px] border-white bg-emerald-500 dark:border-border"
                 role="img"
                 aria-label={t('contact.available')}
               />
@@ -435,7 +435,7 @@ export function ContactSection() {
             whileInView="visible"
             viewport={viewportOnce}
             aria-label={t('contact.locationTitle')}
-            className="flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white shadow-xl shadow-gray-200/60 dark:bg-zinc-900 dark:shadow-none"
+            className="flex flex-col overflow-hidden rounded-3xl border border-border/40 bg-white shadow-xl shadow-gray-200/60 dark:bg-card dark:shadow-none"
           >
             <div className="p-6 sm:p-7">
               <div className="flex items-center gap-3">
@@ -457,7 +457,7 @@ export function ContactSection() {
             {/* Map preview / placeholder */}
             <div className="relative mt-auto min-h-[220px] flex-1 border-t border-border/40">
               <div
-                className="absolute inset-0 bg-muted/30 dark:bg-zinc-800/30"
+                className="absolute inset-0 bg-muted/30 dark:bg-muted/30"
                 style={{
                   backgroundImage:
                     'radial-gradient(circle, oklch(0.768 0.189 131 / 0.18) 1.5px, transparent 1.5px)',
@@ -497,7 +497,7 @@ export function ContactSection() {
           whileInView="visible"
           viewport={viewportOnce}
           aria-label={t('contact.formTitle')}
-          className="rounded-3xl border border-border/40 bg-white p-6 shadow-xl shadow-gray-200/60 dark:bg-zinc-900 dark:shadow-none sm:p-7"
+          className="rounded-3xl border border-border/40 bg-white p-6 shadow-xl shadow-gray-200/60 dark:bg-card dark:shadow-none sm:p-7"
         >
           <div className="mb-5 flex items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">

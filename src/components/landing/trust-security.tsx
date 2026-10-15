@@ -100,7 +100,7 @@ export function TrustSecurity() {
               <motion.div
                 key={feature.title}
                 variants={itemVariants}
-                className="rounded-3xl border border-border/40 bg-white p-5 sm:p-6 shadow-2xl shadow-gray-300/50 transition-all duration-300 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/10 dark:bg-zinc-900 dark:shadow-none"
+                className="rounded-3xl border border-border/40 bg-white p-5 sm:p-6 shadow-2xl shadow-gray-300/50 transition-all duration-300 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/10 dark:bg-card dark:shadow-none"
               >
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Icon className="h-5 w-5" />

@@ -276,7 +276,7 @@ export function StatusBadge({ status }: { status: string }) {
     case 'completed':
       return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">সম্পন্ন</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0 font-medium">বাতিল</Badge>;
     case 'disputed':
       return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">বিরোধ চলছে</Badge>;
     case 'rejected':
@@ -826,7 +826,7 @@ export function NoticeBanner({
     green: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400',
     amber: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400',
     red: 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400',
-    neutral: 'bg-muted/50 dark:bg-zinc-800/40 border-border text-foreground',
+    neutral: 'bg-muted/50 dark:bg-muted/40 border-border text-foreground',
   };
   return (
     <div className={`flex items-start gap-2.5 rounded-xl border px-3.5 py-3 sm:px-4 sm:py-3.5 ${tones[tone]}`}>

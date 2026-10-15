@@ -1122,7 +1122,7 @@ export function AuthView() {
         </button>
 
         {/* Card shell — single column on mobile, brand panel + form on desktop */}
-        <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-xl shadow-black/[0.04] dark:border-zinc-800/60 dark:shadow-none lg:grid lg:grid-cols-[1fr_1.1fr]">
+        <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-xl shadow-black/[0.04] dark:border-border/60 dark:shadow-none lg:grid lg:grid-cols-[1fr_1.1fr]">
           {/* ── Brand / trust panel (desktop) ── */}
           <aside
             aria-hidden={false}

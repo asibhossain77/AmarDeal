@@ -136,7 +136,7 @@ export function ContactInfoPanel() {
   return (
     <div className="space-y-6">
       {/* Profile Picture + Name */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+      <div className="rounded-2xl bg-white dark:bg-card p-5 shadow-lg space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <User className="h-4 w-4 text-primary" />
@@ -203,7 +203,7 @@ export function ContactInfoPanel() {
       </div>
 
       {/* Contact Fields */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+      <div className="rounded-2xl bg-white dark:bg-card p-5 shadow-lg space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Phone className="h-4 w-4 text-primary" />
@@ -240,7 +240,7 @@ export function ContactInfoPanel() {
       </div>
 
       {/* Social Links */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 p-5 shadow-lg space-y-5">
+      <div className="rounded-2xl bg-white dark:bg-card p-5 shadow-lg space-y-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <Facebook className="h-4 w-4 text-primary" />

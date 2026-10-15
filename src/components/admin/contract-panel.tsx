@@ -126,7 +126,7 @@ export function ContractPanel() {
       </div>
 
       {/* Admin Info Card */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-4">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-4">
         <div className="flex items-center gap-2">
           <User className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">
@@ -220,7 +220,7 @@ export function ContractPanel() {
       </div>
 
       {/* Contract Content Card */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">

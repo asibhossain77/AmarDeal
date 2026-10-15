@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function NavbarSkeleton() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/40 bg-white/80 backdrop-blur-xl dark:bg-zinc-950/80">
+    <header className="sticky top-0 z-40 border-b border-border/40 bg-white/80 backdrop-blur-xl dark:bg-background/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ export function ReviewSkeleton() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-border/40 bg-white p-6 dark:bg-zinc-900 space-y-4">
+            <div key={i} className="rounded-2xl border border-border/40 bg-white p-6 dark:bg-card space-y-4">
               {/* Stars */}
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (
@@ -133,7 +133,7 @@ export function ReviewSkeleton() {
  */
 export function FooterSkeleton() {
   return (
-    <footer className="border-t border-border/40 bg-white dark:bg-zinc-950">
+    <footer className="border-t border-border/40 bg-white dark:bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {[1, 2, 3, 4].map((i) => (
@@ -159,7 +159,7 @@ export function FooterSkeleton() {
  */
 export function LandingSkeleton() {
   return (
-    <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-[#09090b]">
+    <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-background">
       <NavbarSkeleton />
       <main className="flex-1">
         <HeroSkeleton />

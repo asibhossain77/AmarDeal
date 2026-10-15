@@ -499,7 +499,7 @@ export function ProductOrderView() {
             <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{product.description}</p>
 
             {/* Seller box */}
-            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-zinc-800/30">
+            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/30 bg-muted/30 p-3 dark:border-border/20 dark:bg-muted/30">
               <div className="flex items-center gap-3 min-w-0">
                 <Avatar className="h-10 w-10 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback><User className="h-5 w-5" /></AvatarFallback></Avatar>
                 <div className="min-w-0">
@@ -550,7 +550,7 @@ export function ProductOrderView() {
                         className={`flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all disabled:cursor-not-allowed ${
                           selected
                             ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm'
-                            : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
+                            : 'border-border bg-white hover:border-primary/40 dark:bg-muted dark:hover:border-primary/40'
                         } ${unavailable ? 'opacity-45' : ''}`}
                       >
                         <span className="flex min-w-0 items-center gap-2.5">

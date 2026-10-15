@@ -150,7 +150,7 @@ export function PrivacySection() {
             <motion.div
               key={idx}
               variants={itemVariants}
-              className="rounded-2xl border border-border/40 bg-white p-5 sm:p-6 shadow-lg dark:bg-zinc-900 dark:shadow-none"
+              className="rounded-2xl border border-border/40 bg-white p-5 sm:p-6 shadow-lg dark:bg-card dark:shadow-none"
             >
               <h3 className="mb-4 text-base font-bold text-foreground">
                 {section.title}

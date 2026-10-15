@@ -110,7 +110,7 @@ export function AdminProfilePanel() {
       </div>
 
       {/* Avatar + Name */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xl font-bold text-primary">
             {user.name.charAt(0)}
@@ -125,7 +125,7 @@ export function AdminProfilePanel() {
       </div>
 
       {/* Change Email */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Mail className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changeEmail')}</h3>
@@ -152,7 +152,7 @@ export function AdminProfilePanel() {
       </div>
 
       {/* Change Phone */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <Phone className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changePhone')}</h3>
@@ -179,7 +179,7 @@ export function AdminProfilePanel() {
       </div>
 
       {/* Change Password */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
+      <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-3">
         <div className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">{t('admin.profile.changePassword')}</h3>

@@ -321,7 +321,7 @@ export function FeeRulesPanel() {
 
       {/* Add / Edit Form */}
       {(showForm || editing) && (
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 p-5 shadow-lg">
+        <div className="rounded-2xl bg-white dark:bg-card border border-border/40 p-5 shadow-lg">
           <h3 className="text-sm font-bold text-foreground mb-4">
             {editing ? t('admin.fees.editRuleTitle') : t('admin.fees.addRuleTitle')}
           </h3>
@@ -344,7 +344,7 @@ export function FeeRulesPanel() {
 
       {/* Desktop Table */}
       {!loading && rules.length > 0 && (
-        <div className="hidden lg:block rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 shadow-lg overflow-hidden">
+        <div className="hidden lg:block rounded-2xl bg-white dark:bg-card border border-border/40 shadow-lg overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="bg-primary text-primary-foreground">
@@ -411,7 +411,7 @@ export function FeeRulesPanel() {
           {rules.map((rule) => (
             <div
               key={rule.id}
-              className="rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 p-4 shadow-lg"
+              className="rounded-2xl bg-white dark:bg-card border border-border/40 p-4 shadow-lg"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -461,7 +461,7 @@ export function FeeRulesPanel() {
 
       {/* Empty State */}
       {!loading && rules.length === 0 && (
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 p-12 text-center shadow-lg">
+        <div className="rounded-2xl bg-white dark:bg-card border border-border/40 p-12 text-center shadow-lg">
           <p className="text-muted-foreground mb-4">{t('admin.fees.noRules')}</p>
           <Button
             onClick={() => setShowForm(true)}

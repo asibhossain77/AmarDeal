@@ -137,7 +137,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
   if (!mounted) return null;
 
   const inputClass =
-    'h-11 rounded-xl border-border bg-white dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder:text-zinc-500 text-center md:text-left';
+    'h-11 rounded-xl border-border bg-white dark:bg-muted dark:border-border dark:placeholder:text-zinc-500 text-center md:text-left';
 
   return (
     <motion.div
@@ -147,7 +147,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
       className="mx-auto w-full max-w-xl"
     >
       {/* ── Solid White Card ── */}
-      <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-zinc-900 sm:p-8">
+      <div className="rounded-2xl bg-white p-6 shadow-lg dark:bg-card sm:p-8">
         {/* Header */}
         <div className="mb-7 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15">
@@ -203,7 +203,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
                   className={`flex w-full sm:flex-1 items-center gap-3 rounded-xl border-2 p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-70 ${
                     role === opt.value
                       ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                      : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
+                      : 'border-border bg-white hover:border-primary/40 dark:bg-muted dark:hover:border-primary/40'
                   }`}
                 >
                   <div
@@ -302,7 +302,7 @@ export function NewDealForm({ mode = 'buyer' }: { mode?: 'buyer' | 'seller' }) {
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
               rows={4}
-              className="rounded-xl border-border bg-white dark:bg-zinc-800 dark:border-zinc-700 dark:placeholder:text-zinc-500 text-center md:text-left resize-none"
+              className="rounded-xl border-border bg-white dark:bg-muted dark:border-border dark:placeholder:text-zinc-500 text-center md:text-left resize-none"
             />
           </div>
         </div>

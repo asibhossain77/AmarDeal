@@ -62,7 +62,7 @@ export function PwaInstallButton() {
 
   return (
     <div className="fixed bottom-20 right-4 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="flex items-center gap-2 rounded-2xl border border-border/50 bg-white dark:bg-zinc-900 p-3 shadow-lg">
+      <div className="flex items-center gap-2 rounded-2xl border border-border/50 bg-white dark:bg-card p-3 shadow-lg">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
             <Download className="h-5 w-5 text-primary" />

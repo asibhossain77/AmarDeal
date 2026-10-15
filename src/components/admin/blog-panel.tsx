@@ -282,7 +282,7 @@ export function BlogPanel() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.05 }}
-              className="flex items-start gap-4 rounded-xl border border-border/50 bg-white dark:bg-zinc-900 p-4 transition-shadow hover:shadow-md"
+              className="flex items-start gap-4 rounded-xl border border-border/50 bg-white dark:bg-card p-4 transition-shadow hover:shadow-md"
             >
               {post.coverImage ? (
                 <img

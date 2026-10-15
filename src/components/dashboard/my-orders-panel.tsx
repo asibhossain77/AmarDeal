@@ -53,7 +53,7 @@ export function OrderStatusBadge({ status, paymentStatus, t }: { status: string;
     in_progress: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-400',
     completed: 'bg-primary/15 text-primary dark:bg-primary/20',
     partial: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-    cancelled: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-500/15 dark:text-zinc-400',
+    cancelled: 'bg-zinc-200 text-zinc-600 dark:bg-foreground/10 dark:text-zinc-400',
     failed: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
     refunded: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-400',
   };

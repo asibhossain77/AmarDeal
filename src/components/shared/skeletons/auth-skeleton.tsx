@@ -16,7 +16,7 @@ export function AuthSkeleton() {
           <Skeleton className="mx-auto h-4 w-56" />
         </div>
         {/* Form card */}
-        <div className="rounded-2xl border border-border/40 bg-white p-6 dark:bg-zinc-900 space-y-5">
+        <div className="rounded-2xl border border-border/40 bg-white p-6 dark:bg-card space-y-5">
  {/* Tab switcher */}
           <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
             <Skeleton className="h-9 flex-1 rounded-lg" />

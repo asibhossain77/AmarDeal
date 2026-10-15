@@ -31,7 +31,7 @@ const PARROT_GREEN = '#65A30D';
 const PARROT_GREEN_GLOW = '0 4px 16px rgba(101, 163, 13, 0.30)';
 
 const GLASS_CARD =
-  'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl';
+  'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-border dark:!bg-card/50 dark:!backdrop-blur-xl';
 
 type WithdrawTab = 'all' | 'pending' | 'approved' | 'rejected' | 'completed';
 

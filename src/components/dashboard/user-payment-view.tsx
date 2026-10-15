@@ -93,7 +93,7 @@ function getPaymentStatusBadge(status: PaymentStatus, t: (key: any) => string) {
     case 'wrong_info':
       return <Badge className="bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400 border-0 font-medium gap-1"><AlertCircle className="h-3 w-3" />{label}</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium gap-1"><Ban className="h-3 w-3" />{label}</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0 font-medium gap-1"><Ban className="h-3 w-3" />{label}</Badge>;
   }
 }
 
@@ -123,7 +123,7 @@ function GlassCard({
 }) {
   return (
     <div
-      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl ${className}`}
+      className={`relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-border dark:!bg-card/50 dark:!backdrop-blur-xl ${className}`}
     >
       {children}
     </div>

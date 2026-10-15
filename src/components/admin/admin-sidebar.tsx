@@ -24,7 +24,7 @@ export function AdminSidebar() {
   );
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-sidebar z-40">
       <div className="flex h-full flex-col">
         <nav className="flex-1 overflow-y-auto pl-5 pr-3 pt-5 pb-4">
           {groups.map((group) => {

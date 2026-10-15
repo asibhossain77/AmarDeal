@@ -24,7 +24,7 @@ import {
 
 const PARROT_GREEN = '#65A30D';
 
-const GLASS = 'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl';
+const GLASS = 'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-border dark:!bg-card/50 dark:!backdrop-blur-xl';
 
 const ACCOUNT_TYPES = [
   { id: 'bkash', label: 'bKash', color: '#E2136E' },

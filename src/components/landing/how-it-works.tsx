@@ -80,7 +80,7 @@ export function HowItWorks() {
               <motion.div
                 key={stepNumbers[index]}
                 variants={itemVariants}
-                className="group relative rounded-3xl border border-border/40 bg-white p-6 sm:p-8 shadow-2xl shadow-gray-300/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 dark:bg-zinc-900 dark:shadow-none"
+                className="group relative rounded-3xl border border-border/40 bg-white p-6 sm:p-8 shadow-2xl shadow-gray-300/50 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 dark:bg-card dark:shadow-none"
               >
                 {index < steps.length - 1 && (
                   <div className="pointer-events-none absolute -right-3 top-1/2 hidden h-px w-6 border-t border-dashed border-primary/30 lg:block" />

@@ -97,7 +97,7 @@ function SolidCard({
 }) {
   return (
     <div
-      className={`rounded-3xl bg-white p-5 sm:p-6 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none ${className}`}
+      className={`rounded-3xl bg-white p-5 sm:p-6 shadow-2xl shadow-gray-300/50 dark:bg-card dark:shadow-none ${className}`}
     >
       {children}
     </div>
@@ -387,7 +387,7 @@ export function PaymentMethodsPanel() {
               {/* Desktop Table */}
               <SolidCard className="!p-0 overflow-hidden hidden lg:block">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+                  <thead className="sticky top-0 bg-white dark:bg-card z-10">
                     <tr className="border-b border-border bg-muted/30">
                       <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.gateway')}</th>
                       <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.payments.accountNumber')}</th>
@@ -451,7 +451,7 @@ export function PaymentMethodsPanel() {
               {/* Mobile Cards */}
               <div className="lg:hidden space-y-3">
                 {methods.map((m) => (
-                  <div key={m.id} className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-3.5 space-y-3">
+                  <div key={m.id} className="rounded-2xl bg-white dark:bg-card shadow-lg p-3.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${m.color || '#84CC16'}18` }}>
@@ -558,7 +558,7 @@ export function PaymentMethodsPanel() {
                 {activeMethods.length > 0 && (
                   <>
                     <div
-                      className="mb-4 rounded-xl border-l-4 bg-white dark:bg-zinc-800 p-3"
+                      className="mb-4 rounded-xl border-l-4 bg-white dark:bg-muted p-3"
                       style={{ borderLeftColor: activeMethods[0].color || '#84CC16' }}
                     >
                       <div className="flex items-center justify-between text-xs">
@@ -620,7 +620,7 @@ export function PaymentMethodsPanel() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
               <div
-                className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none"
+                className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl shadow-gray-300/50 dark:bg-card dark:shadow-none"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Modal Header */}

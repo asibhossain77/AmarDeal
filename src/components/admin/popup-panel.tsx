@@ -313,7 +313,7 @@ export function PopupPanel() {
           onClick={() => setShowPreview(false)}
         >
           <div
-            className="w-[90vw] max-w-[400px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+            className="w-[90vw] max-w-[400px] rounded-2xl bg-white dark:bg-card shadow-2xl border border-zinc-200 dark:border-border overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Preview Header */}

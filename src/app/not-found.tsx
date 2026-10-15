@@ -7,7 +7,7 @@ export default function NotFound() {
   const t = useT();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center !bg-[#F2F4F7] px-4 dark:!bg-[#09090b]">
+    <div className="flex min-h-screen flex-col items-center justify-center !bg-[#F2F4F7] px-4 dark:!bg-background">
       <div className="text-center">
         {/* Large 404 with glow */}
         <div className="relative inline-block">

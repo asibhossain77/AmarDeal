@@ -30,7 +30,7 @@ function SolidCard({
 }) {
   return (
     <div
-      className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-zinc-900 ${className}`}
+      className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-card ${className}`}
     >
       {children}
     </div>
@@ -215,7 +215,7 @@ export function TwoFactorPanel() {
                 <ShieldCheck className="h-3 w-3" /> {t('common.enabled')}
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 dark:bg-muted px-2 py-0.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
                 {t('common.disabled')}
               </span>
             )
@@ -399,8 +399,8 @@ export function TwoFactorPanel() {
             ) : (
               <>
                 {/* Disabled State */}
-                <div className="flex items-start gap-4 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-200 dark:bg-zinc-700">
+                <div className="flex items-start gap-4 p-4 rounded-xl bg-zinc-50 dark:bg-muted/50">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-zinc-200 dark:bg-accent">
                     <Smartphone className="h-6 w-6 text-zinc-500 dark:text-zinc-400" />
                   </div>
                   <div className="flex-1 min-w-0">

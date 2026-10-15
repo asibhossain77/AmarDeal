@@ -14,7 +14,7 @@ export function SeoPageLayout({
   subtitle?: string;
 }) {
   return (
-    <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-[#09090b]">
+    <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-background">
       <Navbar />
       <div className="flex flex-1 flex-col">
         {/* Home link */}

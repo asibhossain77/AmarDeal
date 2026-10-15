@@ -80,38 +80,41 @@
   --sidebar-ring: oklch(0.768 0.189 131);
 }
 
-/* ── Dark Mode: zinc-950 deep black, glowing lime accents ── */
+/* ── Dark Mode: premium near-black charcoal #131511 with a subtle green undertone ──
+   Calibrated against the designer's admin-deal dark screen (public/midman-admin-deal-dark.svg):
+   page base #131511 (oklch 0.192 0.0085 129), surface ladder steps up through card →
+   popover, all hue ~130–150 (green-neutral), no pure black, no blue undertone. ── */
 html.dark {
-  --background: oklch(0.1 0.005 250);
-  --foreground: oklch(0.96 0.003 250);
-  --card: oklch(0.14 0.006 250);
-  --card-foreground: oklch(0.96 0.003 250);
-  --popover: oklch(0.14 0.006 250);
-  --popover-foreground: oklch(0.96 0.003 250);
-  --primary: oklch(0.768 0.189 131);
+  --background: #131511; /* SVG page base — exact anchor (oklch 0.192 0.0085 129) */
+  --foreground: #F2F6F1;
+  --card: #1A201A;
+  --card-foreground: #F2F6F1;
+  --popover: #1F261F;
+  --popover-foreground: #F2F6F1;
+  --primary: oklch(0.768 0.189 131); /* Midman brand green — unchanged */
   --primary-foreground: oklch(0.15 0.05 131);
-  --secondary: oklch(0.2 0.012 131);
+  --secondary: #1C231B;
   --secondary-foreground: oklch(0.92 0.008 131);
-  --muted: oklch(0.2 0.005 250);
-  --muted-foreground: oklch(0.63 0.005 250);
-  --accent: oklch(0.2 0.012 131);
+  --muted: #222922;
+  --muted-foreground: #A8B8AF;
+  --accent: #273027;
   --accent-foreground: oklch(0.92 0.008 131);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.24 0.006 250);
-  --input: oklch(0.24 0.006 250);
+  --border: #2A322B; /* low-contrast green-neutral border */
+  --input: #2A322B;
   --ring: oklch(0.768 0.189 131);
   --chart-1: oklch(0.768 0.189 131);
   --chart-2: oklch(0.75 0.18 155);
   --chart-3: oklch(0.8 0.22 130);
   --chart-4: oklch(0.82 0.2 140);
   --chart-5: oklch(0.78 0.15 125);
-  --sidebar: oklch(0.12 0.005 250);
-  --sidebar-foreground: oklch(0.96 0.003 250);
+  --sidebar: #171D16;
+  --sidebar-foreground: #F2F6F1;
   --sidebar-primary: oklch(0.768 0.189 131);
   --sidebar-primary-foreground: oklch(0.12 0.03 131);
-  --sidebar-accent: oklch(0.2 0.012 131);
+  --sidebar-accent: #273027;
   --sidebar-accent-foreground: oklch(0.92 0.008 131);
-  --sidebar-border: oklch(0.24 0.006 250);
+  --sidebar-border: #2A322B;
   --sidebar-ring: oklch(0.768 0.189 131);
 }
 
@@ -124,7 +127,7 @@ html.dark {
     background-color: #F2F4F7 !important;
   }
   .dark body {
-    background-color: oklch(0.1 0.005 250) !important;
+    background-color: var(--background) !important;
   }
 }
 

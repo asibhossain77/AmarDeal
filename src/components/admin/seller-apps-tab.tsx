@@ -174,7 +174,7 @@ export function SellerAppsTab() {
       </Badge>
     );
     if (status === 'disabled') return (
-      <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-500/15 dark:text-zinc-400 border-0 font-medium gap-1">
+      <Badge className="bg-zinc-100 text-zinc-600 dark:bg-foreground/10 dark:text-zinc-400 border-0 font-medium gap-1">
         <Ban className="h-3 w-3" /> {t('admin.sellerApps.disabled')}
       </Badge>
     );

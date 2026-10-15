@@ -62,7 +62,7 @@ export function OAuthConsent({
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F2F4F7] dark:bg-[#09090b] p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F2F4F7] dark:bg-background p-4">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -80,14 +80,14 @@ export function OAuthConsent({
           <span className="text-sm font-semibold text-muted-foreground">{siteName || 'Midman'}</span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-white dark:bg-zinc-900 dark:border-zinc-700 shadow-sm p-6 sm:p-8">
+        <div className="rounded-2xl border border-border bg-white dark:bg-card dark:border-border shadow-sm p-6 sm:p-8">
           <h1 className="text-xl font-bold text-center text-foreground">{t('oauth.title')}</h1>
           <p className="mt-2 text-sm text-center text-muted-foreground">
             {t('oauth.wantsAccess', { app: clientHost })}
           </p>
 
           {/* Signed-in identity */}
-          <div className="mt-6 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 dark:bg-zinc-800/50 p-4">
+          <div className="mt-6 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 dark:bg-muted/50 p-4">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -153,7 +153,7 @@ export function OAuthConsent({
               value="deny"
               disabled={!!processing}
               onClick={() => handleSubmit('deny')}
-              className="w-full h-12 rounded-xl text-base font-semibold gap-2.5 border border-border bg-transparent text-foreground hover:bg-muted dark:border-zinc-700 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-xl text-base font-semibold gap-2.5 border border-border bg-transparent text-foreground hover:bg-muted dark:border-border dark:hover:bg-accent transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {processing === 'deny' ? <LoadingAnimation size="sm" /> : <XCircle className="h-5 w-5" />}
               {processing === 'deny' ? t('oauth.processing') : t('oauth.cancel')}

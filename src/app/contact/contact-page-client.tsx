@@ -107,7 +107,7 @@ export function ContactPageClient() {
   /* ─── Loading State ─── */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-zinc-950">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-background">
         <LoadingAnimation size="lg" />
       </div>
     );
@@ -116,7 +116,7 @@ export function ContactPageClient() {
   /* ─── No Data State ─── */
   if (!data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950 px-4 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-background px-4 text-center">
         <p className="text-lg font-semibold text-foreground mb-2">তথ্য পাওয়া যায়নি</p>
         <p className="text-sm text-muted-foreground mb-6">এই মুহূর্তে যোগাযোগ তথ্য উপলব্ধ নেই</p>
         <Link
@@ -135,9 +135,9 @@ export function ContactPageClient() {
     data.adminName || data.adminImageUrl || data.address || data.phone || data.email || socialLinks.length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
       {/* ── Header ── */}
-      <header className="bg-white dark:bg-zinc-900 border-b border-border/50 sticky top-0 z-50">
+      <header className="bg-white dark:bg-card border-b border-border/50 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="h-4 w-4" />
@@ -171,7 +171,7 @@ export function ContactPageClient() {
             {(data.adminName || data.adminImageUrl) && (
               <motion.div
                 variants={itemVariants}
-                className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-6 sm:p-8 text-center"
+                className="bg-white dark:bg-card rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-6 sm:p-8 text-center"
               >
                 {/* Avatar */}
                 {data.adminImageUrl ? (
@@ -197,7 +197,7 @@ export function ContactPageClient() {
             {/* ── Contact Details ── */}
             <motion.div
               variants={itemVariants}
-              className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-5 sm:p-6 space-y-4"
+              className="bg-white dark:bg-card rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-5 sm:p-6 space-y-4"
             >
               <h2 className="text-base font-bold text-foreground">যোগাযোগের তথ্য</h2>
 
@@ -222,7 +222,7 @@ export function ContactPageClient() {
             {socialLinks.length > 0 && (
               <motion.div
                 variants={itemVariants}
-                className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-5 sm:p-6"
+                className="bg-white dark:bg-card rounded-3xl shadow-2xl shadow-gray-300/50 dark:shadow-black/20 p-5 sm:p-6"
               >
                 <h2 className="text-base font-bold text-foreground mb-4">সোশ্যাল মিডিয়া</h2>
                 <div className="grid grid-cols-2 gap-3">

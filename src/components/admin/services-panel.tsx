@@ -436,14 +436,14 @@ function ServicesTab({ t, bn }: { t: TFn; bn: boolean }) {
               <label className="mb-1 block text-[12px] font-medium text-foreground">{bn ? 'গ্রাহকের নির্দেশনা' : 'Service instructions (customer-facing)'}</label>
               <Textarea value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} rows={2} placeholder={bn ? 'অর্ডারের আগে গ্রাহক যা জানা দরকার...' : 'What customers should know before ordering...'} className="text-[13px]" />
             </div>
-            <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-zinc-800/40">
+            <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5 dark:bg-muted/40">
               <span className="text-[12px] font-medium text-foreground">{bn ? 'সক্রিয় (অর্ডারযোগ্য)' : 'Enabled (orderable)'}</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={form.isActive}
                 onClick={() => setForm({ ...form, isActive: !form.isActive })}
-                className={`relative h-6 w-11 rounded-full transition-colors ${form.isActive ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                className={`relative h-6 w-11 rounded-full transition-colors ${form.isActive ? 'bg-primary' : 'bg-zinc-300 dark:bg-accent'}`}
               >
                 <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${form.isActive ? 'left-[22px]' : 'left-0.5'}`} />
               </button>
@@ -595,7 +595,7 @@ function CategoriesTab({ bn }: { bn: boolean }) {
                     {c.enabled ? (
                       <Badge variant="secondary" className="gap-1 border-0 bg-primary/15 text-[9px] font-bold text-primary"><CheckCircle2 className="h-2.5 w-2.5" />{bn ? 'চালু' : 'ON'}</Badge>
                     ) : (
-                      <Badge variant="secondary" className="gap-1 border-0 bg-zinc-200 text-[9px] font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"><XCircle className="h-2.5 w-2.5" />{bn ? 'বন্ধ' : 'OFF'}</Badge>
+                      <Badge variant="secondary" className="gap-1 border-0 bg-zinc-200 text-[9px] font-bold text-zinc-600 dark:bg-accent dark:text-zinc-300"><XCircle className="h-2.5 w-2.5" />{bn ? 'বন্ধ' : 'OFF'}</Badge>
                     )}
                   </div>
                   <p className="mt-0.5 text-[11px] text-muted-foreground" dir="ltr">
@@ -611,7 +611,7 @@ function CategoriesTab({ bn }: { bn: boolean }) {
                   aria-label={label}
                   disabled={busyThis}
                   onClick={() => onToggle(c)}
-                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${c.enabled ? 'bg-primary' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                  className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${c.enabled ? 'bg-primary' : 'bg-zinc-300 dark:bg-accent'}`}
                 >
                   {busyThis ? (
                     <span className="absolute inset-0 flex items-center justify-center">
@@ -834,19 +834,19 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2.5 text-[12px]">
-                <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/40">
+                <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
                   <p className="text-[10px] font-semibold text-muted-foreground">{bn ? 'মোট' : 'Total'}</p>
                   <p className="mt-0.5 text-[15px] font-extrabold text-primary" dir="ltr">{formatMoney(detail.totalAmount)}</p>
                   <p className="text-[10px] text-muted-foreground" dir="ltr">{formatMoney(detail.unitPriceAtOrder)}/1k × {detail.quantity.toLocaleString('en-BD')}</p>
                 </div>
-                <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/40">
+                <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
                   <p className="text-[10px] font-semibold text-muted-foreground">{bn ? 'পেমেন্ট' : 'Payment'}</p>
                   <p className="mt-0.5 font-bold text-foreground">{t(`orderPayment.${detail.paymentStatus}` as TranslationKey)}</p>
                   {detail.paymentMethodName && <p className="text-[10px] text-muted-foreground">{detail.paymentMethodName} {detail.senderNumber ? `· ${detail.senderNumber}` : ''}</p>}
                   {detail.transactionId && <p className="truncate font-mono text-[10px] text-muted-foreground" dir="ltr">TXN {detail.transactionId}</p>}
                 </div>
               </div>
-              <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/40">
+              <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
                 <p className="text-[10px] font-semibold text-muted-foreground">{bn ? 'টার্গেট লিংক' : 'Target link'}</p>
                 <a href={detail.linkUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 block break-all text-[12px] font-medium text-primary hover:underline" dir="ltr">{detail.linkUrl}</a>
               </div>
@@ -871,7 +871,7 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
                 <p className="text-[10px] font-semibold text-muted-foreground">{bn ? 'ইভেন্ট ইতিহাস' : 'Event history'}</p>
                 <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
                   {detail.events.map((e) => (
-                    <div key={e.id} className="rounded-lg bg-muted/40 p-2.5 dark:bg-zinc-800/40">
+                    <div key={e.id} className="rounded-lg bg-muted/40 p-2.5 dark:bg-muted/40">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-foreground">{t(`orderEvent.${e.type}` as TranslationKey)}</span>
                         <span className="text-[10px] text-muted-foreground" dir="ltr">{formatDate(e.createdAt)}</span>

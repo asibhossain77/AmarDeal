@@ -101,7 +101,7 @@ function formatDate(dateStr: string): string {
    ═══════════════════════════════════════════ */
 
 const GLASS_CARD =
-  'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-zinc-800/50 dark:!bg-zinc-900/50 dark:!backdrop-blur-xl';
+  'relative rounded-2xl border !border-white/60 !bg-white/40 p-3.5 sm:p-5 shadow-xl !backdrop-blur-xl dark:!border-border dark:!bg-card/50 dark:!backdrop-blur-xl';
 
 /* ═══════════════════════════════════════════
    Skeleton

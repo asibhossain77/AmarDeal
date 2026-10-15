@@ -220,7 +220,7 @@ function ChatBubble({
           className={`relative px-4 py-2.5 shadow-sm ${
             isOwn
               ? 'rounded-2xl rounded-tr-md text-white'
-              : 'rounded-2xl rounded-tl-md bg-white dark:bg-zinc-800 border border-border/50 text-foreground'
+              : 'rounded-2xl rounded-tl-md bg-white dark:bg-muted border border-border/50 text-foreground'
           }`}
           style={isOwn ? { backgroundColor: '#65A30D' } : undefined}
         >

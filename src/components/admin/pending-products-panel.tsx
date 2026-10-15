@@ -137,7 +137,7 @@ export function PendingProductsPanel() {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4 }}
-          className="bg-white dark:bg-zinc-900 rounded-2xl border border-border/50 shadow-sm flex flex-col items-center justify-center py-20 text-center"
+          className="bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm flex flex-col items-center justify-center py-20 text-center"
         >
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
             <Package className="h-8 w-8 text-emerald-500" />
@@ -161,7 +161,7 @@ export function PendingProductsPanel() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: index * 0.06 }}
-              className="group bg-white dark:bg-zinc-900 rounded-2xl border border-border/50 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
+              className="group bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden transition-shadow hover:shadow-md"
             >
               {/* Image */}
               <div className="relative aspect-video w-full overflow-hidden bg-muted">

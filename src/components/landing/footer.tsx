@@ -127,7 +127,7 @@ export function Footer() {
   );
 
   return (
-    <footer className="relative overflow-hidden bg-[#14171B]">
+    <footer className="relative overflow-hidden bg-[#14171B] dark:bg-background">
       {/* Subtle green glow decoration */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 left-1/2 h-64 w-[42rem] max-w-full -translate-x-1/2 rounded-full bg-lime-500/[0.07] blur-3xl" />

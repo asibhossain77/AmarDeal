@@ -122,7 +122,7 @@ export function SettingsPanel() {
 
       <div className="w-full space-y-4">
         {/* Theme Toggle */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t('settings.theme')}</h3>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Language Preference */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Globe className="h-5 w-5 text-primary" />
@@ -156,7 +156,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Push Notifications */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {pushEnabled ? (
@@ -182,7 +182,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Password Change */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 space-y-3">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 space-y-3">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">{t('settings.passwordChange')}</h3>
@@ -235,7 +235,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Security Info */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t('settings.security')}</h3>
           <div className="flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 px-4 py-3 border border-emerald-200 dark:border-emerald-500/20">
             <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0" />
@@ -247,7 +247,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Logout */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">{t('settings.account')}</h3>
           <Button
             onClick={handleLogout}

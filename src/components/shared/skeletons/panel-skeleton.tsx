@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  */
 export function SidebarSkeleton() {
   return (
-    <aside className="hidden md:flex fixed left-0 top-14 bottom-0 w-64 flex-col border-r border-border/40 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex fixed left-0 top-14 bottom-0 w-64 flex-col border-r border-border/40 bg-white dark:bg-sidebar z-40">
       {/* Sidebar header */}
       <div className="p-4 border-b border-border/40">
         <Skeleton className="h-5 w-28" />
@@ -37,7 +37,7 @@ export function SidebarSkeleton() {
  */
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border/40 bg-white p-5 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-border/40 bg-white p-5 dark:bg-card">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-3.5 w-24" />
@@ -54,7 +54,7 @@ export function StatCardSkeleton() {
  */
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="rounded-2xl border border-border/40 bg-white dark:bg-zinc-900 overflow-hidden">
+    <div className="rounded-2xl border border-border/40 bg-white dark:bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <Skeleton className="h-5 w-36" />

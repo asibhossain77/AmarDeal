@@ -120,12 +120,12 @@ function ServiceCard({ service, index, onClick, locale }: { service: StorefrontS
       <div className={`relative flex items-center justify-center overflow-hidden bg-gradient-to-br ${gradientBg} py-8`}>
         <CatIcon className={`h-11 w-11 ${catColor} opacity-40 transition-all duration-500 group-hover:scale-110 group-hover:opacity-70 sm:h-12 sm:w-12`} strokeWidth={1.2} />
         <div className="absolute left-3 top-3">
-          <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-zinc-900/80">
+          <Badge variant="secondary" className="gap-1.5 bg-background/80 text-[10px] font-semibold backdrop-blur-lg shadow-sm dark:bg-card/80">
             <CatIcon className={`h-3 w-3 ${catColor}`} strokeWidth={2.5} />
             {categoryLabel(service.category, locale)}
           </Badge>
         </div>
-        <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-semibold text-primary backdrop-blur shadow-sm dark:bg-zinc-900/80">
+        <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-semibold text-primary backdrop-blur shadow-sm dark:bg-card/80">
           <ShieldCheck className="h-3 w-3" />
           {locale === 'bn' ? 'মিডম্যান সুরক্ষিত' : 'Protected'}
         </div>

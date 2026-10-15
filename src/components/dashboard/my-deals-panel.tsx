@@ -99,7 +99,7 @@ function getStatusBadge(status: string, t: (key: any) => string) {
     case 'completed':
       return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">{t('status.completed')}</Badge>;
     case 'cancelled':
-      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">{t('status.cancelled')}</Badge>;
+      return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0 font-medium">{t('status.cancelled')}</Badge>;
     case 'disputed':
       return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">{t('status.disputed')}</Badge>;
     default:
@@ -315,7 +315,7 @@ export function MyDealsPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('deals.searchPlaceholder')}
-          className="w-full h-10 rounded-xl border border-border/50 bg-white dark:bg-zinc-900 pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 shadow-lg"
+          className="w-full h-10 rounded-xl border border-border/50 bg-white dark:bg-card pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/10 shadow-lg"
         />
         {search && (
           <button
@@ -339,7 +339,7 @@ export function MyDealsPanel() {
               className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
                 filter === tab
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                  : 'bg-white dark:bg-zinc-900 text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground shadow-lg'
+                  : 'bg-white dark:bg-card text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground shadow-lg'
               }`}
             >
               <span>
@@ -368,7 +368,7 @@ export function MyDealsPanel() {
           <LoadingAnimation size="lg" />
         </div>
       ) : filteredDeals.length === 0 ? (
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-6 text-center">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-6 text-center">
           <Inbox className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
           <p className="text-sm text-muted-foreground">
             {search.trim() ? t('deals.searchNoResult', { search }) : t('deals.noDealFound')}
@@ -381,7 +381,7 @@ export function MyDealsPanel() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="hidden overflow-hidden rounded-2xl border border-border/50 bg-white shadow-lg lg:block dark:bg-zinc-900"
+            className="hidden overflow-hidden rounded-2xl border border-border/50 bg-white shadow-lg lg:block dark:bg-card"
           >
             <Table>
               <TableHeader>
@@ -464,7 +464,7 @@ export function MyDealsPanel() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-4 sm:p-5 border border-border/50"
+                  className="rounded-2xl bg-white dark:bg-card shadow-lg p-4 sm:p-5 border border-border/50"
                 >
                   {/* Top row: deal ID + status */}
                   <div className="mb-2.5 flex items-center justify-between gap-2">
@@ -486,7 +486,7 @@ export function MyDealsPanel() {
                   </div>
 
                   {/* Participant row: the OTHER party of this deal */}
-                  <div className="mt-3 rounded-xl bg-muted/40 p-2.5 dark:bg-zinc-800/60">
+                  <div className="mt-3 rounded-xl bg-muted/40 p-2.5 dark:bg-muted/60">
                     <PartnerInfo partner={partner} t={t} />
                   </div>
 

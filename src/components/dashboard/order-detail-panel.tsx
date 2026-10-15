@@ -284,7 +284,7 @@ export function OrderDetailPanel() {
 
         {/* Key facts */}
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/40">
+          <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><Link2 className="h-3 w-3" />{t('orderDetail.targetLink')}</p>
             <a
               href={order.linkUrl}
@@ -298,7 +298,7 @@ export function OrderDetailPanel() {
             </a>
             {order.linkType && <span className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{order.linkType.replace(/_/g, ' ')}</span>}
           </div>
-          <div className="rounded-xl bg-muted/40 p-3 dark:bg-zinc-800/40">
+          <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><Clock className="h-3 w-3" />{t('orderDetail.placedAt')}</p>
             <p className="mt-1 text-[12px] font-medium text-foreground" dir="ltr">{formatDate(order.createdAt)}</p>
             {order.service?.deliveryEstimate && (
@@ -356,7 +356,7 @@ export function OrderDetailPanel() {
                 <button
                   onClick={handleGatewayPay}
                   disabled={payingGateway}
-                  className="flex w-full items-center gap-3 rounded-xl border border-primary/30 bg-background p-3 text-left transition-colors hover:bg-accent disabled:opacity-60 dark:bg-zinc-900"
+                  className="flex w-full items-center gap-3 rounded-xl border border-primary/30 bg-background p-3 text-left transition-colors hover:bg-accent disabled:opacity-60 dark:bg-card"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15">
                     {payingGateway ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Wallet className="h-4 w-4 text-primary" />}
@@ -430,7 +430,7 @@ export function OrderDetailPanel() {
               )}
             </div>
             {order.fulfilmentNote && (
-              <p className="mt-2 rounded-lg bg-muted/40 p-2.5 text-[12px] leading-relaxed text-muted-foreground whitespace-pre-wrap dark:bg-zinc-800/40">{order.fulfilmentNote}</p>
+              <p className="mt-2 rounded-lg bg-muted/40 p-2.5 text-[12px] leading-relaxed text-muted-foreground whitespace-pre-wrap dark:bg-muted/40">{order.fulfilmentNote}</p>
             )}
           </div>
         )}
@@ -487,7 +487,7 @@ function eventDotColor(type: string): string {
     case 'payment_failed':
       return 'border-destructive text-destructive bg-destructive/10';
     case 'cancelled':
-      return 'border-zinc-400 text-zinc-500 bg-zinc-200/40 dark:bg-zinc-700/40';
+      return 'border-zinc-400 text-zinc-500 bg-zinc-200/40 dark:bg-accent/40';
     case 'payment_submitted':
       return 'border-amber-500 text-amber-600 bg-amber-500/10';
     default:

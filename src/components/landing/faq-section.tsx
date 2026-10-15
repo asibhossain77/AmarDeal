@@ -77,7 +77,7 @@ export function FAQSection() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          className="rounded-3xl border border-border/40 bg-white p-2 sm:p-3 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none"
+          className="rounded-3xl border border-border/40 bg-white p-2 sm:p-3 shadow-2xl shadow-gray-300/50 dark:bg-card dark:shadow-none"
         >
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (

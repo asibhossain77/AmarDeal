@@ -145,7 +145,7 @@ export function SellerSidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+      <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-sidebar z-40">
         {sidebarContent}
       </aside>
 
@@ -166,7 +166,7 @@ export function SellerSidebar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border/50 bg-white dark:bg-zinc-900 md:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border/50 bg-white dark:bg-card md:hidden"
             >
               {sidebarContent}
             </motion.aside>

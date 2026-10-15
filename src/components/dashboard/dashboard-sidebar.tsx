@@ -78,7 +78,7 @@ export function DashboardSidebar() {
   const isSeller = user?.isSeller && !user?.sellerDisabled;
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-zinc-900 z-40">
+    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:top-14 border-r border-border/50 bg-white dark:bg-sidebar z-40">
       <div className="flex h-full flex-col">
         <nav className="flex-1 space-y-1 pl-5 pr-3 pt-6 overflow-y-auto">
           {/* Regular nav items */}

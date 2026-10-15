@@ -235,7 +235,7 @@ interface SellerProduct {
 }
 
 function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-white dark:bg-zinc-900 border border-border/50 p-5 shadow-sm ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-white dark:bg-card border border-border/50 p-5 shadow-sm ${className}`}>{children}</div>;
 }
 
 function formatTaka(amount: number): string {
@@ -1189,7 +1189,7 @@ export function MyProductsPanel() {
                         })()
                       : formatTaka(p.price)}
                   </span>
-                  <Badge className={p.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0'}>
+                  <Badge className={p.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0' : 'bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0'}>
                     {p.status === 'active' ? t('seller.active') : p.status}
                   </Badge>
                 </div>
@@ -1349,7 +1349,7 @@ function getStatusBadge(status: string) {
     case 'payment_verified': return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400 border-0 font-medium">Verified</Badge>;
     case 'in_delivery': return <Badge className="bg-primary/15 text-primary dark:bg-primary/20 border-0 font-medium">Delivering</Badge>;
     case 'completed': return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium">Completed</Badge>;
-    case 'cancelled': return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0 font-medium">Cancelled</Badge>;
+    case 'cancelled': return <Badge className="bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0 font-medium">Cancelled</Badge>;
     case 'disputed': return <Badge className="bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0 font-medium">Disputed</Badge>;
     default: return <Badge variant="outline">{status}</Badge>;
   }

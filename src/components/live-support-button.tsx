@@ -199,7 +199,7 @@ export function LiveSupportButton() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="w-[340px] sm:w-[380px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden flex flex-col"
+            className="w-[340px] sm:w-[380px] rounded-2xl bg-white dark:bg-card shadow-2xl border border-zinc-200 dark:border-border overflow-hidden flex flex-col"
             style={{ maxHeight: 'min(560px, calc(100vh - 120px))' }}
           >
             {/* Header */}
@@ -305,7 +305,7 @@ export function LiveSupportButton() {
             </div>
 
             {/* AI Text Input Bar */}
-            <div className="p-3 pt-1 border-t border-zinc-100 dark:border-zinc-800 shrink-0">
+            <div className="p-3 pt-1 border-t border-zinc-100 dark:border-border shrink-0">
               <form
                 onSubmit={(e) => { e.preventDefault(); sendAiMessage(); }}
                 className="flex items-center gap-2"
@@ -318,7 +318,7 @@ export function LiveSupportButton() {
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="আপনার প্রশ্ন লিখুন..."
                     disabled={aiLoading}
-                    className="w-full h-[36px] px-4 rounded-[10px] bg-white dark:bg-zinc-900 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 transition-colors"
+                    className="w-full h-[36px] px-4 rounded-[10px] bg-white dark:bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50 transition-colors"
                   />
                 </div>
                 <button
@@ -341,7 +341,7 @@ export function LiveSupportButton() {
                   href="/faq"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <HelpCircle className="h-3 w-3" />
                   <span className="text-[11px] font-medium">FAQ</span>
@@ -350,7 +350,7 @@ export function LiveSupportButton() {
                   href="/contact"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <ChevronRight className="h-3 w-3" />
                   <span className="text-[11px] font-medium">যোগাযোগ</span>

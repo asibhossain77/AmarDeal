@@ -42,7 +42,7 @@ export function ProductTypeSelector({ value, onChange, t, disabled = false }: Pr
               className={`flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                 selected
                   ? 'border-primary bg-primary/5 dark:bg-primary/10'
-                  : 'border-border bg-white hover:border-primary/40 dark:bg-zinc-800 dark:hover:border-primary/40'
+                  : 'border-border bg-white hover:border-primary/40 dark:bg-muted dark:hover:border-primary/40'
               }`}
             >
               <div

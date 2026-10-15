@@ -455,7 +455,7 @@ export function AiPromptPanel() {
                       className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                         msg.role === 'user'
                           ? 'bg-primary text-primary-foreground rounded-br-md'
-                          : 'bg-white dark:bg-zinc-800 border border-border/50 rounded-bl-md'
+                          : 'bg-white dark:bg-muted border border-border/50 rounded-bl-md'
                       }`}
                     >
                       {msg.text}
@@ -464,7 +464,7 @@ export function AiPromptPanel() {
                 ))}
                 {testLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-white dark:bg-zinc-800 border border-border/50 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="bg-white dark:bg-muted border border-border/50 rounded-2xl rounded-bl-md px-4 py-3">
                       <div className="flex gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0ms]" />
                         <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:150ms]" />

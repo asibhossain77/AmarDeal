@@ -220,7 +220,7 @@ function BlogListing({ onSelect }: { onSelect: (post: BlogPostPreview) => void }
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
             onClick={() => onSelect(post)}
-            className="group cursor-pointer rounded-2xl border border-border/50 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm hover:shadow-lg transition-all active:scale-[0.98]"
+            className="group cursor-pointer rounded-2xl border border-border/50 bg-white dark:bg-card overflow-hidden shadow-sm hover:shadow-lg transition-all active:scale-[0.98]"
           >
             {post.coverImage ? (
               <div className="h-40 sm:h-44 overflow-hidden">

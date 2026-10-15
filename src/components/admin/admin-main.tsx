@@ -215,7 +215,7 @@ function SolidCard({
 }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) {
   return (
     <div
-      className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-zinc-900 ${className}`}
+      className={`rounded-2xl bg-white p-3.5 sm:p-5 shadow-lg dark:bg-card ${className}`}
       {...props}
     >
       {children}
@@ -382,7 +382,7 @@ function SkeletonTable({ cols = 5, rows = 5 }: { cols?: number; rows?: number })
     <SolidCard className="!p-0 overflow-hidden">
       <div className="max-h-[500px] overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+          <thead className="sticky top-0 bg-white dark:bg-card z-10">
             <tr className="border-b border-border bg-muted/30">
               {Array.from({ length: cols }).map((_, i) => (
                 <th key={i} className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">
@@ -1403,14 +1403,14 @@ function AllDealsPanel() {
               className={`rounded-lg px-3.5 py-2 text-xs font-semibold transition-all ${
                 activeFilter === tab.key
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-                  : 'bg-white text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground dark:bg-zinc-800'
+                  : 'bg-white text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground dark:bg-muted'
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 dark:bg-zinc-800 flex-1 sm:flex-none">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 dark:bg-muted flex-1 sm:flex-none">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <input
             type="text"
@@ -1435,7 +1435,7 @@ function AllDealsPanel() {
         ) : (
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+              <thead className="sticky top-0 bg-white dark:bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.deals.dealId')}</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Buyer</th>
@@ -1874,7 +1874,7 @@ function UsersPanel() {
                   <motion.div
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-xl border border-border bg-white p-1.5 shadow-xl dark:bg-zinc-800"
+                    className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-xl border border-border bg-white p-1.5 shadow-xl dark:bg-muted"
                   >
                     <button
                       onClick={() => handleAction(u.id, 'set_admin', 'support')}
@@ -2082,7 +2082,7 @@ function UsersPanel() {
           placeholder={t("admin.users.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-10 sm:h-11 rounded-xl text-sm bg-white dark:bg-zinc-900"
+          className="pl-10 h-10 sm:h-11 rounded-xl text-sm bg-white dark:bg-card"
         />
       </div>
 
@@ -2100,7 +2100,7 @@ function UsersPanel() {
         ) : (
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-white dark:bg-zinc-900 z-10">
+              <thead className="sticky top-0 bg-white dark:bg-card z-10">
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Name</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('common.email')}</th>
@@ -4245,7 +4245,7 @@ export function AdminMain() {
 
             {/* Right: Profile Chip */}
             <div className="shrink-0">
-              <div className="flex items-center gap-2 sm:gap-3 rounded-xl bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border border-border/40 px-2.5 sm:px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 rounded-xl bg-white/70 dark:bg-muted/70 backdrop-blur-sm border border-border/40 px-2.5 sm:px-3 py-2 shadow-sm">
                 <div
                   className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary overflow-hidden ring-2 ring-primary/20"
                   style={user?.imageLink

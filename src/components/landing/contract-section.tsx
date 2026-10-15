@@ -56,7 +56,7 @@ export function ContractSection() {
         </div>
 
         {/* Admin Info Card */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5 mb-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5 mb-5">
           <div className="flex items-center gap-4">
             {data?.adminImageUrl ? (
               <img
@@ -82,7 +82,7 @@ export function ContractSection() {
         </div>
 
         {/* Contract Content Card */}
-        <div className="rounded-2xl bg-white dark:bg-zinc-900 shadow-lg p-5">
+        <div className="rounded-2xl bg-white dark:bg-card shadow-lg p-5">
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">

@@ -66,7 +66,7 @@ export function SitePopup() {
             onClick={dismiss}
           >
             <div
-              className="w-full max-w-[400px] rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden pointer-events-auto"
+              className="w-full max-w-[400px] rounded-2xl bg-white dark:bg-card shadow-2xl border border-zinc-200 dark:border-border overflow-hidden pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header Bar */}

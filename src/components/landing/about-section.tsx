@@ -102,7 +102,7 @@ export function AboutSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.5 }}
-          className="mb-16 rounded-3xl border border-border/40 bg-white p-6 sm:p-10 shadow-2xl shadow-gray-300/50 dark:bg-zinc-900 dark:shadow-none"
+          className="mb-16 rounded-3xl border border-border/40 bg-white p-6 sm:p-10 shadow-2xl shadow-gray-300/50 dark:bg-card dark:shadow-none"
         >
           <div className="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
@@ -143,7 +143,7 @@ export function AboutSection() {
               <motion.div
                 key={stat.label}
                 variants={itemVariants}
-                className="rounded-2xl border border-border/40 bg-white p-5 text-center shadow-lg dark:bg-zinc-900"
+                className="rounded-2xl border border-border/40 bg-white p-5 text-center shadow-lg dark:bg-card"
               >
                 <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Icon className="h-5 w-5" />
@@ -169,7 +169,7 @@ export function AboutSection() {
               <motion.div
                 key={v.title}
                 variants={itemVariants}
-                className="group rounded-2xl border border-border/40 bg-white p-6 shadow-lg transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 dark:bg-zinc-900 dark:shadow-none sm:p-7"
+                className="group rounded-2xl border border-border/40 bg-white p-6 shadow-lg transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 dark:bg-card dark:shadow-none sm:p-7"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <Icon className="h-5 w-5" />
