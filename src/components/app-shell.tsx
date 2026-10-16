@@ -34,7 +34,7 @@ const DownloadView = dynamic(() => import('@/components/landing/download-view').
 const AuctionListView = dynamic(() => import('@/components/landing/auction-list-view').then(m => ({ default: m.AuctionListView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const AuctionDetailView = dynamic(() => import('@/components/landing/auction-detail-view').then(m => ({ default: m.AuctionDetailView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const ServiceOrderView = dynamic(() => import('@/components/landing/service-order-view').then(m => ({ default: m.ServiceOrderView })), { ssr: false, loading: () => <SectionSkeleton /> });
-const MarketplaceTabs = dynamic(() => import('@/components/marketplace/marketplace-tabs').then(m => ({ default: m.MarketplaceTabs })), { ssr: false, loading: () => <SectionSkeleton /> });
+const MarketplaceApp = dynamic(() => import('@/components/marketplace/marketplace-app').then(m => ({ default: m.MarketplaceApp })), { ssr: false, loading: () => <SectionSkeleton /> });
 
 /* ── Dynamic: live support widget (not needed on first paint) ── */
 const LiveSupportButton = dynamic(() => import('@/components/live-support-button').then(m => ({ default: m.LiveSupportButton })), { ssr: false });
@@ -231,13 +231,16 @@ function BlogPage() {
 }
 
 function PageMarketplace() {
-  return (
-    /* No title/subtitle: user asked to drop the "ডিজিটাল মার্কেটপ্লেস" header —
-       the page now starts directly with the banner + toolbar (SMM + products dual-tab store) */
-    <PageWrapper>
-      <MarketplaceTabs />
-    </PageWrapper>
-  );
+  /* Mobile-app-style marketplace shell — no site navbar, no PageWrapper.
+     The shell provides its own compact transparent header (menu · logo · cart),
+     search + category filter, banner, category rail, product grid and a fixed
+     bottom navigation. See components/marketplace/marketplace-app.tsx. */
+  return <MarketplaceApp page="browse" />;
+}
+
+function PageCart() {
+  /* Same shell as the marketplace so the cart badge chrome stays identical. */
+  return <MarketplaceApp page="cart" />;
 }
 
 function PageAuctionList() {
@@ -453,7 +456,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   return (
     <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-background">
-      {!['dashboard', 'admin'].includes(view) && <Navbar />}
+      {!['dashboard', 'admin', 'page-marketplace', 'page-cart'].includes(view) && <Navbar />}
       {view === 'auth' && <AuthView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'admin' && <AdminView />}
@@ -468,6 +471,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-terms' && <PageTerms />}
       {view === 'page-contact' && <PageContact />}
       {view === 'page-marketplace' && <PageMarketplace />}
+      {view === 'page-cart' && <PageCart />}
       {view === 'page-seller-profile' && <SellerProfileView />}
       {view === 'page-product' && <ProductOrderView />}
       {view === 'page-download' && <DownloadView />}

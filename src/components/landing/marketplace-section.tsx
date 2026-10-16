@@ -24,7 +24,9 @@ import {
 } from '@/components/shared/product-options-editor';
 
 interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; }
-interface Product {
+// Exported: the Marketplace app shell (marketplace-app.tsx) consumes the same
+// API shape returned by /api/products.
+export interface Product {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; status: string; createdAt: string; seller: ProductSeller;
   productType?: string;
@@ -37,7 +39,9 @@ interface Product {
 // Admin-uploaded ad banner (see /api/marketplace/banners)
 interface AdBanner { id: string; title: string; subtitle: string | null; image: string; link: string | null; }
 
-const CATEGORIES = [
+// Exported for the Marketplace app shell (marketplace-app.tsx) which reuses
+// the same category data so the filters can never drift apart.
+export const CATEGORIES = [
   { key: 'all', bn: 'সব', en: 'All', Icon: LayoutGrid, color: 'text-primary' },
   { key: 'design', bn: 'ডিজাইন', en: 'Design', Icon: Palette, color: 'text-pink-500 dark:text-pink-400' },
   { key: 'development', bn: 'ডেভেলপমেন্ট', en: 'Development', Icon: Code2, color: 'text-blue-500 dark:text-blue-400' },
@@ -54,7 +58,7 @@ const CATEGORIES = [
   { key: 'other', bn: 'অন্যান্য', en: 'Other', Icon: Package, color: 'text-zinc-500 dark:text-zinc-400' },
 ];
 
-const CATEGORY_BG: Record<string, string> = {
+export const CATEGORY_BG: Record<string, string> = {
   design: 'from-pink-500/10 to-pink-500/5 dark:from-pink-500/15 dark:to-pink-500/5',
   development: 'from-blue-500/10 to-blue-500/5 dark:from-blue-500/15 dark:to-blue-500/5',
   content: 'from-orange-500/10 to-orange-500/5 dark:from-orange-500/15 dark:to-orange-500/5',
@@ -112,7 +116,10 @@ function getCategoryColor(category: string) {
 // always displays at its own uploaded ratio, identically on mobile and
 // desktop, and any leftover blank space is WHITE (ad-slot letterbox).
 // Until any active banner exists, the built-in promo slider stays in place.
-function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () => void }) {
+// Exported: the Marketplace app shell renders the exact same admin banner
+// slot (with the built-in promo slider as fallback) so there is a single
+// banner implementation across surfaces.
+export function AdBannerSlider({ locale, onExplore }: { locale: string; onExplore: () => void }) {
   const [banners, setBanners] = useState<AdBanner[] | null>(null); // null = loading
   const [current, setCurrent] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -380,7 +387,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
 }
 
 // -- AddProductDialog --
-function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: string; onChange: (v: string) => void; t: (k: string) => string; uploading: boolean; onUpload: (f: File) => void }) {
+function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: string; onChange: (v: string) => void; t: (key: TranslationKey, vars?: Record<string, string | number>) => string; uploading: boolean; onUpload: (f: File) => void }) {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) onUpload(f); };
@@ -405,7 +412,9 @@ function ImageUploader({ image, onChange, t, uploading, onUpload }: { image: str
   );
 }
 
-function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boolean; onClose: () => void; onCreated: (product: Product) => void; t: (k: string) => string; locale: string }) {
+// Exported: the Marketplace app shell reuses this dialog (seller drawer CTA)
+// so product creation keeps a single implementation.
+export function AddProductDialog({ open, onClose, onCreated, t, locale }: { open: boolean; onClose: () => void; onCreated: (product: Product) => void; t: (key: TranslationKey, vars?: Record<string, string | number>) => string; locale: string }) {
   const [title, setTitle] = useState(''); const [description, setDescription] = useState('');
   const [price, setPrice] = useState(''); const [category, setCategory] = useState('other'); const [image, setImage] = useState('');
   const [submitting, setSubmitting] = useState(false); const [uploading, setUploading] = useState(false);
