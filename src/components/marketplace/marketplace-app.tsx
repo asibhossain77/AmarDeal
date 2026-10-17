@@ -5,8 +5,11 @@
  *
  * Covers two views from one shell so the chrome (transparent header + fixed
  * bottom navigation) and the cart badge stay perfectly consistent:
- *   - page="browse" → /marketplace  (banner, category rail, unified grid)
- *   - page="cart"   → /cart         (cart lines; Cart tab active)
+ *   - page="browse"  → /marketplace  (banner, category rail, unified grid)
+ *   - page="cart"    → /cart         (cart lines; Cart tab active)
+ *   - page="product" → product detail (view 'page-product'): the header
+ *     swaps the hamburger for a back-to-marketplace action — same sidebar,
+ *     same cart badge, no site navbar, no duplicate header.
  *
  * Layout per spec: no site navbar, no back button, transparent compact header
  * (menu + logo left, cart + badge right) → search row with category filter →
@@ -33,13 +36,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import {
   Menu, X, Search, ShoppingCart, Home, LayoutGrid, ClipboardList, UserRound,
   Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
-  Store, Globe, FilePlus, BadgeCheck, Gavel,
+  Store, Globe, FilePlus, BadgeCheck, Gavel, ArrowLeft,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -61,6 +65,29 @@ import {
   type Product as ProductType,
 } from '@/components/landing/marketplace-section';
 import { CartView } from '@/components/marketplace/cart-view';
+
+/* ── Product Details page — lazy chunk, only loaded for view 'page-product' ──
+ * The skeleton mirrors the real two-column layout so the swap is seamless. */
+const ProductDetailView = dynamic(
+  () => import('@/components/marketplace/product-detail').then((m) => ({ default: m.ProductDetailView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-10">
+          <div className="aspect-[4/3] animate-pulse rounded-2xl bg-muted/60" />
+          <div className="space-y-4">
+            <div className="h-6 w-40 animate-pulse rounded-full bg-muted/60" />
+            <div className="h-8 w-3/4 animate-pulse rounded bg-muted/60" />
+            <div className="h-9 w-32 animate-pulse rounded bg-muted/60" />
+            <div className="h-16 w-full animate-pulse rounded-xl bg-muted/60" />
+            <div className="h-11 w-full animate-pulse rounded-xl bg-muted/60" />
+          </div>
+        </div>
+      </div>
+    ),
+  },
+);
 
 /* ── Data types (shapes returned by the existing public APIs) ── */
 
@@ -105,15 +132,15 @@ interface NavItemData {
   onClick?: () => void; href?: string;
 }
 
-function useNavActions(page: 'browse' | 'cart', onOpenCategories: () => void) {
+function useNavActions(page: 'browse' | 'cart' | 'product', onOpenCategories: () => void) {
   return useMemo(() => ({
     home: () => {
-      if (page === 'cart') useAppStore.getState().setView('page-marketplace');
-      else window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (page === 'browse') window.scrollTo({ top: 0, behavior: 'smooth' });
+      else useAppStore.getState().setView('page-marketplace');
     },
     categories: () => {
-      if (page === 'cart') useAppStore.getState().setView('page-marketplace');
-      else onOpenCategories();
+      if (page === 'browse') onOpenCategories();
+      else useAppStore.getState().setView('page-marketplace');
     },
     orders: () => {
       const s = useAppStore.getState();
@@ -414,7 +441,7 @@ function CategorySheet({ open, onClose, active, onSelect, enabledPlatforms, loca
 
 /* ── Fixed bottom navigation — Home · Categories · Nilam · Orders · Cart · Account ──
  * Mobile only (<md). On desktop the persistent sidebar takes over. */
-function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpenCategories: () => void }) {
+function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart' | 'product'; onOpenCategories: () => void }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const count = useCartStore(selectCartCount);
@@ -567,7 +594,7 @@ function SidebarLangButton({ expanded }: { expanded: boolean }) {
 }
 
 function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSeller }: {
-  page: 'browse' | 'cart'; expanded: boolean; onToggle: () => void;
+  page: 'browse' | 'cart' | 'product'; expanded: boolean; onToggle: () => void;
   onOpenCategories: () => void; onBecomeSeller: () => void;
 }) {
   const t = useT();
@@ -696,7 +723,7 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
  * Radix Sheet provides the close button, backdrop click, Escape key and
  * background scroll lock out of the box. */
 function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller, onAddProduct, isSeller }: {
-  open: boolean; onOpenChange: (v: boolean) => void; page: 'browse' | 'cart';
+  open: boolean; onOpenChange: (v: boolean) => void; page: 'browse' | 'cart' | 'product';
   onOpenCategories: () => void; onBecomeSeller: () => void; onAddProduct: () => void; isSeller: boolean;
 }) {
   const t = useT();
@@ -828,7 +855,7 @@ function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller
 }
 
 /* ── MarketplaceApp — the shell itself ── */
-export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
+export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const user = useAppStore((s) => s.user);
@@ -874,6 +901,14 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
     if (!s.user) { s.setView('auth'); return; }
     if (s.user.isSeller) { s.setDashboardPanel('seller-orders'); s.setView('dashboard'); return; }
     setSellerApplyOpen(true);
+  }, []);
+
+  /* Product page header back action — same smart back as the detail page:
+     return to the seller profile when that is where the user came from. */
+  const handleHeaderBack = useCallback(() => {
+    const s = useAppStore.getState();
+    if (s._prevView === 'page-seller-profile') s.goBack();
+    else s.setView('page-marketplace');
   }, []);
 
   /* Deep link: /marketplace?category=<key> preselects a category once on mount */
@@ -1010,32 +1045,46 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
           sidebarExpanded ? 'md:pl-60' : 'md:pl-14'
         }`}
       >
-      {/* ── Compact transparent header: logo left · cart right (desktop) ──
-          Mobile adds the hamburger (drawer trigger) — hidden at md+ so the
-          desktop header carries no duplicate navigation. */}
+      {/* ── Compact transparent header ──
+          browse/cart: logo left · cart right; mobile adds the hamburger
+          (drawer trigger, hidden at md+ so the desktop header carries no
+          duplicate navigation).
+          product: the hamburger is replaced by a back-to-marketplace action
+          on BOTH breakpoints — no drawer, no duplicate navigation. */}
       <header className="flex w-full items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-1.5">
-          <div className="md:hidden">
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger asChild>
-                <button
-                  aria-label={t('nav.openMenu')}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent active:scale-95"
-                >
-                  <Menu className="h-5 w-5" strokeWidth={2} />
-                </button>
-              </SheetTrigger>
-              <MenuDrawer
-                open={menuOpen}
-                onOpenChange={setMenuOpen}
-                page={page}
-                onOpenCategories={() => setCatSheetOpen(true)}
-                onBecomeSeller={handleBecomeSeller}
-                onAddProduct={() => setAddProductOpen(true)}
-                isSeller={!!user?.isSeller}
-              />
-            </Sheet>
-          </div>
+          {page === 'product' ? (
+            <button
+              type="button"
+              onClick={handleHeaderBack}
+              aria-label={t('sellerProfile.backToMarketplace')}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent active:scale-95"
+            >
+              <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+            </button>
+          ) : (
+            <div className="md:hidden">
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+                <SheetTrigger asChild>
+                  <button
+                    aria-label={t('nav.openMenu')}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent active:scale-95"
+                  >
+                    <Menu className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                </SheetTrigger>
+                <MenuDrawer
+                  open={menuOpen}
+                  onOpenChange={setMenuOpen}
+                  page={page}
+                  onOpenCategories={() => setCatSheetOpen(true)}
+                  onBecomeSeller={handleBecomeSeller}
+                  onAddProduct={() => setAddProductOpen(true)}
+                  isSeller={!!user?.isSeller}
+                />
+              </Sheet>
+            </div>
+          )}
           <button onClick={() => useAppStore.getState().setView('landing')} aria-label="Midman" className="flex items-center rounded-lg">
             <MidmanLogo className="h-8 rounded-lg" priority />
           </button>
@@ -1043,7 +1092,9 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
         <HeaderCartButton />
       </header>
 
-      {page === 'cart' ? (
+      {page === 'product' ? (
+        <ProductDetailView />
+      ) : page === 'cart' ? (
         <CartView />
       ) : (
         <main className="w-full flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10 lg:px-8">

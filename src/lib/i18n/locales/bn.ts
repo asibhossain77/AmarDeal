@@ -2084,6 +2084,15 @@ export const bn = {
   'marketplace.addFailed': 'পণ্য যোগ করতে সমস্যা হয়েছে',
   'marketplace.loginRequired': 'এই ফিচার ব্যবহার করতে লগইন করুন',
   'marketplace.buyNow': 'এখনই কিনুন',
+  // প্রোডাক্ট ডিটেইলস পেজ
+  'marketplace.orderNow': 'অর্ডার করুন',
+  'marketplace.message': 'মেসেজ',
+  'marketplace.description': 'বিবরণ',
+  'marketplace.readMore': 'আরও পড়ুন',
+  'marketplace.showLess': 'কম দেখান',
+  'marketplace.productDetails': 'পণ্যের তথ্য',
+  'marketplace.listedOn': 'তালিকাভুক্ত',
+  'marketplace.noContact': 'এই সেলারের কোনো যোগাযোগ মাধ্যম নেই',
   // ── Digital product download system ──
   'marketplace.free': 'ফ্রি',
   'marketplace.digitalProduct': 'ডিজিটাল',

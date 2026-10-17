@@ -29,7 +29,6 @@ const ContractSection = dynamic(() => import('@/components/landing/contract-sect
 const BlogView = dynamic(() => import('@/components/landing/blog-view').then(m => ({ default: m.BlogView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const MarketplaceSection = dynamic(() => import('@/components/landing/marketplace-section').then(m => ({ default: m.MarketplaceSection })), { ssr: false, loading: () => <SectionSkeleton /> });
 const SellerProfileView = dynamic(() => import('@/components/landing/seller-profile-view').then(m => ({ default: m.SellerProfileView })), { ssr: false, loading: () => <SectionSkeleton /> });
-const ProductOrderView = dynamic(() => import('@/components/landing/product-order-view').then(m => ({ default: m.ProductOrderView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const DownloadView = dynamic(() => import('@/components/landing/download-view').then(m => ({ default: m.DownloadView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const AuctionListView = dynamic(() => import('@/components/landing/auction-list-view').then(m => ({ default: m.AuctionListView })), { ssr: false, loading: () => <SectionSkeleton /> });
 const AuctionDetailView = dynamic(() => import('@/components/landing/auction-detail-view').then(m => ({ default: m.AuctionDetailView })), { ssr: false, loading: () => <SectionSkeleton /> });
@@ -241,6 +240,13 @@ function PageMarketplace() {
 function PageCart() {
   /* Same shell as the marketplace so the cart badge chrome stays identical. */
   return <MarketplaceApp page="cart" />;
+}
+
+function PageProductDetail() {
+  /* Product Details live inside the marketplace shell: the desktop sidebar,
+     compact header (back · logo · cart) and cart badge stay consistent and
+     no site navbar is layered on top. See product-detail.tsx. */
+  return <MarketplaceApp page="product" />;
 }
 
 function PageAuctionList() {
@@ -456,7 +462,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   return (
     <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-background">
-      {!['dashboard', 'admin', 'page-marketplace', 'page-cart'].includes(view) && <Navbar />}
+      {!['dashboard', 'admin', 'page-marketplace', 'page-cart', 'page-product'].includes(view) && <Navbar />}
       {view === 'auth' && <AuthView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'admin' && <AdminView />}
@@ -473,7 +479,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-marketplace' && <PageMarketplace />}
       {view === 'page-cart' && <PageCart />}
       {view === 'page-seller-profile' && <SellerProfileView />}
-      {view === 'page-product' && <ProductOrderView />}
+      {view === 'page-product' && <PageProductDetail />}
       {view === 'page-download' && <DownloadView />}
       {view === 'page-auction' && <PageAuctionList />}
       {view === 'page-auction-detail' && <PageAuctionDetail />}

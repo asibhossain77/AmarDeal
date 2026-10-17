@@ -180,8 +180,9 @@ export function LiveSupportButton() {
   if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
 
   // Marketplace app shell intentionally has no support entry points (its
-  // navigation is the mobile bottom nav / desktop sidebar only)
-  if (isDealDetail || view === 'page-marketplace' || view === 'page-cart') return null;
+  // navigation is the mobile bottom nav / desktop sidebar only). The product
+  // details page renders inside the same shell, so it is excluded too.
+  if (isDealDetail || view === 'page-marketplace' || view === 'page-cart' || view === 'page-product') return null;
 
   return (
     <motion.div

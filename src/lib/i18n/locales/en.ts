@@ -2086,6 +2086,15 @@ export const en: Record<TranslationKey, string> = {
   'marketplace.addFailed': 'Failed to add product',
   'marketplace.loginRequired': 'Please login to use this feature',
   'marketplace.buyNow': 'Buy Now',
+  // Product Details page
+  'marketplace.orderNow': 'Order Now',
+  'marketplace.message': 'Message',
+  'marketplace.description': 'Description',
+  'marketplace.readMore': 'Read More',
+  'marketplace.showLess': 'Show Less',
+  'marketplace.productDetails': 'Product details',
+  'marketplace.listedOn': 'Listed',
+  'marketplace.noContact': 'This seller has no contact channel yet',
   // ── Digital product download system ──
   'marketplace.free': 'Free',
   'marketplace.digitalProduct': 'Digital',
