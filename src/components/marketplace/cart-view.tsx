@@ -81,7 +81,7 @@ export function CartView() {
   const loading = products === null;
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-28 sm:px-6 sm:pb-32">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10">
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-lg font-bold text-foreground">
           <ShoppingCart className="h-5 w-5 text-primary" strokeWidth={2.2} />

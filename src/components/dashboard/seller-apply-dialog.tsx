@@ -66,9 +66,14 @@ interface Application {
 interface SellerApplyButtonProps {
   variant?: 'sidebar' | 'mobile';
   onClose?: () => void;
+  /** Controlled open state — when provided the internal trigger is not
+      rendered and the dialog opens/closes purely through props (used by the
+      Marketplace desktop sidebar, which mounts the dialog on demand). */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
 }
 
-export function SellerApplyButton({ variant = 'sidebar', onClose }: SellerApplyButtonProps) {
+export function SellerApplyButton({ variant = 'sidebar', onClose, open, onOpenChange }: SellerApplyButtonProps) {
   const t = useT();
   const user = useAppStore((s) => s.user);
 
@@ -84,12 +89,14 @@ export function SellerApplyButton({ variant = 'sidebar', onClose }: SellerApplyB
     );
   }
 
-  return <SellerApplyDialog variant={variant} onClose={onClose} />;
+  return <SellerApplyDialog variant={variant} onClose={onClose} open={open} onOpenChange={onOpenChange} />;
 }
 
-function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonProps) {
+function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpenChange: onOpenChangeProp }: SellerApplyButtonProps) {
   const t = useT();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : internalOpen;
   const [submitting, setSubmitting] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +114,8 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   const [codeError, setCodeError] = useState<string | null>(null);
 
   const handleOpenChange = (v: boolean) => {
-    setOpen(v);
+    if (!controlled) setInternalOpen(v);
+    onOpenChangeProp?.(v);
     if (!v) {
       setJustSubmitted(false);
       setCodeInput('');
@@ -330,20 +338,22 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   if (application?.status === 'pending') {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <button
-            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 transition-colors hover:bg-amber-500/15 ${
-              variant === 'mobile' ? 'px-4 py-3' : ''
-            }`}
-          >
-            <KeyRound className="h-[18px] w-[18px] text-amber-500" />
-            <span className="flex-1 text-left leading-tight">
-              <span className="block text-[11px] font-medium opacity-80">{t('seller.pending')}</span>
-              <span className="block text-sm font-bold">{t('seller.verifyTitle')}</span>
-            </span>
-            <ChevronRight className="h-4 w-4 opacity-60" />
-          </button>
-        </DialogTrigger>
+        {!controlled && (
+          <DialogTrigger asChild>
+            <button
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 transition-colors hover:bg-amber-500/15 ${
+                variant === 'mobile' ? 'px-4 py-3' : ''
+              }`}
+            >
+              <KeyRound className="h-[18px] w-[18px] text-amber-500" />
+              <span className="flex-1 text-left leading-tight">
+                <span className="block text-[11px] font-medium opacity-80">{t('seller.pending')}</span>
+                <span className="block text-sm font-bold">{t('seller.verifyTitle')}</span>
+              </span>
+              <ChevronRight className="h-4 w-4 opacity-60" />
+            </button>
+          </DialogTrigger>
+        )}
         <DialogContent className="sm:max-w-md">
           {renderVerifyContent(justSubmitted)}
         </DialogContent>
@@ -354,16 +364,18 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   if (application?.status === 'disabled') {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <button
-            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-orange-600 bg-orange-500/10 border border-orange-500/20 transition-colors hover:bg-orange-500/15 ${
-              variant === 'mobile' ? 'px-4 py-3' : ''
-            }`}
-          >
-            <Ban className="h-[18px] w-[18px]" />
-            <span className="flex-1 text-left">{t('seller.accountDisabled')}</span>
-          </button>
-        </DialogTrigger>
+        {!controlled && (
+          <DialogTrigger asChild>
+            <button
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-orange-600 bg-orange-500/10 border border-orange-500/20 transition-colors hover:bg-orange-500/15 ${
+                variant === 'mobile' ? 'px-4 py-3' : ''
+              }`}
+            >
+              <Ban className="h-[18px] w-[18px]" />
+              <span className="flex-1 text-left">{t('seller.accountDisabled')}</span>
+            </button>
+          </DialogTrigger>
+        )}
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -387,16 +399,18 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
   if (application?.status === 'rejected') {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <button
-            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 transition-colors hover:bg-red-500/15 ${
-              variant === 'mobile' ? 'px-4 py-3' : ''
-            }`}
-          >
-            <XCircle className="h-[18px] w-[18px]" />
-            <span className="flex-1 text-left">{t('seller.applyAgain')}</span>
-          </button>
-        </DialogTrigger>
+        {!controlled && (
+          <DialogTrigger asChild>
+            <button
+              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 transition-colors hover:bg-red-500/15 ${
+                variant === 'mobile' ? 'px-4 py-3' : ''
+              }`}
+            >
+              <XCircle className="h-[18px] w-[18px]" />
+              <span className="flex-1 text-left">{t('seller.applyAgain')}</span>
+            </button>
+          </DialogTrigger>
+        )}
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -419,16 +433,18 @@ function SellerApplyDialog({ variant = 'sidebar', onClose }: SellerApplyButtonPr
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button
-          className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-600 ${
-            variant === 'mobile' ? 'px-4 py-3' : ''
-          }`}
-        >
-          <Sparkles className="h-[18px] w-[18px]" />
-          <span>{t('nav.becomeSeller')}</span>
-        </button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <button
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-600 ${
+              variant === 'mobile' ? 'px-4 py-3' : ''
+            }`}
+          >
+            <Sparkles className="h-[18px] w-[18px]" />
+            <span>{t('nav.becomeSeller')}</span>
+          </button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

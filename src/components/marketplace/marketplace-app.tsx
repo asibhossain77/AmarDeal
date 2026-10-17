@@ -13,6 +13,11 @@
  * promo banner → horizontal categories with সব দেখুন → 2-column product grid →
  * fixed 5-item bottom navigation (Home · Categories · Orders · Cart · Account).
  *
+ * Desktop (md+): the bottom nav is replaced by a persistent collapsible vertical
+ * sidebar — icons only when collapsed (default), icons + labels when expanded —
+ * carrying the same five destinations plus Become a Seller, Landing Page,
+ * Admin Deal and Midman Verify. Mobile UI is byte-for-byte untouched.
+ *
  * Reuse policy: data comes from the existing public APIs (/api/products,
  * /api/marketplace/services, /api/marketplace/categories, /api/marketplace/
  * banners); category data and the banner slot are imported from
@@ -27,11 +32,13 @@ import { toast } from 'sonner';
 import { useTheme } from 'next-themes';
 import {
   Menu, X, Search, ShoppingCart, Home, LayoutGrid, ClipboardList, UserRound,
-  Zap, Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
-  Store as StoreIcon, Gavel, Sparkles, Calculator, ListChecks, CircleHelp,
-  BookOpen, Mail,
+  Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
+  Store as StoreIcon, Gavel, Store, Globe, FilePlus, BadgeCheck,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import { useAppStore } from '@/lib/store';
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { MidmanLogo } from '@/components/shared/midman-logo';
@@ -78,6 +85,45 @@ function productPriceLabel(p: Product): string {
 }
 
 const emptySubscribe = () => () => {};
+
+/* ── Shared nav destinations ──
+ * ONE implementation consumed by both the mobile bottom nav and the desktop
+ * sidebar — the two chrome surfaces can never drift apart, and cart/auth
+ * state is only ever read from the existing stores. */
+interface NavItemData {
+  key: string; label: string; Icon: React.ElementType;
+  active?: boolean; badge?: number | null;
+  onClick?: () => void; href?: string;
+}
+
+function useNavActions(page: 'browse' | 'cart', onOpenCategories: () => void) {
+  return useMemo(() => ({
+    home: () => {
+      if (page === 'cart') useAppStore.getState().setView('page-marketplace');
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    categories: () => {
+      if (page === 'cart') useAppStore.getState().setView('page-marketplace');
+      else onOpenCategories();
+    },
+    orders: () => {
+      const s = useAppStore.getState();
+      if (!s.user) { s.setView('auth'); return; }
+      s.setDashboardPanel('my-orders');
+      s.setView('dashboard');
+    },
+    cart: () => {
+      if (page === 'cart') window.scrollTo({ top: 0, behavior: 'smooth' });
+      else useAppStore.getState().setView('page-cart');
+    },
+    account: () => {
+      const s = useAppStore.getState();
+      if (!s.user) { s.setView('auth'); return; }
+      s.setDashboardPanel('profile');
+      s.setView('dashboard');
+    },
+  }), [page, onOpenCategories]);
+}
 
 /* ── Cart icon button (header) — badge hidden when cart is empty ── */
 function HeaderCartButton() {
@@ -357,68 +403,46 @@ function CategorySheet({ open, onClose, active, onSelect, enabledPlatforms, loca
   );
 }
 
-/* ── Fixed bottom navigation — Home · Categories · Orders · Cart · Account ── */
+/* ── Fixed bottom navigation — Home · Categories · Orders · Cart · Account ──
+ * Mobile only (<md). On desktop the persistent sidebar takes over. */
 function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpenCategories: () => void }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const count = useCartStore(selectCartCount);
+  const nav = useNavActions(page, onOpenCategories);
   const go = useCallback((fn: () => void) => {
     useAppStore.getState().setSidebarOpen(false);
     fn();
   }, []);
 
-  const items = [
+  const items: NavItemData[] = [
     {
       key: 'home', label: locale === 'bn' ? 'হোম' : 'Home', Icon: Home,
-      active: page === 'browse',
-      onClick: () => go(() => {
-        if (page === 'cart') useAppStore.getState().setView('page-marketplace');
-        else window.scrollTo({ top: 0, behavior: 'smooth' });
-      }),
+      active: page === 'browse', onClick: () => go(nav.home),
     },
     {
       key: 'categories', label: t('marketplace.categories'), Icon: LayoutGrid,
-      active: false,
-      onClick: () => go(() => {
-        if (page === 'cart') useAppStore.getState().setView('page-marketplace');
-        else onOpenCategories();
-      }),
+      active: false, onClick: () => go(nav.categories),
     },
     {
       key: 'orders', label: t('nav.orders'), Icon: ClipboardList,
-      active: false,
-      onClick: () => go(() => {
-        const s = useAppStore.getState();
-        if (!s.user) { s.setView('auth'); return; }
-        s.setDashboardPanel('my-orders');
-        s.setView('dashboard');
-      }),
+      active: false, onClick: () => go(nav.orders),
     },
     {
       key: 'cart', label: t('cart.title'), Icon: ShoppingCart,
-      active: page === 'cart',
-      badge: count > 0 ? count : null,
-      onClick: () => go(() => {
-        if (page === 'cart') window.scrollTo({ top: 0, behavior: 'smooth' });
-        else useAppStore.getState().setView('page-cart');
-      }),
+      active: page === 'cart', badge: count > 0 ? count : null,
+      onClick: () => go(nav.cart),
     },
     {
       key: 'account', label: t('nav.account'), Icon: UserRound,
-      active: false,
-      onClick: () => go(() => {
-        const s = useAppStore.getState();
-        if (!s.user) { s.setView('auth'); return; }
-        s.setDashboardPanel('profile');
-        s.setView('dashboard');
-      }),
+      active: false, onClick: () => go(nav.account),
     },
   ];
 
   return (
     <nav
       aria-label={locale === 'bn' ? 'নিচের নেভিগেশন' : 'Bottom navigation'}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur-md dark:border-border/30"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur-md md:hidden dark:border-border/30"
     >
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         {items.map(({ key, label, Icon, active, badge, onClick }) => (
@@ -447,17 +471,137 @@ function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpen
   );
 }
 
-/* ── Left menu drawer — compact site navigation ── */
+/* ── Desktop sidebar (md+) — persistent collapsible vertical navigation ──
+ * Collapsed (default): 56px, icons only, Radix tooltips on hover/focus.
+ * Expanded: 240px, icons + labels. The same five destinations as the mobile
+ * bottom nav plus the platform actions — no informational site links here. */
+function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
+  label: string; Icon: React.ElementType; active?: boolean; badge?: number | null;
+  expanded: boolean; onClick?: () => void; href?: string;
+}) {
+  const shell = `group relative flex h-10 shrink-0 items-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+    expanded ? 'w-full gap-2 px-2' : 'w-10 justify-center'
+  } ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`;
+  const inner = (
+    <>
+      {active && <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" aria-hidden />}
+      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+        <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 1.9} />
+        {badge != null && (
+          <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground shadow-sm">
+            {badge > 99 ? '99+' : badge}
+          </span>
+        )}
+      </span>
+      {expanded && <span className="truncate text-[13px] font-semibold">{label}</span>}
+    </>
+  );
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className={shell}>{inner}</a>
+        ) : (
+          <button type="button" onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={shell}>{inner}</button>
+        )}
+      </TooltipTrigger>
+      {!expanded && <TooltipContent side="right" sideOffset={10} className="font-medium">{label}</TooltipContent>}
+    </Tooltip>
+  );
+}
+
+function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSeller }: {
+  page: 'browse' | 'cart'; expanded: boolean; onToggle: () => void;
+  onOpenCategories: () => void; onBecomeSeller: () => void;
+}) {
+  const t = useT();
+  const locale = useAppStore((s) => s.locale);
+  const count = useCartStore(selectCartCount);
+  const nav = useNavActions(page, onOpenCategories);
+
+  const mainItems: NavItemData[] = [
+    { key: 'home', label: locale === 'bn' ? 'হোম' : 'Home', Icon: Home, active: page === 'browse', onClick: nav.home },
+    { key: 'categories', label: t('marketplace.categories'), Icon: LayoutGrid, onClick: nav.categories },
+    { key: 'orders', label: t('nav.orders'), Icon: ClipboardList, onClick: nav.orders },
+    { key: 'cart', label: t('cart.title'), Icon: ShoppingCart, active: page === 'cart', badge: count > 0 ? count : null, onClick: nav.cart },
+    { key: 'account', label: t('nav.account'), Icon: UserRound, onClick: nav.account },
+  ];
+
+  /* Platform actions — existing destinations only, nothing informational */
+  const platformItems: NavItemData[] = [
+    { key: 'seller', label: t('nav.becomeSeller'), Icon: Store, onClick: onBecomeSeller },
+    { key: 'landing', label: t('nav.landingPage'), Icon: Globe, onClick: () => useAppStore.getState().setView('landing') },
+    {
+      key: 'admin-deal', label: t('nav.newDeal'), Icon: FilePlus,
+      onClick: () => {
+        const s = useAppStore.getState();
+        if (!s.user) { s.setView('auth'); return; }
+        s.setView('dashboard');
+        s.setDashboardPanel('new-deal');
+      },
+    },
+    { key: 'verify', label: t('nav.midmanVerify'), Icon: BadgeCheck, href: 'https://verify.midman.bd' },
+  ];
+
+  const toggleLabel = expanded ? t('nav.collapseSidebar') : t('nav.expandSidebar');
+
+  return (
+    <aside
+      aria-label={locale === 'bn' ? 'মার্কেটপ্লেস নেভিগেশন' : 'Marketplace navigation'}
+      className={`fixed inset-y-0 left-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden border-r border-border/50 bg-background/95 backdrop-blur-md transition-[width] duration-300 ease-in-out md:flex dark:border-border/30 ${
+        expanded ? 'w-60' : 'w-14'
+      }`}
+    >
+      <div className="flex flex-col gap-1 p-2">
+        {/* Expand / collapse control */}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+          className={`group relative flex h-10 shrink-0 items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+            expanded ? 'w-full gap-2 px-2' : 'w-10 justify-center'
+          }`}
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+            {expanded ? <PanelLeftClose className="h-5 w-5" strokeWidth={1.9} /> : <PanelLeftOpen className="h-5 w-5" strokeWidth={1.9} />}
+          </span>
+          {expanded && <span className="truncate text-[13px] font-semibold">{toggleLabel}</span>}
+        </button>
+
+        {/* Main marketplace destinations — mirror the mobile bottom nav */}
+        <nav aria-label={locale === 'bn' ? 'মার্কেটপ্লেস' : 'Marketplace'} className="flex flex-col gap-1">
+          {mainItems.map(({ key, ...item }) => (
+            <SidebarItem key={key} {...item} expanded={expanded} />
+          ))}
+        </nav>
+
+        <div className="my-1 h-px shrink-0 bg-border/60" aria-hidden />
+
+        {/* Platform navigation */}
+        {expanded && (
+          <p className="px-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+            {t('marketplace.navPlatform')}
+          </p>
+        )}
+        <nav aria-label={locale === 'bn' ? 'প্ল্যাটফর্ম' : 'Platform'} className="flex flex-col gap-1">
+          {platformItems.map(({ key, ...item }) => (
+            <SidebarItem key={key} {...item} expanded={expanded} />
+          ))}
+        </nav>
+      </div>
+    </aside>
+  );
+}
+
+/* ── Left menu drawer — compact site navigation ──
+ * Marketplace-scoped: only real destinations (no Contact / How-to / FAQ /
+ * Fees / Security / Blog informational links inside the Marketplace UI). */
 const DRAWER_LINKS = [
   { view: 'landing', labelKey: 'common.home', Icon: StoreIcon },
   { view: 'page-marketplace', labelKey: 'nav.marketplace', Icon: LayoutGrid },
   { view: 'page-auction', labelKey: 'nav.auction', Icon: Gavel },
-  { view: 'page-how-it-works', labelKey: 'nav.howItWorks', Icon: ListChecks },
-  { view: 'page-fees', labelKey: 'nav.feeStructure', Icon: Calculator },
-  { view: 'page-security', labelKey: 'nav.features', Icon: Sparkles },
-  { view: 'page-faq', labelKey: 'nav.faq', Icon: CircleHelp },
-  { view: 'blog', labelKey: 'nav.blog', Icon: BookOpen },
-  { view: 'page-contact', labelKey: 'nav.contact', Icon: Mail },
 ] as const;
 
 function MenuDrawer({ open, onOpenChange, onAddProduct, isSeller }: {
@@ -540,6 +684,30 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
   const [catSheetOpen, setCatSheetOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
+
+  /* Desktop sidebar — collapsed (icons only) by default, choice remembered.
+     Mobile never renders it, so this state is inert below md. */
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  useEffect(() => {
+    try { if (localStorage.getItem('midman-marketplace-sidebar') === '1') setSidebarExpanded(true); } catch { /* private mode */ }
+  }, []);
+  const toggleSidebar = useCallback(() => {
+    setSidebarExpanded((v) => {
+      const next = !v;
+      try { localStorage.setItem('midman-marketplace-sidebar', next ? '1' : '0'); } catch { /* private mode */ }
+      return next;
+    });
+  }, []);
+
+  /* Become a Seller — guests go to login; sellers go to their dashboard;
+     logged-in buyers open the EXISTING WhatsApp application dialog. */
+  const [sellerApplyOpen, setSellerApplyOpen] = useState(false);
+  const handleBecomeSeller = useCallback(() => {
+    const s = useAppStore.getState();
+    if (!s.user) { s.setView('auth'); return; }
+    if (s.user.isSeller) { s.setDashboardPanel('seller-orders'); s.setView('dashboard'); return; }
+    setSellerApplyOpen(true);
+  }, []);
 
   /* Deep link: /marketplace?category=<key> preselects a category once on mount */
   useEffect(() => {
@@ -660,7 +828,21 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <>
+      {/* ── Desktop sidebar (md+): persistent, collapsible, icons-only default ── */}
+      <DesktopSidebar
+        page={page}
+        expanded={sidebarExpanded}
+        onToggle={toggleSidebar}
+        onOpenCategories={() => setCatSheetOpen(true)}
+        onBecomeSeller={handleBecomeSeller}
+      />
+
+      <div
+        className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-in-out ${
+          sidebarExpanded ? 'md:pl-60' : 'md:pl-14'
+        }`}
+      >
       {/* ── Compact transparent header: menu + logo left · cart right ── */}
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-1.5">
@@ -690,7 +872,7 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
       {page === 'cart' ? (
         <CartView />
       ) : (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 sm:px-6 sm:pb-32">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10">
           {/* ── Search + category filter ── */}
           <div className="flex items-center gap-2.5">
             <button
@@ -828,8 +1010,19 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
         locale={locale}
       />
 
-      {/* ── Fixed bottom navigation ── */}
+      {/* ── Fixed bottom navigation (mobile only — desktop uses the sidebar) ── */}
       <BottomNav page={page} onOpenCategories={() => setCatSheetOpen(true)} />
-    </div>
+      </div>
+
+      {/* ── Existing seller application dialog, mounted on demand (desktop sidebar flow) ── */}
+      {sellerApplyOpen && user && !user.isSeller && (
+        <SellerApplyButton
+          variant="sidebar"
+          open
+          onOpenChange={(v) => { if (!v) setSellerApplyOpen(false); }}
+          onClose={() => setSellerApplyOpen(false)}
+        />
+      )}
+    </>
   );
 }

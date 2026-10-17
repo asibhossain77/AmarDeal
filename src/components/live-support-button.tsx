@@ -179,7 +179,9 @@ export function LiveSupportButton() {
   if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', color: 'bg-sky-50', hoverColor: 'hover:bg-sky-100', darkColor: 'dark:bg-sky-950/30', darkHover: 'dark:hover:bg-sky-950/50' });
   if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
 
-  if (isDealDetail) return null;
+  // Marketplace app shell intentionally has no support entry points (its
+  // navigation is the mobile bottom nav / desktop sidebar only)
+  if (isDealDetail || view === 'page-marketplace' || view === 'page-cart') return null;
 
   return (
     <motion.div

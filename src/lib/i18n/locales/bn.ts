@@ -2128,6 +2128,12 @@ export const bn = {
   'cart.checkoutNote': 'অর্ডার করতে পণ্যের পেজে গিয়ে অপশন ও পরিমাণ নির্বাচন করুন',
   'nav.orders': 'অর্ডার',
   'nav.account': 'একাউন্ট',
+  // ── Marketplace desktop sidebar ──
+  'nav.landingPage': 'ল্যান্ডিং পেজ',
+  'nav.midmanVerify': 'মিডম্যান ভেরিফাই',
+  'nav.expandSidebar': 'সাইডবার বড় করুন',
+  'nav.collapseSidebar': 'সাইডবার ছোট করুন',
+  'marketplace.navPlatform': 'প্ল্যাটফর্ম',
   // ── Product types (single / multi-price) ──
   'seller.productType': 'প্রোডাক্ট টাইপ',
   'seller.productTypeDesc': 'আপনি কী ধরনের পণ্য বিক্রি করছেন তা নির্বাচন করুন',

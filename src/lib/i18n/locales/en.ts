@@ -2130,6 +2130,12 @@ export const en: Record<TranslationKey, string> = {
   'cart.checkoutNote': 'Ordering happens on the product page — options and quantity are selected there',
   'nav.orders': 'Orders',
   'nav.account': 'Account',
+  // ── Marketplace desktop sidebar ──
+  'nav.landingPage': 'Landing Page',
+  'nav.midmanVerify': 'Midman Verify',
+  'nav.expandSidebar': 'Expand sidebar',
+  'nav.collapseSidebar': 'Collapse sidebar',
+  'marketplace.navPlatform': 'Platform',
   // ── Product types (single / multi-price) ──
   'seller.productType': 'Product Type',
   'seller.productTypeDesc': 'Choose what kind of product you are selling',
