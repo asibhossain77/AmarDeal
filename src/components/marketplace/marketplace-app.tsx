@@ -11,16 +11,18 @@
  * Layout per spec: no site navbar, no back button, transparent compact header
  * (menu + logo left, cart + badge right) → search row with category filter →
  * promo banner → horizontal categories with সব দেখুন → 2-column product grid →
- * fixed 5-item bottom navigation (Home · Categories · Orders · Cart · Account).
+ * fixed 6-item bottom navigation (Home · Categories · Nilam · Orders · Cart ·
+ * Account).
  *
  * Desktop (md+): the bottom nav is replaced by ONE persistent collapsible
- * vertical sidebar pinned to the RIGHT viewport edge — icons only when
- * collapsed (default), icons + labels when expanded — carrying the same five
- * destinations plus Become a Seller, Landing Page, Admin Deal and Midman
- * Verify. The content area spans the full width between the left edge and the
- * sidebar. Mobile keeps the bottom nav; the header hamburger opens a drawer
- * with the same destinations (mobile only — never rendered alongside the
- * desktop sidebar).
+ * vertical sidebar pinned to the LEFT viewport edge — icons only when
+ * collapsed (default), icons + labels when expanded — carrying the same six
+ * destinations (incl. Nilam) plus Become a Seller, Landing Page, Admin Deal
+ * and Midman Verify, with a language · theme · dashboard footer mirroring the
+ * mobile drawer. The content area spans the full width between the sidebar
+ * and the right edge. Mobile keeps the bottom nav; the header hamburger opens
+ * a drawer with the same destinations (mobile only — never rendered alongside
+ * the desktop sidebar).
  *
  * Reuse policy: data comes from the existing public APIs (/api/products,
  * /api/marketplace/services, /api/marketplace/categories, /api/marketplace/
@@ -37,10 +39,13 @@ import { useTheme } from 'next-themes';
 import {
   Menu, X, Search, ShoppingCart, Home, LayoutGrid, ClipboardList, UserRound,
   Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
-  Store, Globe, FilePlus, BadgeCheck,
-  PanelRightClose, PanelRightOpen,
+  Store, Globe, FilePlus, BadgeCheck, Gavel,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import { useAppStore } from '@/lib/store';
@@ -407,7 +412,7 @@ function CategorySheet({ open, onClose, active, onSelect, enabledPlatforms, loca
   );
 }
 
-/* ── Fixed bottom navigation — Home · Categories · Orders · Cart · Account ──
+/* ── Fixed bottom navigation — Home · Categories · Nilam · Orders · Cart · Account ──
  * Mobile only (<md). On desktop the persistent sidebar takes over. */
 function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpenCategories: () => void }) {
   const t = useT();
@@ -429,6 +434,10 @@ function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpen
       active: false, onClick: () => go(nav.categories),
     },
     {
+      key: 'auction', label: t('nav.auction'), Icon: Gavel,
+      active: false, onClick: () => go(() => useAppStore.getState().setView('page-auction')),
+    },
+    {
       key: 'orders', label: t('nav.orders'), Icon: ClipboardList,
       active: false, onClick: () => go(nav.orders),
     },
@@ -448,13 +457,13 @@ function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpen
       aria-label={locale === 'bn' ? 'নিচের নেভিগেশন' : 'Bottom navigation'}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur-md md:hidden dark:border-border/30"
     >
-      <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-md items-stretch justify-around px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         {items.map(({ key, label, Icon, active, badge, onClick }) => (
           <button
             key={key}
             onClick={onClick}
             aria-current={active ? 'page' : undefined}
-            className={`relative flex min-w-[56px] flex-1 flex-col items-center gap-0.5 rounded-lg py-1 transition-colors ${
+            className={`relative flex min-w-[52px] flex-1 flex-col items-center gap-0.5 rounded-lg py-1 transition-colors ${
               active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -475,12 +484,13 @@ function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpen
   );
 }
 
-/* ── Desktop sidebar (md+) — ONE persistent collapsible navigation, right edge ──
+/* ── Desktop sidebar (md+) — ONE persistent collapsible navigation, left edge ──
  * Collapsed (default): 56px, icons only, Radix tooltips on hover/focus.
- * Expanded: 240px, icons + labels. The same five destinations as the mobile
- * bottom nav plus the platform actions — no informational site links here.
- * The header carries no duplicate navigation on desktop (hamburger is hidden
- * at md+; mobile opens the drawer instead). */
+ * Expanded: 240px, icons + labels. The same six destinations as the mobile
+ * bottom nav (incl. Nilam) plus the platform actions — no informational site
+ * links here. The footer mirrors the mobile drawer: language, theme and the
+ * dashboard / login shortcut. The header carries no duplicate navigation on
+ * desktop (hamburger is hidden at md+; mobile opens the drawer instead). */
 function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
   label: string; Icon: React.ElementType; active?: boolean; badge?: number | null;
   expanded: boolean; onClick?: () => void; href?: string;
@@ -490,7 +500,7 @@ function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
   } ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`;
   const inner = (
     <>
-      {active && <span className="absolute right-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" aria-hidden />}
+      {active && <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" aria-hidden />}
       <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
         <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 1.9} />
         {badge != null && (
@@ -511,8 +521,48 @@ function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
           <button type="button" onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={shell}>{inner}</button>
         )}
       </TooltipTrigger>
-      {!expanded && <TooltipContent side="left" sideOffset={10} className="font-medium">{label}</TooltipContent>}
+      {!expanded && <TooltipContent side="right" sideOffset={10} className="font-medium">{label}</TooltipContent>}
     </Tooltip>
+  );
+}
+
+/* ── Sidebar language button — same bn/en dropdown as the shared
+ * LanguageSwitcher, but container-aware: icon-only + tooltip while the
+ * sidebar is collapsed, icon + current language label when expanded. ── */
+function SidebarLangButton({ expanded }: { expanded: boolean }) {
+  const t = useT();
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
+  const current = locale === 'bn' ? t('lang.bn') : t('lang.en');
+  const shell = `flex h-10 shrink-0 items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+    expanded ? 'w-full gap-2 px-2' : 'w-10 justify-center'
+  }`;
+  return (
+    <DropdownMenu>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label={expanded ? current : locale === 'bn' ? 'ভাষা' : 'Language'} className={shell}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+                <Globe className="h-5 w-5" strokeWidth={1.9} />
+              </span>
+              {expanded && <span className="truncate text-[13px] font-semibold">{current}</span>}
+            </button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        {!expanded && <TooltipContent side="right" sideOffset={10} className="font-medium">{current}</TooltipContent>}
+      </Tooltip>
+      <DropdownMenuContent side="right" align="start" className="w-36">
+        <DropdownMenuItem onClick={() => setLocale('bn')} className={locale === 'bn' ? 'bg-primary/10 text-primary font-semibold' : ''}>
+          <span className="mr-2.5 text-base">🇧🇩</span>
+          {t('lang.bn')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setLocale('en')} className={locale === 'en' ? 'bg-primary/10 text-primary font-semibold' : ''}>
+          <span className="mr-2.5 text-base">🇬🇧</span>
+          {t('lang.en')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -522,12 +572,16 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
 }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
+  const user = useAppStore((s) => s.user);
   const count = useCartStore(selectCartCount);
   const nav = useNavActions(page, onOpenCategories);
+  const { theme, setTheme } = useTheme();
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const mainItems: NavItemData[] = [
     { key: 'home', label: locale === 'bn' ? 'হোম' : 'Home', Icon: Home, active: page === 'browse', onClick: nav.home },
     { key: 'categories', label: t('marketplace.categories'), Icon: LayoutGrid, onClick: nav.categories },
+    { key: 'auction', label: t('nav.auction'), Icon: Gavel, onClick: () => useAppStore.getState().setView('page-auction') },
     { key: 'orders', label: t('nav.orders'), Icon: ClipboardList, onClick: nav.orders },
     { key: 'cart', label: t('cart.title'), Icon: ShoppingCart, active: page === 'cart', badge: count > 0 ? count : null, onClick: nav.cart },
     { key: 'account', label: t('nav.account'), Icon: UserRound, onClick: nav.account },
@@ -554,7 +608,7 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
   return (
     <aside
       aria-label={locale === 'bn' ? 'মার্কেটপ্লেস নেভিগেশন' : 'Marketplace navigation'}
-      className={`fixed inset-y-0 right-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden border-l border-border/50 bg-background/95 backdrop-blur-md transition-[width] duration-300 ease-in-out md:flex dark:border-border/30 ${
+      className={`fixed inset-y-0 left-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden border-r border-border/50 bg-background/95 backdrop-blur-md transition-[width] duration-300 ease-in-out md:flex dark:border-border/30 ${
         expanded ? 'w-60' : 'w-14'
       }`}
     >
@@ -572,12 +626,12 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
               }`}
             >
               <span className="flex h-10 w-10 shrink-0 items-center justify-center">
-                {expanded ? <PanelRightClose className="h-5 w-5" strokeWidth={1.9} /> : <PanelRightOpen className="h-5 w-5" strokeWidth={1.9} />}
+                {expanded ? <PanelLeftClose className="h-5 w-5" strokeWidth={1.9} /> : <PanelLeftOpen className="h-5 w-5" strokeWidth={1.9} />}
               </span>
               {expanded && <span className="truncate text-[13px] font-semibold">{toggleLabel}</span>}
             </button>
           </TooltipTrigger>
-          {!expanded && <TooltipContent side="left" sideOffset={10} className="font-medium">{toggleLabel}</TooltipContent>}
+          {!expanded && <TooltipContent side="right" sideOffset={10} className="font-medium">{toggleLabel}</TooltipContent>}
         </Tooltip>
 
         {/* Main marketplace destinations — mirror the mobile bottom nav */}
@@ -601,12 +655,40 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
           ))}
         </nav>
       </div>
+
+      {/* Footer — language · theme · dashboard, mirroring the mobile drawer footer */}
+      <div className="mt-auto shrink-0 border-t border-border/60 p-2 dark:border-border/30">
+        <div className="flex flex-col gap-1">
+          <SidebarLangButton expanded={expanded} />
+          <SidebarItem
+            label={t('settings.theme')}
+            Icon={mounted ? (theme === 'dark' ? Sun : Moon) : Moon}
+            expanded={expanded}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          />
+          {user ? (
+            <SidebarItem
+              label={t('nav.dashboard')}
+              Icon={LayoutDashboard}
+              expanded={expanded}
+              onClick={() => useAppStore.getState().navigateToDashboard()}
+            />
+          ) : (
+            <SidebarItem
+              label={t('nav.loginRegister')}
+              Icon={LogIn}
+              expanded={expanded}
+              onClick={() => useAppStore.getState().setView('auth')}
+            />
+          )}
+        </div>
+      </div>
     </aside>
   );
 }
 
 /* ── Mobile hamburger drawer (<md) — the mobile counterpart of the desktop ──
- * sidebar: the SAME nine destinations with icons + text labels (never rendered
+ * sidebar: the SAME destinations with icons + text labels (never rendered
  * alongside the desktop sidebar — the trigger is hidden at md+ and the drawer
  * force-closes if the viewport crosses the breakpoint while open).
  * Marketplace-scoped: only real destinations (no Contact / How-to / FAQ /
@@ -628,10 +710,11 @@ function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller
   /* Close the drawer first, then run the shared nav action */
   const go = (fn: () => void) => () => { onOpenChange(false); fn(); };
 
-  /* Same five destinations as the bottom nav / desktop sidebar */
+  /* Same six destinations as the bottom nav / desktop sidebar */
   const mainItems: NavItemData[] = [
     { key: 'home', label: locale === 'bn' ? 'হোম' : 'Home', Icon: Home, active: page === 'browse', onClick: go(nav.home) },
     { key: 'categories', label: t('marketplace.categories'), Icon: LayoutGrid, onClick: go(nav.categories) },
+    { key: 'auction', label: t('nav.auction'), Icon: Gavel, onClick: go(() => useAppStore.getState().setView('page-auction')) },
     { key: 'orders', label: t('nav.orders'), Icon: ClipboardList, onClick: go(nav.orders) },
     { key: 'cart', label: t('cart.title'), Icon: ShoppingCart, active: page === 'cart', badge: count > 0 ? count : null, onClick: go(nav.cart) },
     { key: 'account', label: t('nav.account'), Icon: UserRound, onClick: go(nav.account) },
@@ -923,8 +1006,8 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
       />
 
       <div
-        className={`flex min-h-screen flex-col transition-[padding-right] duration-300 ease-in-out ${
-          sidebarExpanded ? 'md:pr-60' : 'md:pr-14'
+        className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-in-out ${
+          sidebarExpanded ? 'md:pl-60' : 'md:pl-14'
         }`}
       >
       {/* ── Compact transparent header: logo left · cart right (desktop) ──
@@ -964,7 +1047,7 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
         <CartView />
       ) : (
         <main className="w-full flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10 lg:px-8">
-          {/* Full width between the left edge and the right sidebar — no narrow
+          {/* Full width between the left sidebar and the right edge — no narrow
               centered column. Extra grid columns on wide screens keep the cards
               at a sensible size instead of stretching them. */}
           {/* ── Search + category filter ── */}
