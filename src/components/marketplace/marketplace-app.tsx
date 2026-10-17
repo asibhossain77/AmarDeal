@@ -13,10 +13,14 @@
  * promo banner → horizontal categories with সব দেখুন → 2-column product grid →
  * fixed 5-item bottom navigation (Home · Categories · Orders · Cart · Account).
  *
- * Desktop (md+): the bottom nav is replaced by a persistent collapsible vertical
- * sidebar — icons only when collapsed (default), icons + labels when expanded —
- * carrying the same five destinations plus Become a Seller, Landing Page,
- * Admin Deal and Midman Verify. Mobile UI is byte-for-byte untouched.
+ * Desktop (md+): the bottom nav is replaced by ONE persistent collapsible
+ * vertical sidebar pinned to the RIGHT viewport edge — icons only when
+ * collapsed (default), icons + labels when expanded — carrying the same five
+ * destinations plus Become a Seller, Landing Page, Admin Deal and Midman
+ * Verify. The content area spans the full width between the left edge and the
+ * sidebar. Mobile keeps the bottom nav; the header hamburger opens a drawer
+ * with the same destinations (mobile only — never rendered alongside the
+ * desktop sidebar).
  *
  * Reuse policy: data comes from the existing public APIs (/api/products,
  * /api/marketplace/services, /api/marketplace/categories, /api/marketplace/
@@ -33,14 +37,14 @@ import { useTheme } from 'next-themes';
 import {
   Menu, X, Search, ShoppingCart, Home, LayoutGrid, ClipboardList, UserRound,
   Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
-  Store as StoreIcon, Gavel, Store, Globe, FilePlus, BadgeCheck,
-  PanelLeftClose, PanelLeftOpen,
+  Store, Globe, FilePlus, BadgeCheck,
+  PanelRightClose, PanelRightOpen,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import { useAppStore } from '@/lib/store';
-import { useT, type TranslationKey } from '@/lib/i18n';
+import { useT } from '@/lib/i18n';
 import { MidmanLogo } from '@/components/shared/midman-logo';
 import { LanguageSwitcher } from '@/components/shared/language-switcher';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -471,10 +475,12 @@ function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart'; onOpen
   );
 }
 
-/* ── Desktop sidebar (md+) — persistent collapsible vertical navigation ──
+/* ── Desktop sidebar (md+) — ONE persistent collapsible navigation, right edge ──
  * Collapsed (default): 56px, icons only, Radix tooltips on hover/focus.
  * Expanded: 240px, icons + labels. The same five destinations as the mobile
- * bottom nav plus the platform actions — no informational site links here. */
+ * bottom nav plus the platform actions — no informational site links here.
+ * The header carries no duplicate navigation on desktop (hamburger is hidden
+ * at md+; mobile opens the drawer instead). */
 function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
   label: string; Icon: React.ElementType; active?: boolean; badge?: number | null;
   expanded: boolean; onClick?: () => void; href?: string;
@@ -484,7 +490,7 @@ function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
   } ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`;
   const inner = (
     <>
-      {active && <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" aria-hidden />}
+      {active && <span className="absolute right-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" aria-hidden />}
       <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
         <Icon className="h-5 w-5" strokeWidth={active ? 2.3 : 1.9} />
         {badge != null && (
@@ -505,7 +511,7 @@ function SidebarItem({ label, Icon, active, badge, expanded, onClick, href }: {
           <button type="button" onClick={onClick} aria-label={label} aria-current={active ? 'page' : undefined} className={shell}>{inner}</button>
         )}
       </TooltipTrigger>
-      {!expanded && <TooltipContent side="right" sideOffset={10} className="font-medium">{label}</TooltipContent>}
+      {!expanded && <TooltipContent side="left" sideOffset={10} className="font-medium">{label}</TooltipContent>}
     </Tooltip>
   );
 }
@@ -548,27 +554,31 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
   return (
     <aside
       aria-label={locale === 'bn' ? 'মার্কেটপ্লেস নেভিগেশন' : 'Marketplace navigation'}
-      className={`fixed inset-y-0 left-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden border-r border-border/50 bg-background/95 backdrop-blur-md transition-[width] duration-300 ease-in-out md:flex dark:border-border/30 ${
+      className={`fixed inset-y-0 right-0 z-40 hidden flex-col overflow-y-auto overflow-x-hidden border-l border-border/50 bg-background/95 backdrop-blur-md transition-[width] duration-300 ease-in-out md:flex dark:border-border/30 ${
         expanded ? 'w-60' : 'w-14'
       }`}
     >
       <div className="flex flex-col gap-1 p-2">
-        {/* Expand / collapse control */}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          className={`group relative flex h-10 shrink-0 items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-            expanded ? 'w-full gap-2 px-2' : 'w-10 justify-center'
-          }`}
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center">
-            {expanded ? <PanelLeftClose className="h-5 w-5" strokeWidth={1.9} /> : <PanelLeftOpen className="h-5 w-5" strokeWidth={1.9} />}
-          </span>
-          {expanded && <span className="truncate text-[13px] font-semibold">{toggleLabel}</span>}
-        </button>
+        {/* Expand / collapse control (tooltip mirrors SidebarItem in collapsed state) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-expanded={expanded}
+              aria-label={toggleLabel}
+              className={`group relative flex h-10 shrink-0 items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                expanded ? 'w-full gap-2 px-2' : 'w-10 justify-center'
+              }`}
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+                {expanded ? <PanelRightClose className="h-5 w-5" strokeWidth={1.9} /> : <PanelRightOpen className="h-5 w-5" strokeWidth={1.9} />}
+              </span>
+              {expanded && <span className="truncate text-[13px] font-semibold">{toggleLabel}</span>}
+            </button>
+          </TooltipTrigger>
+          {!expanded && <TooltipContent side="left" sideOffset={10} className="font-medium">{toggleLabel}</TooltipContent>}
+        </Tooltip>
 
         {/* Main marketplace destinations — mirror the mobile bottom nav */}
         <nav aria-label={locale === 'bn' ? 'মার্কেটপ্লেস' : 'Marketplace'} className="flex flex-col gap-1">
@@ -595,23 +605,60 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
   );
 }
 
-/* ── Left menu drawer — compact site navigation ──
+/* ── Mobile hamburger drawer (<md) — the mobile counterpart of the desktop ──
+ * sidebar: the SAME nine destinations with icons + text labels (never rendered
+ * alongside the desktop sidebar — the trigger is hidden at md+ and the drawer
+ * force-closes if the viewport crosses the breakpoint while open).
  * Marketplace-scoped: only real destinations (no Contact / How-to / FAQ /
- * Fees / Security / Blog informational links inside the Marketplace UI). */
-const DRAWER_LINKS = [
-  { view: 'landing', labelKey: 'common.home', Icon: StoreIcon },
-  { view: 'page-marketplace', labelKey: 'nav.marketplace', Icon: LayoutGrid },
-  { view: 'page-auction', labelKey: 'nav.auction', Icon: Gavel },
-] as const;
-
-function MenuDrawer({ open, onOpenChange, onAddProduct, isSeller }: {
-  open: boolean; onOpenChange: (v: boolean) => void; onAddProduct: () => void; isSeller: boolean;
+ * Fees / Security / Blog informational links inside the Marketplace UI).
+ * Radix Sheet provides the close button, backdrop click, Escape key and
+ * background scroll lock out of the box. */
+function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller, onAddProduct, isSeller }: {
+  open: boolean; onOpenChange: (v: boolean) => void; page: 'browse' | 'cart';
+  onOpenCategories: () => void; onBecomeSeller: () => void; onAddProduct: () => void; isSeller: boolean;
 }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const user = useAppStore((s) => s.user);
   const navigateToDashboard = useAppStore((s) => s.navigateToDashboard);
   const setView = useAppStore((s) => s.setView);
+  const count = useCartStore(selectCartCount);
+  const nav = useNavActions(page, onOpenCategories);
+
+  /* Close the drawer first, then run the shared nav action */
+  const go = (fn: () => void) => () => { onOpenChange(false); fn(); };
+
+  /* Same five destinations as the bottom nav / desktop sidebar */
+  const mainItems: NavItemData[] = [
+    { key: 'home', label: locale === 'bn' ? 'হোম' : 'Home', Icon: Home, active: page === 'browse', onClick: go(nav.home) },
+    { key: 'categories', label: t('marketplace.categories'), Icon: LayoutGrid, onClick: go(nav.categories) },
+    { key: 'orders', label: t('nav.orders'), Icon: ClipboardList, onClick: go(nav.orders) },
+    { key: 'cart', label: t('cart.title'), Icon: ShoppingCart, active: page === 'cart', badge: count > 0 ? count : null, onClick: go(nav.cart) },
+    { key: 'account', label: t('nav.account'), Icon: UserRound, onClick: go(nav.account) },
+  ];
+
+  /* Platform actions — existing destinations only, mirrors the desktop sidebar */
+  const platformItems: NavItemData[] = [
+    { key: 'seller', label: t('nav.becomeSeller'), Icon: Store, onClick: go(onBecomeSeller) },
+    { key: 'landing', label: t('nav.landingPage'), Icon: Globe, onClick: go(() => useAppStore.getState().setView('landing')) },
+    {
+      key: 'admin-deal', label: t('nav.newDeal'), Icon: FilePlus,
+      onClick: go(() => {
+        const s = useAppStore.getState();
+        if (!s.user) { s.setView('auth'); return; }
+        s.setView('dashboard');
+        s.setDashboardPanel('new-deal');
+      }),
+    },
+    { key: 'verify', label: t('nav.midmanVerify'), Icon: BadgeCheck, href: 'https://verify.midman.bd' },
+  ];
+
+  const rowClass = (active?: boolean) =>
+    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] transition-colors ${
+      active
+        ? 'bg-primary/10 font-semibold text-primary'
+        : 'font-medium text-muted-foreground hover:bg-accent hover:text-foreground'
+    }`;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -620,17 +667,44 @@ function MenuDrawer({ open, onOpenChange, onAddProduct, isSeller }: {
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3.5 dark:border-border/25">
           <MidmanLogo className="h-8 rounded-lg" />
         </div>
-        <nav className="flex flex-col gap-0.5 p-3">
-          {DRAWER_LINKS.map(({ view, labelKey, Icon }) => (
-            <button
-              key={view}
-              onClick={() => { onOpenChange(false); if (view !== 'page-marketplace') setView(view); }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Icon className="h-4 w-4" />
-              {t(labelKey as TranslationKey)}
-            </button>
-          ))}
+        <nav aria-label={locale === 'bn' ? 'মার্কেটপ্লেস' : 'Marketplace'} className="flex flex-col gap-0.5 p-3">
+          {mainItems.map(({ key, label, Icon, active, badge, onClick, href }) =>
+            href ? (
+              <a key={key} href={href} target="_blank" rel="noopener noreferrer" onClick={() => onOpenChange(false)} className={rowClass(active)}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </a>
+            ) : (
+              <button key={key} onClick={onClick} aria-current={active ? 'page' : undefined} className={rowClass(active)}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+                {badge != null && (
+                  <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </button>
+            ),
+          )}
+        </nav>
+
+        <nav aria-label={locale === 'bn' ? 'প্ল্যাটফর্ম' : 'Platform'} className="flex flex-col gap-0.5 border-t border-border/40 px-3 py-3 dark:border-border/25">
+          <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+            {t('marketplace.navPlatform')}
+          </p>
+          {platformItems.map(({ key, label, Icon, onClick, href }) =>
+            href ? (
+              <a key={key} href={href} target="_blank" rel="noopener noreferrer" onClick={() => onOpenChange(false)} className={rowClass()}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </a>
+            ) : (
+              <button key={key} onClick={onClick} className={rowClass()}>
+                <Icon className="h-4 w-4 shrink-0" />
+                {label}
+              </button>
+            ),
+          )}
           {isSeller && (
             <button
               onClick={() => { onOpenChange(false); onAddProduct(); }}
@@ -684,6 +758,16 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
   const [catSheetOpen, setCatSheetOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
+
+  /* Mobile hamburger drawer — mobile only. If the viewport crosses into md+
+     while it is open (rotation, window resize), close it so the desktop
+     sidebar is the only visible navigation and none overlap. */
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = (e: MediaQueryListEvent) => { if (e.matches) setMenuOpen(false); };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   /* Desktop sidebar — collapsed (icons only) by default, choice remembered.
      Mobile never renders it, so this state is inert below md. */
@@ -839,29 +923,36 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
       />
 
       <div
-        className={`flex min-h-screen flex-col transition-[padding-left] duration-300 ease-in-out ${
-          sidebarExpanded ? 'md:pl-60' : 'md:pl-14'
+        className={`flex min-h-screen flex-col transition-[padding-right] duration-300 ease-in-out ${
+          sidebarExpanded ? 'md:pr-60' : 'md:pr-14'
         }`}
       >
-      {/* ── Compact transparent header: menu + logo left · cart right ── */}
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-2.5 sm:px-6">
+      {/* ── Compact transparent header: logo left · cart right (desktop) ──
+          Mobile adds the hamburger (drawer trigger) — hidden at md+ so the
+          desktop header carries no duplicate navigation. */}
+      <header className="flex w-full items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-1.5">
-          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger asChild>
-              <button
-                aria-label={t('nav.openMenu')}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent active:scale-95"
-              >
-                <Menu className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </SheetTrigger>
-            <MenuDrawer
-              open={menuOpen}
-              onOpenChange={setMenuOpen}
-              onAddProduct={() => setAddProductOpen(true)}
-              isSeller={!!user?.isSeller}
-            />
-          </Sheet>
+          <div className="md:hidden">
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  aria-label={t('nav.openMenu')}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-accent active:scale-95"
+                >
+                  <Menu className="h-5 w-5" strokeWidth={2} />
+                </button>
+              </SheetTrigger>
+              <MenuDrawer
+                open={menuOpen}
+                onOpenChange={setMenuOpen}
+                page={page}
+                onOpenCategories={() => setCatSheetOpen(true)}
+                onBecomeSeller={handleBecomeSeller}
+                onAddProduct={() => setAddProductOpen(true)}
+                isSeller={!!user?.isSeller}
+              />
+            </Sheet>
+          </div>
           <button onClick={() => useAppStore.getState().setView('landing')} aria-label="Midman" className="flex items-center rounded-lg">
             <MidmanLogo className="h-8 rounded-lg" priority />
           </button>
@@ -872,7 +963,10 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
       {page === 'cart' ? (
         <CartView />
       ) : (
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10">
+        <main className="w-full flex-1 px-4 pb-28 sm:px-6 sm:pb-32 md:pb-10 lg:px-8">
+          {/* Full width between the left edge and the right sidebar — no narrow
+              centered column. Extra grid columns on wide screens keep the cards
+              at a sensible size instead of stretching them. */}
           {/* ── Search + category filter ── */}
           <div className="flex items-center gap-2.5">
             <button
@@ -955,7 +1049,7 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
           </div>
 
           {loading ? (
-            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-border/30 bg-card dark:border-border/20">
                   <div className="aspect-[4/3] bg-muted/50" />
@@ -978,7 +1072,7 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' }) {
               <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.noProductsDesc')}</p>
             </div>
           ) : (
-            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4" role="list">
+            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6" role="list">
               {feed.map((item) => (
                 <FeedCard
                   key={`${item.kind}-${item.id}`}
