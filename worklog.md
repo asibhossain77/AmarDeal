@@ -1612,3 +1612,16 @@ Stage Summary:
 - Commit 3efbf24 "feat: physical products with type-based actions — itemType field (physical/non-physical), stock with atomic decrement + oversell guard + cancel restore, Order Now server-gated to physical products, non-physical seller products show Admin Deal + Message only, platform-owned direct-order flow preserved, Admin Deal separation intact" (19 files, +1208/−122) on main, parent ad5a313. main is ahead of origin/main by 1.
 - ⚠ PUSH BLOCKED — recurring git token issue (6th occurrence, NEW VARIANT): stored ghp_ token returns GitHub API 401 "Bad credentials" (expired/revoked — prior sessions pushed fine, sandbox snapshots carry the token). Push fails with "could not read Password" under GIT_TERMINAL_PROMPT=0; no fresh token anywhere in the sandbox (searched env, files, git/gh credential stores). main (3efbf24) ready to push the moment a valid token is set: git remote set-url origin https://<TOKEN>@github.com/asibhossain77/AmarDeal.git && git push origin main.
 - Test data: T82 fixtures (T82 Physical Watch stock now 3 after UI order, T82 NonPhysical Single, T81 set) in amardeal/db/custom.db (tracked, committed); user logins seller1/seller2/buyer/admin-t81@midman.test / t81pass123.
+
+---
+Task ID: 82-push
+Agent: Main
+Task: Push Task 82 commits (user provided fresh GitHub token after 401 block)
+
+Work Log:
+- Re-verified stored token still 401 (7th occurrence); user pasted fresh ghp_ token in chat
+- Token validated via GitHub API (200), remote URL updated, push succeeded
+- Pushed: ad5a313..1332c4c main -> main (3efbf24 Task 82 feat + 1332c4c worklog)
+
+Stage Summary:
+- Task 82 (Physical Products & Type-Based Actions) fully landed on origin/main; branch synced; token stored in remote URL only (never logged in files)
