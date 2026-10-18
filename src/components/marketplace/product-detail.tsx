@@ -15,10 +15,11 @@
  *
  * Reuse policy: every behaviour is the existing product page logic, ported
  * 1:1 — /api/products/[id] fetch, multi-option selection, order-time
- * quantity, the escrow order flow (confirm → deal prefill → dashboard
- * new-deal), free digital claim/download, seller follow + profile, WhatsApp
- * seller contact and native/share popover. No new backend, no new pages,
- * no fake data — only fields the product model really has.
+ * quantity, the DIRECT marketplace order flow (confirm → POST /api/orders →
+ * inline manual payment submission — NEVER a Deal/escrow), free digital
+ * claim/download, seller follow + profile, WhatsApp seller contact and
+ * native/share popover. No new backend, no new pages, no fake data — only
+ * fields the product model really has.
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -28,14 +29,17 @@ import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Loader2, User,
   Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2,
   Facebook, FileDown, Download, ChevronDown, FileText, ClipboardList,
+  CheckCircle2, Wallet, Clock3, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { cdnUrl } from '@/lib/cdn-url';
 import { waMeLink } from '@/lib/wa-me';
-import { fbqTrack, genMetaEventId, META_IC_EVENT_ID_KEY } from '@/lib/meta-client';
+import { fbqTrack, genMetaEventId } from '@/lib/meta-client';
 import { CATEGORIES, CATEGORY_BG } from '@/components/landing/marketplace-section';
 
 interface OrderProductSeller {
@@ -57,6 +61,16 @@ interface OrderProduct {
 
 /* Quantity is an order-time selection only — no stock concept (max 99 per order) */
 const MAX_QTY = 99;
+
+/* ── Direct marketplace order (POST /api/orders — NEVER a Deal) ── */
+interface PlacedOrder {
+  id: string; orderNumber: string; status: string; paymentStatus: string;
+  quantity: number; unitPriceAtOrder: number; totalAmount: number; optionName?: string | null;
+}
+interface PaymentMethodLite {
+  id: string; name: string; accountNumber: string; accountType: string;
+  instructions?: string | null; color?: string | null;
+}
 
 /* Description longer than this gets the Read More / Show Less treatment */
 const DESC_CLAMP_CHARS = 340;
@@ -97,6 +111,17 @@ export function ProductDetailView() {
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
   const [qty, setQty] = useState(1);
   const [descExpanded, setDescExpanded] = useState(false);
+  /* Direct marketplace order — created via POST /api/orders (NEVER a Deal) */
+  const [placingOrder, setPlacingOrder] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState<PlacedOrder | null>(null);
+  const [orderReqId, setOrderReqId] = useState<string | null>(null);
+  /* Inline payment submission (mirrors the existing manual payment mechanism) */
+  const [payOpen, setPayOpen] = useState(false);
+  const [payMethods, setPayMethods] = useState<PaymentMethodLite[]>([]);
+  const [payMethodId, setPayMethodId] = useState('');
+  const [paySender, setPaySender] = useState('');
+  const [payTxn, setPayTxn] = useState('');
+  const [paySubmitting, setPaySubmitting] = useState(false);
   /* Multi-price products: the buyer must pick an option before ordering */
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   /* Share: native share sheet on mobile, popover fallback (copy/WhatsApp/Facebook) on desktop */
@@ -151,6 +176,9 @@ export function ProductDetailView() {
     setLoading(true);
     setShowBuyConfirm(false);
     setDescExpanded(false);
+    setPlacedOrder(null);
+    setOrderReqId(null);
+    setPayOpen(false);
     setProduct(null);
     setQty(1);
     setSelectedOptionId(null);
@@ -220,33 +248,116 @@ export function ProductDetailView() {
     setShowBuyConfirm(true);
   };
 
-  const confirmBuy = () => {
+  /* ── Place a NORMAL marketplace order (POST /api/orders).
+     NEVER creates a Deal / escrow — direct orders live in the
+     seller's Orders dashboard, completely separate from Admin Deals. */
+  const confirmBuy = async () => {
     if (!product) return;
     setShowBuyConfirm(false);
-    /* Meta Pixel — InitiateCheckout; the event_id rides to POST /api/deals/create
-       via sessionStorage so the server CAPI event deduplicates against this one */
-    const icEventId = genMetaEventId('ic');
+    /* Meta Pixel — InitiateCheckout (client-side analytics only) */
     fbqTrack('InitiateCheckout', {
       content_type: 'product',
       content_ids: [product.id],
       value: (unitPrice ?? product.price) * qty,
       currency: 'BDT',
       num_items: qty,
-    }, icEventId);
-    try { sessionStorage.setItem(META_IC_EVENT_ID_KEY, icEventId); } catch { /* private mode */ }
+    }, genMetaEventId('ic'));
+
+    // Idempotency key: generated once per checkout attempt — retries
+    // (network error, double-click) return the SAME order, no duplicates.
+    const reqId = orderReqId ?? `web_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+    setOrderReqId(reqId);
+    setPlacingOrder(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          optionId: selectedOption?.id,
+          quantity: qty,
+          clientRequestId: reqId,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPlacedOrder(data.order as PlacedOrder);
+        setPayOpen(false);
+        setPaySender(''); setPayTxn(''); setPayMethodId('');
+        toast.success(t('marketplace.orderPlaced'));
+      } else if (res.status === 401) {
+        toast.error(t('marketplace.loginRequired'));
+        setView('auth');
+      } else {
+        toast.error(data.error || t('marketplace.orderFailed'));
+        // allow a fresh attempt — burn the used request id on hard failures
+        if (data.code !== 'REQUEST_ID_TAKEN') setOrderReqId(null);
+      }
+    } catch {
+      toast.error(t('marketplace.orderFailed'));
+      setOrderReqId(null);
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  /* ── Inline payment submission for the just-placed order —
+     the EXISTING manual payment endpoint (same one the SMM
+     direct orders use): owner-only, unpaid-only, duplicate-txn
+     guard, goes to awaiting_verification until an admin verifies. */
+  const openPayForm = async () => {
+    setPayOpen(true);
+    if (payMethods.length > 0) return;
+    try {
+      const res = await fetch('/api/payment-methods');
+      const json = await res.json().catch(() => null);
+      const list: PaymentMethodLite[] = Array.isArray(json)
+        ? json
+        : Array.isArray(json?.methods)
+          ? json.methods
+          : [];
+      const active = list.filter((m) => m && m.id && m.name);
+      setPayMethods(active);
+      if (active.length > 0) setPayMethodId((cur) => cur || active[0].id);
+    } catch { /* form still usable — method optional */ }
+  };
+
+  const submitOrderPayment = async () => {
+    if (!placedOrder) return;
+    if (!paySender.trim() || !payTxn.trim()) {
+      toast.error(t('orders.paymentFieldsRequired'));
+      return;
+    }
+    setPaySubmitting(true);
+    try {
+      const res = await fetch(`/api/marketplace/orders/${placedOrder.id}/payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paymentMethodId: payMethodId || undefined,
+          senderNumber: paySender.trim(),
+          transactionId: payTxn.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPlacedOrder({ ...placedOrder, status: 'pending_payment', paymentStatus: 'awaiting_verification' });
+        setPayOpen(false);
+        toast.success(t('orders.paymentSubmitted'));
+      } else {
+        toast.error(data.error || t('orders.paymentFailed'));
+      }
+    } catch {
+      toast.error(t('orders.paymentFailed'));
+    } finally {
+      setPaySubmitting(false);
+    }
+  };
+
+  /** Go to the buyer's My Orders dashboard panel */
+  const goMyOrders = () => {
     const store = useAppStore.getState();
-    const optionSuffix = selectedOption ? ` — ${selectedOption.name}` : '';
-    store.setDealPreFill({
-      title: qty > 1 ? `${product.title}${optionSuffix} (×${qty})` : `${product.title}${optionSuffix}`,
-      amount: (unitPrice ?? product.price) * qty,
-      partyEmail: product.seller.email || '',
-      /* Server re-verifies the product/option and computes the real price —
-         these values are what makes the order product-verified. */
-      productId: product.id,
-      optionId: selectedOption?.id,
-      quantity: qty,
-    });
-    store.setDashboardPanel('new-deal');
+    store.setDashboardPanel('my-orders');
     store.setView('dashboard');
   };
 
@@ -663,7 +774,102 @@ export function ProductDetailView() {
           {/* ── Action area — Order Now · Admin Deal · Message (plus the
                  existing digital claim/download and order-confirm states) ── */}
           <div className="mt-5">
-            {entitled ? (
+            {placedOrder ? (
+              /* ── Order placed — success card (normal marketplace order, NOT a deal) ── */
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground">{t('marketplace.orderPlacedTitle')}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      {t('marketplace.orderPlacedDesc', { amount: formatPrice(placedOrder.totalAmount) })}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1 font-mono text-[11px] font-bold text-foreground">
+                        {placedOrder.orderNumber}
+                      </span>
+                      {placedOrder.optionName && (
+                        <span className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                          {placedOrder.optionName} · ×{placedOrder.quantity.toLocaleString('en')}
+                        </span>
+                      )}
+                      {placedOrder.quantity > 1 && !placedOrder.optionName && (
+                        <span className="inline-flex items-center rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                          ×{placedOrder.quantity.toLocaleString('en')}
+                        </span>
+                      )}
+                    </div>
+                    {placedOrder.paymentStatus === 'unpaid' && (
+                      <p className="mt-2 text-[12px] font-medium text-amber-600 dark:text-amber-400">
+                        {t('orders.unpaidWarning')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {placedOrder.paymentStatus === 'unpaid' ? (
+                  payOpen ? (
+                    /* Payment form — mirrors the existing manual payment fields (method, sender, txn) */
+                    <div className="mt-3 space-y-2.5 rounded-lg border border-border bg-background p-3">
+                      {payMethods.length > 0 && (
+                        <div className="space-y-1">
+                          <Label htmlFor="order-pay-method" className="text-[12px] font-medium text-muted-foreground">{t('orders.paymentMethod')}</Label>
+                          <select
+                            id="order-pay-method"
+                            value={payMethodId}
+                            onChange={(e) => setPayMethodId(e.target.value)}
+                            className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          >
+                            {payMethods.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} — {m.accountNumber}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="order-pay-sender" className="text-[12px] font-medium text-muted-foreground">{t('orders.senderNumber')}</Label>
+                          <Input id="order-pay-sender" value={paySender} onChange={(e) => setPaySender(e.target.value)} placeholder="01XXXXXXXXX" inputMode="tel" className="h-10" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="order-pay-txn" className="text-[12px] font-medium text-muted-foreground">{t('orders.transactionId')}</Label>
+                          <Input id="order-pay-txn" value={payTxn} onChange={(e) => setPayTxn(e.target.value)} placeholder={t('orders.txnPlaceholder')} className="h-10" />
+                        </div>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">{t('orders.paymentVerifyNote')}</p>
+                      <div className="flex gap-2">
+                        <Button onClick={submitOrderPayment} disabled={paySubmitting} className="flex-1 gap-2 rounded-xl text-[13px] font-semibold">
+                          {paySubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
+                          {t('orders.submitPayment')}
+                        </Button>
+                        <Button onClick={() => setPayOpen(false)} variant="outline" disabled={paySubmitting} className="rounded-xl text-[13px] font-semibold">
+                          {t('marketplace.cancel')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex gap-2">
+                      <Button onClick={openPayForm} className="flex-1 gap-2 rounded-xl text-[13px] font-semibold">
+                        <Wallet className="h-4 w-4" />
+                        {t('orders.submitPayment')}
+                      </Button>
+                      <Button onClick={goMyOrders} variant="outline" className="flex-1 rounded-xl text-[13px] font-semibold">
+                        {t('orders.goMyOrders')}
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-emerald-700 dark:text-emerald-400">
+                    <Clock3 className="h-4 w-4" />
+                    {t('orders.paymentVerifying')}
+                  </div>
+                )}
+              </div>
+            ) : entitled ? (
               <Button onClick={openDownload} className="h-12 w-full gap-2 rounded-xl text-[15px] font-semibold shadow-lg shadow-primary/25">
                 <Download className="h-5 w-5" />
                 {t('marketplace.downloadNow')}
@@ -681,8 +887,8 @@ export function ProductDetailView() {
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10"><ShoppingCart className="h-5 w-5 text-primary" /></div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-foreground">{t('marketplace.dealConfirmTitle')}</p>
-                    <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.dealConfirmDesc', { amount: formatPrice((unitPrice ?? product.price) * qty) })}</p>
+                    <p className="text-sm font-bold text-foreground">{t('marketplace.orderConfirmTitle')}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">{t('marketplace.orderConfirmDesc', { amount: formatPrice((unitPrice ?? product.price) * qty) })}</p>
                     {selectedOption && (
                       <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
                         {selectedOption.name} · {formatPrice(selectedOption.price)}
@@ -691,17 +897,19 @@ export function ProductDetailView() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={confirmBuy} className="flex-1 gap-2 rounded-xl py-4 text-[14px] font-semibold">
-                    {t('marketplace.dealConfirmYes')}
+                  <Button onClick={confirmBuy} disabled={placingOrder} className="flex-1 gap-2 rounded-xl py-4 text-[14px] font-semibold">
+                    {placingOrder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                    {placingOrder ? t('marketplace.placingOrder') : t('marketplace.orderConfirmYes')}
                   </Button>
-                  <Button onClick={() => setShowBuyConfirm(false)} variant="outline" className="flex-1 rounded-xl py-4 text-[14px] font-semibold">
+                  <Button onClick={() => setShowBuyConfirm(false)} variant="outline" disabled={placingOrder} className="flex-1 rounded-xl py-4 text-[14px] font-semibold">
                     {t('marketplace.cancel')}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                {/* Order Now — the strongest action, existing escrow flow */}
+                {/* Order Now — creates a NORMAL marketplace order (never a Deal);
+                    the seller sees it in their Dashboard Orders page */}
                 <Button
                   onClick={handleBuyNow}
                   disabled={isMulti && !selectedOption}

@@ -2,10 +2,10 @@ import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
 export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-cart' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail' | 'page-service'
-export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions' | 'my-orders' | 'order-detail'
+export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-marketplace-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions' | 'my-orders' | 'order-detail'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
-export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products' | 'services'
+export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products' | 'services' | 'marketplace-orders'
 /* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
 export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 

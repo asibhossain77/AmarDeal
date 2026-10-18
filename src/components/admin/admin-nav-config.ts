@@ -25,6 +25,7 @@ import {
   Store,
   PackageCheck,
   Rocket,
+  ShoppingBag,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -55,6 +56,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     title: 'ডিল ও ইউজার',
     items: [
       { label: 'সকল ডিল', icon: Handshake, panel: 'all-deals' },
+      { label: 'মার্কেটপ্লেস অর্ডার', icon: ShoppingBag, panel: 'marketplace-orders' },
       { label: 'ইউজার ম্যানেজমেন্ট', icon: Users, panel: 'users' },
       { label: 'পেন্ডিং প্রোডাক্ট', icon: PackageCheck, panel: 'pending-products' },
       { label: 'এসএমএম সার্ভিস', icon: Rocket, panel: 'services' },
@@ -112,6 +114,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
       title: t('adminNav.groupDealsUsers'),
       items: [
         { label: t('adminNav.allDeals'), icon: Handshake, panel: 'all-deals' },
+        { label: t('adminNav.marketplaceOrders'), icon: ShoppingBag, panel: 'marketplace-orders' },
         { label: t('adminNav.userManagement'), icon: Users, panel: 'users' },
         { label: t('adminNav.pendingProducts'), icon: PackageCheck, panel: 'pending-products' },
         { label: t('adminNav.services'), icon: Rocket, panel: 'services' },
@@ -171,6 +174,7 @@ export const SUPPORT_ALLOWED = new Set<string>([
   'contact-info',
   'blog',
   'email-settings',
+  'marketplace-orders',
 ]);
 
 /** Filter groups by role/permissions — removes empty groups */

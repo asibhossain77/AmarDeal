@@ -198,7 +198,6 @@ async function createNotificationRow(data: {
 
 export async function notifyUser(opts: NotifyOptions): Promise<void> {
   const { userId, dealId, type, title, message, relatedType, relatedId, pushUrl } = opts
-
   // 1. Save to DB
   await createNotificationRow({
     userId,
@@ -217,7 +216,7 @@ export async function notifyUser(opts: NotifyOptions): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId,
-        notification: { type, title, message, dealId, createdAt: new Date().toISOString() },
+        notification: { type, title, message, dealId, relatedType: relatedType ?? null, relatedId: relatedId ?? null, createdAt: new Date().toISOString() },
       }),
     })
   } catch { /* ws not available */ }

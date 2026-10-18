@@ -57,7 +57,8 @@ model User {
   auctionsWon        Auction[] @relation("AuctionWinner")
   topBidAuctions     Auction[] @relation("AuctionTopBidder")
   oauthAuthCodes     OAuthAuthorizationCode[]
-  marketplaceOrders  MarketplaceOrder[]
+  marketplaceOrdersAsBuyer  MarketplaceOrder[] @relation("MarketplaceOrderBuyer")
+  marketplaceOrdersAsSeller MarketplaceOrder[] @relation("MarketplaceOrderSeller")
 }
 
 model Admin {
@@ -125,6 +126,7 @@ model PaymentMethod {
   updatedAt     DateTime @updatedAt
 
   deals Deal[]
+  marketplaceOrders MarketplaceOrder[]
 }
 
 model PlatformSetting {
@@ -337,6 +339,7 @@ model DigitalProduct {
   deals         Deal[]
   options       ProductOption[]
   downloads     ProductDownload[]
+  marketplaceOrders MarketplaceOrder[]
 
   @@index([sellerId, status])
   @@index([status, createdAt])
@@ -354,6 +357,7 @@ model ProductOption {
   updatedAt   DateTime @updatedAt
 
   deals Deal[]
+  marketplaceOrders MarketplaceOrder[]
 
   @@index([productId, sortOrder])
 }
@@ -625,11 +629,23 @@ model MarketplaceOrder {
   id                String    @id @default(cuid())
   orderNumber       String    @unique
   userId            String
-  user              User      @relation(fields: [userId], references: [id])
-  serviceId         String
-  service           MarketplaceService @relation(fields: [serviceId], references: [id])
+  user              User      @relation("MarketplaceOrderBuyer", fields: [userId], references: [id])
+  // sellerId is set for product ("Order Now") orders; null = platform-owned
+  // (admin SMM service orders and admin-sold products).
+  sellerId          String?
+  seller            User?     @relation("MarketplaceOrderSeller", fields: [sellerId], references: [id])
+  // serviceId is set for admin-owned SMM service direct orders; null for product orders
+  serviceId         String?
+  service           MarketplaceService? @relation(fields: [serviceId], references: [id])
+  // Denormalized display title: service name (service orders) or product
+  // title + option (product orders) — keeps existing queries untouched.
   serviceName       String
-  linkUrl           String
+  // productId is set for product orders placed via "Order Now" on a product page
+  productId         String?
+  product           DigitalProduct? @relation(fields: [productId], references: [id])
+  productOptionId   String?
+  option            ProductOption? @relation(fields: [productOptionId], references: [id])
+  linkUrl           String?
   linkType          String?
   quantity          Int
   pricingUnit       String    @default("per_1000")
@@ -648,15 +664,24 @@ model MarketplaceOrder {
   startCount        Int?
   remains           Int?
   idempotencyKey    String    @unique
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelledBy       String?
   cancelReason      String?
+  refundedAt        DateTime?
+  customerNote      String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  events MarketplaceOrderEvent[]
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  events        MarketplaceOrderEvent[]
 
   @@index([userId, createdAt])
+  @@index([sellerId, status])
+  @@index([sellerId, createdAt])
   @@index([status])
   @@index([serviceId])
+  @@index([productId])
   @@index([transactionId])
 }
 

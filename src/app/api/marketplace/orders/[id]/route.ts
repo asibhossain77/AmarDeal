@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/deal-guard'
 import { getAdminFromRequest } from '@/lib/admin-guard'
-import { parseLinkTypes } from '@/lib/marketplace-pricing'
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    GET /api/marketplace/orders/[id]
-   Order details + status history. Access: owner or admin only
-   (IDOR protection — everyone else gets 403).
-   Internal payment/invoice fields are only sent to admins.
-   ═══════════════════════════════════════════════════════════ */
+   Unified detail for BOTH order types that share the
+   MarketplaceOrder table:
+   - admin-owned SMM service direct orders (serviceId set)
+   - seller product orders ("Order Now", productId set)
+
+   Access: the order's buyer, the order's seller (product orders),
+   or an admin. Ownership is enforced HERE on the server — a forged
+   URL for someone else's order returns 403.
+   Privacy: the seller sees the buyer's name + avatar only — never
+   the buyer's email/phone (fulfillment inputs ride on the order:
+   customerNote / linkUrl). Internal payment/invoice fields are only
+   sent to admins.
+   ═══════════════════════════════════════════════════════════════ */
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +39,16 @@ export async function GET(
             linkTypes: true, deliveryEstimate: true, instructions: true,
           },
         },
+        product: {
+          select: {
+            id: true, title: true, image: true, category: true, description: true,
+            fileKey: true, fileName: true, fileSize: true, productType: true,
+          },
+        },
+        option: { select: { id: true, name: true, price: true } },
+        user: { select: { id: true, name: true, imageLink: true } },
+        seller: { select: { id: true, name: true, imageLink: true, whatsappNumber: true, admin: { select: { userId: true } } } },
+        paymentMethod: { select: { id: true, name: true, accountNumber: true, accountType: true } },
       },
     })
 
@@ -39,9 +57,15 @@ export async function GET(
     }
 
     const isAdmin = !!(await getAdminFromRequest(req))
-    if (order.userId !== guard.userId && !isAdmin) {
+    const isBuyer = order.userId === guard.userId
+    const isSeller = !!order.sellerId && order.sellerId === guard.userId
+    if (!isBuyer && !isSeller && !isAdmin) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 })
     }
+
+    // Role precedence: admin beats seller (platform orders are sold by the
+    // admin account — the admin needs its action set there).
+    const viewerRole: 'admin' | 'seller' | 'buyer' = isAdmin ? 'admin' : isSeller ? 'seller' : 'buyer'
 
     // Customer-safe payload — internal fulfilment fields stripped for owners
     const base = {
@@ -50,6 +74,33 @@ export async function GET(
       userId: order.userId,
       serviceName: order.serviceName,
       service: order.service,
+      // product-order payload (nulls for service orders)
+      productId: order.productId,
+      product: order.product
+        ? {
+            id: order.product.id,
+            title: order.product.title,
+            image: order.product.image,
+            category: order.product.category,
+            description: order.product.description,
+            hasFile: !!order.product.fileKey, // fileKey itself NEVER leaves the server
+            fileName: order.product.fileName,
+            fileSize: order.product.fileSize,
+            productType: order.product.productType,
+          }
+        : null,
+      option: order.option,
+      isPlatformOwned: order.serviceId ? true : !!order.seller?.admin,
+      buyer: order.user,
+      seller: order.seller
+        ? {
+            id: order.seller.id,
+            name: order.seller.name,
+            imageLink: order.seller.imageLink,
+            whatsappNumber: order.seller.whatsappNumber,
+          }
+        : null,
+      viewerRole,
       linkUrl: order.linkUrl,
       linkType: order.linkType,
       quantity: order.quantity,
@@ -58,6 +109,7 @@ export async function GET(
       totalAmount: order.totalAmount,
       status: order.status,
       paymentStatus: order.paymentStatus,
+      customerNote: order.customerNote,
       paymentMethodName: order.paymentMethodName,
       senderNumber: order.senderNumber,
       transactionId: order.transactionId,
@@ -66,7 +118,11 @@ export async function GET(
       fulfilmentNote: order.fulfilmentNote,
       startCount: order.startCount,
       remains: order.remains,
+      completedAt: order.completedAt,
+      cancelledAt: order.cancelledAt,
+      cancelledBy: order.cancelledBy,
       cancelReason: order.cancelReason,
+      refundedAt: order.refundedAt,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       events: order.events.map((e) => ({
@@ -79,6 +135,11 @@ export async function GET(
         actorName: e.actorName,
         createdAt: e.createdAt,
       })),
+      payment: {
+        method: order.paymentMethod,
+        senderNumber: order.senderNumber,
+        transactionId: order.transactionId,
+      },
     }
 
     if (isAdmin) {

@@ -100,6 +100,19 @@ export async function POST(
       },
     })
 
+    // Product orders: let the seller know payment evidence was submitted
+    // (verification itself stays with the admin — the existing mechanism).
+    if (order.sellerId) {
+      const { notifySellerOrderUpdate } = await import('@/lib/orders')
+      notifySellerOrderUpdate({
+        id: order.id,
+        sellerId: order.sellerId,
+        orderNumber: order.orderNumber,
+        productTitle: order.serviceName,
+        status: 'pending_payment',
+      }).catch(() => {})
+    }
+
     notifyAdmins({
       type: 'marketplace_order_payment',
       title: 'মার্কেটপ্লেস অর্ডার পেমেন্ট',

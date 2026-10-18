@@ -21,6 +21,7 @@ import {
   BadgeCheck,
   Info,
   Banknote,
+  ShoppingBag,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -78,6 +79,16 @@ const TYPE_STYLES: Record<string, TypeStyle> = {
   seller_request: { icon: Store, color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400' },
   seller_approved: { icon: Store, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
   seller_rejected: { icon: Store, color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' },
+  // Marketplace orders (direct "Order Now" purchases — separate from deals)
+  order_new: { icon: ShoppingBag, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
+  order_payment_submitted: { icon: Wallet, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  order_pending_confirmation: { icon: Wallet, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  order_processing: { icon: BadgeCheck, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
+  order_completed: { icon: BadgeCheck, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400' },
+  order_cancelled: { icon: XCircle, color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' },
+  order_refunded: { icon: Banknote, color: 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400' },
+  order_pending_payment: { icon: Wallet, color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400' },
+  order_queued: { icon: BadgeCheck, color: 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400' },
   system_update: { icon: Info, color: 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400' },
   payout: { icon: Banknote, color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400' },
   system: { icon: Bell, color: 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400' },

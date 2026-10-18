@@ -50,6 +50,7 @@ const AdminAffiliatePanel = dynamic(() => import('./affiliate-panel').then(m => 
 const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payouts-panel').then(m => ({ default: m.AdminAffiliatePayoutsPanel })), { loading: () => <PanelLoader /> });
 const AdminSellerWithdrawalsPanel = dynamic(() => import('./admin-seller-withdrawals-panel').then(m => ({ default: m.AdminSellerWithdrawalsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
+const AdminMarketplaceOrdersPanel = dynamic(() => import('./admin-marketplace-orders-panel').then(m => ({ default: m.AdminMarketplaceOrdersPanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
@@ -4148,6 +4149,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminAffiliatePayoutsPanel />;
     case 'marketplace':
       return <AdminMarketplacePanel />;
+    case 'marketplace-orders':
+      return <AdminMarketplaceOrdersPanel />;
     case 'pending-products':
       return <PendingProductsPanel />;
     case 'services':
@@ -4180,7 +4183,7 @@ export function AdminMain() {
 
   // ── Role-based permission guard ──
   const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile']);
-  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders']);
 
   const hasPanelAccess = (panel: string): boolean => {
     if (!user || user.adminRole === 'super_admin') return true;

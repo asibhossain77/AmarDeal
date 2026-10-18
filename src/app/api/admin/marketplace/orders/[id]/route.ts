@@ -99,6 +99,18 @@ export async function PATCH(
       if (!result.ok) {
         return NextResponse.json({ success: false, error: result.error }, { status: 409 })
       }
+      // Product orders: let the seller know the payment is verified —
+      // the order is now queued for fulfilment in their Orders page.
+      if (order.sellerId) {
+        const { notifySellerOrderUpdate } = await import('@/lib/orders')
+        notifySellerOrderUpdate({
+          id: order.id,
+          sellerId: order.sellerId,
+          orderNumber: order.orderNumber,
+          productTitle: order.serviceName,
+          status: 'queued',
+        }).catch(() => {})
+      }
       return NextResponse.json({ success: true })
     }
 
@@ -161,10 +173,14 @@ export async function PATCH(
       if (b.remains !== undefined && b.remains !== null && Number.isFinite(Number(b.remains))) {
         data.remains = Number(b.remains)
       }
-      if (toStatus === 'cancelled') data.cancelReason = note || 'cancelled_by_admin'
+      if (toStatus === 'cancelled') {
+        data.cancelReason = note || 'cancelled_by_admin'
+        data.cancelledAt = new Date()
+      }
       if (toStatus === 'refunded') {
         // Refund is an offline money movement — record it, mark unpaid-refunded
         data.paymentStatus = 'unpaid'
+        data.refundedAt = new Date()
       }
 
       const updated = await db.marketplaceOrder.updateMany({
@@ -197,6 +213,23 @@ export async function PATCH(
           message: `অর্ডার ${order.orderNumber} এখন "${toStatus.replace(/_/g, ' ')}" অবস্থায় আছে।`,
           pushUrl: `/dashboard/orders/${order.id}`,
         }).catch(() => {})
+
+        // Product orders: keep the seller in the loop + grant digital
+        // entitlement when an admin completes a paid digital-file order.
+        if (order.sellerId) {
+          const { notifySellerOrderUpdate } = await import('@/lib/orders')
+          notifySellerOrderUpdate({
+            id: order.id,
+            sellerId: order.sellerId,
+            orderNumber: order.orderNumber,
+            productTitle: order.serviceName,
+            status: toStatus,
+          }).catch(() => {})
+        }
+        if (toStatus === 'completed' && order.productId) {
+          const { grantDigitalEntitlementOnComplete } = await import('@/lib/orders')
+          grantDigitalEntitlementOnComplete(order.productId, order.userId).catch(() => {})
+        }
       }
 
       return NextResponse.json({ success: true })

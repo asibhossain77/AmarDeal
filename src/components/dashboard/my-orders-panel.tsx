@@ -181,9 +181,11 @@ export function MyOrdersPanel() {
                     <OrderStatusBadge status={order.status} paymentStatus={order.paymentStatus} t={t} />
                   </div>
                   <h3 className="mt-1 truncate text-[14px] font-semibold text-foreground">{order.serviceName}</h3>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground" dir="ltr" title={order.linkUrl}>
-                    {truncateLink(order.linkUrl)}
-                  </p>
+                  {!!order.linkUrl && (
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground" dir="ltr" title={order.linkUrl}>
+                      {truncateLink(order.linkUrl)}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
                   <span className="text-[15px] font-extrabold text-primary">{formatMoney(order.totalAmount)}</span>

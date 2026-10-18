@@ -58,6 +58,22 @@ export async function POST(
       },
     })
 
+    // Product orders: let the seller know the buyer cancelled.
+    const sellerRow = await db.marketplaceOrder.findUnique({
+      where: { id: order.id },
+      select: { sellerId: true },
+    })
+    if (sellerRow?.sellerId) {
+      const { notifySellerOrderUpdate } = await import('@/lib/orders')
+      notifySellerOrderUpdate({
+        id: order.id,
+        sellerId: sellerRow.sellerId,
+        orderNumber: order.orderNumber,
+        productTitle: order.serviceName,
+        status: 'cancelled',
+      }).catch(() => {})
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('[marketplace-order-cancel] POST error:', err)

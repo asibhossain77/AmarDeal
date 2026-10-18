@@ -8,6 +8,8 @@ interface NotificationPayload {
   title: string
   message: string
   dealId?: string
+  relatedType?: string | null
+  relatedId?: string | null
   createdAt?: string
 }
 
@@ -29,7 +31,6 @@ export function useSocket(userId: string | null | undefined) {
     let mounted = true
     const initSocket = async () => {
       try {
-        // @ts-expect-error socket.io-client is optional
         const { io } = await import('socket.io-client')
         const socket = io('/?XTransformPort=3004', {
           transports: ['websocket', 'polling'],

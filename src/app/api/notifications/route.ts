@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
 import { pruneUserNotifications } from '@/lib/push'
+import { isMissingColumnError } from '@/lib/prisma-column-safe'
 
 /**
  * GET /api/notifications
@@ -33,26 +34,39 @@ export async function GET(req: NextRequest) {
     // Retention: keep newest 100 per user, delete older rows (self-healing)
     await pruneUserNotifications(userId)
 
-    // Explicit select WITHOUT the new relatedType/relatedId columns so this
-    // endpoint keeps working on databases that haven't received the
-    // notification-related-columns migration yet (no P2022 on old schemas).
-    const notifications = await db.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset,
-      select: {
-        id: true,
-        userId: true,
-        dealId: true,
-        type: true,
-        title: true,
-        message: true,
-        read: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })
+    // Select includes relatedType/relatedId (order/deal deep-link routing)
+    // with a P2022 fallback for databases that haven't received the
+    // notification-related-columns migration yet.
+    const selectBase = {
+      id: true,
+      userId: true,
+      dealId: true,
+      type: true,
+      title: true,
+      message: true,
+      read: true,
+      createdAt: true,
+      updatedAt: true,
+    } as const
+    let notifications
+    try {
+      notifications = await db.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        select: { ...selectBase, relatedType: true, relatedId: true },
+      })
+    } catch (err) {
+      if (!isMissingColumnError(err, 'relatedType')) throw err
+      notifications = await db.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        select: selectBase,
+      })
+    }
 
     const unreadCount = await db.notification.count({
       where: { userId, read: false },

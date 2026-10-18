@@ -673,6 +673,8 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      // Service orders only — product orders live in the Marketplace Orders panel
+      params.set('type', 'service');
       if (statusFilter) params.set('status', statusFilter);
       if (paymentFilter) params.set('paymentStatus', paymentFilter);
       if (search.trim()) params.set('search', search.trim());

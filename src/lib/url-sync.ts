@@ -205,7 +205,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'seller-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions', 'my-orders'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'my-orders', 'seller-orders', 'seller-marketplace-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;
@@ -239,7 +239,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       'profile', 'contract', 'admin-calls', 'disputes', 'blog', 'email-settings',
       'whatsapp-settings',
       'two-factor', 'ai-prompt', 'popup', 'google-oauth', 'piprapay', 'affiliate',
-      'affiliate-payouts', 'services',
+      'affiliate-payouts', 'marketplace', 'pending-products', 'services', 'marketplace-orders',
     ];
     result.adminPanel = valid.includes(seg2 as AdminPanel) ? seg2 as AdminPanel : 'dashboard';
     return result;

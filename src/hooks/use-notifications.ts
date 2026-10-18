@@ -74,6 +74,8 @@ export function useNotifications() {
           message: n.message,
           read: false,
           dealId: n.dealId,
+          relatedType: n.relatedType ?? null,
+          relatedId: n.relatedId ?? null,
           createdAt: n.createdAt || new Date().toISOString(),
         },
         ...prev,
@@ -166,11 +168,14 @@ export function useNotifications() {
  * Navigate to the target of a notification.
  *  - deal notifications open the deal detail inside the dashboard SPA
  *    (no full reload when already in the SPA)
+ *  - marketplace order notifications open the right orders list
+ *    (seller view for sellers / order_new, buyer view otherwise)
  *  - anything else lands on the dashboard overview
  * Related deal ids are validated server-side on every deal API call
- * (requireDealAccess), so a forged link cannot expose another user's deal.
+ * (requireDealAccess), and order APIs are participant-scoped the same
+ * way, so a forged link cannot expose another user's data.
  */
-export function navigateToNotification(n: Pick<NotificationItem, 'dealId' | 'relatedType'>) {
+export function navigateToNotification(n: Pick<NotificationItem, 'dealId' | 'relatedType' | 'type'>) {
   if (typeof window === 'undefined') return
   if (n.dealId) {
     const state = useAppStore.getState()
@@ -182,6 +187,22 @@ export function navigateToNotification(n: Pick<NotificationItem, 'dealId' | 'rel
     } else {
       // Static route (/notifications) → real navigation into the SPA
       window.location.href = `/dashboard/deals/${n.dealId}`
+    }
+    return
+  }
+  // Marketplace order notifications → the orders list panel
+  if (n.relatedType === 'order') {
+    const state = useAppStore.getState()
+    const isSeller = !!state.user?.isSeller && !state.user?.sellerDisabled
+    // order_new is always addressed to the seller; for the rest prefer the
+    // seller view when the account is a seller, else the buyer's orders
+    const panel = (n.type === 'order_new' || isSeller)
+      ? 'seller-marketplace-orders' as const
+      : 'my-orders' as const
+    if (state.view === 'dashboard') {
+      state.setDashboardPanel(panel)
+    } else {
+      window.location.href = `/dashboard/${panel}`
     }
     return
   }
