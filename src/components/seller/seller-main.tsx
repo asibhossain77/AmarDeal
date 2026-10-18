@@ -16,6 +16,7 @@ import { NewDealForm } from '@/components/dashboard/new-deal-form';
 import { DealUnreadBadge } from '@/components/dashboard/deal-unread-badge';
 import { BackButton } from '@/components/shared/back-button';
 import { ProductTypeSelector } from '@/components/shared/product-type-selector';
+import { ItemTypeSelector, type ItemTypeValue } from '@/components/shared/item-type-selector';
 import {
   ProductOptionsEditor, createEmptyOption, validateOptionRows, optionRowsToPayload,
   type OptionRow,
@@ -23,7 +24,7 @@ import {
 import { useT } from '@/lib/i18n';
 import {
   Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye, Layers,
-  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X, FileText,
+  UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X, FileText, Truck, Cloud,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
@@ -231,6 +232,8 @@ interface SellerProductOption {
 interface SellerProduct {
   id: string; title: string; description: string; price: number; category: string; image: string | null; status: string; createdAt: string;
   productType?: string;
+  itemType?: string;
+  quantity?: number;
   options?: SellerProductOption[];
 }
 
@@ -419,6 +422,13 @@ export function AddProductPanel() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
+  /* Task 82: item type — physical vs the existing non-physical kinds.
+     No default: the seller must choose explicitly; submit is blocked until picked. */
+  const [itemType, setItemType] = useState<ItemTypeValue>('');
+  /* Physical-only fields (stock reuses the product's quantity column) */
+  const [stock, setStock] = useState('');
+  const [condition, setCondition] = useState<'' | 'new' | 'used'>('');
+  const [shippingInfo, setShippingInfo] = useState('');
   /* Multi-price support: product type decides which fields show below */
   const [productType, setProductType] = useState<'single' | 'multi'>('single');
   const [options, setOptions] = useState<OptionRow[]>([createEmptyOption()]);
@@ -496,10 +506,28 @@ export function AddProductPanel() {
       return;
     }
 
+    /* ── Item type must be chosen explicitly (Task 82) ── */
+    if (!itemType) {
+      toast.error(t('seller.itemTypeRequired'));
+      return;
+    }
+    const isPhysical = itemType === 'physical';
+
     /* ── Type-specific client validation (server re-validates everything) ──
        Free products are always single + price 0 — no options, no price needed. */
     let payloadOptions: OptionRow[] | undefined;
-    if (isFree) {
+    if (isPhysical) {
+      /* Physical: single fixed price + explicit stock — no free, no options, no file */
+      if (!price || Number(price) <= 0) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+      const stockNum = Math.floor(Number(stock));
+      if (!stock || Number.isNaN(stockNum) || stockNum < 1) {
+        toast.error(t('seller.stockInvalid'));
+        return;
+      }
+    } else if (isFree) {
       // free product — nothing else to validate
     } else if (productType === 'multi') {
       const errorKey = validateOptionRows(options);
@@ -523,24 +551,34 @@ export function AddProductPanel() {
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
-          ...(isFree
-            ? { productType: 'single', price: 0 }
-            : productType === 'multi'
-              ? { productType, options: optionRowsToPayload(payloadOptions!) }
-              : { productType, price: Number(price) }),
+          itemType,
+          ...(isPhysical
+            ? {
+                productType: 'single',
+                price: Number(price),
+                quantity: Math.floor(Number(stock)),
+                condition: condition || null,
+                shippingInfo: shippingInfo.trim() || null,
+              }
+            : isFree
+              ? { productType: 'single', price: 0 }
+              : productType === 'multi'
+                ? { productType, options: optionRowsToPayload(payloadOptions!) }
+                : { productType, price: Number(price) }),
           category,
           image: image.trim() || null,
-          isFree,
-          fileKey: fileInfo?.key || null,
-          fileName: fileInfo?.name || null,
-          fileSize: fileInfo?.size || null,
-          fileType: fileInfo?.type || null,
+          isFree: isPhysical ? false : isFree,
+          fileKey: isPhysical ? null : (fileInfo?.key || null),
+          fileName: isPhysical ? null : (fileInfo?.name || null),
+          fileSize: isPhysical ? null : (fileInfo?.size || null),
+          fileType: isPhysical ? null : (fileInfo?.type || null),
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setShowPendingDialog(true);
         setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
+        setItemType(''); setStock(''); setCondition(''); setShippingInfo('');
         setProductType('single'); setOptions([createEmptyOption()]);
         setIsFree(false); setFileInfo(null);
       } else {
@@ -563,8 +601,9 @@ export function AddProductPanel() {
       </div>
 
       <SolidCard className="space-y-5">
-        {/* Step 1: Product type — decides which fields appear below */}
-        <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
+        {/* Step 1: Item type (Task 82) — physical vs non-physical. No default;
+            the choice decides which fields appear below. */}
+        <ItemTypeSelector value={itemType} onChange={setItemType} t={t} />
 
         <div className="space-y-2">
           <Label className="text-sm font-semibold">{t('seller.productTitle')}</Label>
@@ -576,21 +615,71 @@ export function AddProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        {/* Step 2: type-specific pricing fields */}
-        {productType === 'single' ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-sm font-semibold">{t('seller.productPrice')} (\u09F3)</Label>
-              <div className="flex items-center gap-2">
-                <Switch id="free-toggle" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
-                <Label htmlFor="free-toggle" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+        {/* Step 2 — NON-PHYSICAL: existing pricing fields, preserved 1:1 */}
+        {itemType === 'non_physical' && (
+          <>
+            <ProductTypeSelector value={productType} onChange={setProductType} t={t} />
+
+            {productType === 'single' ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+                  <div className="flex items-center gap-2">
+                    <Switch id="free-toggle" checked={isFree} onCheckedChange={(v) => { setIsFree(v); if (v) setPrice(''); }} className="scale-90" />
+                    <Label htmlFor="free-toggle" className="cursor-pointer text-[12px] font-medium text-muted-foreground">{t('seller.isFreeProduct')}</Label>
+                  </div>
+                </div>
+                <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
+                {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
+              </div>
+            ) : (
+              <ProductOptionsEditor options={options} onChange={setOptions} />
+            )}
+          </>
+        )}
+
+        {/* Step 2 — PHYSICAL: price, stock, optional condition + delivery info */}
+        {itemType === 'physical' && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+              <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="physical-stock" className="text-sm font-semibold">
+                  {t('seller.stock')} <span className="text-destructive">*</span>
+                </Label>
+                <Input id="physical-stock" type="number" min="1" placeholder="10" value={stock} onChange={(e) => setStock(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">{t('seller.stockHint')}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.condition')}</Label>
+                <select
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value as '' | 'new' | 'used')}
+                  className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">{t('seller.conditionNotSet')}</option>
+                  <option value="new">{t('seller.conditionNew')}</option>
+                  <option value="used">{t('seller.conditionUsed')}</option>
+                </select>
               </div>
             </div>
-            <Input type="number" placeholder="0" value={isFree ? '0' : price} onChange={(e) => setPrice(e.target.value)} min="1" disabled={isFree} className={isFree ? 'opacity-60' : ''} />
-            {isFree && <p className="text-[11px] text-muted-foreground">{t('seller.isFreeProductHint')}</p>}
-          </div>
-        ) : (
-          <ProductOptionsEditor options={options} onChange={setOptions} />
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.shippingInfo')}</Label>
+              <Textarea
+                placeholder={t('seller.shippingInfoPh')}
+                value={shippingInfo}
+                onChange={(e) => setShippingInfo(e.target.value)}
+                rows={2}
+                className="resize-none"
+              />
+              <p className="text-[11px] text-muted-foreground">{t('seller.shippingInfoHint')}</p>
+            </div>
+          </>
         )}
 
         <div className="space-y-2 sm:space-y-3">
@@ -648,12 +737,15 @@ export function AddProductPanel() {
           <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
         </div>
 
-        {/* Digital product file — buyers download it after payment verification (or free) */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
-          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
-          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
-        </div>
+        {/* Digital product file — buyers download it after payment verification (or free).
+            Physical products never carry a digital file — the shipped item IS the deliverable. */}
+        {itemType !== 'physical' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+            <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+            <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+          </div>
+        )}
 
         <div className="flex justify-end pt-2">
           <Button onClick={handleSubmit} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
@@ -712,6 +804,11 @@ export function EditProductPanel() {
   const [uploadError, setUploadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  /* Task 82 — saved item type (locked after creation) + physical-only fields */
+  const [savedItemType, setSavedItemType] = useState<'physical' | 'non_physical'>('non_physical');
+  const [stock, setStock] = useState('');
+  const [condition, setCondition] = useState<'' | 'new' | 'used'>('');
+  const [shippingInfo, setShippingInfo] = useState('');
   /* Multi-price support — type is locked after creation, options are editable */
   const [productType, setProductType] = useState<'single' | 'multi'>('single');
   const [options, setOptions] = useState<OptionRow[]>([]);
@@ -739,6 +836,10 @@ export function EditProductPanel() {
           setImage(p.image || '');
           const type: 'single' | 'multi' = p.productType === 'multi' ? 'multi' : 'single';
           setProductType(type);
+          setSavedItemType(p.itemType === 'physical' ? 'physical' : 'non_physical');
+          setStock(String(p.quantity ?? 10));
+          setCondition(p.condition === 'new' || p.condition === 'used' ? p.condition : '');
+          setShippingInfo(p.shippingInfo || '');
           setOptions(
             type === 'multi' && Array.isArray(p.options) && p.options.length > 0
               ? p.options.map((o: { id: string; name: string; price: number; isAvailable: boolean }) => ({
@@ -811,9 +912,31 @@ export function EditProductPanel() {
     }
 
     /* Multi: validate options — price is derived from them server-side (free not allowed).
-       Single: free toggle wins over price; paid needs price > 0. */
+       Single: free toggle wins over price; paid needs price > 0.
+       Physical (Task 82): stock ≥ 1 required on create; 0 allowed on edit (sold out). */
+    const isPhysical = savedItemType === 'physical';
     let payload: Record<string, unknown>;
-    if (productType === 'multi') {
+    if (isPhysical) {
+      if (!description.trim()) { toast.error(t('seller.fillAllFields')); return; }
+      const stockNum = Math.floor(Number(stock));
+      if (stock === '' || Number.isNaN(stockNum) || stockNum < 0) {
+        toast.error(t('seller.stockInvalid'));
+        return;
+      }
+      if (!price || Number(price) <= 0) {
+        toast.error(t('seller.fillAllFields'));
+        return;
+      }
+      payload = {
+        description: description.trim(),
+        category,
+        image: image.trim() || null,
+        price: Number(price),
+        quantity: stockNum,
+        condition: condition || null,
+        shippingInfo: shippingInfo.trim() || null,
+      };
+    } else if (productType === 'multi') {
       if (isFree) {
         toast.error(t('seller.fillAllFields'));
         return;
@@ -925,27 +1048,83 @@ export function EditProductPanel() {
           <Textarea placeholder={t('seller.productDescPh')} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
         </div>
 
-        {/* Product type — locked after creation (shown read-only) */}
+        {/* Item type (Task 82) — locked after creation, shown read-only */}
         <div className="space-y-2">
           <Label className="text-sm font-semibold flex items-center gap-1.5">
-            {t('seller.productType')}
+            {t('seller.itemType')}
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
               <Lock className="h-3 w-3" />
               {t('seller.titleNotEditable')}
             </span>
           </Label>
           <div className="flex items-center gap-2">
-            <Badge className={productType === 'multi' ? 'gap-1.5 bg-primary/10 text-primary border-0' : 'gap-1.5 bg-muted text-muted-foreground border-0'}>
-              {productType === 'multi' ? <Layers className="h-3 w-3" /> : null}
-              {productType === 'multi' ? t('seller.typeMulti') : t('seller.typeSingle')}
+            <Badge className={savedItemType === 'physical' ? 'gap-1.5 bg-primary/10 text-primary border-0' : 'gap-1.5 bg-muted text-muted-foreground border-0'}>
+              {savedItemType === 'physical' ? <Truck className="h-3 w-3" /> : <Cloud className="h-3 w-3" />}
+              {savedItemType === 'physical' ? t('seller.itemPhysical') : t('seller.itemNonPhysical')}
             </Badge>
-            {productType === 'multi' && (
-              <span className="text-xs text-muted-foreground">{t('seller.optionsCount', { count: options.length })}</span>
-            )}
           </div>
         </div>
 
-        {productType === 'multi' ? (
+        {/* Pricing type — non-physical only (physical is always single fixed price) */}
+        {savedItemType === 'non_physical' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-1.5">
+              {t('seller.productType')}
+              <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                <Lock className="h-3 w-3" />
+                {t('seller.titleNotEditable')}
+              </span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Badge className={productType === 'multi' ? 'gap-1.5 bg-primary/10 text-primary border-0' : 'gap-1.5 bg-muted text-muted-foreground border-0'}>
+                {productType === 'multi' ? <Layers className="h-3 w-3" /> : null}
+                {productType === 'multi' ? t('seller.typeMulti') : t('seller.typeSingle')}
+              </Badge>
+              {productType === 'multi' && (
+                <span className="text-xs text-muted-foreground">{t('seller.optionsCount', { count: options.length })}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {savedItemType === 'physical' ? (
+          /* ── PHYSICAL: price + stock + condition + delivery info ── */
+          <>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.productPrice')} (৳)</Label>
+              <Input type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} min="1" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="physical-stock-edit" className="text-sm font-semibold">{t('seller.stock')}</Label>
+                <Input id="physical-stock-edit" type="number" min="0" value={stock} onChange={(e) => setStock(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">{t('seller.stockEditHint')}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t('seller.condition')}</Label>
+                <select
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value as '' | 'new' | 'used')}
+                  className="h-10 w-full rounded-lg border border-border bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">{t('seller.conditionNotSet')}</option>
+                  <option value="new">{t('seller.conditionNew')}</option>
+                  <option value="used">{t('seller.conditionUsed')}</option>
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.shippingInfo')}</Label>
+              <Textarea
+                placeholder={t('seller.shippingInfoPh')}
+                value={shippingInfo}
+                onChange={(e) => setShippingInfo(e.target.value)}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+          </>
+        ) : productType === 'multi' ? (
           /* Multi: options editor — price derived from options server-side */
           <ProductOptionsEditor options={options} onChange={setOptions} />
         ) : (
@@ -1010,12 +1189,14 @@ export function EditProductPanel() {
           )}
         </div>
 
-        {/* Digital product file */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
-          <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
-          <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
-        </div>
+        {/* Digital product file — physical products never carry one */}
+        {savedItemType !== 'physical' && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">{t('seller.digitalFile')}</Label>
+            <DigitalFileUploader value={fileInfo} onChange={setFileInfo} onUploading={setFileBusy} t={t} />
+            <p className="text-[11px] text-muted-foreground">{t('seller.digitalFileHint')}</p>
+          </div>
+        )}
 
         <div className="flex justify-end pt-2">
           <Button onClick={handleSave} disabled={submitting || uploading || fileBusy} className="gap-2 shadow-lg shadow-primary/25">
@@ -1168,6 +1349,18 @@ export function MyProductsPanel() {
               <div>
                 <h3 className="font-semibold text-sm text-foreground truncate pr-14">{p.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{p.description}</p>
+                {/* Item type line (Task 82) — physical shows its live stock */}
+                {p.itemType === 'physical' && (
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <Badge className="gap-1 bg-primary/10 text-primary border-0 text-[10px] font-semibold">
+                      <Truck className="h-3 w-3" />
+                      {t('seller.itemPhysicalShort')}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">
+                      {(p.quantity ?? 0) > 0 ? t('seller.stockCount', { count: p.quantity ?? 0 }) : t('seller.outOfStock')}
+                    </span>
+                  </div>
+                )}
                 {/* Product type line */}
                 {p.productType === 'multi' && p.options && p.options.length > 0 && (
                   <div className="mt-1.5 flex items-center gap-1.5">

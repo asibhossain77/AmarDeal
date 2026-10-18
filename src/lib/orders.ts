@@ -279,3 +279,29 @@ export async function grantDigitalEntitlementOnComplete(productId: string, buyer
     })
   } catch { /* entitlement must never fail the completion itself */ }
 }
+
+/* ── Physical stock restore (Task 82) ────────────────────────────
+   Physical orders RESERVE stock at creation (atomic decrement in
+   POST /api/orders). When such an order is CANCELLED, the reserved
+   units go back to the product's stock. Refund / failed terminal
+   states are offline money-and-ops decisions — the seller adjusts
+   stock manually there (the item may have already shipped). */
+export async function restorePhysicalStockOnCancel(
+  productId: string | null | undefined,
+  qty: number,
+): Promise<void> {
+  if (!productId || !(qty > 0)) return
+  try {
+    const product = await db.digitalProduct.findUnique({
+      where: { id: productId },
+      select: { itemType: true },
+    })
+    if (product?.itemType !== 'physical') return // non-physical has no stock
+    await db.digitalProduct.update({
+      where: { id: productId },
+      data: { quantity: { increment: qty } },
+    })
+  } catch {
+    // best-effort — a stock restore must never fail the cancellation
+  }
+}

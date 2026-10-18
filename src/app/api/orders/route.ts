@@ -105,6 +105,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'এই সেলার বর্তমানে অর্ডার গ্রহণ করছেন না' }, { status: 400 })
     }
 
+    const isPlatformOwned = !!product.seller.admin
+
+    // ── Task 82: Order Now is for PHYSICAL products ──
+    // Non-physical SELLER products are served by the Admin Deal / Message
+    // actions instead. Platform-owned (admin-sold) products keep the
+    // existing direct-order behaviour — the Task 62/81 flow is preserved.
+    // The client hides the button, but THIS is the security boundary:
+    // eligibility is re-checked here on every submission.
+    if (!isPlatformOwned && product.itemType !== 'physical') {
+      return NextResponse.json(
+        { error: 'এই পণ্যটি সরাসরি অর্ডার করা যাবে না — Admin Deal বা মেসেজ ব্যবহার করুন', code: 'ORDER_NOT_ALLOWED' },
+        { status: 403 },
+      )
+    }
+
+    // Physical orders never use SMM-style option packages (enforced at
+    // creation); this is defense-in-depth against tampered rows.
+    const isPhysicalOrder = product.itemType === 'physical'
+    if (isPhysicalOrder && product.productType === 'multi') {
+      return NextResponse.json({ error: 'অবৈধ পণ্য কনফিগারেশন' }, { status: 400 })
+    }
+
     // ── Multi-price products: verify the option server-side, use ITS price ──
     let unitPrice = product.price
     let verifiedOptionId: string | null = null
@@ -129,12 +151,20 @@ export async function POST(req: NextRequest) {
     // Trusted server-side total — client numbers never reach the DB
     const totalAmount = Math.round(unitPrice * qty * 100) / 100
 
+    // Physical items have real stock — the order must fit within it.
+    // (checked here, after qty is clamped; the decrement itself is atomic
+    // inside the creation transaction below)
+    if (isPhysicalOrder && product.quantity < qty) {
+      return NextResponse.json(
+        { error: 'অপর্যাপ্ত স্টক — অর্ডারের পরিমাণ স্টকের চেয়ে বেশি', code: 'INSUFFICIENT_STOCK' },
+        { status: 400 },
+      )
+    }
+
     // Free digital products go through the claim/download flow, not paid orders
     if (product.isFree) {
       return NextResponse.json({ error: 'এই পণ্যটি ফ্রি — ডাউনলোড পেজ থেকে সংগ্রহ করুন' }, { status: 400 })
     }
-
-    const isPlatformOwned = !!product.seller.admin
 
     const note = typeof customerNote === 'string' ? customerNote.trim().slice(0, 1000) || null : null
     const link =
@@ -143,6 +173,10 @@ export async function POST(req: NextRequest) {
         : null
 
     // ── Create with order-number collision retry ──
+    // Physical orders decrement stock ATOMICALLY: the guarded updateMany
+    // (quantity >= qty) and the order INSERT commit or roll back together,
+    // so concurrent checkouts can never oversell the last unit.
+    class StockConflict extends Error {}
     let order: {
       id: string; orderNumber: string; status: string; paymentStatus: string
       quantity: number; unitPriceAtOrder: number; totalAmount: number
@@ -150,27 +184,44 @@ export async function POST(req: NextRequest) {
     } | null = null
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        order = await db.marketplaceOrder.create({
-          data: {
-            orderNumber: generateOrderNumber(),
-            idempotencyKey: reqId ?? `srv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
-            userId,
-            sellerId: product.sellerId,
-            productId: product.id,
-            productOptionId: verifiedOptionId,
-            serviceName: optionName ? `${product.title} — ${optionName}` : product.title,
-            quantity: qty,
-            pricingUnit: 'unit',
-            unitPriceAtOrder: unitPrice,
-            totalAmount,
-            status: 'pending_payment',
-            paymentStatus: 'unpaid',
-            customerNote: note,
-            linkUrl: link,
-          },
-        })
+        const createData = {
+          orderNumber: generateOrderNumber(),
+          idempotencyKey: reqId ?? `srv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+          userId,
+          sellerId: product.sellerId,
+          productId: product.id,
+          productOptionId: verifiedOptionId,
+          serviceName: optionName ? `${product.title} — ${optionName}` : product.title,
+          quantity: qty,
+          pricingUnit: 'unit',
+          unitPriceAtOrder: unitPrice,
+          totalAmount,
+          status: 'pending_payment',
+          paymentStatus: 'unpaid',
+          customerNote: note,
+          linkUrl: link,
+        }
+        if (isPhysicalOrder) {
+          order = await db.$transaction(async (tx) => {
+            const upd = await tx.digitalProduct.updateMany({
+              where: { id: product.id, quantity: { gte: qty } },
+              data: { quantity: { decrement: qty } },
+            })
+            if (upd.count !== 1) throw new StockConflict()
+            return tx.marketplaceOrder.create({ data: createData })
+          })
+        } else {
+          order = await db.marketplaceOrder.create({ data: createData })
+        }
         break
       } catch (err: unknown) {
+        if (err instanceof StockConflict) {
+          // Someone else bought the last units mid-checkout — no retry
+          return NextResponse.json(
+            { error: 'স্টক শেষ হয়ে গেছে — স্টক আপডেট হয়েছে, আবার চেষ্টা করুন', code: 'STOCK_CHANGED' },
+            { status: 409 },
+          )
+        }
         const code = (err as { code?: string })?.code
         if (code === 'P2002' && attempt < 3) {
           const msg = err instanceof Error ? err.message : String(err)

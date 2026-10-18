@@ -6,6 +6,7 @@ import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptions
 import { validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, deleteFileByKey, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
 import { isValidProductCategory } from '@/lib/product-categories'
+import { isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
 
 const VALID_STATUSES = ['active', 'inactive', 'sold'] as const
 
@@ -28,7 +29,7 @@ export async function GET(
         where: { id },
         include: {
           seller: {
-            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, admin: { select: { userId: true } } },
           },
           options: OPTIONS_SELECT,
         },
@@ -82,6 +83,11 @@ export async function GET(
         fileName: (product as { fileName?: string | null }).fileName ?? null,
         fileSize: (product as { fileSize?: number | null }).fileSize ?? null,
         fileType: (product as { fileType?: string | null }).fileType ?? null,
+        // Item type + physical-only attributes (Task 82); legacy rows → non_physical
+        itemType: (product as { itemType?: string }).itemType === 'physical' ? 'physical' : 'non_physical',
+        condition: (product as { condition?: string | null }).condition ?? null,
+        shippingInfo: (product as { shippingInfo?: string | null }).shippingInfo ?? null,
+        isPlatformOwned: !!(product.seller as { admin?: { userId: string } | null } | undefined)?.admin,
         seller: {
           id: product.seller.id,
           name: product.seller.name,
@@ -114,7 +120,7 @@ export async function PATCH(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true },
+      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true, itemType: true },
     })
 
     if (!existing) {
@@ -132,7 +138,18 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const { title, description, price, category, image, status, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType } = body
+    const { title, description, price, category, image, status, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo } = body
+
+    // Item type is locked after creation (same rule as productType) — a
+    // physical product can never silently become digital/service or back.
+    const savedItemType = existing.itemType === 'physical' ? 'physical' : 'non_physical'
+    if (itemType !== undefined && itemType !== null && itemType !== savedItemType) {
+      return NextResponse.json(
+        { success: false, error: 'পণ্যের ধরন পরিবর্তন করা যায় না — প্রয়োজনে পণ্যটি মুছে নতুন করে তৈরি করুন' },
+        { status: 400 }
+      )
+    }
+    const isPhysical = savedItemType === 'physical'
 
     // Title is locked after creation — sellers may only edit description,
     // price, category, image, status, quantity and (for multi) the options
@@ -177,9 +194,16 @@ export async function PATCH(
       data.description = description.trim()
     }
 
-    // Free toggle — free products are always price 0 (single products only)
+    // Free toggle — free products are always price 0 (single products only).
+    // Physical items can never be free — stock + shipping make no sense there.
     const freeNow = isFree !== undefined ? !!isFree : !!(existing as { isFree?: boolean }).isFree
     if (isFree !== undefined) {
+      if (isPhysical && freeNow) {
+        return NextResponse.json(
+          { success: false, error: 'ফিজিক্যাল পণ্য ফ্রি হিসেবে দেওয়া যাবে না' },
+          { status: 400 }
+        )
+      }
       data.isFree = freeNow
     }
 
@@ -267,16 +291,45 @@ export async function PATCH(
 
     if (quantity !== undefined) {
       const quantityNum = Math.floor(Number(quantity))
-      if (Number.isNaN(quantityNum) || quantityNum < 1) {
+      // Physical: 0 allowed (sold out — orders can also drive it to 0).
+      // Non-physical: historical ≥ 1 rule untouched.
+      const minQty = isPhysical ? 0 : 1
+      if (Number.isNaN(quantityNum) || quantityNum < minQty) {
         return NextResponse.json(
-          { success: false, error: 'কোয়ান্টিটি অবশ্যই ১ বা তার বেশি হতে হবে' },
+          { success: false, error: isPhysical ? 'স্টক অবশ্যই ০ বা তার বেশি হতে হবে' : 'কোয়ান্টিটি অবশ্যই ১ বা তার বেশি হতে হবে' },
           { status: 400 }
         )
       }
       data.quantity = quantityNum
     }
 
-    // Digital file — attach / replace / remove
+    // Physical-only attributes (Task 82). Non-physical rows keep them null.
+    if (isPhysical) {
+      if (condition !== undefined) {
+        if (condition === null || condition === '') {
+          data.condition = null
+        } else if (isItemCondition(condition)) {
+          data.condition = condition
+        } else {
+          return NextResponse.json(
+            { success: false, error: 'অবৈধ পণ্যের অবস্থা' },
+            { status: 400 }
+          )
+        }
+      }
+      if (shippingInfo !== undefined) {
+        data.shippingInfo = sanitizeShippingInfo(shippingInfo)
+      }
+    }
+
+    // Digital file — attach / replace / remove. Physical products never
+    // carry a digital file — the shipped item IS the deliverable.
+    if (fileKey !== undefined && fileKey !== null && fileKey !== '' && isPhysical) {
+      return NextResponse.json(
+        { success: false, error: 'ফিজিক্যাল পণ্যে ডিজিটাল ফাইল যুক্ত করা যাবে না' },
+        { status: 400 }
+      )
+    }
     if (fileKey !== undefined) {
       if (fileKey === null || fileKey === '') {
         // Removal

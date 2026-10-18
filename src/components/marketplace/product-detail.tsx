@@ -8,8 +8,10 @@
  *
  * Layout:
  *   Mobile  — single column: image → badges/title/price → seller → options →
- *             quantity → three actions (Order Now · Admin Deal · Message) →
- *             description (Read More) → product details → suggested items.
+ *             quantity → type-based actions (physical: Order Now + Admin Deal;
+ *             non-physical seller product: Admin Deal + Message; platform-
+ *             owned keeps the legacy trio) → description (Read More) →
+ *             product details → suggested items.
  *   Desktop — two-column grid (image left, info + actions right), with the
  *             description and details sections in full content width below.
  *
@@ -29,7 +31,7 @@ import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Loader2, User,
   Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2,
   Facebook, FileDown, Download, ChevronDown, FileText, ClipboardList,
-  CheckCircle2, Wallet, Clock3, Zap,
+  CheckCircle2, Wallet, Clock3, Zap, Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +54,10 @@ interface OrderProduct {
   id: string; title: string; description: string; price: number; category: string;
   image?: string | null; quantity?: number; status: string; createdAt: string; seller: OrderProductSeller;
   productType?: string;
+  itemType?: string;
+  condition?: string | null;
+  shippingInfo?: string | null;
+  isPlatformOwned?: boolean;
   options?: OrderProductOption[];
   optionsCount?: number;
   minPrice?: number;
@@ -59,7 +65,8 @@ interface OrderProduct {
   isFree?: boolean; hasFile?: boolean; fileName?: string | null; fileSize?: number | null;
 }
 
-/* Quantity is an order-time selection only — no stock concept (max 99 per order) */
+/* Single-price physical products: quantity is capped by real stock (max 99
+   per order for everything else — non-physical items have no stock concept) */
 const MAX_QTY = 99;
 
 /* ── Direct marketplace order (POST /api/orders — NEVER a Deal) ── */
@@ -146,6 +153,20 @@ export function ProductDetailView() {
 
   const isDigital = !!product?.hasFile;
   const isFreeDigital = isDigital && !!product?.isFree;
+
+  /* ── Task 82: item type drives the action buttons ──
+     Physical product             → Order Now + Admin Deal (no Message)
+     Non-physical seller product  → Admin Deal + Message (no Order Now)
+     Platform-owned (admin-sold)  → existing direct-order flow preserved
+     This is presentation only — POST /api/orders re-validates eligibility
+     and stock server-side, so client state is never a security control. */
+  const isPhysical = product?.itemType === 'physical';
+  const isPlatformOwned = !!product?.isPlatformOwned;
+  const canOrderNow = isPhysical || isPlatformOwned;
+  const canMessage = !isPhysical;
+  const stock = isPhysical ? (product?.quantity ?? 0) : null;
+  const outOfStock = isPhysical && stock !== null && stock <= 0;
+  const maxQty = isPhysical && stock !== null && stock > 0 ? Math.min(MAX_QTY, stock) : MAX_QTY;
 
   /* Meta Pixel — ViewContent (browser-only; fires once per loaded product) */
   useEffect(() => {
@@ -245,6 +266,12 @@ export function ProductDetailView() {
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
     /* Multi-price: an option MUST be selected before ordering */
     if (isMulti && !selectedOption) { toast.error(t('marketplace.selectPackageHint')); return; }
+    /* Physical: client-side convenience check — the server re-validates
+       against live stock atomically at order creation */
+    if (isPhysical && stock !== null && qty > stock) {
+      toast.error(t('marketplace.insufficientStock'));
+      return;
+    }
     setShowBuyConfirm(true);
   };
 
@@ -285,6 +312,14 @@ export function ProductDetailView() {
         setPayOpen(false);
         setPaySender(''); setPayTxn(''); setPayMethodId('');
         toast.success(t('marketplace.orderPlaced'));
+        /* Physical: refresh the product so the stock badge reflects the
+           units just reserved by this order */
+        if (isPhysical) {
+          fetch(`/api/products/${product.id}`)
+            .then((r) => r.json())
+            .then((d) => { if (d.success && d.product) setProduct(d.product); })
+            .catch(() => {});
+        }
       } else if (res.status === 401) {
         toast.error(t('marketplace.loginRequired'));
         setView('auth');
@@ -579,6 +614,20 @@ export function ProductDetailView() {
                 {t('marketplace.digitalProduct')}
               </span>
             )}
+            {/* Physical: live stock chip (real quantity from the DB) */}
+            {isPhysical && stock !== null && (
+              outOfStock ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-bold text-red-600 dark:bg-red-500/15 dark:text-red-400">
+                  <Boxes className="h-3 w-3" />
+                  {t('marketplace.outOfStock')}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-foreground">
+                  <Boxes className="h-3 w-3 text-primary" />
+                  {t('marketplace.inStockCount', { count: stock })}
+                </span>
+              )
+            )}
             <span className="inline-flex items-center gap-1 text-primary">
               <ShieldCheck className="h-4 w-4" />
               <span className="text-[11px] font-semibold">{t('marketplace.verified')}</span>
@@ -739,8 +788,9 @@ export function ProductDetailView() {
             </div>
           )}
 
-          {/* Quantity — order-time selection only (no stock). Hidden for
-              single-price digital files (a file ×N is meaningless), but
+          {/* Quantity — order-time selection. Physical items are capped by
+              live stock; non-physical keep the historical max of 99. Hidden
+              for single-price digital files (a file ×N is meaningless), but
               ALWAYS shown for multi-price products. */}
           {(!isDigital || isMulti) && (
             <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -760,19 +810,24 @@ export function ProductDetailView() {
                   <button
                     type="button"
                     aria-label="increase quantity"
-                    onClick={() => setQty((q) => Math.min(MAX_QTY, q + 1))}
-                    disabled={qty >= MAX_QTY}
+                    onClick={() => setQty((q) => Math.min(maxQty, q + 1))}
+                    disabled={qty >= maxQty}
                     className="flex h-10 w-10 items-center justify-center text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+                {isPhysical && stock !== null && stock > 0 && (
+                  <span className="text-[11px] font-medium text-muted-foreground">{t('marketplace.maxStockHint', { count: stock })}</span>
+                )}
               </div>
             </div>
           )}
 
-          {/* ── Action area — Order Now · Admin Deal · Message (plus the
-                 existing digital claim/download and order-confirm states) ── */}
+          {/* ── Action area — buttons depend on the saved item type (Task 82):
+                 physical → Order Now + Admin Deal; non-physical seller product →
+                 Admin Deal + Message; platform-owned keeps the legacy trio.
+                 Plus the existing digital claim/download and order-confirm states. ── */}
           <div className="mt-5">
             {placedOrder ? (
               /* ── Order placed — success card (normal marketplace order, NOT a deal) ── */
@@ -908,21 +963,29 @@ export function ProductDetailView() {
               </div>
             ) : (
               <div className="space-y-2">
-                {/* Order Now — creates a NORMAL marketplace order (never a Deal);
-                    the seller sees it in their Dashboard Orders page */}
-                <Button
-                  onClick={handleBuyNow}
-                  disabled={isMulti && !selectedOption}
-                  className="h-12 w-full gap-2 rounded-xl text-[15px] font-bold shadow-lg shadow-primary/25"
-                >
-                  <ShoppingCart className="h-[18px] w-[18px] shrink-0" />
-                  <span className="truncate">
-                    {t('marketplace.orderNow')}
-                    {isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty)}` : ''}
-                  </span>
-                </Button>
-                {/* Secondary row — Admin Deal (existing route) + Message (existing WhatsApp contact) */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Order Now — PHYSICAL products (and preserved platform-owned
+                    products) only. Creates a NORMAL marketplace order (never a
+                    Deal); the seller sees it in their Dashboard Orders page.
+                    Hidden for non-physical seller products — they use the
+                    Admin Deal / Message actions below. */}
+                {canOrderNow && (
+                  <Button
+                    onClick={handleBuyNow}
+                    disabled={outOfStock || (isMulti && !selectedOption)}
+                    className="h-12 w-full gap-2 rounded-xl text-[15px] font-bold shadow-lg shadow-primary/25"
+                  >
+                    <ShoppingCart className="h-[18px] w-[18px] shrink-0" />
+                    <span className="truncate">
+                      {outOfStock
+                        ? t('marketplace.outOfStock')
+                        : t('marketplace.orderNow')}
+                      {!outOfStock && isMulti && selectedOption ? ` — ${formatPrice(selectedOption.price * qty)}` : ''}
+                    </span>
+                  </Button>
+                )}
+                {/* Secondary row — Admin Deal always; Message only for
+                    non-physical products (Task 82 visibility matrix) */}
+                <div className={`grid gap-2 ${canMessage ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <Button
                     variant="outline"
                     onClick={handleAdminDeal}
@@ -931,7 +994,7 @@ export function ProductDetailView() {
                     <ShieldCheck className="h-4 w-4 text-primary" />
                     <span className="truncate">{t('nav.newDeal')}</span>
                   </Button>
-                  {waHref ? (
+                  {canMessage && (waHref ? (
                     <a
                       href={waHref}
                       target="_blank"
@@ -951,8 +1014,14 @@ export function ProductDetailView() {
                       <MessageCircle className="h-4 w-4" />
                       <span className="truncate">{t('marketplace.message')}</span>
                     </button>
-                  )}
+                  ))}
                 </div>
+                {isPhysical && !outOfStock && (
+                  <p className="flex items-center justify-center gap-1.5 pt-1 text-[12px] text-muted-foreground">
+                    <Truck className="h-3.5 w-3.5 text-primary" />
+                    {t('marketplace.physicalHint')}
+                  </p>
+                )}
                 {isDigital && (
                   <p className="flex items-center justify-center gap-1.5 pt-1 text-[12px] text-muted-foreground">
                     <FileDown className="h-3.5 w-3.5 text-primary" />
@@ -1004,6 +1073,21 @@ export function ProductDetailView() {
             <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.seller')}</dt>
             <dd className="truncate text-[13px] font-semibold text-foreground">{product.seller.name}</dd>
           </div>
+          {/* Physical-only metadata rows — only fields the model really has */}
+          {isPhysical && product.condition && (
+            <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+              <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.itemCondition')}</dt>
+              <dd className="truncate text-[13px] font-semibold text-foreground">
+                {product.condition === 'used' ? t('seller.conditionUsed') : t('seller.conditionNew')}
+              </dd>
+            </div>
+          )}
+          {isPhysical && product.shippingInfo && (
+            <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+              <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.deliveryInfo')}</dt>
+              <dd className="whitespace-pre-wrap break-words text-right text-[13px] font-medium text-foreground/90">{product.shippingInfo}</dd>
+            </div>
+          )}
           {isDigital && product.fileName && (
             <div className="flex items-center justify-between gap-4 px-4 py-2.5">
               <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.digitalProduct')}</dt>

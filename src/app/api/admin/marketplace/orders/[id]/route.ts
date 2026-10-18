@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/admin-guard'
 import { canAdminTransition, ORDER_STATUSES } from '@/lib/marketplace-pricing'
 import { confirmMarketplaceOrderPayment } from '@/lib/marketplace-payments'
+import { restorePhysicalStockOnCancel } from '@/lib/orders'
 
 /* ═══════════════════════════════════════════════════════════
    GET   /api/admin/marketplace/orders/[id] — full detail
@@ -189,6 +190,11 @@ export async function PATCH(
       })
       if (updated.count === 0) {
         return NextResponse.json({ success: false, error: 'State changed, try again' }, { status: 409 })
+      }
+
+      // Physical product order cancelled by admin → restore reserved stock
+      if (toStatus === 'cancelled' && order.productId) {
+        await restorePhysicalStockOnCancel(order.productId, order.quantity)
       }
 
       await db.marketplaceOrderEvent.create({

@@ -110,6 +110,10 @@ async function main() {
       sellerId: seller1.id,
       status: 'active',
       productType: 'single',
+      // Task 82: regular sellers' products are only orderable as PHYSICAL —
+      // this product carries the whole seller-side order flow in t81-tests.
+      itemType: 'physical',
+      quantity: 100,
     },
   })
 
@@ -119,7 +123,9 @@ async function main() {
       description: 'Multi-option SMM service for T81 tests. Choose a package; quantity decides total delivery.',
       price: 500,
       category: 'social_media',
-      sellerId: seller1.id,
+      // Task 82: platform-owned products keep the direct-order flow (multi
+      // option verification + server pricing tests live here).
+      sellerId: admin.id,
       status: 'active',
       productType: 'multi',
       options: {
@@ -138,7 +144,10 @@ async function main() {
       description: 'Paid digital file product for T81 tests — completion should grant download entitlement.',
       price: 300,
       category: 'education',
-      sellerId: seller1.id,
+      // Task 82: digital-file products sold by REGULAR sellers are not
+      // orderable (Admin Deal / Message only) — this one is admin-sold so
+      // the entitlement-after-completion flow stays covered.
+      sellerId: admin.id,
       status: 'active',
       productType: 'single',
       fileKey: 'files/t81-test-ebook.pdf',

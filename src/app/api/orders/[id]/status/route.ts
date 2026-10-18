@@ -7,6 +7,7 @@ import {
   isOrderAction,
   notifyBuyerOrderUpdate,
   notifySellerOrderUpdate,
+  restorePhysicalStockOnCancel,
   type OrderAction,
 } from '@/lib/orders'
 
@@ -137,6 +138,10 @@ export async function PATCH(
     if (action === 'complete') {
       // paid digital-file order → grant the buyer download entitlement
       await grantDigitalEntitlementOnComplete(order.productId, order.userId)
+    }
+    if (action === 'cancel') {
+      // physical order cancelled → the reserved stock units go back
+      await restorePhysicalStockOnCancel(order.productId, updated.quantity)
     }
 
     // Notify the counterpart(s) — never the actor themself

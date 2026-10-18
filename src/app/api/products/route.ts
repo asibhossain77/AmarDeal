@@ -5,6 +5,7 @@ import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptions
 import { normalizeProductType, validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
 import { isValidProductCategory } from '@/lib/product-categories'
+import { normalizeItemType, isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
 
 /* PRODUCT_CATEGORIES lives in src/lib/product-categories.ts — single source of
    truth shared with PATCH /api/products/[id] so edits always accept every
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
         where,
         include: {
           seller: {
-            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true },
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, admin: { select: { userId: true } } },
           },
           options: {
             select: { id: true, name: true, price: true, isAvailable: true, sortOrder: true },
@@ -76,6 +77,13 @@ export async function GET(req: NextRequest) {
         fileName: (p as { fileName?: string | null }).fileName ?? null,
         fileSize: (p as { fileSize?: number | null }).fileSize ?? null,
         fileType: (p as { fileType?: string | null }).fileType ?? null,
+        // Item type + physical-only attributes (Task 82). Missing column /
+        // legacy rows → non_physical (old listings are never reclassified).
+        itemType: (p as { itemType?: string }).itemType === 'physical' ? 'physical' : 'non_physical',
+        condition: (p as { condition?: string | null }).condition ?? null,
+        shippingInfo: (p as { shippingInfo?: string | null }).shippingInfo ?? null,
+        // Admin-sold (platform-owned) products keep their direct-order flow
+        isPlatformOwned: !!(p.seller as { admin?: { userId: string } | null } | undefined)?.admin,
         seller: {
           id: p.seller.id,
           name: p.seller.name,
@@ -116,9 +124,35 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { title, description, price, category, image, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType } = await req.json()
+    const { title, description, price, category, image, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo } = await req.json()
 
     const freeProduct = !!isFree
+
+    // ── Item type (Task 82): physical vs the existing non-physical kinds ──
+    const itemKind = normalizeItemType(itemType)
+    if (!itemKind) {
+      return NextResponse.json(
+        { success: false, error: 'অবৈধ পণ্যের ধরন' },
+        { status: 400 }
+      )
+    }
+    const isPhysical = itemKind === 'physical'
+
+    // Physical items: no pricing packages, no free giveaway, no digital file
+    if (isPhysical) {
+      if (freeProduct) {
+        return NextResponse.json(
+          { success: false, error: 'ফিজিক্যাল পণ্য ফ্রি হিসেবে দেওয়া যাবে না' },
+          { status: 400 }
+        )
+      }
+      if (fileKey) {
+        return NextResponse.json(
+          { success: false, error: 'ফিজিক্যাল পণ্যে ডিজিটাল ফাইল যুক্ত করা যাবে না' },
+          { status: 400 }
+        )
+      }
+    }
 
     if (!title?.trim() || !description?.trim()) {
       return NextResponse.json(
@@ -127,8 +161,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Free products are always single-price with price 0 — anyone can download them
-    const type = freeProduct ? 'single' : normalizeProductType(productType)
+    // Free products are always single-price with price 0 — anyone can download them.
+    // Physical items are always single fixed price (stock-based, no option packages).
+    const type = freeProduct || isPhysical ? 'single' : normalizeProductType(productType)
+    if (isPhysical && normalizeProductType(productType) === 'multi') {
+      return NextResponse.json(
+        { success: false, error: 'ফিজিক্যাল পণ্যে একাধিক মূল্য-অপশন থাকতে পারে না' },
+        { status: 400 }
+      )
+    }
 
     // ── Type-specific validation ──
     // single: one fixed price → price is required
@@ -162,15 +203,36 @@ export async function POST(req: NextRequest) {
       ? category
       : 'other'
 
+    // quantity doubles as STOCK for physical items — required and explicit there;
+    // non-physical products keep the historical default behaviour untouched.
+    if (isPhysical && (quantity === undefined || quantity === null || quantity === '')) {
+      return NextResponse.json(
+        { success: false, error: 'ফিজিক্যাল পণ্যের স্টক পরিমাণ প্রদান করুন' },
+        { status: 400 }
+      )
+    }
     const quantityNum = quantity === undefined || quantity === null || quantity === ''
       ? DEFAULT_PRODUCT_QUANTITY
       : Math.floor(Number(quantity))
     if (Number.isNaN(quantityNum) || quantityNum < 1) {
       return NextResponse.json(
-        { success: false, error: 'কোয়ান্টিটি অবশ্যই ১ বা তার বেশি হতে হবে' },
+        { success: false, error: 'স্টক অবশ্যই ১ বা তার বেশি হতে হবে' },
         { status: 400 }
       )
     }
+
+    // Physical-only optional attributes — always null for non-physical items
+    let conditionValue: string | null = null
+    if (isPhysical && condition !== undefined && condition !== null && condition !== '') {
+      if (!isItemCondition(condition)) {
+        return NextResponse.json(
+          { success: false, error: 'অবৈধ পণ্যের অবস্থা' },
+          { status: 400 }
+        )
+      }
+      conditionValue = condition
+    }
+    const shippingValue = isPhysical ? sanitizeShippingInfo(shippingInfo) : null
 
     const createData: Record<string, unknown> = {
       title: title.trim(),
@@ -183,6 +245,9 @@ export async function POST(req: NextRequest) {
       quantity: quantityNum,
       productType: type,
       isFree: freeProduct,
+      itemType: itemKind,
+      condition: conditionValue,
+      shippingInfo: shippingValue,
     }
 
     // Digital file attachment — key must belong to this uploader
@@ -231,6 +296,9 @@ export async function POST(req: NextRequest) {
       delete createData.quantity
       delete createData.productType
       delete createData.isFree
+      delete createData.itemType
+      delete createData.condition
+      delete createData.shippingInfo
       delete createData.fileKey
       delete createData.fileName
       delete createData.fileSize
@@ -292,6 +360,9 @@ export async function POST(req: NextRequest) {
           fileName: (product as { fileName?: string | null }).fileName ?? null,
           fileSize: (product as { fileSize?: number | null }).fileSize ?? null,
           fileType: (product as { fileType?: string | null }).fileType ?? null,
+          itemType: (product as { itemType?: string }).itemType ?? 'non_physical',
+          condition: (product as { condition?: string | null }).condition ?? null,
+          shippingInfo: (product as { shippingInfo?: string | null }).shippingInfo ?? null,
           seller: {
             name: product.seller.name,
             imageLink: product.seller.imageLink,

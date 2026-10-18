@@ -23,6 +23,9 @@ bad()  { FAIL=$((FAIL+1)); say "  ✗ $1"; }
 check(){ # $1 desc, $2 actual, $3 expected-substring
   if echo "$2" | grep -q "$3"; then ok "$1"; else bad "$1 — expected [$3] got: $(echo "$2" | head -c 240)"; fi
 }
+# The proxy's per-IP api-general bucket is 60 req/min — pacing between
+# sections keeps the suite under it (buckets roll every 60s).
+pace(){ sleep "${PACE_SECS:-12}"; }
 
 # ── Login helper with cookie caching + rate-limit backoff (5 logins/min) ──
 ensure_login() {
@@ -52,6 +55,9 @@ ensure_login() {
 IDS=$(bun /home/z/my-project/amardeal/scripts/t81-seed-db.ts --print-ids 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['admin'],d['seller1'],d['seller2'],d['buyer'],d['bkashId'],d['products']['single'],d['products']['smm'],d['products']['digital'],d['products']['platformOwned'])")
 read -r ADMIN_ID S1_ID S2_ID BUYER_ID BKASH_ID P_SINGLE P_SMM P_DIGITAL P_PLATFORM <<< "$IDS"
 say "seed: seller1=$S1_ID buyer=$BUYER_ID single=$P_SINGLE smm=$P_SMM digital=$P_DIGITAL platform=$P_PLATFORM"
+# Task 82 fixtures (non-physical seller product used for the 403 check)
+T82IDS=$(bun /home/z/my-project/amardeal/scripts/t82-seed-db.ts --print-ids 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['products']['nonPhysical'],d['products']['physical'])")
+read -r P_NONPHYSICAL P_T82PHYSICAL <<< "$T82IDS"
 
 ensure_login buyer-t81@midman.test "$JAR_BUYER"
 ensure_login seller1-t81@midman.test "$JAR_S1"
@@ -110,6 +116,7 @@ TOTAL4=$(echo "$CREATE4" | python3 -c "import sys,json; print(json.load(sys.stdi
 check "multi+option: server price 2200×3 = 6600 (client price ignored)" "$TOTAL4" "^6600$"
 
 say ""
+pace
 say "── 2. Seller isolation & ownership (server-enforced) ──"
 S1_LIST=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller")
 check "seller1 sees own orders" "$S1_LIST" "$ORDER_NO"
@@ -130,6 +137,7 @@ BUYER_LIST=$(curl -s -b "$JAR_BUYER" "$BASE/api/marketplace/orders")
 check "buyer sees own purchase in /api/marketplace/orders" "$BUYER_LIST" "$ORDER_NO"
 
 say ""
+pace
 say "── 3. Status transition matrix ──"
 # seller CANNOT complete unpaid
 E1=$(curl -s -b "$JAR_S1" -X PATCH "$BASE/api/orders/$ORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"complete"}')
@@ -176,7 +184,8 @@ DONE=$(curl -s -b "$JAR_S1" -X PATCH "$BASE/api/orders/$ORDER_ID/status" -H 'Con
 check "seller completes paid order" "$DONE" '"status":"completed"'
 
 say ""
-say "── 4. Digital order completion grants download ──"
+pace
+say "── 4. Digital order completion grants download (platform-owned per Task 82) ──"
 DREQ="dig-$(date +%s)"
 DCREATE=$(curl -s -b "$JAR_BUYER" -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
   -d "{\"productId\":\"$P_DIGITAL\",\"quantity\":1,\"clientRequestId\":\"$DREQ\"}")
@@ -184,11 +193,20 @@ DORDER_ID=$(echo "$DCREATE" | python3 -c "import sys,json; print(json.load(sys.s
 curl -s -b "$JAR_BUYER" -X POST "$BASE/api/marketplace/orders/$DORDER_ID/payment" -H 'Content-Type: application/json' \
   -d "{\"paymentMethodId\":\"$BKASH_ID\",\"senderNumber\":\"017199999999\",\"transactionId\":\"T81TXN002-$RUN_ID\"}" > /dev/null
 curl -s -b "$JAR_ADMIN" -X PATCH "$BASE/api/admin/marketplace/orders/$DORDER_ID" -H 'Content-Type: application/json' -d '{"action":"verify_payment"}' > /dev/null
-curl -s -b "$JAR_S1" -X PATCH "$BASE/api/orders/$DORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"start"}' > /dev/null
-curl -s -b "$JAR_S1" -X PATCH "$BASE/api/orders/$DORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"complete"}' > /dev/null
+curl -s -b "$JAR_ADMIN" -X PATCH "$BASE/api/orders/$DORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"start"}' > /dev/null
+curl -s -b "$JAR_ADMIN" -X PATCH "$BASE/api/orders/$DORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"complete"}' > /dev/null
 ENT2=$(curl -s -b "$JAR_BUYER" "$BASE/api/download/$P_DIGITAL/info" | python3 -c "import sys,json; print(json.load(sys.stdin).get('entitled'))")
 check "digital order complete → buyer entitled" "$ENT2" "True"
+
 say ""
+pace
+say "── 4b. Task 82: non-physical SELLER products are NOT orderable ──"
+NPREQ="np-$(date +%s)"
+NPCREATE=$(curl -s -b "$JAR_BUYER" -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
+  -d "{\"productId\":\"$P_NONPHYSICAL\",\"quantity\":1,\"clientRequestId\":\"$NPREQ\"}")
+check "non-physical seller product order → 403 ORDER_NOT_ALLOWED" "$NPCREATE" 'ORDER_NOT_ALLOWED'
+say ""
+pace
 say "── 5. Refund (admin only, existing set_status path) ──"
 REFUND_BY_SELLER=$(curl -s -b "$JAR_S1" -X PATCH "$BASE/api/orders/$ORDER_ID/status" -H 'Content-Type: application/json' -d '{"action":"refund"}')
 check "seller refund → 400 (no such action)" "$REFUND_BY_SELLER" 'অবৈধ'
@@ -198,6 +216,7 @@ RST=$(detail_field "$JAR_BUYER" "$ORDER_ID" "o.get('status')")
 check "order now refunded" "$RST" "refunded"
 
 say ""
+pace
 say "── 6. Buyer cancel own unpaid order ──"
 CREQ="cancel-$(date +%s)"
 CCREATE=$(curl -s -b "$JAR_BUYER" -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
@@ -210,6 +229,7 @@ S2CANCEL=$(curl -s -b "$JAR_S2" -X PATCH "$BASE/api/orders/$CORDER_ID/status" -H
 check "seller2 cancel foreign unpaid → 403" "$S2CANCEL" 'FORBIDDEN'
 
 say ""
+pace
 say "── 7. Platform-owned orders (admin view) ──"
 PREQ="plat-$(date +%s)"
 PCREATE=$(curl -s -b "$JAR_BUYER" -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
@@ -228,12 +248,17 @@ ADMIN_DETAIL=$(curl -s -b "$JAR_ADMIN" "$BASE/api/marketplace/orders/$PORDER_ID"
 check "admin can open platform order detail" "$ADMIN_DETAIL" '"viewerRole":"admin"'
 
 say ""
+pace
 say "── 8. Counts, search, filters, sort ──"
-CNT=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller" | python3 -c "import sys,json; d=json.load(sys.stdin)['counts']; print(d['total']>=3, d['completed']>=1, d['refunded']>=1, d['cancelled']>=1)")
-check "seller1 counts reflect lifecycle (total/completed/refunded/cancelled)" "$CNT" "True True True True"
+# Task 82 fixture geometry: the completed-digital order now belongs to the
+# admin (platform-owned), and the main physical order ends REFUNDED — so
+# seller1's lifecycle set is total≥2 / refunded≥1 / cancelled≥1 (the
+# completed transition itself is asserted in section 3).
+CNT=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller" | python3 -c "import sys,json; d=json.load(sys.stdin)['counts']; print(d['total']>=2, d['refunded']>=1, d['cancelled']>=1)")
+check "seller1 counts reflect lifecycle (total/refunded/cancelled)" "$CNT" "True True True"
 SEARCH=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller&q=$ORDER_NO" | python3 -c "import sys,json; print(len(json.load(sys.stdin)['orders']))")
 check "search by order number" "$SEARCH" "^1$"
-FILTERED=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller&status=completed" | python3 -c "import sys,json; d=json.load(sys.stdin); print(all(o['status']=='completed' for o in d['orders']) and len(d['orders'])>=1)")
+FILTERED=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller&status=refunded" | python3 -c "import sys,json; d=json.load(sys.stdin); print(all(o['status']=='refunded' for o in d['orders']) and len(d['orders'])>=1)")
 check "status filter works" "$FILTERED" "True"
 SORT=$(curl -s -b "$JAR_S1" "$BASE/api/orders?role=seller&sort=amount_desc" | python3 -c "import sys,json; a=[o['totalAmount'] for o in json.load(sys.stdin)['orders']]; print(a==sorted(a,reverse=True))")
 check "sort amount desc" "$SORT" "True"

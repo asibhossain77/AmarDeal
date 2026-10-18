@@ -326,6 +326,15 @@ model DigitalProduct {
   // "single" = one fixed price, "multi" = multiple priced options.
   // Existing products default to "single" so old listings keep working.
   productType String   @default("single")
+  // ── Item type (Task 82): what kind of product this is ──
+  // "physical"    = tangible item — Order Now + stock, no digital file
+  // "non_physical"= every pre-existing seller product (digital file /
+  //                 service). Default keeps ALL old listings non-physical —
+  //                 existing products are never reclassified as physical.
+  itemType     String   @default("non_physical")
+  // Physical-only optional attributes (always null for non-physical items)
+  condition    String?  // "new" | "used"
+  shippingInfo String?  // free-text delivery / shipping information
   // Digital product file (uploaded to R2 `files/` prefix) — null = physical/service product
   isFree      Boolean  @default(false) // free products: anyone can download without a deal
   fileKey     String?  // R2 object key — NEVER exposed to clients (secret URL)
