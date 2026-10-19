@@ -98,7 +98,43 @@ import {
   Image as ImageIcon,
   Sun,
   Moon,
+  Package,
+  ShoppingBag,
 } from 'lucide-react';
+
+/* ── Dashboard card highlight system ──
+   Data-driven: when a card's pending count > 0 it gets a subtle tone
+   (border + background tint + icon tint + count badge). Count 0 → the
+   card renders with the normal neutral style. Tailwind v4 trailing `!`
+   guarantees the tint overrides SolidCard's bg-white/dark:bg-card. */
+type HighlightTone = 'amber' | 'red' | 'blue' | 'green';
+
+const HIGHLIGHT_TONES: Record<HighlightTone, { card: string; badge: string; iconBg: string; iconColor: string }> = {
+  amber: {
+    card: 'border border-amber-500/50 bg-amber-50! dark:border-amber-500/40 dark:bg-amber-500/[0.06]!',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    iconBg: 'bg-amber-500/15',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+  },
+  red: {
+    card: 'border border-red-500/50 bg-red-50! dark:border-red-500/40 dark:bg-red-500/[0.06]!',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+    iconBg: 'bg-red-500/15',
+    iconColor: 'text-red-600 dark:text-red-400',
+  },
+  blue: {
+    card: 'border border-sky-500/50 bg-sky-50! dark:border-sky-500/40 dark:bg-sky-500/[0.06]!',
+    badge: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
+    iconBg: 'bg-sky-500/15',
+    iconColor: 'text-sky-600 dark:text-sky-400',
+  },
+  green: {
+    card: 'border border-emerald-500/50 bg-emerald-50! dark:border-emerald-500/40 dark:bg-emerald-500/[0.06]!',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+    iconBg: 'bg-emerald-500/15',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
+};
 
 const emptySubscribe = () => () => {};
 
@@ -190,6 +226,10 @@ interface AdminStats {
   disputedCount: number;
   pendingProducts: number;
   pendingSellerApps?: number;
+  totalSmmOrders?: number;
+  pendingSmmOrders?: number;
+  totalProductOrders?: number;
+  pendingProductOrders?: number;
 }
 
 interface PlatformSettings {
@@ -423,7 +463,7 @@ function DashboardStatsPanel() {
   const role = user?.adminRole;
   const staffPerms = new Set(user?.permissions ?? []);
   const ALWAYS = new Set(['dashboard', 'profile']);
-  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog']);
+  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders']);
 
   const canAccess = (target: string) => {
     if (role === 'super_admin') return true;
@@ -432,7 +472,7 @@ function DashboardStatsPanel() {
     return true;
   };
 
-  const allCards: Array<{ label: string; value: string; icon: React.ElementType; color: string; bg: string; target: AdminPanel; preClick?: () => void }> = stats
+  const allCards: Array<{ label: string; value: string; icon: React.ElementType; color: string; bg: string; target: AdminPanel; preClick?: () => void; highlight?: { tone: HighlightTone; count: number } }> = stats
     ? [
         {
           label: t('adminNav.userManagement'),
@@ -457,6 +497,7 @@ function DashboardStatsPanel() {
           color: 'text-amber-500 dark:text-amber-400',
           bg: 'bg-amber-500/10',
           target: 'payment-verify' as const,
+          highlight: { tone: 'amber' as const, count: stats.pendingVerification },
         },
         {
           label: t('adminNav.payoutManagement'),
@@ -465,6 +506,7 @@ function DashboardStatsPanel() {
           color: 'text-orange-500 dark:text-orange-400',
           bg: 'bg-orange-500/10',
           target: 'payouts' as const,
+          highlight: { tone: 'amber' as const, count: stats.pendingPayouts },
         },
         {
           label: t('adminNav.liveChat'),
@@ -481,6 +523,7 @@ function DashboardStatsPanel() {
           color: 'text-rose-500 dark:text-rose-400',
           bg: 'bg-rose-500/10',
           target: 'disputes' as const,
+          highlight: { tone: 'red' as const, count: stats.disputedCount },
         },
         {
           label: t('adminNav.pendingProducts'),
@@ -489,6 +532,7 @@ function DashboardStatsPanel() {
           color: 'text-amber-500 dark:text-amber-400',
           bg: 'bg-amber-500/10',
           target: 'pending-products' as const,
+          highlight: { tone: 'amber' as const, count: stats.pendingProducts ?? 0 },
         },
         {
           label: t('adminNav.sellerRequests'),
@@ -498,6 +542,35 @@ function DashboardStatsPanel() {
           bg: 'bg-sky-500/10',
           target: 'marketplace' as const,
           preClick: () => useAppStore.getState().setAdminMarketplaceTab('applications'),
+          highlight: { tone: 'amber' as const, count: stats.pendingSellerApps ?? 0 },
+        },
+        {
+          /* SMM service direct orders — opens the EXISTING services panel
+             Orders tab (no duplicate orders page). Pending = payment
+             evidence awaiting admin verification. */
+          label: t('admin.smmOrders'),
+          value: (stats.totalSmmOrders ?? 0).toLocaleString('en'),
+          icon: Package,
+          color: 'text-fuchsia-500 dark:text-fuchsia-400',
+          bg: 'bg-fuchsia-500/10',
+          target: 'services' as const,
+          preClick: () => {
+            const store = useAppStore.getState();
+            store.setAdminServicesTab('orders');
+            store.setAdminServicesOrdersFilter((stats.pendingSmmOrders ?? 0) > 0 ? 'awaiting_verification' : '');
+          },
+          highlight: { tone: 'amber' as const, count: stats.pendingSmmOrders ?? 0 },
+        },
+        {
+          /* "Order Now" product orders — opens the EXISTING
+             marketplace-orders panel (Task 81). Same pending definition. */
+          label: t('adminNav.marketplaceOrders'),
+          value: (stats.totalProductOrders ?? 0).toLocaleString('en'),
+          icon: ShoppingBag,
+          color: 'text-primary',
+          bg: 'bg-primary/10',
+          target: 'marketplace-orders' as const,
+          highlight: { tone: 'amber' as const, count: stats.pendingProductOrders ?? 0 },
         },
         {
           label: `${t('admin.verify.totalTransactions')} (৳)`,
@@ -524,7 +597,7 @@ function DashboardStatsPanel() {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 12 }).map((_, i) => (
           <AdminStatCardSkeleton key={i} />
         ))}
       </div>
@@ -535,6 +608,11 @@ function DashboardStatsPanel() {
     <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {cards.map((stat, i) => {
         const Icon = stat.icon;
+        /* Highlight is data-driven: pending count > 0 → tone applied;
+           count 0 → normal neutral card. Presentation only — the real
+           security/attention source is the server-side stats API. */
+        const hl = stat.highlight && stat.highlight.count > 0 ? stat.highlight : null;
+        const tone = hl ? HIGHLIGHT_TONES[hl.tone] : null;
         return (
           <motion.div
             key={stat.label}
@@ -543,8 +621,10 @@ function DashboardStatsPanel() {
             transition={{ duration: 0.4, delay: i * 0.1 }}
           >
             <SolidCard
-              className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+              className={`cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98] ${tone ? tone.card : ''}`}
               onClick={() => { stat.preClick?.(); setAdminPanel(stat.target); }}
+              title={hl ? `${stat.label} — ${hl.count} ${t('adminAff.pendingBadge')}` : undefined}
+              aria-label={hl ? `${stat.label} — ${hl.count} ${t('adminAff.pendingBadge')}` : undefined}
             >
               <div className="flex items-center justify-between text-center sm:text-left">
                 <div className="flex-1 min-w-0">
@@ -552,11 +632,19 @@ function DashboardStatsPanel() {
                   <p className="mt-1 sm:mt-1.5 text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                     {stat.value}
                   </p>
+                  {hl && tone && (
+                    <span
+                      className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-4 ${tone.badge}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+                      {hl.count} {t('adminAff.pendingBadge')}
+                    </span>
+                  )}
                 </div>
                 <div
-                  className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
+                  className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${tone ? tone.iconBg : stat.bg}`}
                 >
-                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
+                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${tone ? tone.iconColor : stat.color}`} />
                 </div>
               </div>
             </SolidCard>

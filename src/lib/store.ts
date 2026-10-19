@@ -9,6 +9,9 @@ export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-wi
 /* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
 export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 
+/* Tabs inside the admin SMM Services panel — dashboard deep-links can preselect one */
+export type AdminServicesTab = 'services' | 'categories' | 'orders'
+
 /** All possible deal statuses in the escrow flow */
 export type DealStatus =
   | 'created'
@@ -66,6 +69,9 @@ interface AppState {
   sellerPanel: SellerPanel
   adminPanel: AdminPanel
   adminMarketplaceTab: AdminMarketplaceTab
+  /* Tabs inside the admin SMM Services panel + Orders-tab payment filter — dashboard deep-links can preselect them */
+  adminServicesTab: AdminServicesTab
+  adminServicesOrdersFilter: string
   activeDeal: DealInfo | null
   dealPreFill: DealPreFill | null
   locale: Locale
@@ -91,6 +97,8 @@ interface AppState {
   setSellerPanel: (panel: SellerPanel) => void /* kept for compat */
   setAdminPanel: (panel: AdminPanel) => void
   setAdminMarketplaceTab: (tab: AdminMarketplaceTab) => void
+  setAdminServicesTab: (tab: AdminServicesTab) => void
+  setAdminServicesOrdersFilter: (filter: string) => void
   setActiveDeal: (deal: DealInfo | null) => void
   setDealPreFill: (preFill: DealPreFill | null) => void
   setLocale: (locale: Locale) => void
@@ -121,6 +129,8 @@ export const useAppStore = create<AppState>((set) => ({
   sellerPanel: 'overview',
   adminPanel: 'dashboard',
   adminMarketplaceTab: 'settings',
+  adminServicesTab: 'services',
+  adminServicesOrdersFilter: '',
   activeDeal: null,
   dealPreFill: null,
   locale: getSavedLocale(),
@@ -167,6 +177,8 @@ export const useAppStore = create<AppState>((set) => ({
   })),
   setAdminPanel: (adminPanel) => set({ adminPanel, sidebarOpen: false }),
   setAdminMarketplaceTab: (adminMarketplaceTab) => set({ adminMarketplaceTab }),
+  setAdminServicesTab: (adminServicesTab) => set({ adminServicesTab }),
+  setAdminServicesOrdersFilter: (adminServicesOrdersFilter) => set({ adminServicesOrdersFilter }),
   setActiveDeal: (activeDeal) => set({ activeDeal }),
   setDealPreFill: (dealPreFill) => set({ dealPreFill }),
   setLocale: (locale) => {

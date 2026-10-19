@@ -2357,6 +2357,7 @@ export const en: Record<TranslationKey, string> = {
   'adminServices.newService': 'New Service',
   'seller.marketplaceOrders': 'Orders',
   'adminNav.marketplaceOrders': 'Marketplace Orders',
+  'admin.smmOrders': 'SMM Orders',
   'orders.title': 'Orders',
   'orders.subtitle': 'Manage and track your Marketplace orders.',
   'orders.myOrdersTitle': 'My Orders',

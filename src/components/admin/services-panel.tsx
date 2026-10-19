@@ -661,7 +661,10 @@ function OrdersTab({ t, bn }: { t: TFn; bn: boolean }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [paymentFilter, setPaymentFilter] = useState('');
+  /* Deep-link support: the Admin Dashboard SMM Orders card preselects the
+     payment filter (e.g. awaiting_verification) via the app store before
+     navigating here. Local changes after mount are not written back. */
+  const [paymentFilter, setPaymentFilter] = useState(() => useAppStore.getState().adminServicesOrdersFilter);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -936,7 +939,10 @@ export function AdminServicesPanel() {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const bn = locale === 'bn';
-  const [tab, setTab] = useState<Tab>('services');
+  /* Tab lives in the app store (same pattern as the Marketplace panel) so
+     the Admin Dashboard SMM Orders card can deep-link straight to Orders. */
+  const tab = useAppStore((s) => s.adminServicesTab);
+  const setTab = useAppStore((s) => s.setAdminServicesTab);
 
   const tabs: Array<{ key: Tab; label: string; Icon: React.ElementType }> = [
     { key: 'services', label: bn ? 'সার্ভিস' : 'Services', Icon: Zap },

@@ -2354,6 +2354,7 @@ export const bn = {
   'adminServices.newService': 'নতুন সার্ভিস',
   'seller.marketplaceOrders': 'অর্ডারসমূহ',
   'adminNav.marketplaceOrders': 'মার্কেটপ্লেস অর্ডার',
+  'admin.smmOrders': 'এসএমএম অর্ডার',
   'orders.title': 'অর্ডারসমূহ',
   'orders.subtitle': 'মার্কেটপ্লেস অর্ডার পরিচালনা ও ট্র্যাক করুন।',
   'orders.myOrdersTitle': 'আমার অর্ডারসমূহ',
