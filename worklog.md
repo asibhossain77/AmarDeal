@@ -1649,3 +1649,22 @@ Stage Summary:
 - Data-driven highlight system: cards auto-highlight when real pending counts > 0 and auto-restore at 0; subtle amber/red tints + count badges + icon tints only; Light+Dark + desktop/tablet/mobile verified.
 - Existing panels/APIs/business logic untouched (services Orders tab, Task 81 admin orders panel, payment verification, Admin Deal workflow). Deep-link preserves the pending filter only when pending items exist.
 - Untracked verification artifacts: scripts/t83-stats-api-tests.ts, download/t83-*.png screenshots.
+
+---
+Task ID: 83-hotfix
+Agent: Main
+Task: User reported "admin panel dashboard page blank" — investigate & fix
+
+Work Log:
+- Inspected HEAD 2d35ae1 (Task 83) diffs: admin-main.tsx, stats route, store, locales — all syntactically valid (suspected `HIGHLIGHT_TONESl.tone]` corruption was an output-display artifact; real file has correct `HIGHLIGHT_TONES[hl.tone]`). tsc: 59 errors, none in changed files.
+- Server: single next-dev process, /admin 200, /api/health 200, zero 5xx lines in dev.log + dev-daemon.log across full runtime.
+- False alarm chased: direct Prisma check initially reported DB missing Admin table (only Post+User) — caused by a stray shell env `DATABASE_URL=file:/home/z/my-project/db/custom.db` (parent dir, wrong DB) overriding .env in ad-hoc tsx runs. Real DB (amardeal/db/custom.db, as pinned by start-dev-daemon.py) verified intact: 35 tables, 2 super_admins (admin@demo.com, admin-t81@midman.test), 6 marketplace orders. md5 of worktree db == git HEAD db.
+- API proof: login (identifier/password) 200 → GET /api/admin/stats 200 with all fields incl. totalSmmOrders/pendingSmmOrders/totalProductOrders/pendingProductOrders.
+- Clean dev-server restart via scripts/start-dev-daemon.py; health 200.
+- Fresh-context browser verification (cookies+storage cleared, UI login as admin-t81@midman.test): /admin renders 12 cards — desktop light bn, desktop dark bn, mobile 390 light bn all correct; amber highlight + "1 পেন্ডিং" badge on exactly Verification Pending & Pending Products (matches real pending counts 1/1); SMM Orders card (0) click → existing SMM Services panel Orders tab active with filters intact; zero page/console errors on every fresh load.
+- Not reproducible server-side: no defect found in code/DB/API/logs. Conclusion: user-side stale browser state (cached pre-Task-83 JS chunks across two dev-server restarts, or page loaded during a restart/compile window).
+- Cleanup: removed tmp DB-inspection scripts; worktree clean at 2d35ae1.
+
+Stage Summary:
+- No code change needed — server, DB, and dashboard verified fully healthy after clean restart; user advised hard refresh (Ctrl+Shift+R) / clear site data / re-login.
+- Diagnostic note for future sessions: ad-hoc Prisma scripts must pin DATABASE_URL=file:/home/z/my-project/amardeal/db/custom.db — the shell inherits a WRONG DATABASE_URL (parent-dir starter DB with Post+User only) that silently overrides .env.
