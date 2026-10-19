@@ -451,7 +451,7 @@ function DashboardStatsPanel() {
   const t = useT();
   const user = useAppStore((s) => s.user);
   const setAdminPanel = useAppStore((s) => s.setAdminPanel);
-  const { data: stats, isLoading } = useQuery<AdminStats>({
+  const { data: stats, isLoading, isError, refetch } = useQuery<AdminStats>({
     queryKey: ['admin-dashboard-stats'],
     queryFn: async () => {
       const res = await fetch('/api/admin/stats');
@@ -601,6 +601,27 @@ function DashboardStatsPanel() {
           <AdminStatCardSkeleton key={i} />
         ))}
       </div>
+    );
+  }
+
+  /* Never render a silent empty grid: if the stats request failed
+     (network hiccup, expired session, server error) show an explicit
+     error state with a retry instead of blank space. */
+  if (isError) {
+    return (
+      <SolidCard className="flex flex-col items-center justify-center gap-3 p-8 text-center sm:p-10">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+          <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400" />
+        </div>
+        <p className="text-sm font-medium text-muted-foreground">{t('common.error')}</p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98]"
+        >
+          {t('common.retry')}
+        </button>
+      </SolidCard>
     );
   }
 

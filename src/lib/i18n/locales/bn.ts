@@ -460,6 +460,7 @@ export const bn = {
   'common.networkError': 'নেটওয়ার্ক ত্রুটি',
   'common.success': 'সফল!',
   'common.error': 'সমস্যা হয়েছে',
+  'common.retry': 'আবার চেষ্টা করুন',
 
   // ── Deal Workflow Tracker ──
   'tracker.step1': 'ডিল তৈরি',

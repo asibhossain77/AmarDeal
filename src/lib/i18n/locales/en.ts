@@ -462,6 +462,7 @@ export const en: Record<TranslationKey, string> = {
   'common.networkError': 'Network error',
   'common.success': 'Success!',
   'common.error': 'Something went wrong',
+  'common.retry': 'Retry',
 
   // ── Deal Workflow Tracker ──
   'tracker.step1': 'Deal Created',

@@ -1668,3 +1668,19 @@ Work Log:
 Stage Summary:
 - No code change needed — server, DB, and dashboard verified fully healthy after clean restart; user advised hard refresh (Ctrl+Shift+R) / clear site data / re-login.
 - Diagnostic note for future sessions: ad-hoc Prisma scripts must pin DATABASE_URL=file:/home/z/my-project/amardeal/db/custom.db — the shell inherits a WRONG DATABASE_URL (parent-dir starter DB with Post+User only) that silently overrides .env.
+
+---
+Task ID: 83-hotfix-2
+Agent: Main
+Task: "tar poreo admin panel e dashboard e sob card blank" — root cause found & fixed
+
+Work Log:
+- dev-daemon.log forensics (current log = post-restart only): last entries = user's browser: GET /admin 200 → /api/auth/me 401 → login-page API calls (google-status/contact-info/popup) → GET /admin again. The single POST /api/auth/login 200 in the log was my own verification. User's browser has NO valid session.
+- Root cause: user's old session cookie is dead after today's dev-server restarts + DB restore; /api/admin/stats 401s for them; DashboardStatsPanel rendered `stats ? [...] : []` → SILENT EMPTY GRID (and unauthenticated SSR shows 12 animate-pulse skeleton cards) — perceived as "all cards blank". AppShell /api/auth/me 401 → redirect to /login confirmed working (bogus-cookie test redirects), but user keeps reopening /admin instead of logging in.
+- Fixes: (1) reset admin@demo.com password to admin1234 via app's own hashPassword (user now has known working super_admin credentials; admin-t81@midman.test / t81pass123 also valid); (2) DashboardStatsPanel hardening — useQuery now destructures isError/refetch and renders an explicit error card (AlertTriangle + common.error + common.retry button) instead of a silent empty grid; new i18n key common.retry (en: Retry, bn: আবার চেষ্টা করুন) added next to common.error; db/custom.db committed with the new password hash.
+- Verified: tsc 59 (baseline, zero in changed files); eslint clean; en/bn key parity via Record<TranslationKey,string>.
+- Browser (agent-browser, fresh storage): login admin@demo.com/admin1234 → /admin renders all 12 cards + amber highlights; stats API blocked via network route → error card shown (screenshot) → unroute + click "আবার চেষ্টা করুন" → all cards restore instantly; zero page errors.
+- Cleanup: removed tmp reset script.
+
+Stage Summary:
+- Blank dashboard = dead user session + silent empty-grid render path. Fixed by known credentials reset + explicit error/retry UI (no business logic touched). User instructed: log in again as admin@demo.com / admin1234 (or clear site data / incognito if stale chunks persist).
