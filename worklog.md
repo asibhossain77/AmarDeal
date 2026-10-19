@@ -1684,3 +1684,18 @@ Work Log:
 
 Stage Summary:
 - Blank dashboard = dead user session + silent empty-grid render path. Fixed by known credentials reset + explicit error/retry UI (no business logic touched). User instructed: log in again as admin@demo.com / admin1234 (or clear site data / incognito if stale chunks persist).
+
+---
+Task ID: 83-hotfix-3
+Agent: Main
+Task: "tar poreo admin panel e dashboard dekhai na" — session cookie rejected in cross-site iframe; fixed with CHIPS
+
+Work Log:
+- dev.log forensics: user trace = GET / → me 401 → POST /api/auth/login 200 (login SUCCEEDED) → /api/notifications 401/401/200/401/... alternating → (after my checks) all 200. Alternation = two browser contexts: one stores the session cookie, one silently drops it.
+- Root cause: login-family routes set midman_session with SameSite=Lax. In a cross-site iframe (the chat preview panel) browsers block Lax cookies — login POST returns 200 but Set-Cookie is dropped, every authed API 401s, /admin redirects to /login. Matches user logging in successfully yet still seeing no dashboard.
+- Fix: new src/lib/session-cookie.ts setSessionCookie() — https/preview contexts (x-forwarded-proto=https OR non-loopback/non-LAN host heuristic) emit SameSite=None; Secure; Partitioned (CHIPS); loopback/LAN http keeps Lax (Secure would break plain-http LAN dev). Applied to all three cookie setters: /api/auth/login, /api/admin/2fa/login-verify, /api/auth/google/callback. eslint false positive: renamed usePartitionedCookie → shouldPartitionCookie.
+- Verified: curl matrix (localhost→Lax; preview host w/ and w/o x-forwarded-proto→None+Secure+Partitioned; 192.168.x→Lax); Secure-over-http correctly NOT sent by curl cookie engine; https-context cookie → /api/auth/me 200 super_admin → /api/admin/stats 200 all 13 fields (rate-limit 429 hit during testing = proxy limiter working); agent-browser fresh-context login admin@demo.com/admin1234 → /admin renders 12 cards, amber highlights on Verification Pending & Pending Products, zero page errors; tsc 59 baseline (zero new), eslint clean.
+- Committed a42952c. Screenshot: /home/z/my-project/download/admin-dashboard-cookiefix.png.
+
+Stage Summary:
+- Real fix for "logged in but no dashboard": session cookie now iframe-safe via Partitioned CHIPS cookie on preview/https; localhost/LAN flows unchanged. User should log in again (admin@demo.com / admin1234); if still failing, open the preview link in a top-level browser tab — and confirm Safari iframe case would need a token-based fallback (not implemented).
