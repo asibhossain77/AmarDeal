@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTOTP } from '@/lib/totp'
+import { setSessionCookie } from '@/lib/session-cookie'
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,13 +45,7 @@ export async function POST(req: NextRequest) {
       isSeller: user.isSeller,
     })
 
-    response.cookies.set('midman_session', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    setSessionCookie(response, req, user.id)
 
     return response
   } catch (err) {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { hashPassword } from '@/lib/password'
 import { generateUniqueReferralCode } from '@/lib/referral-code'
+import { setSessionCookie } from '@/lib/session-cookie'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || ''
 const REFERRAL_COOKIE_NAME = 'midman_ref'
@@ -154,13 +155,7 @@ export async function GET(req: NextRequest) {
     // 4. Set session cookie and redirect
     const response = NextResponse.redirect(`${APP_URL}/?google_login=success`)
 
-    response.cookies.set('midman_session', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    setSessionCookie(response, req, user.id)
 
     return response
   } catch (err) {

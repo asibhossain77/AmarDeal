@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, loginNotificationEmail } from '@/lib/email'
 import { comparePassword, hashPassword, needsRehash } from '@/lib/password'
+import { setSessionCookie } from '@/lib/session-cookie'
 
 export async function POST(req: NextRequest) {
   try {
@@ -98,13 +99,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Set session cookie for server-side auth (used by deal-guard, chat, etc.)
-    response.cookies.set('midman_session', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    })
+    // Attributes adapt per request context (iframe-safe on https, Lax on
+    // localhost http) — see lib/session-cookie.ts.
+    setSessionCookie(response, req, user.id)
 
     return response
   } catch (err) {
