@@ -1,0 +1,916 @@
+import { db } from '@/lib/db'
+
+/**
+ * Runtime schema self-healing for SQLite/Turso.
+ *
+ * WHY: production (Vercel + Turso) drifts behind the schema the code
+ * expects — new tables/columns shipped in a deploy never get created on
+ * the hosted DB (the old health route only created tables when the User
+ * table was missing entirely). Prisma then fails with P2021 (table does
+ * not exist) / P2022 (column does not exist) → API routes 500:
+ *   - GET /api/admin/stats   (counts MarketplaceOrder — table missing)
+ *   - GET /api/products      (includes ProductOption + Task-82 columns)
+ *
+ * This module is generated from the authoritative DB schema (see
+ * scripts/generate-ensure-schema.ts + scripts/missing-tables-ddl.sql).
+ *
+ * HOW: idempotent DDL — CREATE TABLE IF NOT EXISTS for every table, then
+ * PRAGMA table_info per table with ALTER TABLE ADD COLUMN for anything
+ * missing. Runs once per server process (memoized); safe to call on every
+ * request afterwards. Works on both local SQLite files and Turso
+ * (libsql) because it executes through Prisma raw SQL.
+ */
+
+const TABLE_DDL: string[] = [
+  `CREATE TABLE IF NOT EXISTS "Admin" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'support',
+    "permissions" TEXT NOT NULL DEFAULT '[]',
+    "totpSecret" TEXT,
+    "totpEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Admin_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "AffiliateEarning" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "affiliateId" TEXT NOT NULL,
+    "dealId" TEXT NOT NULL,
+    "referredUserId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "percentage" REAL NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "AffiliateEarning_affiliateId_fkey" FOREIGN KEY ("affiliateId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "AffiliatePaymentMethod" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "AffiliateWithdrawal" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "accountType" TEXT NOT NULL,
+    "accountNumber" TEXT NOT NULL,
+    "accountName" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "note" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "AffiliateWithdrawal_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "Auction" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'other',
+    "image" TEXT,
+    "sellerId" TEXT NOT NULL,
+    "startPrice" REAL NOT NULL,
+    "currentPrice" REAL,
+    "highestBidderId" TEXT,
+    "bidCount" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "endsAt" DATETIME NOT NULL,
+    "winnerId" TEXT,
+    "dealId" TEXT,
+    "finalPrice" REAL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Auction_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Auction_highestBidderId_fkey" FOREIGN KEY ("highestBidderId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Auction_winnerId_fkey" FOREIGN KEY ("winnerId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "Bid" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "auctionId" TEXT NOT NULL,
+    "bidderId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Bid_auctionId_fkey" FOREIGN KEY ("auctionId") REFERENCES "Auction" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Bid_bidderId_fkey" FOREIGN KEY ("bidderId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "BlogPost" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "excerpt" TEXT,
+    "content" TEXT NOT NULL,
+    "coverImage" TEXT,
+    "published" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "ChatFile" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "dealId" TEXT NOT NULL,
+    "messageId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "fileName" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "fileType" TEXT,
+    "expiresAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "ChatMessage" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "dealId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "role" TEXT,
+    "senderName" TEXT,
+    "text" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "ContactInfo" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "phone" TEXT,
+    "email" TEXT,
+    "whatsapp" TEXT,
+    "telegram" TEXT,
+    "facebook" TEXT,
+    "address" TEXT,
+    "updatedAt" DATETIME NOT NULL
+, "facebookGroup" TEXT, "telegramGroup" TEXT, "facebookPage" TEXT)`,
+  `CREATE TABLE IF NOT EXISTS "Deal" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'created',
+    "buyerId" TEXT NOT NULL,
+    "sellerId" TEXT,
+    "creatorId" TEXT NOT NULL,
+    "terms" TEXT,
+    "paymentMethodId" TEXT,
+    "senderNumber" TEXT,
+    "transactionId" TEXT,
+    "paymentAmount" REAL,
+    "platformFee" REAL,
+    "rejectionReason" TEXT,
+    "productId" TEXT,
+    "productOptionId" TEXT,
+    "adminCalled" BOOLEAN NOT NULL DEFAULT false,
+    "adminCalledAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "autoCompleteAt" DATETIME, "deliveredAt" DATETIME, "reminderEmailSentAt" DATETIME, "workDays" INTEGER, "workDeadlineAt" DATETIME,
+    CONSTRAINT "Deal_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Deal_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Deal_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Deal_paymentMethodId_fkey" FOREIGN KEY ("paymentMethodId") REFERENCES "PaymentMethod" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Deal_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Deal_productOptionId_fkey" FOREIGN KEY ("productOptionId") REFERENCES "ProductOption" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "DealReadState" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "dealId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "lastReadAt" DATETIME NOT NULL,
+    "lastSeenDealUpdated" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "DigitalProduct" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "price" REAL NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'other',
+    "image" TEXT,
+    "quantity" INTEGER NOT NULL DEFAULT 10,
+    "sellerId" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "productType" TEXT NOT NULL DEFAULT 'single',
+    "itemType" TEXT NOT NULL DEFAULT 'non_physical',
+    "condition" TEXT,
+    "shippingInfo" TEXT,
+    "isFree" BOOLEAN NOT NULL DEFAULT false,
+    "fileKey" TEXT,
+    "fileName" TEXT,
+    "fileSize" INTEGER,
+    "fileType" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "DigitalProduct_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "FeeRule" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "minimum_amount" INTEGER NOT NULL,
+    "maximum_amount" INTEGER NOT NULL DEFAULT 0,
+    "fee" INTEGER NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "MarketplaceBanner" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "title" TEXT NOT NULL,
+    "subtitle" TEXT,
+    "image" TEXT NOT NULL,
+    "link" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "MarketplaceCategorySetting" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "categoryId" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "MarketplaceOrder" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "orderNumber" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "sellerId" TEXT,
+    "serviceId" TEXT,
+    "serviceName" TEXT NOT NULL,
+    "productId" TEXT,
+    "productOptionId" TEXT,
+    "linkUrl" TEXT,
+    "linkType" TEXT,
+    "quantity" INTEGER NOT NULL,
+    "pricingUnit" TEXT NOT NULL DEFAULT 'per_1000',
+    "unitPriceAtOrder" REAL NOT NULL,
+    "totalAmount" REAL NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending_payment',
+    "paymentStatus" TEXT NOT NULL DEFAULT 'unpaid',
+    "paymentMethodName" TEXT,
+    "paymentMethodId" TEXT,
+    "senderNumber" TEXT,
+    "transactionId" TEXT,
+    "piprapayInvoiceId" TEXT,
+    "paidAt" DATETIME,
+    "paymentVerifiedBy" TEXT,
+    "fulfilmentNote" TEXT,
+    "startCount" INTEGER,
+    "remains" INTEGER,
+    "idempotencyKey" TEXT NOT NULL,
+    "completedAt" DATETIME,
+    "cancelledAt" DATETIME,
+    "cancelledBy" TEXT,
+    "cancelReason" TEXT,
+    "refundedAt" DATETIME,
+    "customerNote" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "MarketplaceOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "MarketplaceOrder_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MarketplaceOrder_serviceId_fkey" FOREIGN KEY ("serviceId") REFERENCES "MarketplaceService" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MarketplaceOrder_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MarketplaceOrder_productOptionId_fkey" FOREIGN KEY ("productOptionId") REFERENCES "ProductOption" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "MarketplaceOrder_paymentMethodId_fkey" FOREIGN KEY ("paymentMethodId") REFERENCES "PaymentMethod" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "MarketplaceOrderEvent" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "orderId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "fromStatus" TEXT,
+    "toStatus" TEXT,
+    "message" TEXT,
+    "actorType" TEXT NOT NULL DEFAULT 'system',
+    "actorId" TEXT,
+    "actorName" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "MarketplaceOrderEvent_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "MarketplaceOrder" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "MarketplaceService" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'other',
+    "description" TEXT NOT NULL,
+    "pricePerThousand" REAL NOT NULL,
+    "minQuantity" INTEGER NOT NULL DEFAULT 100,
+    "maxQuantity" INTEGER NOT NULL DEFAULT 100000,
+    "linkTypes" TEXT NOT NULL DEFAULT '[]',
+    "deliveryEstimate" TEXT,
+    "instructions" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdById" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "Notification" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "dealId" TEXT,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "read" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "relatedId" TEXT, "relatedType" TEXT,
+    CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "OAuthAuthorizationCode" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "codeHash" TEXT NOT NULL,
+    "clientId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "redirectUri" TEXT NOT NULL,
+    "scope" TEXT NOT NULL,
+    "codeChallenge" TEXT NOT NULL,
+    "codeChallengeMethod" TEXT NOT NULL DEFAULT 'S256',
+    "expiresAt" DATETIME NOT NULL,
+    "usedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "OAuthAuthorizationCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "PaymentMethod" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "accountNumber" TEXT NOT NULL,
+    "accountType" TEXT NOT NULL DEFAULT 'personal',
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "color" TEXT NOT NULL DEFAULT '#84CC16',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+, "image" TEXT, "instructions" TEXT, "qrImage" TEXT)`,
+  `CREATE TABLE IF NOT EXISTS "Payout" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "dealId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "recipientId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "accountType" TEXT NOT NULL,
+    "accountNumber" TEXT NOT NULL,
+    "accountName" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "PayoutAccount" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "accountType" TEXT NOT NULL,
+    "accountName" TEXT NOT NULL,
+    "accountNumber" TEXT NOT NULL,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "PayoutAccount_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "PlatformSetting" (
+    "key" TEXT NOT NULL PRIMARY KEY,
+    "value" TEXT NOT NULL,
+    "updatedAt" DATETIME NOT NULL
+)`,
+  `CREATE TABLE IF NOT EXISTS "ProductChatMessage" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "productId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ProductChatMessage_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "ProductChatMessage_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "ProductDownload" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "productId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "dealId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ProductDownload_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "ProductDownload_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "ProductOption" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "productId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "price" REAL NOT NULL,
+    "isAvailable" BOOLEAN NOT NULL DEFAULT true,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ProductOption_productId_fkey" FOREIGN KEY ("productId") REFERENCES "DigitalProduct" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "PushSubscription" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "endpoint" TEXT NOT NULL,
+    "p256dh" TEXT NOT NULL,
+    "auth" TEXT NOT NULL,
+    "userAgent" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "Review" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT NOT NULL,
+    "isApproved" BOOLEAN NOT NULL DEFAULT false,
+    "userId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Review_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "SellerApplication" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "businessName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "rejectionReason" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "whatsappNumber" TEXT, "verificationCode" TEXT,
+    CONSTRAINT "SellerApplication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "SellerFollower" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "sellerId" TEXT NOT NULL,
+    "followerId" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SellerFollower_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SellerFollower_followerId_fkey" FOREIGN KEY ("followerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "SellerReview" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "sellerId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "SellerReview_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "SellerReview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "SellerWithdrawal" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "accountType" TEXT NOT NULL,
+    "accountName" TEXT NOT NULL,
+    "accountNumber" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "adminNote" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "SellerWithdrawal_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE TABLE IF NOT EXISTS "User" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "isSeller" BOOLEAN NOT NULL DEFAULT false,
+    "sellerDisabled" BOOLEAN NOT NULL DEFAULT false,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "resetToken" TEXT,
+    "resetTokenExpiry" DATETIME,
+    "googleId" TEXT,
+    "imageLink" TEXT,
+    "referralCode" TEXT,
+    "referredBy" TEXT,
+    "affiliateBalance" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL, "businessBio" TEXT, "businessName" TEXT, "whatsappNumber" TEXT,
+    CONSTRAINT "User_referredBy_fkey" FOREIGN KEY ("referredBy") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`
+];
+
+/** [table, column, ALTER type-fragment (incl. safe DEFAULT)] */
+const COLUMN_CHECKS: [string, string, string][] = [
+  ['Admin', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['Admin', 'role', `TEXT NOT NULL DEFAULT 'support'`],
+  ['Admin', 'permissions', `TEXT NOT NULL DEFAULT '[]'`],
+  ['Admin', 'totpSecret', `TEXT`],
+  ['Admin', 'totpEnabled', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['Admin', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Admin', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['AffiliateEarning', 'affiliateId', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateEarning', 'dealId', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateEarning', 'referredUserId', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateEarning', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['AffiliateEarning', 'percentage', `REAL NOT NULL DEFAULT 0`],
+  ['AffiliateEarning', 'status', `TEXT NOT NULL DEFAULT 'pending'`],
+  ['AffiliateEarning', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['AffiliateEarning', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['AffiliatePaymentMethod', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliatePaymentMethod', 'isActive', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['AffiliatePaymentMethod', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`],
+  ['AffiliatePaymentMethod', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['AffiliatePaymentMethod', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['AffiliateWithdrawal', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateWithdrawal', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['AffiliateWithdrawal', 'accountType', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateWithdrawal', 'accountNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateWithdrawal', 'accountName', `TEXT NOT NULL DEFAULT ''`],
+  ['AffiliateWithdrawal', 'status', `TEXT NOT NULL DEFAULT 'pending'`],
+  ['AffiliateWithdrawal', 'note', `TEXT`],
+  ['AffiliateWithdrawal', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['AffiliateWithdrawal', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Auction', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['Auction', 'description', `TEXT NOT NULL DEFAULT ''`],
+  ['Auction', 'category', `TEXT NOT NULL DEFAULT 'other'`],
+  ['Auction', 'image', `TEXT`],
+  ['Auction', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
+  ['Auction', 'startPrice', `REAL NOT NULL DEFAULT 0`],
+  ['Auction', 'currentPrice', `REAL`],
+  ['Auction', 'highestBidderId', `TEXT`],
+  ['Auction', 'bidCount', `INTEGER NOT NULL DEFAULT 0`],
+  ['Auction', 'status', `TEXT NOT NULL DEFAULT 'active'`],
+  ['Auction', 'endsAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Auction', 'winnerId', `TEXT`],
+  ['Auction', 'dealId', `TEXT`],
+  ['Auction', 'finalPrice', `REAL`],
+  ['Auction', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Auction', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Bid', 'auctionId', `TEXT NOT NULL DEFAULT ''`],
+  ['Bid', 'bidderId', `TEXT NOT NULL DEFAULT ''`],
+  ['Bid', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['Bid', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['BlogPost', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['BlogPost', 'slug', `TEXT NOT NULL DEFAULT ''`],
+  ['BlogPost', 'excerpt', `TEXT`],
+  ['BlogPost', 'content', `TEXT NOT NULL DEFAULT ''`],
+  ['BlogPost', 'coverImage', `TEXT`],
+  ['BlogPost', 'published', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['BlogPost', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['BlogPost', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ChatFile', 'dealId', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatFile', 'messageId', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatFile', 'key', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatFile', 'fileName', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatFile', 'fileSize', `INTEGER NOT NULL DEFAULT 0`],
+  ['ChatFile', 'fileType', `TEXT`],
+  ['ChatFile', 'expiresAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ChatFile', 'deletedAt', `DATETIME`],
+  ['ChatFile', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['ChatFile', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ChatMessage', 'dealId', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatMessage', 'senderId', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatMessage', 'role', `TEXT`],
+  ['ChatMessage', 'senderName', `TEXT`],
+  ['ChatMessage', 'text', `TEXT NOT NULL DEFAULT ''`],
+  ['ChatMessage', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['ChatMessage', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ContactInfo', 'phone', `TEXT`],
+  ['ContactInfo', 'email', `TEXT`],
+  ['ContactInfo', 'whatsapp', `TEXT`],
+  ['ContactInfo', 'telegram', `TEXT`],
+  ['ContactInfo', 'facebook', `TEXT`],
+  ['ContactInfo', 'address', `TEXT`],
+  ['ContactInfo', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ContactInfo', 'facebookGroup', `TEXT`],
+  ['ContactInfo', 'telegramGroup', `TEXT`],
+  ['ContactInfo', 'facebookPage', `TEXT`],
+  ['Deal', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['Deal', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['Deal', 'status', `TEXT NOT NULL DEFAULT 'created'`],
+  ['Deal', 'buyerId', `TEXT NOT NULL DEFAULT ''`],
+  ['Deal', 'sellerId', `TEXT`],
+  ['Deal', 'creatorId', `TEXT NOT NULL DEFAULT ''`],
+  ['Deal', 'terms', `TEXT`],
+  ['Deal', 'paymentMethodId', `TEXT`],
+  ['Deal', 'senderNumber', `TEXT`],
+  ['Deal', 'transactionId', `TEXT`],
+  ['Deal', 'paymentAmount', `REAL`],
+  ['Deal', 'platformFee', `REAL`],
+  ['Deal', 'rejectionReason', `TEXT`],
+  ['Deal', 'productId', `TEXT`],
+  ['Deal', 'productOptionId', `TEXT`],
+  ['Deal', 'adminCalled', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['Deal', 'adminCalledAt', `DATETIME`],
+  ['Deal', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Deal', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Deal', 'autoCompleteAt', `DATETIME`],
+  ['Deal', 'deliveredAt', `DATETIME`],
+  ['Deal', 'reminderEmailSentAt', `DATETIME`],
+  ['Deal', 'workDays', `INTEGER`],
+  ['Deal', 'workDeadlineAt', `DATETIME`],
+  ['DealReadState', 'dealId', `TEXT NOT NULL DEFAULT ''`],
+  ['DealReadState', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['DealReadState', 'lastReadAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['DealReadState', 'lastSeenDealUpdated', `DATETIME`],
+  ['DealReadState', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['DealReadState', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['DigitalProduct', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['DigitalProduct', 'description', `TEXT NOT NULL DEFAULT ''`],
+  ['DigitalProduct', 'price', `REAL NOT NULL DEFAULT 0`],
+  ['DigitalProduct', 'category', `TEXT NOT NULL DEFAULT 'other'`],
+  ['DigitalProduct', 'image', `TEXT`],
+  ['DigitalProduct', 'quantity', `INTEGER NOT NULL DEFAULT 10`],
+  ['DigitalProduct', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
+  ['DigitalProduct', 'status', `TEXT NOT NULL DEFAULT 'active'`],
+  ['DigitalProduct', 'productType', `TEXT NOT NULL DEFAULT 'single'`],
+  ['DigitalProduct', 'itemType', `TEXT NOT NULL DEFAULT 'non_physical'`],
+  ['DigitalProduct', 'condition', `TEXT`],
+  ['DigitalProduct', 'shippingInfo', `TEXT`],
+  ['DigitalProduct', 'isFree', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['DigitalProduct', 'fileKey', `TEXT`],
+  ['DigitalProduct', 'fileName', `TEXT`],
+  ['DigitalProduct', 'fileSize', `INTEGER`],
+  ['DigitalProduct', 'fileType', `TEXT`],
+  ['DigitalProduct', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['DigitalProduct', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['FeeRule', 'minimum_amount', `INTEGER NOT NULL DEFAULT 0`],
+  ['FeeRule', 'maximum_amount', `INTEGER NOT NULL DEFAULT 0`],
+  ['FeeRule', 'fee', `INTEGER NOT NULL DEFAULT 0`],
+  ['FeeRule', 'is_active', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['FeeRule', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['FeeRule', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['MarketplaceBanner', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceBanner', 'subtitle', `TEXT`],
+  ['MarketplaceBanner', 'image', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceBanner', 'link', `TEXT`],
+  ['MarketplaceBanner', 'isActive', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['MarketplaceBanner', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`],
+  ['MarketplaceBanner', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['MarketplaceBanner', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['MarketplaceCategorySetting', 'categoryId', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceCategorySetting', 'enabled', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['MarketplaceCategorySetting', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['MarketplaceOrder', 'orderNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrder', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrder', 'sellerId', `TEXT`],
+  ['MarketplaceOrder', 'serviceId', `TEXT`],
+  ['MarketplaceOrder', 'serviceName', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrder', 'productId', `TEXT`],
+  ['MarketplaceOrder', 'productOptionId', `TEXT`],
+  ['MarketplaceOrder', 'linkUrl', `TEXT`],
+  ['MarketplaceOrder', 'linkType', `TEXT`],
+  ['MarketplaceOrder', 'quantity', `INTEGER NOT NULL DEFAULT 0`],
+  ['MarketplaceOrder', 'pricingUnit', `TEXT NOT NULL DEFAULT 'per_1000'`],
+  ['MarketplaceOrder', 'unitPriceAtOrder', `REAL NOT NULL DEFAULT 0`],
+  ['MarketplaceOrder', 'totalAmount', `REAL NOT NULL DEFAULT 0`],
+  ['MarketplaceOrder', 'status', `TEXT NOT NULL DEFAULT 'pending_payment'`],
+  ['MarketplaceOrder', 'paymentStatus', `TEXT NOT NULL DEFAULT 'unpaid'`],
+  ['MarketplaceOrder', 'paymentMethodName', `TEXT`],
+  ['MarketplaceOrder', 'paymentMethodId', `TEXT`],
+  ['MarketplaceOrder', 'senderNumber', `TEXT`],
+  ['MarketplaceOrder', 'transactionId', `TEXT`],
+  ['MarketplaceOrder', 'piprapayInvoiceId', `TEXT`],
+  ['MarketplaceOrder', 'paidAt', `DATETIME`],
+  ['MarketplaceOrder', 'paymentVerifiedBy', `TEXT`],
+  ['MarketplaceOrder', 'fulfilmentNote', `TEXT`],
+  ['MarketplaceOrder', 'startCount', `INTEGER`],
+  ['MarketplaceOrder', 'remains', `INTEGER`],
+  ['MarketplaceOrder', 'idempotencyKey', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrder', 'completedAt', `DATETIME`],
+  ['MarketplaceOrder', 'cancelledAt', `DATETIME`],
+  ['MarketplaceOrder', 'cancelledBy', `TEXT`],
+  ['MarketplaceOrder', 'cancelReason', `TEXT`],
+  ['MarketplaceOrder', 'refundedAt', `DATETIME`],
+  ['MarketplaceOrder', 'customerNote', `TEXT`],
+  ['MarketplaceOrder', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['MarketplaceOrder', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['MarketplaceOrderEvent', 'orderId', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrderEvent', 'type', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceOrderEvent', 'fromStatus', `TEXT`],
+  ['MarketplaceOrderEvent', 'toStatus', `TEXT`],
+  ['MarketplaceOrderEvent', 'message', `TEXT`],
+  ['MarketplaceOrderEvent', 'actorType', `TEXT NOT NULL DEFAULT 'system'`],
+  ['MarketplaceOrderEvent', 'actorId', `TEXT`],
+  ['MarketplaceOrderEvent', 'actorName', `TEXT`],
+  ['MarketplaceOrderEvent', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['MarketplaceService', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceService', 'category', `TEXT NOT NULL DEFAULT 'other'`],
+  ['MarketplaceService', 'description', `TEXT NOT NULL DEFAULT ''`],
+  ['MarketplaceService', 'pricePerThousand', `REAL NOT NULL DEFAULT 0`],
+  ['MarketplaceService', 'minQuantity', `INTEGER NOT NULL DEFAULT 100`],
+  ['MarketplaceService', 'maxQuantity', `INTEGER NOT NULL DEFAULT 100000`],
+  ['MarketplaceService', 'linkTypes', `TEXT NOT NULL DEFAULT '[]'`],
+  ['MarketplaceService', 'deliveryEstimate', `TEXT`],
+  ['MarketplaceService', 'instructions', `TEXT`],
+  ['MarketplaceService', 'status', `TEXT NOT NULL DEFAULT 'draft'`],
+  ['MarketplaceService', 'isActive', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['MarketplaceService', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`],
+  ['MarketplaceService', 'createdById', `TEXT`],
+  ['MarketplaceService', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['MarketplaceService', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Notification', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['Notification', 'dealId', `TEXT`],
+  ['Notification', 'type', `TEXT NOT NULL DEFAULT ''`],
+  ['Notification', 'title', `TEXT NOT NULL DEFAULT ''`],
+  ['Notification', 'message', `TEXT NOT NULL DEFAULT ''`],
+  ['Notification', 'read', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['Notification', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Notification', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['Notification', 'relatedId', `TEXT`],
+  ['Notification', 'relatedType', `TEXT`],
+  ['OAuthAuthorizationCode', 'codeHash', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'clientId', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'redirectUri', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'scope', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'codeChallenge', `TEXT NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'codeChallengeMethod', `TEXT NOT NULL DEFAULT 'S256'`],
+  ['OAuthAuthorizationCode', 'expiresAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['OAuthAuthorizationCode', 'usedAt', `DATETIME`],
+  ['OAuthAuthorizationCode', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['PaymentMethod', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['PaymentMethod', 'accountNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['PaymentMethod', 'accountType', `TEXT NOT NULL DEFAULT 'personal'`],
+  ['PaymentMethod', 'status', `TEXT NOT NULL DEFAULT 'active'`],
+  ['PaymentMethod', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`],
+  ['PaymentMethod', 'color', `TEXT NOT NULL DEFAULT '#84CC16'`],
+  ['PaymentMethod', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['PaymentMethod', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['PaymentMethod', 'image', `TEXT`],
+  ['PaymentMethod', 'instructions', `TEXT`],
+  ['PaymentMethod', 'qrImage', `TEXT`],
+  ['Payout', 'dealId', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'type', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'recipientId', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['Payout', 'accountType', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'accountNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'accountName', `TEXT NOT NULL DEFAULT ''`],
+  ['Payout', 'status', `TEXT NOT NULL DEFAULT 'pending'`],
+  ['Payout', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Payout', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['PayoutAccount', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['PayoutAccount', 'accountType', `TEXT NOT NULL DEFAULT ''`],
+  ['PayoutAccount', 'accountName', `TEXT NOT NULL DEFAULT ''`],
+  ['PayoutAccount', 'accountNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['PayoutAccount', 'isDefault', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['PayoutAccount', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['PayoutAccount', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['PlatformSetting', 'value', `TEXT NOT NULL DEFAULT ''`],
+  ['PlatformSetting', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['ProductChatMessage', 'productId', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductChatMessage', 'senderId', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductChatMessage', 'text', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductChatMessage', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['ProductDownload', 'productId', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductDownload', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductDownload', 'dealId', `TEXT`],
+  ['ProductDownload', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['ProductOption', 'productId', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductOption', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['ProductOption', 'price', `REAL NOT NULL DEFAULT 0`],
+  ['ProductOption', 'isAvailable', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['ProductOption', 'sortOrder', `INTEGER NOT NULL DEFAULT 0`],
+  ['ProductOption', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['ProductOption', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['PushSubscription', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['PushSubscription', 'endpoint', `TEXT NOT NULL DEFAULT ''`],
+  ['PushSubscription', 'p256dh', `TEXT NOT NULL DEFAULT ''`],
+  ['PushSubscription', 'auth', `TEXT NOT NULL DEFAULT ''`],
+  ['PushSubscription', 'userAgent', `TEXT`],
+  ['PushSubscription', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Review', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['Review', 'rating', `INTEGER NOT NULL DEFAULT 0`],
+  ['Review', 'comment', `TEXT NOT NULL DEFAULT ''`],
+  ['Review', 'isApproved', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['Review', 'userId', `TEXT`],
+  ['Review', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['Review', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'businessName', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'email', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'phone', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'status', `TEXT NOT NULL DEFAULT 'pending'`],
+  ['SellerApplication', 'rejectionReason', `TEXT`],
+  ['SellerApplication', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['SellerApplication', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['SellerApplication', 'whatsappNumber', `TEXT`],
+  ['SellerApplication', 'verificationCode', `TEXT`],
+  ['SellerFollower', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerFollower', 'followerId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerFollower', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['SellerReview', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerReview', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerReview', 'rating', `INTEGER NOT NULL DEFAULT 0`],
+  ['SellerReview', 'comment', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerReview', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['SellerReview', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['SellerWithdrawal', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerWithdrawal', 'amount', `REAL NOT NULL DEFAULT 0`],
+  ['SellerWithdrawal', 'accountType', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerWithdrawal', 'accountName', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerWithdrawal', 'accountNumber', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerWithdrawal', 'status', `TEXT NOT NULL DEFAULT 'pending'`],
+  ['SellerWithdrawal', 'adminNote', `TEXT`],
+  ['SellerWithdrawal', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['SellerWithdrawal', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['User', 'name', `TEXT NOT NULL DEFAULT ''`],
+  ['User', 'phone', `TEXT NOT NULL DEFAULT ''`],
+  ['User', 'email', `TEXT NOT NULL DEFAULT ''`],
+  ['User', 'password', `TEXT NOT NULL DEFAULT ''`],
+  ['User', 'isSeller', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['User', 'sellerDisabled', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['User', 'isActive', `BOOLEAN NOT NULL DEFAULT 1`],
+  ['User', 'emailVerified', `BOOLEAN NOT NULL DEFAULT 0`],
+  ['User', 'resetToken', `TEXT`],
+  ['User', 'resetTokenExpiry', `DATETIME`],
+  ['User', 'googleId', `TEXT`],
+  ['User', 'imageLink', `TEXT`],
+  ['User', 'referralCode', `TEXT`],
+  ['User', 'referredBy', `TEXT`],
+  ['User', 'affiliateBalance', `REAL NOT NULL DEFAULT 0`],
+  ['User', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
+  ['User', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
+  ['User', 'businessBio', `TEXT`],
+  ['User', 'businessName', `TEXT`],
+  ['User', 'whatsappNumber', `TEXT`],
+];
+
+export interface EnsureSchemaReport {
+  tablesCreated: string[];
+  columnsAdded: string[];
+  errors: string[];
+  alreadyUpToDate: boolean;
+}
+
+let _ensurePromise: Promise<EnsureSchemaReport> | null = null;
+
+/** Runs the healing once per process; concurrent callers share the run. */
+export function ensureSchema(): Promise<EnsureSchemaReport> {
+  if (!_ensurePromise) {
+    _ensurePromise = runEnsureSchema().catch(err => {
+      // Allow a retry on the next request after a failed run
+      _ensurePromise = null
+      throw err
+    })
+  }
+  return _ensurePromise
+}
+
+async function runEnsureSchema(): Promise<EnsureSchemaReport> {
+  const report: EnsureSchemaReport = { tablesCreated: [], columnsAdded: [], errors: [], alreadyUpToDate: false }
+
+  // 1. Create missing tables (idempotent — no-op when the table exists)
+  for (const ddl of TABLE_DDL) {
+    try {
+      // Detect whether the table existed before, for the report
+      const tableName = ddl.match(/CREATE TABLE IF NOT EXISTS "([^"]+)"/)?.[1] ?? '?'
+      const before = await db.$queryRawUnsafe<Array<{ name: string }>>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}'`
+      )
+      await db.$executeRawUnsafe(ddl)
+      if (before.length === 0) report.tablesCreated.push(tableName)
+    } catch (err) {
+      report.errors.push(`create: ${err instanceof Error ? err.message.slice(0, 160) : String(err)}`)
+    }
+  }
+
+  // 2. Add missing columns on existing tables
+  const byTable = new Map<string, Array<[string, string]>>()
+  for (const [t, c, frag] of COLUMN_CHECKS) {
+    if (!byTable.has(t)) byTable.set(t, [])
+    byTable.get(t)!.push([c, frag])
+  }
+  for (const [table, cols] of byTable) {
+    try {
+      const info = await db.$queryRawUnsafe<Array<{ name: string }>>(
+        `PRAGMA table_info("${table}")`
+      )
+      const have = new Set(info.map(r => r.name))
+      for (const [col, frag] of cols) {
+        if (have.has(col)) continue
+        try {
+          await db.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN "${col}" ${frag}`)
+          report.columnsAdded.push(`${table}.${col}`)
+        } catch (err) {
+          report.errors.push(`${table}.${col}: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`)
+        }
+      }
+    } catch (err) {
+      // Table truly missing (create failed earlier) — recorded above
+      report.errors.push(`pragma ${table}: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`)
+    }
+  }
+
+  report.alreadyUpToDate = report.tablesCreated.length === 0 && report.columnsAdded.length === 0 && report.errors.length === 0
+  if (report.tablesCreated.length || report.columnsAdded.length || report.errors.length) {
+    console.log(
+      `[schema-heal] tables: ${report.tablesCreated.join(', ') || 'none'} | columns: ${report.columnsAdded.join(', ') || 'none'} | errors: ${report.errors.length}`
+    )
+  }
+  return report
+}
+
+/**
+ * Convenience for API routes: run `fn`, and on failure heal the schema
+ * once and retry. Returns undefined when the retry also fails.
+ */
+export async function withSchemaHeal<T>(fn: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await fn()
+  } catch (firstErr) {
+    try {
+      await ensureSchema()
+      return await fn()
+    } catch {
+      console.error('[schema-heal] retry failed after heal:', firstErr instanceof Error ? firstErr.message : firstErr)
+      return undefined
+    }
+  }
+}

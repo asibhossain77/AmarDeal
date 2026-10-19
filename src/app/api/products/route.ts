@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
+import { withSchemaHeal } from '@/lib/ensure-schema'
 import { DEFAULT_PRODUCT_QUANTITY, isMissingColumnError, isMissingProductOptionsSupportError } from '@/lib/prisma-column-safe'
 import { normalizeProductType, validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
@@ -12,7 +13,10 @@ import { normalizeItemType, isItemCondition, sanitizeShippingInfo } from '@/lib/
    category create allows (Task 40 drift fix). */
 
 // GET /api/products — list all active products (public, no auth needed)
-export async function GET(req: NextRequest) {
+// Wrapped in withSchemaHeal: on schema-drift failure (production Turso
+// missing new tables/columns) the schema heals once and the load retries;
+// the internal fallbacks stay as a second line of defense.
+async function loadProducts(req: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category')
@@ -97,11 +101,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, products: formatted })
   } catch (err) {
     console.error('[products:GET] Failed:', err instanceof Error ? err.message : err)
-    return NextResponse.json(
-      { success: false, error: 'পণ্য লোড করতে সমস্যা হয়েছে' },
-      { status: 500 }
-    )
+    // Rethrow so the outer withSchemaHeal wrapper can heal + retry once
+    throw err
   }
+}
+
+export async function GET(req: NextRequest) {
+  const res = await withSchemaHeal(() => loadProducts(req))
+  if (res) return res
+  return NextResponse.json(
+    { success: false, error: 'পণ্য লোড করতে সমস্যা হয়েছে' },
+    { status: 500 }
+  )
 }
 
 // POST /api/products — create a new product (seller only)

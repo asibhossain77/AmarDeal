@@ -49,7 +49,7 @@ function buildCsp(nonce: string): string {
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
     // Dev-only: allow presigned PUTs to a local fake S3/R2 server (E2E tests)
-    "connect-src 'self' wss: ws: https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net https://*.r2.cloudflarestorage.com" + (isDev ? ' http://127.0.0.1:* http://localhost:*' : ''),
+    "connect-src 'self' wss: ws: https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://analytics.google.com https://www.facebook.com https://connect.facebook.net https://*.r2.cloudflarestorage.com" + (isDev ? ' http://127.0.0.1:* http://localhost:*' : ''),
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
