@@ -1,7 +1,12 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
-import { ensureVerificationColumn, withVerificationColumn } from '@/lib/seller-verify'
+import {
+  ensureSellerRoleColumns,
+  ensureVerificationColumn,
+  withSellerRoleColumns,
+  withVerificationColumn,
+} from '@/lib/seller-verify'
 
 export async function GET() {
   try {
@@ -9,12 +14,15 @@ export async function GET() {
     if (!guard.ok) return guard.response
 
     await ensureVerificationColumn()
+    await ensureSellerRoleColumns()
 
-    const applications = await withVerificationColumn(() =>
-      db.sellerApplication.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true, isSeller: true, whatsappNumber: true } } },
-      })
+    const applications = await withSellerRoleColumns(() =>
+      withVerificationColumn(() =>
+        db.sellerApplication.findMany({
+          orderBy: { createdAt: 'desc' },
+          include: { user: { select: { id: true, name: true, email: true, phone: true, imageLink: true, isSeller: true, whatsappNumber: true } } },
+        })
+      )
     )
 
     return NextResponse.json({ applications })

@@ -1716,3 +1716,33 @@ Work Log:
 
 Stage Summary:
 - Production 500s fixed at the root: any deploy can now never drift the hosted DB schema — first request per process heals it. Dashboard cards will populate on the user's next midman.bd/admin visit (first load a few seconds slower while healing runs once). Local repo now synced to origin/main with user WIP preserved on local-wip-backup.
+
+Task ID: 13
+Agent: Main
+Task: Two seller roles — Personal Digital Seller & Verified Business Seller (phase 1)
+
+Work Log:
+- Inspected existing seller registration: WhatsApp code flow (become-seller + verify), SellerApplication model, admin seller-apps tab, BusinessProfilePanel — reused all of it instead of rewriting
+- Prisma schema: User.sellerRole ('personal'|'business', default 'personal'), User.businessVerified (default false); SellerApplication.applicationType (default 'personal'), idType ('nid'|'trade_licence'), idNumber, documentImage. prisma db push applied to db/custom.db (MUST pass DATABASE_URL explicitly — env resolution walks up to /home/z/my-project/.env)
+- Existing 3 sellers auto-defaulted to personal — backward compatible, no data loss (17 products, 21 deals intact)
+- Self-healing: seller-verify.ts gained ensureSellerRoleColumns()/withSellerRoleColumns() (P2022 auto-recovery); health route autoFixSchema checks + both CREATE TABLE SQL blocks updated
+- POST /api/user/become-seller: applicationType param; personal = WhatsApp-only (unchanged legacy flow, code generated); business = businessName + idType + idNumber + optional documentImage + WhatsApp; existing personal sellers may apply for business upgrade; businessVerified sellers blocked from re-applying
+- POST verify: business applications CANNOT self-verify (proper Bangla error); personal verify sets sellerRole='personal'
+- PATCH /api/admin/seller-applications/[id] approve: sets sellerRole from applicationType; business also sets businessVerified=true
+- New POST /api/upload/seller-document (requireAuth, R2 'seller-docs' prefix) for NID/licence photos
+- /api/seller/profile: GET returns sellerRole/businessVerified; PUT blocks businessName/businessBio for non-business sellers (403) — name editable for all
+- /api/seller/[id]/public, /api/products, /api/products/[id]: sellerRole + businessVerified in seller selects (products wrapped in withSellerRoleColumns — public endpoint must never P2022)
+- login/me/complete-profile payloads + store.ts UserInfo extended (optional fields)
+- seller-apply-dialog.tsx rewritten: step 1 role selection cards (Bangla descriptions + verification requirements), step 2 personal (WhatsApp) or business (name, NID/licence type toggle, number, optional photo upload, WhatsApp, terms); business pending view (no code box); SellerApplyButton shows upgrade CTA for personal sellers; dashboard-view/dashboard-sidebar render it for sellers too
+- Admin seller-apps-tab: Type column (পার্সোনাল/বিজনেস badges), BusinessInfoBlock (business name, document type, ID number, document photo link) under business rows — desktop table + mobile cards
+- BusinessProfilePanel locked upsell view for personal sellers (perks list + upgrade CTA); verified badge added to panel header, product order page, public seller profile, marketplace cards
+- i18n: ~50 new seller.* + admin.sellerApps.* keys in bn.ts + en.ts (natural Bangla)
+- Untracked db/custom.db (was still tracked; /db/ already in .gitignore) so test-data mutations stop polluting commits
+- Verification: tsc 208 = 208 baseline (0 new), eslint 20 = 20 baseline (0 new); API E2E all pass (personal apply→verify→seller; business apply→validation→admin approve→businessVerified; 403 gate on business profile edit; upgrade path; block re-apply); agent-browser UI E2E: role cards render, business form validation + submit + pending view, admin type badges + info blocks + approve via UI, locked upsell view, verified badge on order page + seller profile + marketplace cards. NOTE: demo passwords reset to test1234 (admin@demo.com, user@demo.com, seller@demo.com, seller2@demo.com, dash@test.com, t@m.com, asib@gmail.com, seller@gmail.com); test applications exist in dev DB
+- Sandbox note: dev server must be spawned via node detached+unref (scripts/spawn-detached.js) — bash setsid/nohup gets reaped between tool calls
+
+Stage Summary:
+- Two seller roles live end-to-end: Personal Digital Seller (WhatsApp only, no NID) and Verified Business Seller (NID/trade licence + admin approval gate)
+- Restricted business features (business profile edit, verified badge) enforced on BOTH frontend (locked view, badge) and backend (403)
+- Phase 1 scope respected: no new product listing/order system; existing accounts, Admin Deal, Marketplace, auth untouched and verified
+- 24 files changed + 1 new route; screenshots in /home/z/my-project/download/

@@ -1,7 +1,12 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
-import { ensureVerificationColumn, withVerificationColumn } from '@/lib/seller-verify'
+import {
+  ensureSellerRoleColumns,
+  ensureVerificationColumn,
+  withSellerRoleColumns,
+  withVerificationColumn,
+} from '@/lib/seller-verify'
 import { notifyUser } from '@/lib/push'
 
 export async function PATCH(
@@ -13,6 +18,7 @@ export async function PATCH(
     if (!guard.ok) return guard.response
 
     await ensureVerificationColumn()
+    await ensureSellerRoleColumns()
 
     const { id } = await params
     const body = await req.json()
@@ -23,8 +29,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const application = await withVerificationColumn(() =>
-      db.sellerApplication.findUnique({ where: { id } })
+    const application = await withSellerRoleColumns(() =>
+      withVerificationColumn(() =>
+        db.sellerApplication.findUnique({ where: { id } })
+      )
     )
     if (!application) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -64,9 +72,18 @@ export async function PATCH(
     })
 
     if (status === 'approved') {
+      // Role follows the application type: personal applications make a
+      // Personal Digital Seller, business applications make a Verified
+      // Business Seller (businessVerified = true unlocks business features).
+      const isBusiness = application.applicationType === 'business'
       await db.user.update({
         where: { id: application.userId },
-        data: { isSeller: true, whatsappNumber: application.whatsappNumber || null },
+        data: {
+          isSeller: true,
+          sellerRole: isBusiness ? 'business' : 'personal',
+          ...(isBusiness ? { businessVerified: true } : {}),
+          whatsappNumber: application.whatsappNumber || null,
+        },
       })
 
       // Notify the applicant that their seller request was approved

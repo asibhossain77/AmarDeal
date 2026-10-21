@@ -7,7 +7,7 @@ import {
   Search, X, MessageCircle, Package, Plus, Loader2, User, Layers,
   Palette, Code2, PenTool, Megaphone, GraduationCap, Wrench, LayoutGrid, TrendingUp,
   ChevronLeft, ChevronRight, ChevronDown, Zap, ArrowRight, Clock, Star, Upload, ImageIcon, FileDown,
-  Facebook, Instagram, Repeat, Gift,
+  Facebook, Instagram, Repeat, Gift, BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ import {
   type OptionRow,
 } from '@/components/shared/product-options-editor';
 
-interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; }
+interface ProductSeller { id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; sellerRole?: string | null; businessVerified?: boolean; }
 // Exported: the Marketplace app shell (marketplace-app.tsx) consumes the same
 // API shape returned by /api/products.
 export interface Product {
@@ -374,6 +374,7 @@ function ProductCard({ product, index, onClick, t, locale }: { product: Product;
             <div className="flex items-center gap-1 text-muted-foreground">
               <Avatar className="h-4 w-4 shrink-0"><AvatarImage src={cdnUrl(product.seller.imageLink) || undefined} /><AvatarFallback className="text-[7px]"><User className="h-2.5 w-2.5" /></AvatarFallback></Avatar>
               <span className="max-w-[52px] truncate text-[10px] font-medium sm:max-w-[70px] sm:text-[11px]">{product.seller.name}</span>
+              {product.seller.businessVerified && <BadgeCheck className="h-3 w-3 shrink-0 text-emerald-500" aria-label={t('seller.verifiedBusinessBadge')} />}
             </div>
             <div className="hidden items-center gap-1 text-muted-foreground/60 sm:flex">
               <Clock className="h-2.5 w-2.5" />

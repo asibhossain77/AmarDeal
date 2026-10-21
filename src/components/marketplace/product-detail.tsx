@@ -31,7 +31,7 @@ import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Loader2, User,
   Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2,
   Facebook, FileDown, Download, ChevronDown, FileText, ClipboardList,
-  CheckCircle2, Wallet, Clock3, Zap, Truck,
+  CheckCircle2, Wallet, Clock3, Zap, Truck, BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +45,7 @@ import { fbqTrack, genMetaEventId } from '@/lib/meta-client';
 import { CATEGORIES, CATEGORY_BG } from '@/components/landing/marketplace-section';
 
 interface OrderProductSeller {
-  id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null;
+  id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; sellerRole?: string | null; businessVerified?: boolean;
 }
 interface OrderProductOption {
   id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
@@ -705,7 +705,15 @@ export function ProductDetailView() {
                 <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{product.seller.name}</p>
+                <p className="flex items-center gap-1.5 truncate text-sm font-semibold text-foreground">
+                  <span className="truncate">{product.seller.name}</span>
+                  {product.seller.businessVerified && (
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400" title={t('seller.verifiedBusinessBadge')}>
+                      <BadgeCheck className="h-3 w-3" />
+                      {t('seller.verifiedBusinessBadge')}
+                    </span>
+                  )}
+                </p>
                 <p className="text-[11px] text-muted-foreground">{t('marketplace.seller')}</p>
               </div>
             </button>
@@ -1071,7 +1079,10 @@ export function ProductDetailView() {
           </div>
           <div className="flex items-center justify-between gap-4 px-4 py-2.5">
             <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.seller')}</dt>
-            <dd className="truncate text-[13px] font-semibold text-foreground">{product.seller.name}</dd>
+            <dd className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-foreground">
+              <span className="truncate">{product.seller.name}</span>
+              {product.seller.businessVerified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-label={t('seller.verifiedBusinessBadge')} />}
+            </dd>
           </div>
           {/* Physical-only metadata rows — only fields the model really has */}
           {isPhysical && product.condition && (

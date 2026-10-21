@@ -33,6 +33,8 @@ export interface UserInfo {
   permissions: string[]
   isSeller: boolean
   sellerDisabled: boolean
+  sellerRole?: string
+  businessVerified?: boolean
   imageLink?: string | null
 }
 

@@ -1,9 +1,25 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { ensureVerificationColumn, generateVerificationCode, withVerificationColumn } from '@/lib/seller-verify'
+import {
+  ensureSellerRoleColumns,
+  ensureVerificationColumn,
+  generateVerificationCode,
+  withSellerRoleColumns,
+  withVerificationColumn,
+} from '@/lib/seller-verify'
 import { notifyAdmins } from '@/lib/push'
 
+const VALID_APPLICATION_TYPES = ['personal', 'business']
+const VALID_ID_TYPES = ['nid', 'trade_licence']
+
+// POST /api/user/become-seller
+// applicationType:
+//  - 'personal'  → Personal Digital Seller: only WhatsApp number verification
+//                  (admin sends the code on WhatsApp, user verifies → seller)
+//  - 'business'  → Verified Business Seller: NID / trade licence verification,
+//                  application stays pending until an admin reviews and approves it.
+//                  Existing personal sellers may also apply to upgrade.
 export async function POST(req: NextRequest) {
   try {
     const guard = await requireAuth(req)
@@ -11,6 +27,9 @@ export async function POST(req: NextRequest) {
     const userId = guard.userId
 
     const body = await req.json()
+    const applicationType = VALID_APPLICATION_TYPES.includes(body?.applicationType)
+      ? body.applicationType
+      : 'personal'
     const { whatsappNumber } = body
 
     const wa = typeof whatsappNumber === 'string' ? whatsappNumber.trim() : ''
@@ -30,42 +49,93 @@ export async function POST(req: NextRequest) {
     const user = await db.user.findUnique({ where: { id: userId } })
     if (!user) {
       return NextResponse.json(
-        { error: '\u0987\u0989\u099C\u09BE\u09B0 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF' },
+        { error: 'ইউজার পাওয়া যায়নি' },
         { status: 404 }
       )
     }
 
-    if (user.isSeller) {
+    // Business fields are validated before any other check so existing
+    // personal sellers (isSeller = true) can also submit an upgrade application.
+    let businessName = ''
+    let idType: string | null = null
+    let idNumber: string | null = null
+    let documentImage: string | null = null
+
+    if (applicationType === 'business') {
+      if (user.sellerRole === 'business' && user.businessVerified) {
+        return NextResponse.json(
+          { error: 'আপনি ইতিমধ্যে একজন ভেরিফায়েড বিজনেস সেলার' },
+          { status: 400 }
+        )
+      }
+
+      businessName = typeof body?.businessName === 'string' ? body.businessName.trim() : ''
+      if (!businessName || businessName.length < 2) {
+        return NextResponse.json(
+          { error: 'বিজনেসের নাম দিন' },
+          { status: 400 }
+        )
+      }
+
+      idType = VALID_ID_TYPES.includes(body?.idType) ? body.idType : null
+      if (!idType) {
+        return NextResponse.json(
+          { error: 'NID অথবা ট্রেড লাইসেন্স — যাচাইয়ের ধরন বেছে নিন' },
+          { status: 400 }
+        )
+      }
+
+      idNumber = typeof body?.idNumber === 'string' ? body.idNumber.trim() : ''
+      if (!idNumber || idNumber.length < 4) {
+        return NextResponse.json(
+          { error: 'সঠিক নম্বর লিখুন (কমপক্ষে ৪ অক্ষর)' },
+          { status: 400 }
+        )
+      }
+
+      documentImage = typeof body?.documentImage === 'string' && body.documentImage.trim()
+        ? body.documentImage.trim()
+        : null
+    }
+
+    if (user.isSeller && applicationType === 'personal') {
       return NextResponse.json(
-        { error: '\u0986\u09AA\u09A8\u09BF \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u098F\u0995\u099C\u09A8 \u09B8\u09C7\u09B2\u09BE\u09B0' },
+        { error: 'আপনি ইতিমধ্যেই একজন সেলার' },
         { status: 400 }
       )
     }
 
-    const existing = await withVerificationColumn(() =>
-      db.sellerApplication.findFirst({
-        where: { userId, status: 'pending' },
-      })
+    const existing = await withSellerRoleColumns(() =>
+      withVerificationColumn(() =>
+        db.sellerApplication.findFirst({
+          where: { userId, status: 'pending' },
+        })
+      )
     )
     if (existing) {
       return NextResponse.json(
-        { error: '\u0986\u09AA\u09A8\u09BE\u09B0 \u0986\u09AC\u09C7\u09A6\u09A8 \u0987\u09A4\u09BF\u09AE\u09A7\u09CD\u09AF\u09C7 \u09AA\u09C7\u09A8\u09CD\u09A1\u09BF\u0982 \u0986\u099B\u09C7', pending: true },
+        { error: 'আপনার আবেদন ইতিমধ্যে পেন্ডিং আছে', pending: true },
         { status: 400 }
       )
     }
 
     await ensureVerificationColumn()
+    await ensureSellerRoleColumns()
 
-    const verificationCode = generateVerificationCode()
+    const verificationCode = applicationType === 'personal' ? generateVerificationCode() : null
 
     await db.sellerApplication.create({
       data: {
         userId,
-        businessName: '',
+        businessName: applicationType === 'business' ? businessName : '',
         email: user.email || '',
         phone: user.phone || '',
         whatsappNumber: wa,
         verificationCode,
+        applicationType,
+        idType,
+        idNumber,
+        documentImage,
         status: 'pending',
       },
     })
@@ -78,14 +148,16 @@ export async function POST(req: NextRequest) {
       relatedType: 'seller_application',
     }).catch(() => {})
 
-    // SECURITY: the code is NEVER returned to the user and never appears in any
-    // user-facing response. Only the admin can see it in the Admin Panel and
-    // sends it to the user's WhatsApp number manually.
+    // SECURITY: for personal applications the code is NEVER returned to the user
+    // and never appears in any user-facing response. Only the admin can see it in
+    // the Admin Panel and sends it to the user's WhatsApp number manually.
+    // Business applications carry no code — the admin verifies the NID/licence
+    // documents directly and approves from the Admin Panel.
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Become seller error:', err)
     return NextResponse.json(
-      { error: '\u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7' },
+      { error: 'সমস্যা হয়েছে' },
       { status: 500 }
     )
   }
@@ -97,22 +169,27 @@ export async function GET(req: NextRequest) {
     if (!guard.ok) return guard.response
     const userId = guard.userId
 
-    const application = await db.sellerApplication.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        status: true,
-        rejectionReason: true,
-        createdAt: true,
-      },
-    })
+    const application = await withSellerRoleColumns(() =>
+      withVerificationColumn(() =>
+        db.sellerApplication.findFirst({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            status: true,
+            rejectionReason: true,
+            applicationType: true,
+            createdAt: true,
+          },
+        })
+      )
+    )
 
     return NextResponse.json({ application })
   } catch (err) {
     console.error('Get seller application error:', err)
     return NextResponse.json(
-      { error: '\u09B8\u09AE\u09B8\u09CD\u09AF\u09BE \u09B9\u09AF\u09BC\u09C7\u099B\u09C7' },
+      { error: 'সমস্যা হয়েছে' },
       { status: 500 }
     )
   }

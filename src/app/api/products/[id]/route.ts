@@ -7,6 +7,7 @@ import { validateOptions, priceRangeFromPrices } from '@/lib/product-options'
 import { ownsFileKey, validateDigitalFile, deleteFileByKey, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
 import { isValidProductCategory } from '@/lib/product-categories'
 import { isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
+import { withSellerRoleColumns } from '@/lib/seller-verify'
 
 const VALID_STATUSES = ['active', 'inactive', 'sold'] as const
 
@@ -23,13 +24,15 @@ export async function GET(
   try {
     const { id } = await params
 
-    let product
+    // withSellerRoleColumns: public endpoint must never crash with P2022 on a
+    // legacy production DB missing the two-seller-roles columns.
+    let product = await withSellerRoleColumns(async () => {
     try {
-      product = await db.digitalProduct.findUnique({
+      return await db.digitalProduct.findUnique({
         where: { id },
         include: {
           seller: {
-            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, admin: { select: { userId: true } } },
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true, admin: { select: { userId: true } } },
           },
           options: OPTIONS_SELECT,
         },
@@ -37,15 +40,16 @@ export async function GET(
     } catch (err) {
       if (!isMissingColumnError(err, 'quantity') && !isMissingProductOptionsSupportError(err) && !isMissingColumnError(err, 'fileKey')) throw err
       // quantity/productType/ProductOption/file columns not migrated yet (production) — fall back without them
-      product = await db.digitalProduct.findUnique({
+      return await db.digitalProduct.findUnique({
         where: { id },
         select: {
           id: true, title: true, description: true, price: true, category: true, image: true,
           status: true, createdAt: true, updatedAt: true,
-          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true } },
+          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true } },
         },
       })
     }
+    })
 
     if (!product) {
       return NextResponse.json(
@@ -94,6 +98,8 @@ export async function GET(
           imageLink: product.seller.imageLink,
           email: product.seller.email,
           whatsappNumber: product.seller.whatsappNumber,
+          sellerRole: (product.seller as { sellerRole?: string }).sellerRole ?? 'personal',
+          businessVerified: (product.seller as { businessVerified?: boolean }).businessVerified ?? false,
         },
       },
     })

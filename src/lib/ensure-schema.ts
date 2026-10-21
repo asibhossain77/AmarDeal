@@ -427,6 +427,7 @@ const TABLE_DDL: string[] = [
     "rejectionReason" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL, "whatsappNumber" TEXT, "verificationCode" TEXT,
+    "applicationType" TEXT NOT NULL DEFAULT 'personal', "idType" TEXT, "idNumber" TEXT, "documentImage" TEXT,
     CONSTRAINT "SellerApplication_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 )`,
   `CREATE TABLE IF NOT EXISTS "SellerFollower" (
@@ -480,6 +481,7 @@ const TABLE_DDL: string[] = [
     "affiliateBalance" REAL NOT NULL DEFAULT 0,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL, "businessBio" TEXT, "businessName" TEXT, "whatsappNumber" TEXT,
+    "sellerRole" TEXT NOT NULL DEFAULT 'personal', "businessVerified" BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT "User_referredBy_fkey" FOREIGN KEY ("referredBy") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 )`
 ];
@@ -782,6 +784,10 @@ const COLUMN_CHECKS: [string, string, string][] = [
   ['SellerApplication', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
   ['SellerApplication', 'whatsappNumber', `TEXT`],
   ['SellerApplication', 'verificationCode', `TEXT`],
+  ['SellerApplication', 'applicationType', `TEXT NOT NULL DEFAULT 'personal'`],
+  ['SellerApplication', 'idType', `TEXT`],
+  ['SellerApplication', 'idNumber', `TEXT`],
+  ['SellerApplication', 'documentImage', `TEXT`],
   ['SellerFollower', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
   ['SellerFollower', 'followerId', `TEXT NOT NULL DEFAULT ''`],
   ['SellerFollower', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
@@ -820,6 +826,8 @@ const COLUMN_CHECKS: [string, string, string][] = [
   ['User', 'businessBio', `TEXT`],
   ['User', 'businessName', `TEXT`],
   ['User', 'whatsappNumber', `TEXT`],
+  ['User', 'sellerRole', `TEXT NOT NULL DEFAULT 'personal'`],
+  ['User', 'businessVerified', `BOOLEAN NOT NULL DEFAULT 0`],
 ];
 
 export interface EnsureSchemaReport {

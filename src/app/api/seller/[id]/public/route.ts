@@ -13,6 +13,7 @@ export async function GET(
       where: { id },
       select: {
         id: true, name: true, imageLink: true, isSeller: true, sellerDisabled: true,
+        sellerRole: true, businessVerified: true,
         businessName: true, businessBio: true,
       },
     })
@@ -78,6 +79,8 @@ export async function GET(
         id: user.id,
         name: user.name,
         imageLink: user.imageLink,
+        sellerRole: user.sellerRole,
+        businessVerified: user.businessVerified,
         businessName: user.businessName,
         businessBio: user.businessBio,
       },

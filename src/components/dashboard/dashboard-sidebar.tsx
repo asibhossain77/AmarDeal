@@ -149,7 +149,7 @@ export function DashboardSidebar() {
             <ShoppingCart className="h-[18px] w-[18px]" />
             {t('page.marketplace.title') || 'মার্কেটপ্লেস'}
           </button>
-          {!isSeller && !user?.isAdmin && <SellerApplyButton variant="sidebar" />}
+          {!user?.isAdmin && <SellerApplyButton variant="sidebar" />}
           <div className="flex items-center gap-3 rounded-xl py-2">
             <div
               className="h-9 w-9 shrink-0 rounded-full overflow-hidden"

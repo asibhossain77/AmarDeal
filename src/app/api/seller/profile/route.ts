@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
       select: {
         id: true, name: true, email: true, phone: true,
         imageLink: true, isSeller: true,
+        sellerRole: true, businessVerified: true,
         businessName: true, businessBio: true,
       },
     })
@@ -50,10 +51,23 @@ export async function PUT(req: NextRequest) {
     // Verify user is a seller
     const user = await db.user.findUnique({
       where: { id: userId },
-      select: { id: true, isSeller: true },
+      select: { id: true, isSeller: true, sellerRole: true, businessVerified: true },
     })
     if (!user || !user.isSeller) {
       return NextResponse.json({ error: 'সেলার অনুমোদিত নয়' }, { status: 403 })
+    }
+
+    // Business profile fields (business name / bio) are a Verified Business
+    // Seller feature — personal sellers cannot set or change them.
+    const isBusinessSeller = user.sellerRole === 'business' && user.businessVerified
+    const wantsBusinessFields =
+      (typeof businessName === 'string' && businessName.trim()) ||
+      (typeof businessBio === 'string' && businessBio.trim())
+    if (wantsBusinessFields && !isBusinessSeller) {
+      return NextResponse.json(
+        { error: 'বিজনেস প্রোফাইল সম্পাদনা করতে ভেরিফায়েড বিজনেস সেলার হতে হবে' },
+        { status: 403 }
+      )
     }
 
     // Build update data

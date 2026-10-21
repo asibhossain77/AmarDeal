@@ -1,11 +1,18 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/deal-guard'
-import { ensureVerificationColumn, normalizeCode, withVerificationColumn } from '@/lib/seller-verify'
+import {
+  ensureVerificationColumn,
+  normalizeCode,
+  withVerificationColumn,
+} from '@/lib/seller-verify'
 
 // POST /api/user/become-seller/verify
 // User enters the verification code the admin sent them on WhatsApp.
-// On the correct code the application is approved and the user is promoted to seller.
+// Applies to PERSONAL Digital Seller applications only — business
+// applications are reviewed directly by the admin in the Admin Panel.
+// On the correct code the application is approved and the user is promoted
+// to a Personal Digital Seller.
 export async function POST(req: NextRequest) {
   try {
     const guard = await requireAuth(req)
@@ -36,6 +43,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'এই আবেদন ইতিমধ্যে প্রক্রিয়াকৃত' }, { status: 400 })
     }
 
+    // Business applications have no code — the admin approves them after
+    // verifying the NID / trade licence documents.
+    if (application.applicationType === 'business') {
+      return NextResponse.json(
+        { error: 'বিজনেস আবেদন অ্যাডমিন ডকুমেন্ট যাচাই করে অনুমোদন করবেন' },
+        { status: 400 }
+      )
+    }
+
     if (!application.verificationCode) {
       return NextResponse.json(
         { error: 'এই আবেদনের কোড তৈরি হয়নি। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন' },
@@ -47,7 +63,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ভুল কোড! আবার চেষ্টা করুন' }, { status: 400 })
     }
 
-    // Correct code — approve the application and promote the user to seller
+    // Correct code — approve the application and promote the user to a
+    // Personal Digital Seller
     await db.sellerApplication.update({
       where: { id: application.id },
       data: { status: 'approved' },
@@ -55,7 +72,11 @@ export async function POST(req: NextRequest) {
 
     await db.user.update({
       where: { id: userId },
-      data: { isSeller: true, whatsappNumber: application.whatsappNumber || null },
+      data: {
+        isSeller: true,
+        sellerRole: 'personal',
+        whatsappNumber: application.whatsappNumber || null,
+      },
     })
 
     return NextResponse.json({ success: true })

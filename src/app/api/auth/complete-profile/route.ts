@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
       adminRole: isAdmin ? (await db.admin.findUnique({ where: { userId: user.id } }))?.role || '' : '',
       permissions: isAdmin ? JSON.parse((await db.admin.findUnique({ where: { userId: user.id } }))?.permissions || '[]') : [],
       isSeller: user.isSeller,
+      sellerRole: user.sellerRole,
+      businessVerified: user.businessVerified,
       imageLink: user.imageLink,
     }
 

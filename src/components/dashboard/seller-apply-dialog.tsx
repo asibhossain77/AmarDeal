@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, ShieldCheck, KeyRound, ChevronRight } from 'lucide-react';
+import {
+  Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, ShieldCheck, KeyRound,
+  ChevronRight, UserRound, Building2, BadgeCheck, Upload, X, ImagePlus, ArrowLeft,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
@@ -61,7 +64,10 @@ interface Application {
   id: string;
   status: string;
   rejectionReason: string | null;
+  applicationType?: string | null;
 }
+
+type SellerRoleStep = 'role' | 'personal' | 'business';
 
 interface SellerApplyButtonProps {
   variant?: 'sidebar' | 'mobile';
@@ -77,7 +83,7 @@ export function SellerApplyButton({ variant = 'sidebar', onClose, open, onOpenCh
   const t = useT();
   const user = useAppStore((s) => s.user);
 
-  if (user?.isSeller) {
+  if (user?.isSeller && user?.businessVerified) {
     return (
       <button
         onClick={() => { useAppStore.getState().setDashboardPanel('seller-orders'); onClose?.(); }}
@@ -89,17 +95,37 @@ export function SellerApplyButton({ variant = 'sidebar', onClose, open, onOpenCh
     );
   }
 
+  if (user?.isSeller) {
+    // Personal Digital Seller — CTA to upgrade to Verified Business Seller
+    return (
+      <SellerApplyDialog variant={variant} onClose={onClose} initialStep="business" upgrade />
+    );
+  }
+
   return <SellerApplyDialog variant={variant} onClose={onClose} open={open} onOpenChange={onOpenChange} />;
 }
 
-function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpenChange: onOpenChangeProp }: SellerApplyButtonProps) {
+function SellerApplyDialog({
+  variant = 'sidebar',
+  onClose,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
+  initialStep = 'role',
+  upgrade = false,
+}: SellerApplyButtonProps & { initialStep?: SellerRoleStep; upgrade?: boolean }) {
   const t = useT();
+  const user = useAppStore((s) => s.user);
   const [internalOpen, setInternalOpen] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : internalOpen;
   const [submitting, setSubmitting] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<SellerRoleStep>(initialStep);
+  const [selectedRole, setSelectedRole] = useState<'personal' | 'business' | null>(
+    initialStep === 'business' ? 'business' : null
+  );
+  const [showRejectedNote, setShowRejectedNote] = useState(true);
 
   const [countryCode, setCountryCode] = useState('BD');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -113,6 +139,14 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
   const [verifying, setVerifying] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
 
+  // Business application fields
+  const [businessName, setBusinessName] = useState('');
+  const [idType, setIdType] = useState<'nid' | 'trade_licence' | null>(null);
+  const [idNumber, setIdNumber] = useState('');
+  const [docUrl, setDocUrl] = useState('');
+  const [docUploading, setDocUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const handleOpenChange = (v: boolean) => {
     if (!controlled) setInternalOpen(v);
     onOpenChangeProp?.(v);
@@ -120,6 +154,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
       setJustSubmitted(false);
       setCodeInput('');
       setCodeError(null);
+      setShowRejectedNote(true);
     }
   };
 
@@ -135,8 +170,12 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
 
   const localDigits = whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
   const selectedCountry = COUNTRY_CODES.find((c) => c.iso === countryCode) || COUNTRY_CODES[0];
+  const isSeller = !!user?.isSeller;
+  const activeApplicationType = application?.applicationType === 'business' ? 'business' : 'personal';
 
-  const validate = () => {
+  const clearError = (key: string) => setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+
+  const validatePersonal = () => {
     const newErrors: Record<string, string> = {};
     if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
     else if (localDigits.length < 6 || localDigits.length > 14) newErrors.whatsappNumber = t('seller.whatsappInvalid');
@@ -145,21 +184,88 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateBusiness = () => {
+    const newErrors: Record<string, string> = {};
+    if (!businessName.trim() || businessName.trim().length < 2) newErrors.businessName = t('seller.requiredField');
+    if (!idType) newErrors.idType = t('seller.requiredField');
+    if (!idNumber.trim() || idNumber.trim().length < 4) newErrors.idNumber = t('seller.requiredField');
+    if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
+    else if (localDigits.length < 6 || localDigits.length > 14) newErrors.whatsappNumber = t('seller.whatsappInvalid');
+    if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!validatePersonal()) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/user/become-seller', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsappNumber: `${selectedCountry.dial}${localDigits}` }),
+        body: JSON.stringify({
+          applicationType: 'personal',
+          whatsappNumber: `${selectedCountry.dial}${localDigits}`,
+        }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         toast.success(t('dashboard.becomeSellerSuccess'));
         setJustSubmitted(true);
-        setApplication({ id: '', status: 'pending', rejectionReason: null });
+        setApplication({ id: '', status: 'pending', rejectionReason: null, applicationType: 'personal' });
         // keep dialog open — the "wait for WhatsApp code + verify" view is shown inside
+      } else {
+        toast.error(data.error || t('dashboard.becomeSellerError'));
+      }
+    } catch {
+      toast.error(t('dashboard.becomeSellerError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDocUpload = async (file: File) => {
+    setDocUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/upload/seller-document', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setDocUrl(data.url);
+        toast.success(t('seller.docUploaded'));
+      } else {
+        toast.error(data.error || t('seller.docUploadFailed'));
+      }
+    } catch {
+      toast.error(t('seller.docUploadFailed'));
+    } finally {
+      setDocUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleBusinessSubmit = async () => {
+    if (!validateBusiness()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/user/become-seller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationType: 'business',
+          businessName: businessName.trim(),
+          idType,
+          idNumber: idNumber.trim(),
+          documentImage: docUrl || undefined,
+          whatsappNumber: `${selectedCountry.dial}${localDigits}`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('dashboard.becomeSellerSuccess'));
+        setApplication({ id: '', status: 'pending', rejectionReason: null, applicationType: 'business' });
+        setJustSubmitted(true);
       } else {
         toast.error(data.error || t('dashboard.becomeSellerError'));
       }
@@ -178,7 +284,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     <div className="space-y-2">
       <button
         type="button"
-        onClick={() => { setTermsAccepted(!termsAccepted); setErrors(prev => { const n = {...prev}; delete n.terms; return n; }); }}
+        onClick={() => { setTermsAccepted(!termsAccepted); clearError('terms'); }}
         className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
           termsAccepted ? 'border-primary/30 bg-primary/5' : errors.terms ? 'border-destructive/40 bg-destructive/5' : 'border-border hover:border-border/80'
         }`}
@@ -233,7 +339,7 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
             value={whatsappNumber}
             onChange={(e) => {
               setWhatsappNumber(e.target.value);
-              if (errors.whatsappNumber) setErrors(prev => { const n = {...prev}; delete n.whatsappNumber; return n; });
+              clearError('whatsappNumber');
             }}
             className="pl-10 rounded-xl"
           />
@@ -255,6 +361,289 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     </Button>
   );
 
+  // Step 1: role selection — two cards with description + verification needs
+  const renderRoleSelect = () => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-amber-500" />
+          {t('seller.roleSelectTitle')}
+        </DialogTitle>
+        <DialogDescription>{t('seller.roleSelectDesc')}</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-3 mt-2">
+        {application?.status === 'rejected' && showRejectedNote && (
+          <div className="flex items-start justify-between gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2.5">
+            <p className="text-xs leading-relaxed text-red-600 dark:text-red-400">
+              <XCircle className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
+              {t('seller.rejectedDesc')} {application.rejectionReason || 'N/A'}
+            </p>
+            <button onClick={() => setShowRejectedNote(false)} className="shrink-0 text-red-400 hover:text-red-600" aria-label="close">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+        {isSeller && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">{t('seller.roleCurrent')}</p>
+            <p className="flex items-center gap-1.5 text-sm font-bold text-primary">
+              <UserRound className="h-4 w-4" />
+              {t('seller.rolePersonal')}
+            </p>
+          </div>
+        )}
+
+        {/* Personal Digital Seller card */}
+        <button
+          type="button"
+          disabled={isSeller}
+          onClick={() => { setSelectedRole('personal'); clearError('role'); }}
+          className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+            isSeller ? 'cursor-not-allowed opacity-55' : ''
+          } ${
+            selectedRole === 'personal'
+              ? 'border-amber-500/60 bg-amber-500/5 shadow-sm'
+              : errors.role ? 'border-destructive/40' : 'border-border hover:border-amber-500/40 hover:bg-amber-500/[0.03]'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+              selectedRole === 'personal' ? 'bg-amber-500 text-white' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+            }`}>
+              <UserRound className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-foreground">{t('seller.rolePersonal')}</p>
+                <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                  {t('seller.personalSellerBadge')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('seller.rolePersonalDesc')}</p>
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed font-medium text-amber-600 dark:text-amber-400">
+                <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" />
+                {t('seller.rolePersonalVerify')}
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {/* Verified Business Seller card */}
+        <button
+          type="button"
+          onClick={() => { setSelectedRole('business'); clearError('role'); }}
+          className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+            selectedRole === 'business'
+              ? 'border-emerald-500/60 bg-emerald-500/5 shadow-sm'
+              : errors.role ? 'border-destructive/40' : 'border-border hover:border-emerald-500/40 hover:bg-emerald-500/[0.03]'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+              selectedRole === 'business' ? 'bg-emerald-500 text-white' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+            }`}>
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-foreground">{t('seller.roleBusiness')}</p>
+                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <BadgeCheck className="h-3 w-3" />
+                  {t('admin.sellerApps.typeBusiness')}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('seller.roleBusinessDesc')}</p>
+              <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed font-medium text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" />
+                {t('seller.roleBusinessVerify')}
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
+
+        <Button
+          onClick={() => {
+            if (selectedRole === 'personal') setStep('personal');
+            else if (selectedRole === 'business') setStep('business');
+            else setErrors({ role: t('seller.requiredField') });
+          }}
+          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2 shadow-md shadow-amber-500/20"
+        >
+          {t('seller.roleContinue')}
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </>
+  );
+
+  // Step 2a: Personal Digital Seller form — WhatsApp only
+  const renderPersonalForm = () => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <UserRound className="h-5 w-5 text-amber-500" />
+          {t('seller.rolePersonal')}
+        </DialogTitle>
+        <DialogDescription>{t('seller.rolePersonalVerify')}</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 mt-2">
+        <button
+          type="button"
+          onClick={() => { setStep('role'); setSelectedRole(null); }}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t('seller.roleBack')}
+        </button>
+        {renderWhatsAppField()}
+        {renderTerms()}
+        {renderSubmitButton()}
+      </div>
+    </>
+  );
+
+  // Step 2b: Verified Business Seller form — NID / trade licence + admin approval
+  const renderBusinessForm = () => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-emerald-500" />
+          {upgrade ? t('seller.upgradeBusiness') : t('seller.businessApplyTitle')}
+        </DialogTitle>
+        <DialogDescription>{upgrade ? t('seller.upgradeBusinessDesc') : t('seller.businessApplyDesc')}</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 mt-2">
+        {!upgrade && (
+          <button
+            type="button"
+            onClick={() => { setStep('role'); setSelectedRole(null); }}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            {t('seller.roleBack')}
+          </button>
+        )}
+
+        {/* Business name */}
+        <div className="space-y-2">
+          <Label htmlFor="seller-biz-name" className="text-sm font-semibold">{t('seller.businessName')}</Label>
+          <Input
+            id="seller-biz-name"
+            placeholder={t('seller.businessNamePh')}
+            value={businessName}
+            onChange={(e) => { setBusinessName(e.target.value); clearError('businessName'); }}
+            className="rounded-xl"
+          />
+          {errors.businessName && <p className="text-xs text-destructive">{errors.businessName}</p>}
+        </div>
+
+        {/* Verification document type */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">{t('seller.idType')}</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: 'nid' as const, label: t('seller.idTypeNid') },
+              { value: 'trade_licence' as const, label: t('seller.idTypeTrade') },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => { setIdType(opt.value); clearError('idType'); }}
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-all ${
+                  idType === opt.value
+                    ? 'border-emerald-500/60 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400'
+                    : 'border-border text-muted-foreground hover:border-emerald-500/40'
+                }`}
+              >
+                <ShieldCheck className={`h-4 w-4 ${idType === opt.value ? 'text-emerald-500' : 'text-muted-foreground/60'}`} />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {errors.idType && <p className="text-xs text-destructive">{errors.idType}</p>}
+        </div>
+
+        {/* ID number */}
+        <div className="space-y-2">
+          <Label htmlFor="seller-id-number" className="text-sm font-semibold">{t('seller.idNumber')}</Label>
+          <Input
+            id="seller-id-number"
+            inputMode="text"
+            placeholder={t('seller.idNumberPh')}
+            value={idNumber}
+            onChange={(e) => { setIdNumber(e.target.value); clearError('idNumber'); }}
+            className="rounded-xl"
+            dir="ltr"
+          />
+          {errors.idNumber ? (
+            <p className="text-xs text-destructive">{errors.idNumber}</p>
+          ) : (
+            <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.idNumberHelp')}</p>
+          )}
+        </div>
+
+        {/* Document photo (optional) */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">
+            {t('seller.documentPhoto')} <span className="font-normal text-muted-foreground">{t('seller.documentPhotoOptional')}</span>
+          </Label>
+          {docUrl ? (
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-2.5">
+              <img src={docUrl} alt={t('seller.documentPhoto')} className="h-12 w-12 rounded-lg object-cover" />
+              <p className="flex flex-1 items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <BadgeCheck className="h-4 w-4" />
+                {t('seller.docUploaded')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setDocUrl('')}
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                title={t('seller.removeDoc')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={docUploading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-3 py-4 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+            >
+              {docUploading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" />{t('seller.uploadingDoc')}</>
+              ) : (
+                <><ImagePlus className="h-4 w-4" />{t('seller.uploadDoc')}</>
+              )}
+            </button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.documentPhotoHelp')}</p>
+        </div>
+
+        {renderWhatsAppField()}
+        {renderTerms()}
+
+        <Button
+          onClick={handleBusinessSubmit}
+          disabled={submitting}
+          className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white gap-2 shadow-md shadow-emerald-500/20"
+        >
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />}
+          {submitting ? t('seller.submitting') : t('seller.submit')}
+        </Button>
+      </div>
+    </>
+  );
+
   const normalizeTypedCode = (v: string) => {
     const bn = '০১২৩৪৫৬৭৮৯';
     return v.replace(/[০-৯]/g, (d) => String(bn.indexOf(d))).replace(/[^0-9]/g, '').slice(0, 6);
@@ -273,9 +662,9 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
       const data = await res.json();
       if (res.ok && data.success) {
         const curr = useAppStore.getState().user;
-        if (curr) useAppStore.getState().setUser({ ...curr, isSeller: true });
+        if (curr) useAppStore.getState().setUser({ ...curr, isSeller: true, sellerRole: 'personal' });
         toast.success(t('seller.verifySuccess'));
-        setApplication({ id: application?.id || '', status: 'approved', rejectionReason: null });
+        setApplication({ id: application?.id || '', status: 'approved', rejectionReason: null, applicationType: 'personal' });
         handleOpenChange(false);
         onClose?.();
       } else {
@@ -333,8 +722,55 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     </>
   );
 
+  // Business application: pending admin review (documents, no code)
+  const renderBusinessPendingContent = (justSubmitted: boolean) => (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          <BadgeCheck className="h-5 w-5 text-emerald-500" />
+          {t(justSubmitted ? 'seller.businessSubmittedTitle' : 'seller.businessPending')}
+        </DialogTitle>
+        <DialogDescription>
+          {t(justSubmitted ? 'seller.businessSubmittedDesc' : 'seller.businessPendingDesc')}
+        </DialogDescription>
+      </DialogHeader>
+      <div className="mt-2 flex items-center justify-center py-4">
+        <div className="flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/5 px-4 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t('seller.businessPending')}
+        </div>
+      </div>
+    </>
+  );
+
   if (loading) return null;
 
+  // Pending business application → "documents under review" view
+  if (application?.status === 'pending' && activeApplicationType === 'business') {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <button
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 transition-colors hover:bg-emerald-500/15 ${
+              variant === 'mobile' ? 'px-4 py-3' : ''
+            }`}
+          >
+            <BadgeCheck className="h-[18px] w-[18px] text-emerald-500" />
+            <span className="flex-1 text-left leading-tight">
+              <span className="block text-[11px] font-medium opacity-80">{t('admin.sellerApps.typeBusiness')}</span>
+              <span className="block text-sm font-bold">{t('seller.businessPending')}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 opacity-60" />
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          {renderBusinessPendingContent(justSubmitted)}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Pending personal application → code verification view (existing flow)
   if (application?.status === 'pending') {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -361,7 +797,8 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     );
   }
 
-  if (application?.status === 'disabled') {
+  // Disabled seller account — re-apply view (unchanged personal flow)
+  if (application?.status === 'disabled' && !isSeller) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         {!controlled && (
@@ -396,45 +833,22 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
     );
   }
 
-  if (application?.status === 'rejected') {
-    return (
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        {!controlled && (
-          <DialogTrigger asChild>
-            <button
-              className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-medium text-red-500 bg-red-500/10 border border-red-500/20 transition-colors hover:bg-red-500/15 ${
-                variant === 'mobile' ? 'px-4 py-3' : ''
-              }`}
-            >
-              <XCircle className="h-[18px] w-[18px]" />
-              <span className="flex-1 text-left">{t('seller.applyAgain')}</span>
-            </button>
-          </DialogTrigger>
-        )}
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-red-500" />
-              {t('seller.rejected')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('seller.rejectedDesc')} {application.rejectionReason || 'N/A'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            {renderWhatsAppField()}
-            {renderTerms()}
-            {renderSubmitButton()}
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
+  // Fresh application: role selection → personal / business form
+  // (also used for re-apply after rejection, and for business upgrade)
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {!controlled && (
-        <DialogTrigger asChild>
+      <DialogTrigger asChild>
+        {upgrade ? (
+          <button
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-500/20 transition-all hover:from-emerald-600 hover:to-green-700 ${
+              variant === 'mobile' ? 'px-4 py-3' : ''
+            }`}
+          >
+            <BadgeCheck className="h-[18px] w-[18px]" />
+            <span>{t('seller.upgradeBusiness')}</span>
+          </button>
+        ) : (
           <button
             className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-3 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20 transition-all hover:from-amber-600 hover:to-orange-600 ${
               variant === 'mobile' ? 'px-4 py-3' : ''
@@ -443,21 +857,13 @@ function SellerApplyDialog({ variant = 'sidebar', onClose, open: openProp, onOpe
             <Sparkles className="h-[18px] w-[18px]" />
             <span>{t('nav.becomeSeller')}</span>
           </button>
-        </DialogTrigger>
+        )}
+      </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            {t('seller.applyTitle')}
-          </DialogTitle>
-          <DialogDescription>{t('seller.applyDesc')}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          {renderWhatsAppField()}
-          {renderTerms()}
-          {renderSubmitButton()}
-        </div>
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        {step === 'role' && renderRoleSelect()}
+        {step === 'personal' && renderPersonalForm()}
+        {step === 'business' && renderBusinessForm()}
       </DialogContent>
     </Dialog>
   );

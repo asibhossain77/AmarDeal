@@ -120,7 +120,7 @@ export function DashboardView() {
                   </button>
                 </nav>
                 <div className="border-t border-border/50 p-3 space-y-2">
-                  {!isSeller && !user?.isAdmin && (
+                  {!user?.isAdmin && (
                     <div className="px-1">
                       <SellerApplyButton variant="sidebar" />
                     </div>

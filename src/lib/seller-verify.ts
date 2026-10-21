@@ -27,6 +27,67 @@ export async function ensureVerificationColumn(): Promise<void> {
   _verificationColumnEnsured = await addVerificationColumn()
 }
 
+// ---------------------------------------------------------------------------
+// Two seller roles (personal / business) — self-healing columns.
+// The columns are also added by `prisma db push` (build step) and
+// /api/health autoFixSchema — this is a third safety net so the runtime
+// never crashes with P2022 on a production DB that missed migration.
+// ---------------------------------------------------------------------------
+
+type ColumnSpec = { table: string; column: string; ddl: string }
+
+const SELLER_ROLE_COLUMNS: ColumnSpec[] = [
+  { table: 'User', column: 'sellerRole', ddl: "TEXT NOT NULL DEFAULT 'personal'" },
+  { table: 'User', column: 'businessVerified', ddl: 'BOOLEAN NOT NULL DEFAULT 0' },
+  { table: 'SellerApplication', column: 'applicationType', ddl: "TEXT NOT NULL DEFAULT 'personal'" },
+  { table: 'SellerApplication', column: 'idType', ddl: 'TEXT' },
+  { table: 'SellerApplication', column: 'idNumber', ddl: 'TEXT' },
+  { table: 'SellerApplication', column: 'documentImage', ddl: 'TEXT' },
+]
+
+const _ensuredRoleColumns = new Set<string>()
+
+async function addRoleColumn({ table, column, ddl }: ColumnSpec): Promise<boolean> {
+  try {
+    await db.$executeRawUnsafe(`ALTER TABLE "${table}" ADD COLUMN "${column}" ${ddl}`)
+    console.log(`[seller-verify] added ${table}.${column} column`)
+    return true
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (/duplicate column|already exists/i.test(msg)) return true
+    console.error(`[seller-verify] ensure ${table}.${column} failed:`, msg)
+    return false
+  }
+}
+
+/** Ensure all two-seller-roles columns exist (memoized per process). */
+export async function ensureSellerRoleColumns(): Promise<void> {
+  for (const spec of SELLER_ROLE_COLUMNS) {
+    if (_ensuredRoleColumns.has(spec.column + spec.table)) continue
+    const ok = await addRoleColumn(spec)
+    if (ok) _ensuredRoleColumns.add(spec.column + spec.table)
+  }
+}
+
+/**
+ * Run a query with automatic recovery when a two-seller-roles column is
+ * missing (Prisma error P2022): add the missing columns, then retry once.
+ */
+export async function withSellerRoleColumns<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code
+    const msg = err instanceof Error ? err.message : String(err)
+    if (code === 'P2022' || /sellerRole|businessVerified|applicationType|idType|idNumber|documentImage/i.test(msg)) {
+      _ensuredRoleColumns.clear()
+      await ensureSellerRoleColumns()
+      return await fn()
+    }
+    throw err
+  }
+}
+
 /**
  * Run a SellerApplication query with automatic recovery when the
  * verificationCode column is missing (Prisma error P2022): add the

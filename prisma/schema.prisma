@@ -16,6 +16,8 @@ model User {
   password  String
   isSeller        Boolean  @default(false)
   sellerDisabled  Boolean  @default(false)
+  sellerRole      String   @default("personal") // 'personal' | 'business' (business = admin-approved Verified Business Seller)
+  businessVerified Boolean @default(false) // true only when a business application is approved by admin
   isActive        Boolean  @default(true)
   emailVerified   Boolean  @default(false)
   resetToken      String?
@@ -430,6 +432,10 @@ model SellerApplication {
   phone           String
   whatsappNumber  String?
   verificationCode String?
+  applicationType String   @default("personal") // 'personal' | 'business'
+  idType          String?  // business only: 'nid' | 'trade_licence'
+  idNumber        String?  // business only: NID or trade licence number
+  documentImage   String?  // business only: uploaded NID/licence photo (R2 URL)
   status          String   @default("pending")
   rejectionReason String?
   createdAt       DateTime @default(now())

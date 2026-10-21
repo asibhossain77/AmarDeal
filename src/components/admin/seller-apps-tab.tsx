@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   UserCheck, UserX, Users, Clock, Loader2, Ban, RotateCcw, MessageCircle, CalendarDays, Copy, KeyRound,
+  Building2, UserRound, BadgeCheck, ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,10 @@ interface SellerApp {
   phone: string;
   whatsappNumber: string | null;
   verificationCode: string | null;
+  applicationType: string | null;
+  idType: string | null;
+  idNumber: string | null;
+  documentImage: string | null;
   status: string;
   rejectionReason: string | null;
   createdAt: string;
@@ -185,6 +190,59 @@ export function SellerAppsTab() {
     );
   }
 
+  function AppTypeBadge({ app }: { app: SellerApp }) {
+    if (app.applicationType === 'business') {
+      return (
+        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0 font-medium gap-1">
+          <Building2 className="h-3 w-3" /> {t('admin.sellerApps.typeBusiness')}
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0 font-medium gap-1">
+        <UserRound className="h-3 w-3" /> {t('admin.sellerApps.typePersonal')}
+      </Badge>
+    );
+  }
+
+  function idTypeLabel(app: SellerApp): string {
+    if (app.idType === 'trade_licence') return t('admin.sellerApps.idTypeTrade');
+    if (app.idType === 'nid') return t('admin.sellerApps.idTypeNid');
+    return '-';
+  }
+
+  /** Business verification details (NID / licence number + document photo). */
+  function BusinessInfoBlock({ app }: { app: SellerApp }) {
+    return (
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-3 space-y-2">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+          <Building2 className="h-3.5 w-3.5" />
+          {t('admin.sellerApps.businessInfoTitle')}
+        </p>
+        {app.businessName && (
+          <p className="text-xs text-foreground"><span className="text-muted-foreground">{t('seller.businessName')}:</span> <span className="font-medium">{app.businessName}</span></p>
+        )}
+        <p className="text-xs text-foreground"><span className="text-muted-foreground">{t('admin.sellerApps.idType')}:</span> <span className="font-medium">{idTypeLabel(app)}</span></p>
+        {app.idNumber && (
+          <p className="text-xs text-foreground" dir="ltr"><span className="text-muted-foreground" dir="auto">{t('admin.sellerApps.idNumber')}:</span> <span className="font-mono font-medium">{app.idNumber}</span></p>
+        )}
+        {app.documentImage ? (
+          <a
+            href={cdnUrl(app.documentImage) || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <ImageIcon className="h-3.5 w-3.5 text-emerald-500" />
+            {t('admin.sellerApps.viewDocument')}
+          </a>
+        ) : (
+          <p className="text-xs text-muted-foreground">{t('admin.sellerApps.noDocument')}</p>
+        )}
+      </div>
+    );
+  }
+
   function UserAvatar({ name, imageLink, size = 'sm' }: { name: string; imageLink: string | null; size?: 'sm' | 'lg' }) {
     const cls = size === 'lg'
       ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary'
@@ -233,6 +291,7 @@ export function SellerAppsTab() {
                 <thead>
                   <tr className="border-b border-border/50 bg-muted/30">
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.applicant')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.type')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.whatsappNumber')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.code')}</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{t('admin.sellerApps.appliedAt')}</th>
@@ -242,7 +301,8 @@ export function SellerAppsTab() {
                 </thead>
                 <tbody>
                   {apps.map((app) => (
-                    <tr key={app.id} className="border-b border-border/30 last:border-0 transition-colors hover:bg-accent/30">
+                    <Fragment key={app.id}>
+                    <tr className="border-b border-border/30 transition-colors hover:bg-accent/30">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <UserAvatar name={app.user.name} imageLink={app.user.imageLink} />
@@ -252,6 +312,7 @@ export function SellerAppsTab() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-4 py-3"><AppTypeBadge app={app} /></td>
                       <td className="px-4 py-3"><WhatsAppCell number={app.whatsappNumber || app.user.whatsappNumber} /></td>
                       <td className="px-4 py-3"><VerificationCodeCell app={app} /></td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(app.createdAt).toLocaleDateString('bn-BD')}</td>
@@ -305,6 +366,14 @@ export function SellerAppsTab() {
                         ) : null}
                       </td>
                     </tr>
+                    {app.applicationType === 'business' && (
+                      <tr className="border-b border-border/30">
+                        <td colSpan={7} className="px-4 pb-4">
+                          <BusinessInfoBlock app={app} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -323,7 +392,10 @@ export function SellerAppsTab() {
                       <p className="text-xs text-muted-foreground">{app.user.email}</p>
                     </div>
                   </div>
-                  <AppStatusBadge status={app.status} />
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <AppStatusBadge status={app.status} />
+                    <AppTypeBadge app={app} />
+                  </div>
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-xl bg-[#25D366]/5 border border-[#25D366]/15 px-3 py-2.5">
                   <div className="flex items-center gap-2 min-w-0">
@@ -373,6 +445,7 @@ export function SellerAppsTab() {
                     </div>
                   </div>
                 )}
+                {app.applicationType === 'business' && <BusinessInfoBlock app={app} />}
                 {app.status === 'rejected' && app.rejectionReason && (
                   <div className="rounded-lg bg-red-500/5 border border-red-500/10 p-2.5 text-xs">
                     <span className="font-medium text-red-600 dark:text-red-400">{t('admin.sellerApps.rejectionReason')}:</span>{' '}

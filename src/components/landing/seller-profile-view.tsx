@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Home, ArrowLeft, Star, Users, Package, Heart, Loader2,
-  Send, MapPin, Calendar, ShieldCheck, MessageCircle,
+  Send, MapPin, Calendar, ShieldCheck, MessageCircle, BadgeCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +19,7 @@ import { Footer } from './footer';
 
 interface SellerInfo {
   id: string; name: string; imageLink: string | null; businessName: string | null; businessBio: string | null;
+  sellerRole?: string | null; businessVerified?: boolean;
 }
 interface Product {
   id: string; title: string; description: string; price: number;
@@ -187,8 +188,14 @@ export function SellerProfileView() {
             </Avatar>
 
             <div className="flex-1 text-center sm:text-left min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">
-                {seller.businessName || seller.name}
+              <h1 className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xl sm:text-2xl font-bold text-foreground">
+                <span className="truncate">{seller.businessName || seller.name}</span>
+                {seller.businessVerified && (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    {t('seller.verifiedBusinessBadge')}
+                  </span>
+                )}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">{seller.name}</p>
               {seller.businessBio && (

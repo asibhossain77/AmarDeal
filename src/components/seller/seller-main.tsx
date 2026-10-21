@@ -25,7 +25,9 @@ import { useT } from '@/lib/i18n';
 import {
   Inbox, Clock, TrendingUp, Plus, PackageCheck, Eye, Layers,
   UserCircle, Store, Loader2, Image, Pencil, Trash2, ImageIcon, Upload, ArrowLeft, Lock, Save, Search, X, FileText, Truck, Cloud,
+  BadgeCheck, Building2, ShieldCheck,
 } from 'lucide-react';
+import { SellerApplyButton } from '@/components/dashboard/seller-apply-dialog';
 import { toast } from 'sonner';
 import { cdnUrl } from '@/lib/cdn-url';
 import {
@@ -267,6 +269,12 @@ export function BusinessProfilePanel() {
         setBusinessName(data.user.businessName || '');
         setBusinessBio(data.user.businessBio || '');
         setProfileName(data.user.name || '');
+        // Sync fresh seller role fields into the store — the cached user object
+        // can be stale after an admin approves a business application.
+        const curr = useAppStore.getState().user;
+        if (curr && (curr.sellerRole !== data.user.sellerRole || curr.businessVerified !== data.user.businessVerified)) {
+          useAppStore.getState().setUser({ ...curr, sellerRole: data.user.sellerRole, businessVerified: data.user.businessVerified });
+        }
       }
       setProductCount(data.productCount || 0);
     }).catch(() => {}).finally(() => setLoading(false));
@@ -303,6 +311,48 @@ export function BusinessProfilePanel() {
     );
   }
 
+  // Business profile is a Verified Business Seller feature — personal sellers
+  // see an upsell view with an upgrade CTA instead of the edit form.
+  const isBusinessSeller = user?.sellerRole === 'business' && user?.businessVerified === true;
+  if (!isBusinessSeller) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{t('seller.businessProfile')}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t('seller.businessProfileDesc')}</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10">
+            <Lock className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="mt-4 flex flex-wrap items-center justify-center gap-1.5 text-base sm:text-lg font-bold text-foreground">
+            <Building2 className="h-5 w-5 text-emerald-500" />
+            {t('seller.businessLockedTitle')}
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{t('seller.businessLockedDesc')}</p>
+          <div className="mx-auto mt-5 max-w-sm rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 text-left">
+            <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{t('seller.businessLockedPerksTitle')}</p>
+            <ul className="mt-2 space-y-1.5">
+              {[t('seller.businessLockedPerk1'), t('seller.businessLockedPerk2'), t('seller.businessLockedPerk3')].map((perk) => (
+                <li key={perk} className="flex items-start gap-2 text-xs leading-relaxed text-foreground/80">
+                  <BadgeCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  {perk}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="mx-auto mt-5 max-w-sm">
+            <SellerApplyButton variant="sidebar" />
+          </div>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+            {t('seller.roleBusinessVerify')}
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
   const displayName = businessName || profileName;
 
   return (
@@ -334,7 +384,15 @@ export function BusinessProfilePanel() {
             <h3 className="text-lg font-bold text-foreground truncate">{displayName}</h3>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
             <div className="flex items-center gap-3 mt-1.5">
-              <Badge className="bg-primary/10 text-primary border-0 font-medium text-xs">{t('dashboard.sellerBadge')}</Badge>
+              <Badge className="bg-primary/10 text-primary border-0 font-medium text-xs gap-1">
+                {t('dashboard.sellerBadge')}
+              </Badge>
+              {user?.businessVerified && user?.sellerRole === 'business' && (
+                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 font-medium text-xs gap-1">
+                  <BadgeCheck className="h-3 w-3" />
+                  {t('seller.verifiedBusinessBadge')}
+                </Badge>
+              )}
               <span className="text-xs text-muted-foreground">{productCount} {t('sellerProfile.products')}</span>
             </div>
           </div>

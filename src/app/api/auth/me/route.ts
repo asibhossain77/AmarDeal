@@ -37,6 +37,8 @@ export async function GET(req: NextRequest) {
       permissions: adminPermissions,
       isSeller: user.isSeller,
       sellerDisabled: user.sellerDisabled,
+      sellerRole: user.sellerRole,
+      businessVerified: user.businessVerified,
       imageLink: user.imageLink ?? null,
     })
   } catch (err) {

@@ -7,6 +7,7 @@ import { normalizeProductType, validateOptions, priceRangeFromPrices } from '@/l
 import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r2'
 import { isValidProductCategory } from '@/lib/product-categories'
 import { normalizeItemType, isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
+import { withSellerRoleColumns } from '@/lib/seller-verify'
 
 /* PRODUCT_CATEGORIES lives in src/lib/product-categories.ts — single source of
    truth shared with PATCH /api/products/[id] so edits always accept every
@@ -26,13 +27,17 @@ async function loadProducts(req: NextRequest): Promise<NextResponse> {
       where.category = category
     }
 
-    let products
+    // withSellerRoleColumns: if the sellerRole / businessVerified columns are
+    // missing on a legacy production DB, add them and retry — this endpoint is
+    // public (marketplace) so it must never crash with P2022. Outer
+    // withSchemaHeal (GET) remains the general safety net.
+    let products = await withSellerRoleColumns(async () => {
     try {
-      products = await db.digitalProduct.findMany({
+      return await db.digitalProduct.findMany({
         where,
         include: {
           seller: {
-            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, admin: { select: { userId: true } } },
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true, admin: { select: { userId: true } } },
           },
           options: {
             select: { id: true, name: true, price: true, isAvailable: true, sortOrder: true },
@@ -44,16 +49,17 @@ async function loadProducts(req: NextRequest): Promise<NextResponse> {
     } catch (err) {
       if (!isMissingColumnError(err, 'quantity') && !isMissingProductOptionsSupportError(err) && !isMissingColumnError(err, 'fileKey')) throw err
       // quantity/productType/ProductOption/file columns not migrated yet (production) — fall back without them
-      products = await db.digitalProduct.findMany({
+      return await db.digitalProduct.findMany({
         where,
         select: {
           id: true, title: true, description: true, price: true, category: true, image: true,
           status: true, createdAt: true, updatedAt: true,
-          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true } },
+          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true } },
         },
         orderBy: { createdAt: 'desc' },
       })
     }
+    })
 
     const formatted = products.map((p) => {
       const options = ((p as { options?: { id: string; name: string; price: number; isAvailable: boolean; sortOrder: number }[] }).options) ?? []
@@ -94,6 +100,8 @@ async function loadProducts(req: NextRequest): Promise<NextResponse> {
           imageLink: p.seller.imageLink,
           email: p.seller.email,
           whatsappNumber: p.seller.whatsappNumber,
+          sellerRole: (p.seller as { sellerRole?: string }).sellerRole ?? 'personal',
+          businessVerified: (p.seller as { businessVerified?: boolean }).businessVerified ?? false,
         },
       }
     })
