@@ -1746,3 +1746,33 @@ Stage Summary:
 - Restricted business features (business profile edit, verified badge) enforced on BOTH frontend (locked view, badge) and backend (403)
 - Phase 1 scope respected: no new product listing/order system; existing accounts, Admin Deal, Marketplace, auth untouched and verified
 - 24 files changed + 1 new route; screenshots in /home/z/my-project/download/
+
+---
+Task ID: 13-rebase
+Agent: Main
+Task: Rebase two-seller-roles commit (dc0f9ca) onto origin/main (5328818) — merge Turso self-healing + CHIPS cookie + Task 83 fixes with the roles feature
+
+Work Log:
+- Found repo diverged: local dc0f9ca (Task 13 two-seller-roles, based on old 04c6757) vs origin/main 5328818 (Task 83 SMM card + stats-500 fix + CHIPS cookie fix + Turso schema-drift self-healing)
+- Updated GitHub token in remote URL (old one revoked); verified via /user API before push
+- Rebased dc0f9ca onto origin/main; resolved 9 content conflicts + 2 modify/delete:
+  - health/route.ts: kept origin's ensureSchema() architecture; ADDED the 6 seller-role columns (User.sellerRole/businessVerified, SellerApplication.applicationType/idType/idNumber/documentImage) to both TABLE_DDL and COLUMN_CHECKS in lib/ensure-schema.ts
+  - products/route.ts + products/[id]/route.ts: nested withSellerRoleColumns INSIDE withSchemaHeal; sellerRole/businessVerified added to main + fallback selects and formatted output
+  - become-seller + admin/seller-applications/[id]: merged import supersets (seller-verify helpers + push notifications); notifyAdmins call preserved before the SECURITY comment
+  - seller-apply-dialog.tsx: merged origin's controlled open/onOpenChange API with Task 13's initialStep/upgrade props; handleOpenChange already auto-merged (controlled + reset logic); dropped origin's rejected-only dialog in favor of Task 13's in-flow showRejectedNote; DialogTrigger wrapped in !controlled guard
+  - marketplace-section.tsx: origin's refined avatar/card styles + Task 13's BadgeCheck on cards
+  - seller-main.tsx: merged icon imports
+  - product-order-view.tsx: ACCEPTED deletion (replaced by marketplace/product-detail.tsx on origin); ported the verified-badge change into product-detail.tsx (seller interface + mobile seller row + desktop details table)
+  - worklog.md: kept both entries
+- Untracked db/custom.db resurrected by git add -A — re-removed (git rm -f); restored dev DB from 5328818's tracked binary, prisma db push added the 6 new columns; 14 users / 7 sellers / 24 products / 21 deals intact, all sellers auto-default 'personal'
+- Recreated scripts/spawn-detached.js (bash-detached children get reaped between tool calls)
+- Prisma client was stale after rebase (305 phantom errors) — npx prisma generate fixed; tsc then 60 = 60 baseline (verified against clean checkout of 5328818, error lists identical up to line shifts); eslint 11 = 11 baseline (same files/rules)
+- Dev server gotcha: next dev walked env up to /home/z/my-project/.env → used /home/z/my-project/db/custom.db (login 401s); MUST pass DATABASE_URL explicitly to the server spawn; turbopack dev panic (tokio runtime) also breaks later compiles — restart fixes
+- npm install --legacy-peer-deps was needed: @aws-sdk/s3-request-presigner missing from node_modules (in package.json, present on origin session)
+- E2E (scripts/t13-rebase-e2e.ts, fresh one-shot users): 18/18 PASS — business apply→pending→admin sees NID→approve→businessVerified; personal apply→code→verify→personal; 403 business-profile gate; re-apply blocks; products/detail/public-profile expose sellerRole+businessVerified; health heal OK
+- Demo passwords re-reset to test1234 (admin@demo.com, user@demo.com, seller@demo.com, dash@test.com); E2E users biz-e2e/pers-e2e@midman.test recreated per run
+
+Stage Summary:
+- main = ea17f5b: Task 13 feature rebased cleanly onto all origin fixes; zero net new tsc/eslint errors; 18/18 API E2E
+- ensure-schema.ts now heals the seller-role columns too (production Turso safe); dual safety nets (ensureSchema + withSellerRoleColumns) retained
+- Ready to push: origin/main fast-forwards 5328818 → ea17f5b (+ verification scripts commit)
