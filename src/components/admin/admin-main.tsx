@@ -91,6 +91,8 @@ import {
   User,
   Trash2,
   PackageCheck,
+  Building2,
+  BadgeCheck,
   UserPlus,
   ArrowUp,
   ArrowDown,
@@ -209,6 +211,8 @@ interface UserRow {
   isActive: boolean;
   isSeller: boolean;
   sellerDisabled: boolean;
+  sellerRole: string | null;
+  businessVerified: boolean;
   isAdmin: boolean;
   adminRole: string | null;
   adminPermissions: string[];
@@ -1737,6 +1741,14 @@ function UsersPanel() {
                   ...prev,
                   isActive: action === 'toggle_active' ? (value as boolean) : prev.isActive,
                   sellerDisabled: action === 'toggle_seller_disabled' ? (value as boolean) : prev.sellerDisabled,
+                  sellerRole: action === 'set_seller_role'
+                    ? ((value as string) === 'business' ? 'business' : 'personal')
+                    : prev.sellerRole,
+                  businessVerified: action === 'toggle_business_verified'
+                    ? (value === true || value === 'true')
+                    : action === 'set_seller_role' && (value as string) !== 'business'
+                      ? false
+                      : prev.businessVerified,
                 }
               : null
           );
@@ -1961,6 +1973,45 @@ function UsersPanel() {
                       <UserX className="h-4 w-4" />
                     )}
                     {u.sellerDisabled ? 'Enable Seller Account' : 'Disable Seller Account'}
+                  </Button>
+                )}
+
+                {/* Seller Role + Business Verification (Phase 2) — complements the
+                    seller-application approval flow with direct assignment */}
+                {u.isSeller && (
+                  <Button
+                    size="lg"
+                    disabled={isActing}
+                    onClick={() => handleAction(u.id, 'set_seller_role', u.sellerRole === 'business' ? 'personal' : 'business')}
+                    variant="outline"
+                    className="w-full h-11 sm:h-12 gap-2 rounded-xl text-sm font-bold"
+                  >
+                    {isActing ? (
+                      <LoadingAnimation size="sm" />
+                    ) : (
+                      <Building2 className="h-4 w-4" />
+                    )}
+                    {u.sellerRole === 'business' ? 'Set as Personal Digital Seller' : 'Set as Business Seller'}
+                  </Button>
+                )}
+                {u.isSeller && u.sellerRole === 'business' && (
+                  <Button
+                    size="lg"
+                    disabled={isActing}
+                    onClick={() => handleAction(u.id, 'toggle_business_verified', !u.businessVerified)}
+                    variant={u.businessVerified ? 'outline' : 'default'}
+                    className={`w-full h-11 sm:h-12 gap-2 rounded-xl text-sm font-bold ${
+                      u.businessVerified
+                        ? 'border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-500/10'
+                        : 'shadow-lg shadow-violet-500/25 bg-violet-600 hover:bg-violet-700 text-white'
+                    }`}
+                  >
+                    {isActing ? (
+                      <LoadingAnimation size="sm" />
+                    ) : (
+                      <BadgeCheck className="h-4 w-4" />
+                    )}
+                    {u.businessVerified ? 'Revoke Business Verification' : 'Approve as Verified Business Seller'}
                   </Button>
                 )}
               </div>
@@ -2240,6 +2291,11 @@ function UsersPanel() {
                                 {u.sellerDisabled ? 'Seller Disabled' : 'Seller'}
                               </Badge>
                             )}
+                            {u.isSeller && u.sellerRole === 'business' && (
+                              <Badge className={`${u.businessVerified ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400'} border-0 text-[10px] font-medium px-1.5 py-0`}>
+                                {u.businessVerified ? '✓ Verified Business' : 'Business (Unverified)'}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2295,6 +2351,11 @@ function UsersPanel() {
                     {u.isSeller && (
                       <Badge className={`${u.sellerDisabled ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'} border-0 text-[10px] font-medium px-1.5 py-0`}>
                         {u.sellerDisabled ? 'Seller Disabled' : 'Seller'}
+                      </Badge>
+                    )}
+                    {u.isSeller && u.sellerRole === 'business' && (
+                      <Badge className={`${u.businessVerified ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400'} border-0 text-[10px] font-medium px-1.5 py-0`}>
+                        {u.businessVerified ? '✓ Verified Business' : 'Business (Unverified)'}
                       </Badge>
                     )}
                   </div>

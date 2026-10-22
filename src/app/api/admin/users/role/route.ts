@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-guard'
 import { hashPassword } from '@/lib/password'
 import { deleteFromR2 } from '@/lib/r2'
+import { withSellerRoleColumns } from '@/lib/seller-verify'
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,17 +35,69 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      // admin relation is needed by the delete_user super-admin check below —
-      // without include it is undefined at runtime and the check never fires.
-      include: { admin: true },
-    })
+    const user = await withSellerRoleColumns(async () =>
+      db.user.findUnique({
+        where: { id: userId },
+        // admin relation is needed by the delete_user super-admin check below —
+        // without include it is undefined at runtime and the check never fires.
+        include: { admin: true },
+      })
+    )
     if (!user) {
       return NextResponse.json(
         { error: 'ইউজার পাওয়া যায়নি' },
         { status: 404 }
       )
+    }
+
+    /* ─── Set Seller Role (personal / business) — Phase 2 ───
+       Direct role assignment from the Users panel — complements the
+       business-application approval flow (seller-applications). */
+    if (action === 'set_seller_role') {
+      if (!callerIsSuper) return forbidden()
+      const role = value === 'business' ? 'business' : 'personal'
+      if (role === 'business' && !user.isSeller) {
+        return NextResponse.json(
+          { error: 'এই ইউজার সেলার নয় — আগে সেলার করুন' },
+          { status: 400 }
+        )
+      }
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          sellerRole: role,
+          // switching back to personal always revokes business verification
+          ...(role === 'personal' ? { businessVerified: false } : {}),
+        },
+      })
+      return NextResponse.json({
+        success: true,
+        message: role === 'business'
+          ? 'বিজনেস সেলার রোল সেট করা হয়েছে — এখন ভেরিফাই করুন'
+          : 'পার্সোনাল ডিজিটাল সেলার রোল সেট করা হয়েছে',
+      })
+    }
+
+    /* ─── Toggle Business Verification (Phase 2) ─── */
+    if (action === 'toggle_business_verified') {
+      if (!callerIsSuper) return forbidden()
+      if (!user.isSeller || user.sellerRole !== 'business') {
+        return NextResponse.json(
+          { error: 'শুধুমাত্র বিজনেস সেলারকে ভেরিফাই করা যায় — আগে রোল সেট করুন' },
+          { status: 400 }
+        )
+      }
+      const verified = value === true || value === 'true'
+      await db.user.update({
+        where: { id: userId },
+        data: { businessVerified: verified },
+      })
+      return NextResponse.json({
+        success: true,
+        message: verified
+          ? 'ভেরিফায়েড বিজনেস সেলার হিসেবে অনুমোদিত হয়েছে'
+          : 'বিজনেস ভেরিফিকেশন বাতিল করা হয়েছে',
+      })
     }
 
     /* ─── Toggle Active/Deactive ─── */

@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
         isActive: true,
         isSeller: true,
         sellerDisabled: true,
+        sellerRole: true,
+        businessVerified: true,
         createdAt: true,
         admin: {
           select: {
@@ -36,6 +38,8 @@ export async function GET(req: NextRequest) {
       isActive: u.isActive,
       isSeller: u.isSeller,
       sellerDisabled: u.sellerDisabled,
+      sellerRole: u.sellerRole ?? null,
+      businessVerified: !!u.businessVerified,
       isAdmin: !!u.admin,
       adminRole: u.admin?.role ?? null,
       adminPermissions: u.admin?.permissions ? JSON.parse(u.admin.permissions) : [],

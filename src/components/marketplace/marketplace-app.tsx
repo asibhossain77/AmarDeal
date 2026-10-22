@@ -44,7 +44,7 @@ import {
   Menu, X, Search, ShoppingCart, Home, LayoutGrid, ClipboardList, UserRound,
   Package, Check, Trash2, LayoutDashboard, LogIn, Sun, Moon, ChevronRight,
   Store, Globe, FilePlus, BadgeCheck, Gavel, ArrowLeft,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, User,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -91,7 +91,7 @@ const ProductDetailView = dynamic(
 
 /* ── Data types (shapes returned by the existing public APIs) ── */
 
-interface Seller { name: string; imageLink?: string | null }
+interface Seller { name: string; imageLink?: string | null; businessVerified?: boolean }
 type Product = ProductType & { seller: Seller };
 
 interface Service {
@@ -319,9 +319,35 @@ function FeedCard({ item, inCart, onAddToCart, locale }: {
             {t('marketplace.digitalProduct')}
           </span>
         )}
+        {/* ── Phase 2: physical item badge + live stock availability ── */}
+        {p.itemType === 'physical' && (
+          <span className="absolute right-2 top-2 rounded-md bg-blue-600/90 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur">
+            {t('seller.itemPhysicalShort')}
+          </span>
+        )}
+        {p.itemType === 'physical' && typeof p.quantity === 'number' && p.quantity <= 0 && (
+          <span className="absolute inset-x-2 bottom-2 rounded-md bg-red-600/90 px-1.5 py-0.5 text-center text-[9px] font-bold text-white backdrop-blur">
+            {t('seller.outOfStock')}
+          </span>
+        )}
       </div>
       <div className="space-y-1 p-2.5">
         <h3 className="line-clamp-1 text-[13px] font-semibold text-foreground transition-colors group-hover:text-primary">{p.title}</h3>
+        {/* ── Phase 2: seller name + verified business badge ── */}
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <User className="h-2.5 w-2.5 shrink-0" />
+          <span className="min-w-0 truncate text-[10px] font-medium">{p.seller.name}</span>
+          {p.seller.businessVerified && (
+            <span title={t('seller.verifiedBusinessBadge')} className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-violet-100 px-1 py-0.5 text-[8px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+              <BadgeCheck className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {p.itemType === 'physical' && typeof p.quantity === 'number' && p.quantity > 0 && (
+            <span className="ml-auto shrink-0 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
+              {t('marketplace.inStockCount', { count: p.quantity })}
+            </span>
+          )}
+        </div>
         <div className="flex items-end justify-between gap-1">
           <span className={`min-w-0 truncate text-[14px] font-extrabold ${p.isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary'}`}>
             {p.isFree ? t('marketplace.free') : priceLabel}

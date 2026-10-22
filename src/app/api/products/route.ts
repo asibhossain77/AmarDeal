@@ -8,6 +8,13 @@ import { ownsFileKey, validateDigitalFile, MAX_DIGITAL_FILE_SIZE } from '@/lib/r
 import { isValidProductCategory } from '@/lib/product-categories'
 import { normalizeItemType, isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
 import { withSellerRoleColumns } from '@/lib/seller-verify'
+import {
+  VALID_DIGITAL_KINDS,
+  isVerifiedBusinessSeller,
+  sanitizeProductImages,
+  parseStoredImages,
+  sanitizeListingText,
+} from '@/lib/product-listing'
 
 /* PRODUCT_CATEGORIES lives in src/lib/product-categories.ts — single source of
    truth shared with PATCH /api/products/[id] so edits always accept every
@@ -92,6 +99,11 @@ async function loadProducts(req: NextRequest): Promise<NextResponse> {
         itemType: (p as { itemType?: string }).itemType === 'physical' ? 'physical' : 'non_physical',
         condition: (p as { condition?: string | null }).condition ?? null,
         shippingInfo: (p as { shippingInfo?: string | null }).shippingInfo ?? null,
+        // Phase 2: digital classification + gallery. NOTE: deliveryDetails is
+        // intentionally NEVER included here — it is private and only ever
+        // returned to the product owner / admin by GET /api/products/[id].
+        digitalKind: (p as { digitalKind?: string | null }).digitalKind ?? null,
+        images: parseStoredImages((p as { images?: string | null }).images),
         // Admin-sold (platform-owned) products keep their direct-order flow
         isPlatformOwned: !!(p.seller as { admin?: { userId: string } | null } | undefined)?.admin,
         seller: {
@@ -130,11 +142,13 @@ export async function POST(req: NextRequest) {
     if (!guard.ok) return guard.response
     const userId = guard.userId
 
-    // Verify the user is a seller
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      select: { isSeller: true },
-    })
+    // Verify the user is a seller (+ seller role for Phase 2 listing features)
+    const user = await withSellerRoleColumns(async () =>
+      db.user.findUnique({
+        where: { id: userId },
+        select: { isSeller: true, sellerRole: true, businessVerified: true },
+      })
+    )
 
     if (!user?.isSeller) {
       return NextResponse.json(
@@ -143,7 +157,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { title, description, price, category, image, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo } = await req.json()
+    // ── Phase 2 RBAC: physical listings are a Verified Business Seller feature ──
+    // Admin-approved business sellers (sellerRole='business' + businessVerified)
+    // only. Personal Digital Sellers keep their existing non-physical flow.
+    const businessSeller = isVerifiedBusinessSeller({
+      isSeller: user.isSeller,
+      sellerRole: user.sellerRole,
+      businessVerified: user.businessVerified,
+    })
+
+    const { title, description, price, category, image, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo, digitalKind, deliveryDetails, images } = await req.json()
 
     const freeProduct = !!isFree
 
@@ -156,6 +179,14 @@ export async function POST(req: NextRequest) {
       )
     }
     const isPhysical = itemKind === 'physical'
+
+    // ── Phase 2: only verified business sellers may list physical products ──
+    if (isPhysical && !businessSeller) {
+      return NextResponse.json(
+        { success: false, error: 'ফিজিক্যাল পণ্য তৈরি করতে অনুমোদিত ভেরিফায়েড বিজনেস সেলার হতে হবে' },
+        { status: 403 }
+      )
+    }
 
     // Physical items: no pricing packages, no free giveaway, no digital file
     if (isPhysical) {
@@ -253,6 +284,26 @@ export async function POST(req: NextRequest) {
     }
     const shippingValue = isPhysical ? sanitizeShippingInfo(shippingInfo) : null
 
+    // ── Phase 2: digital classification + private delivery details (non-physical only) ──
+    let digitalKindValue: string | null = null
+    let deliveryDetailsValue: string | null = null
+    if (!isPhysical) {
+      if (digitalKind !== undefined && digitalKind !== null && digitalKind !== '') {
+        if (typeof digitalKind !== 'string' || !VALID_DIGITAL_KINDS.includes(digitalKind as (typeof VALID_DIGITAL_KINDS)[number])) {
+          return NextResponse.json(
+            { success: false, error: 'অবৈধ ডিজিটাল পণ্যের ধরন' },
+            { status: 400 }
+          )
+        }
+        digitalKindValue = digitalKind
+      }
+      // Private — never returned by public endpoints, owner/admin views only
+      deliveryDetailsValue = sanitizeListingText(deliveryDetails, 2000)
+    }
+
+    // ── Phase 2: gallery images (both item types; first image = cover) ──
+    const gallery = sanitizeProductImages(images)
+
     const createData: Record<string, unknown> = {
       title: title.trim(),
       description: description.trim(),
@@ -260,13 +311,19 @@ export async function POST(req: NextRequest) {
       category: validCategory,
       image: image || null,
       sellerId: userId,
-      status: 'pending',
+      // Phase 2: verified business sellers publish directly — the seller-level
+      // verification IS the gate; personal sellers keep the admin-review flow.
+      status: businessSeller ? 'active' : 'pending',
       quantity: quantityNum,
       productType: type,
       isFree: freeProduct,
       itemType: itemKind,
       condition: conditionValue,
       shippingInfo: shippingValue,
+      digitalKind: digitalKindValue,
+      deliveryDetails: deliveryDetailsValue,
+      ...(gallery.length > 0 ? { images: JSON.stringify(gallery) } : {}),
+      ...(gallery.length > 0 && !image ? { image: gallery[0] } : {}),
     }
 
     // Digital file attachment — key must belong to this uploader
@@ -322,6 +379,9 @@ export async function POST(req: NextRequest) {
       delete createData.fileName
       delete createData.fileSize
       delete createData.fileType
+      delete createData.digitalKind
+      delete createData.deliveryDetails
+      delete createData.images
       const optionsToInsert = validatedOptions
       delete createData.options
       const newId = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12)
@@ -329,7 +389,7 @@ export async function POST(req: NextRequest) {
       await db.$executeRawUnsafe(
         'INSERT INTO "DigitalProduct" ("id","title","description","price","category","image","sellerId","status","createdAt","updatedAt") VALUES (?,?,?,?,?,?,?,?,?,?)',
         newId, createData.title as string, createData.description as string, effectivePrice,
-        createData.category as string, (createData.image as string | null) ?? null, userId, 'pending', now, now
+        createData.category as string, (createData.image as string | null) ?? null, userId, (createData.status as string) ?? 'pending', now, now
       )
       product = await db.digitalProduct.findUnique({
         where: { id: newId },
@@ -382,6 +442,10 @@ export async function POST(req: NextRequest) {
           itemType: (product as { itemType?: string }).itemType ?? 'non_physical',
           condition: (product as { condition?: string | null }).condition ?? null,
           shippingInfo: (product as { shippingInfo?: string | null }).shippingInfo ?? null,
+          digitalKind: (product as { digitalKind?: string | null }).digitalKind ?? null,
+          images: parseStoredImages((product as { images?: string | null }).images),
+          // Owner-created — safe to include the private delivery details here
+          deliveryDetails: (product as { deliveryDetails?: string | null }).deliveryDetails ?? null,
           seller: {
             name: product.seller.name,
             imageLink: product.seller.imageLink,

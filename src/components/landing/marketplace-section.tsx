@@ -34,6 +34,11 @@ export interface Product {
   minPrice?: number;
   maxPrice?: number;
   isFree?: boolean; hasFile?: boolean;
+  /* Task 82 + Phase 2 fields returned by GET /api/products */
+  itemType?: string;
+  quantity?: number;
+  digitalKind?: string | null;
+  images?: string[] | null;
 }
 
 // Admin-uploaded ad banner (see /api/marketplace/banners)

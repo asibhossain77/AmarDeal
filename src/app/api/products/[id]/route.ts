@@ -8,6 +8,15 @@ import { ownsFileKey, validateDigitalFile, deleteFileByKey, MAX_DIGITAL_FILE_SIZ
 import { isValidProductCategory } from '@/lib/product-categories'
 import { isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
 import { withSellerRoleColumns } from '@/lib/seller-verify'
+import {
+  VALID_DIGITAL_KINDS,
+  isVerifiedBusinessSeller,
+  sanitizeProductImages,
+  parseStoredImages,
+  sanitizeListingText,
+} from '@/lib/product-listing'
+
+const SESSION_COOKIE = 'midman_session'
 
 const VALID_STATUSES = ['active', 'inactive', 'sold'] as const
 
@@ -18,7 +27,7 @@ const OPTIONS_SELECT = {
 
 // GET /api/products/[id] — get single product with seller info (public)
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -44,7 +53,7 @@ export async function GET(
         where: { id },
         select: {
           id: true, title: true, description: true, price: true, category: true, image: true,
-          status: true, createdAt: true, updatedAt: true,
+          status: true, createdAt: true, updatedAt: true, sellerId: true,
           seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true } },
         },
       })
@@ -56,6 +65,15 @@ export async function GET(
         { success: false, error: 'পণ্য পাওয়া যায়নি' },
         { status: 404 }
       )
+    }
+
+    // ── Phase 2: private deliveryDetails — owner or admin only ──
+    const sessionId = req.cookies.get(SESSION_COOKIE)?.value
+    const isOwner = !!sessionId && sessionId === product.sellerId
+    let canSeeDeliveryDetails = isOwner
+    if (!canSeeDeliveryDetails && sessionId) {
+      const admin = await getAdminFromRequest(req)
+      canSeeDeliveryDetails = !!admin
     }
 
     const options = ((product as { options?: { id: string; name: string; price: number; isAvailable: boolean; sortOrder: number }[] }).options) ?? []
@@ -91,6 +109,13 @@ export async function GET(
         itemType: (product as { itemType?: string }).itemType === 'physical' ? 'physical' : 'non_physical',
         condition: (product as { condition?: string | null }).condition ?? null,
         shippingInfo: (product as { shippingInfo?: string | null }).shippingInfo ?? null,
+        // Phase 2: digital classification + gallery
+        digitalKind: (product as { digitalKind?: string | null }).digitalKind ?? null,
+        images: parseStoredImages((product as { images?: string | null }).images),
+        // PRIVATE — owner/admin views only, never exposed publicly
+        ...(canSeeDeliveryDetails
+          ? { deliveryDetails: (product as { deliveryDetails?: string | null }).deliveryDetails ?? null }
+          : {}),
         isPlatformOwned: !!(product.seller as { admin?: { userId: string } | null } | undefined)?.admin,
         seller: {
           id: product.seller.id,
@@ -126,7 +151,7 @@ export async function PATCH(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true, itemType: true },
+      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true, itemType: true, images: true },
     })
 
     if (!existing) {
@@ -143,8 +168,17 @@ export async function PATCH(
       )
     }
 
+    // ── Phase 2: seller role drives publish/unpublish + business listing fields ──
+    const owner = await withSellerRoleColumns(async () =>
+      db.user.findUnique({
+        where: { id: userId },
+        select: { isSeller: true, sellerDisabled: true, sellerRole: true, businessVerified: true },
+      })
+    )
+    const businessSeller = isVerifiedBusinessSeller(owner)
+
     const body = await req.json()
-    const { title, description, price, category, image, status, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo } = body
+    const { title, description, price, category, image, status, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo, digitalKind, deliveryDetails, images } = body
 
     // Item type is locked after creation (same rule as productType) — a
     // physical product can never silently become digital/service or back.
@@ -285,11 +319,46 @@ export async function PATCH(
       }
     }
 
+    // ── Phase 2: gallery images (both item types) — replaces the stored list,
+    // keeps the cover (`image`) in sync and cleans up removed R2 files.
+    // VERIFIED BUSINESS SELLERS ONLY — gallery is a business listing feature. ──
+    if (images !== undefined && businessSeller) {
+      // The existing stored list (previous value) — for R2 cleanup
+      const previousList = parseStoredImages((existing as { images?: string | null }).images)
+      const gallery = sanitizeProductImages(images)
+      data.images = gallery.length > 0 ? JSON.stringify(gallery) : null
+      // Keep the cover in sync unless the client also sent an explicit `image`
+      if (image === undefined) {
+        const nextCover = gallery[0] ?? null
+        data.image = nextCover
+        if (existing.image && existing.image !== nextCover && !gallery.includes(existing.image)) {
+          const { deleteFromR2 } = await import('@/lib/r2')
+          await deleteFromR2(existing.image).catch(() => {})
+        }
+      }
+      // Delete R2 files that were removed from the gallery
+      const removed = previousList.filter((u) => u && !gallery.includes(u) && u !== data.image)
+      for (const url of removed) {
+        const { deleteFromR2 } = await import('@/lib/r2')
+        await deleteFromR2(url).catch(() => {})
+      }
+    }
+
     if (status !== undefined) {
       if (!VALID_STATUSES.includes(status as (typeof VALID_STATUSES)[number])) {
         return NextResponse.json(
           { success: false, error: 'অবৈধ স্ট্যাটাস' },
           { status: 400 }
+        )
+      }
+      // ── Phase 2: publish/unpublish is a Verified Business Seller feature ──
+      // Personal sellers can never self-activate a pending/rejected listing —
+      // admin approval stays mandatory for them (this also closes the old
+      // pending→active self-activation hole). 'sold' stays allowed (legacy).
+      if ((status === 'active' || status === 'inactive') && !businessSeller) {
+        return NextResponse.json(
+          { success: false, error: 'পণ্য প্রকাশ/সরানোর জন্য ভেরিফায়েড বিজনেস সেলার হতে হবে' },
+          { status: 403 }
         )
       }
       data.status = status
@@ -325,6 +394,26 @@ export async function PATCH(
       }
       if (shippingInfo !== undefined) {
         data.shippingInfo = sanitizeShippingInfo(shippingInfo)
+      }
+    } else if (businessSeller) {
+      // ── Phase 2: digital classification + PRIVATE delivery details ──
+      // Verified Business Seller feature — personal sellers' PATCHes ignore
+      // these fields entirely (they keep their classic listing flow).
+      if (digitalKind !== undefined) {
+        if (digitalKind === null || digitalKind === '') {
+          data.digitalKind = null
+        } else if (typeof digitalKind === 'string' && VALID_DIGITAL_KINDS.includes(digitalKind as (typeof VALID_DIGITAL_KINDS)[number])) {
+          data.digitalKind = digitalKind
+        } else {
+          return NextResponse.json(
+            { success: false, error: 'অবৈধ ডিজিটাল পণ্যের ধরন' },
+            { status: 400 }
+          )
+        }
+      }
+      if (deliveryDetails !== undefined) {
+        // Private — owner/admin views only, never returned by public endpoints
+        data.deliveryDetails = sanitizeListingText(deliveryDetails, 2000)
       }
     }
 
@@ -403,6 +492,9 @@ export async function PATCH(
       delete fallbackData.fileName
       delete fallbackData.fileSize
       delete fallbackData.fileType
+      delete fallbackData.digitalKind
+      delete fallbackData.deliveryDetails
+      delete fallbackData.images
       if (Object.keys(fallbackData).length > 0) {
         await db.digitalProduct.updateMany({ where: { id }, data: fallbackData })
       }
@@ -443,6 +535,11 @@ export async function PATCH(
         fileName: (product as { fileName?: string | null }).fileName ?? null,
         fileSize: (product as { fileSize?: number | null }).fileSize ?? null,
         fileType: (product as { fileType?: string | null }).fileType ?? null,
+        // Phase 2 fields — PATCH is owner-only, so deliveryDetails is safe here
+        itemType: (product as { itemType?: string }).itemType === 'physical' ? 'physical' : 'non_physical',
+        digitalKind: (product as { digitalKind?: string | null }).digitalKind ?? null,
+        images: parseStoredImages((product as { images?: string | null }).images),
+        deliveryDetails: (product as { deliveryDetails?: string | null }).deliveryDetails ?? null,
         seller: {
           name: product.seller.name,
           imageLink: product.seller.imageLink,
@@ -471,7 +568,7 @@ export async function DELETE(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true, image: true, fileKey: true },
+      select: { sellerId: true, image: true, fileKey: true, images: true },
     })
 
     if (!existing) {
@@ -493,10 +590,14 @@ export async function DELETE(
       )
     }
 
-    // Delete R2 image if exists
-    if (existing.image) {
+    // Delete R2 images (cover + gallery, deduped)
+    const galleryList = parseStoredImages(existing.images)
+    const imagesToDelete = Array.from(new Set([existing.image, ...galleryList].filter((u): u is string => !!u)))
+    if (imagesToDelete.length > 0) {
       const { deleteFromR2 } = await import('@/lib/r2')
-      await deleteFromR2(existing.image)
+      for (const url of imagesToDelete) {
+        await deleteFromR2(url).catch(() => {})
+      }
     }
 
     // ProductOption rows are removed automatically (onDelete: Cascade)

@@ -337,6 +337,10 @@ model DigitalProduct {
   // Physical-only optional attributes (always null for non-physical items)
   condition    String?  // "new" | "used"
   shippingInfo String?  // free-text delivery / shipping information
+  // ── Verified Business Seller listing extensions (Phase 2) ──
+  digitalKind     String?  // non-physical classification: 'file'|'account'|'license'|'subscription'|'other'
+  deliveryDetails String?  // PRIVATE digital delivery instructions — owner/admin only, never public
+  images          String?  // JSON array of gallery image URLs; images[0] mirrors `image`
   // Digital product file (uploaded to R2 `files/` prefix) — null = physical/service product
   isFree      Boolean  @default(false) // free products: anyone can download without a deal
   fileKey     String?  // R2 object key — NEVER exposed to clients (secret URL)

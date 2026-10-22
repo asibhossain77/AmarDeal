@@ -29,7 +29,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   ArrowLeft, MessageCircle, ShieldCheck, ShoppingCart, Loader2, User,
-  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2,
+  Eye, Heart, Package, Minus, Plus, Boxes, Layers, Check, Share2, Link2, Lock,
   Facebook, FileDown, Download, ChevronDown, FileText, ClipboardList,
   CheckCircle2, Wallet, Clock3, Zap, Truck, BadgeCheck,
 } from 'lucide-react';
@@ -63,11 +63,25 @@ interface OrderProduct {
   minPrice?: number;
   maxPrice?: number;
   isFree?: boolean; hasFile?: boolean; fileName?: string | null; fileSize?: number | null;
+  /* Phase 2: digital classification + gallery; deliveryDetails is only
+     present in the response when the viewer is the owner or an admin */
+  digitalKind?: string | null;
+  images?: string[] | null;
+  deliveryDetails?: string | null;
 }
 
 /* Single-price physical products: quantity is capped by real stock (max 99
    per order for everything else — non-physical items have no stock concept) */
 const MAX_QTY = 99;
+
+/* ── Phase 2: digital product classification → i18n label key ── */
+const DIGITAL_KIND_LABELS = {
+  file: 'seller.digitalKindFile',
+  account: 'seller.digitalKindAccount',
+  license: 'seller.digitalKindLicense',
+  subscription: 'seller.digitalKindSubscription',
+  other: 'seller.digitalKindOther',
+} as const;
 
 /* ── Direct marketplace order (POST /api/orders — NEVER a Deal) ── */
 interface PlacedOrder {
@@ -150,6 +164,12 @@ export function ProductDetailView() {
   /* Digital product state */
   const [entitled, setEntitled] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  /* Phase 2: gallery + owner-only private delivery details */
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const isOwner = !!product && !!user && user.id === product.seller.id;
+  const gallery = product?.images && product.images.length > 0
+    ? product.images
+    : (product?.image ? [product.image] : []);
 
   const isDigital = !!product?.hasFile;
   const isFreeDigital = isDigital && !!product?.isFree;
@@ -202,6 +222,7 @@ export function ProductDetailView() {
     setPayOpen(false);
     setProduct(null);
     setQty(1);
+    setActiveImage(null);
     setSelectedOptionId(null);
     fetch(`/api/products/${productDetailId}`)
       .then((r) => r.json())
@@ -582,20 +603,37 @@ export function ProductDetailView() {
         transition={{ duration: 0.3 }}
         className="grid gap-6 lg:grid-cols-2 lg:gap-10"
       >
-        {/* ── Product image — real image, object-contain (no crop/stretch);
+        {/* ── Product image + Phase 2 gallery — real image, object-contain (no crop/stretch);
                no image → the Marketplace category gradient placeholder ── */}
-        <div className="relative self-start overflow-hidden rounded-2xl border border-border/40 shadow-sm lg:sticky lg:top-4 dark:border-border/20">
-          {product.image ? (
-            <img
-              src={cdnUrl(product.image) || ''}
-              alt={product.title}
-              className="aspect-[4/3] w-full bg-white object-contain"
-              loading="eager"
-              decoding="async"
-            />
-          ) : (
-            <div className={`flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br ${gradientBg}`}>
-              <CatIcon className="h-16 w-16 text-muted-foreground/50" strokeWidth={1.1} />
+        <div className="relative self-start space-y-2 lg:sticky lg:top-4">
+          <div className="relative overflow-hidden rounded-2xl border border-border/40 shadow-sm dark:border-border/20">
+            {(activeImage || product.image) ? (
+              <img
+                src={cdnUrl(activeImage || product.image!) || ''}
+                alt={product.title}
+                className="aspect-[4/3] w-full bg-white object-contain"
+                loading="eager"
+                decoding="async"
+              />
+            ) : (
+              <div className={`flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br ${gradientBg}`}>
+                <CatIcon className="h-16 w-16 text-muted-foreground/50" strokeWidth={1.1} />
+              </div>
+            )}
+          </div>
+          {gallery.length > 1 && (
+            <div className="grid grid-cols-5 gap-2">
+              {gallery.slice(0, 10).map((url, i) => (
+                <button
+                  key={url + i}
+                  type="button"
+                  onClick={() => setActiveImage(url)}
+                  className={`overflow-hidden rounded-lg border-2 bg-white transition-all ${(activeImage || product.image) === url ? 'border-primary shadow-sm' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                  aria-label={`${product.title} ${i + 1}`}
+                >
+                  <img src={cdnUrl(url) || ''} alt={`${product.title} ${i + 1}`} className="aspect-square w-full object-contain" loading="lazy" decoding="async" />
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -612,6 +650,12 @@ export function ProductDetailView() {
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-foreground">
                 <FileDown className="h-3 w-3 text-primary" />
                 {t('marketplace.digitalProduct')}
+              </span>
+            )}
+            {/* ── Phase 2: digital classification chip (business listings) ── */}
+            {!isPhysical && product.digitalKind && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-bold text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+                {t('seller.digitalKind')}: {t(DIGITAL_KIND_LABELS[product.digitalKind as keyof typeof DIGITAL_KIND_LABELS] ?? 'seller.digitalKindOther')}
               </span>
             )}
             {/* Physical: live stock chip (real quantity from the DB) */}
@@ -1097,6 +1141,16 @@ export function ProductDetailView() {
             <div className="flex items-start justify-between gap-4 px-4 py-2.5">
               <dt className="shrink-0 text-[12px] font-medium text-muted-foreground">{t('marketplace.deliveryInfo')}</dt>
               <dd className="whitespace-pre-wrap break-words text-right text-[13px] font-medium text-foreground/90">{product.shippingInfo}</dd>
+            </div>
+          )}
+          {/* ── Phase 2: PRIVATE digital delivery details — rendered only for the
+                 product owner (the API only returns the field to owner/admin) ── */}
+          {!isPhysical && isOwner && product.deliveryDetails && (
+            <div className="flex items-start justify-between gap-4 bg-amber-50/60 px-4 py-2.5 dark:bg-amber-500/5">
+              <dt className="flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-amber-700 dark:text-amber-400">
+                <Lock className="h-3 w-3" />{t('seller.deliveryDetails')}
+              </dt>
+              <dd className="whitespace-pre-wrap break-words text-right text-[13px] font-medium text-foreground/90">{product.deliveryDetails}</dd>
             </div>
           )}
           {isDigital && product.fileName && (

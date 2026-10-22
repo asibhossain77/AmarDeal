@@ -4,6 +4,7 @@ import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useSyncExternalStore, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore, type DealStatus } from '@/lib/store';
+import { isVerifiedBusinessSeller, MAX_PRODUCT_IMAGES } from '@/lib/product-listing';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,33 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const emptySubscribe = () => () => {};
+
+/* ── Phase 2: publish/unpublish status labels (localized) ── */
+type ProductStatusKey = 'seller.active' | 'seller.statusPending' | 'seller.statusInactive' | 'seller.statusRejected' | 'seller.statusSold';
+
+function statusKey(status: string): ProductStatusKey {
+  if (status === 'pending') return 'seller.statusPending';
+  if (status === 'inactive') return 'seller.statusInactive';
+  if (status === 'rejected') return 'seller.statusRejected';
+  if (status === 'sold') return 'seller.statusSold';
+  return 'seller.active';
+}
+
+function statusBadgeClass(status: string): string {
+  if (status === 'active') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0';
+  if (status === 'pending') return 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400 border-0';
+  if (status === 'rejected') return 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0';
+  return 'bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0';
+}
+
+/* ── Phase 2: digital product classification (non-physical, business sellers) ── */
+const DIGITAL_KINDS = [
+  { key: 'file', labelKey: 'seller.digitalKindFile' },
+  { key: 'account', labelKey: 'seller.digitalKindAccount' },
+  { key: 'license', labelKey: 'seller.digitalKindLicense' },
+  { key: 'subscription', labelKey: 'seller.digitalKindSubscription' },
+  { key: 'other', labelKey: 'seller.digitalKindOther' },
+] as const;
 
 /* ═══════════════════════════════════════════════════════════
    Digital product file uploader (PDF / ZIP / DOC … → R2)
@@ -237,6 +265,9 @@ interface SellerProduct {
   itemType?: string;
   quantity?: number;
   options?: SellerProductOption[];
+  digitalKind?: string | null;
+  deliveryDetails?: string | null;
+  images?: string[] | null;
 }
 
 function SolidCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -469,6 +500,11 @@ export function BusinessProfilePanel() {
 export function AddProductPanel() {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
+  const user = useAppStore((s) => s.user);
+  /* ── Phase 2: Verified Business Sellers get the full listing system —
+     multi-image gallery, digital kind classification, private delivery
+     details and instant publish. Personal sellers keep the classic flow. ── */
+  const business = isVerifiedBusinessSeller(user);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -495,6 +531,11 @@ export function AddProductPanel() {
   const [isFree, setIsFree] = useState(false);
   const [fileInfo, setFileInfo] = useState<DigitalFileInfo | null>(null);
   const [fileBusy, setFileBusy] = useState(false);
+  /* Phase 2: gallery + digital classification + private delivery details */
+  const [images, setImages] = useState<string[]>([]);
+  const [digitalKind, setDigitalKind] = useState('');
+  const [deliveryDetails, setDeliveryDetails] = useState('');
+  const [showPublishedDialog, setShowPublishedDialog] = useState(false);
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
@@ -542,6 +583,41 @@ export function AddProductPanel() {
       setLocalPreview('');
       setUploadError(true);
     } finally { setUploading(false); }
+  };
+
+  /* ── Phase 2 (business sellers): multi-image gallery upload, first = cover ── */
+  const handleMultiImageUpload = async (files: FileList) => {
+    setUploading(true);
+    setUploadError(false);
+    const room = MAX_PRODUCT_IMAGES - images.length;
+    const list = Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, room);
+    if (list.length === 0) { setUploading(false); return; }
+    const uploaded: string[] = [];
+    for (const f of list) {
+      try {
+        const fd = new FormData(); fd.append('image', f);
+        const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.url) uploaded.push(data.url as string);
+        else toast.error(data.error || 'Upload failed');
+      } catch {
+        toast.error('Upload failed');
+      }
+    }
+    if (uploaded.length > 0) setImages((prev) => [...prev, ...uploaded].slice(0, MAX_PRODUCT_IMAGES));
+    else setUploadError(true);
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const removeGalleryImage = (url: string) => {
+    setImages((prev) => prev.filter((u) => u !== url));
+    // Best-effort server cleanup — a fresh upload that was never saved
+    fetch('/api/upload/product-image', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    }).catch(() => {});
   };
 
   const handleSubmit = async () => {
@@ -625,6 +701,11 @@ export function AddProductPanel() {
                 : { productType, price: Number(price) }),
           category,
           image: image.trim() || null,
+          /* ── Phase 2: business listing extensions ── */
+          ...(business ? { images } : {}),
+          ...(!isPhysical && business
+            ? { digitalKind: digitalKind || null, deliveryDetails: deliveryDetails.trim() || null }
+            : {}),
           isFree: isPhysical ? false : isFree,
           fileKey: isPhysical ? null : (fileInfo?.key || null),
           fileName: isPhysical ? null : (fileInfo?.name || null),
@@ -634,11 +715,17 @@ export function AddProductPanel() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setShowPendingDialog(true);
+        if (business) {
+          // Verified business sellers publish instantly — no admin review step
+          setShowPublishedDialog(true);
+        } else {
+          setShowPendingDialog(true);
+        }
         setTitle(''); setDescription(''); setPrice(''); setCategory('other'); setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false);
         setItemType(''); setStock(''); setCondition(''); setShippingInfo('');
         setProductType('single'); setOptions([createEmptyOption()]);
         setIsFree(false); setFileInfo(null);
+        setImages([]); setDigitalKind(''); setDeliveryDetails('');
       } else {
         toast.error(data.error || t('seller.productAddError'));
       }
@@ -662,6 +749,12 @@ export function AddProductPanel() {
         {/* Step 1: Item type (Task 82) — physical vs non-physical. No default;
             the choice decides which fields appear below. */}
         <ItemTypeSelector value={itemType} onChange={setItemType} t={t} />
+        {!business && (
+          <p className="-mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+            <Building2 className="h-3 w-3 shrink-0" />
+            {t('seller.physicalNeedsBusiness')}
+          </p>
+        )}
 
         <div className="space-y-2">
           <Label className="text-sm font-semibold">{t('seller.productTitle')}</Label>
@@ -740,6 +833,43 @@ export function AddProductPanel() {
           </>
         )}
 
+        {/* ── Phase 2 (business, non-physical): digital kind + private delivery details ── */}
+        {business && itemType === 'non_physical' && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.digitalKind')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {DIGITAL_KINDS.map((dk) => (
+                  <button
+                    key={dk.key}
+                    onClick={() => setDigitalKind(digitalKind === dk.key ? '' : dk.key)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      digitalKind === dk.key
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {t(dk.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.deliveryDetails')}</Label>
+              <Textarea
+                placeholder={t('seller.deliveryDetailsPh')}
+                value={deliveryDetails}
+                onChange={(e) => setDeliveryDetails(e.target.value)}
+                rows={3}
+              />
+              <p className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                <Lock className="h-3 w-3 shrink-0" />
+                {t('seller.deliveryDetailsHint')}
+              </p>
+            </div>
+          </>
+        )}
+
         <div className="space-y-2 sm:space-y-3">
           <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
           <div className="flex flex-wrap gap-2">
@@ -759,40 +889,96 @@ export function AddProductPanel() {
           </div>
         </div>
 
+        {/* ── Images: business = multi-image gallery; personal = single image ── */}
         <div className="space-y-2">
-          <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
-          {(image || localPreview) ? (
-            <div className="relative group">
-              <img src={localPreview || cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" onLoad={(e) => {
-                const img = e.currentTarget; setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
-              }} />
-              {imgDimensions && (
-                <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
+          <Label className="text-sm font-semibold">{business ? t('seller.productImages') : t('seller.productImage')}</Label>
+          {business ? (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {images.map((url, idx) => (
+                  <div key={url} className="relative group">
+                    <img src={cdnUrl(url) || ''} alt={`Product ${idx + 1}`} className="h-32 w-full object-cover rounded-xl border border-border/40" />
+                    {idx === 0 && (
+                      <span className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                        {locale === 'en' ? 'Cover' : 'কভার'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryImage(url)}
+                      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < MAX_PRODUCT_IMAGES && (
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) handleMultiImageUpload(e.dataTransfer.files); }}
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-32 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border/40 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+                  >
+                    {uploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Upload className="h-5 w-5 text-muted-foreground" />}
+                    <p className="text-[11px] text-muted-foreground">{t('seller.addMoreImages', { count: images.length, max: MAX_PRODUCT_IMAGES })}</p>
+                  </div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => { if (e.target.files && e.target.files.length > 0) handleMultiImageUpload(e.target.files); }} className="hidden" />
+              {uploadError && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <span>⚠</span>
+                  <span>{t('seller.imageUploadFailedHint')}</span>
+                </div>
               )}
-              <button type="button" onClick={() => { if (image) { fetch('/api/upload/product-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: image }) }).catch(() => {}); } setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
-            </div>
+              <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
+              <Input
+                placeholder={t('seller.productImagePh')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const url = (e.target as HTMLInputElement).value.trim();
+                    if (url) { setImages((prev) => [...prev, url].slice(0, MAX_PRODUCT_IMAGES)); (e.target as HTMLInputElement).value = ''; }
+                  }
+                }}
+                className="text-[13px]"
+              />
+            </>
           ) : (
-            <div
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
-              onClick={() => fileRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
-            >
-              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
-              {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
-              <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
-              <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
-            </div>
+            <>
+              {(image || localPreview) ? (
+                <div className="relative group">
+                  <img src={localPreview || cdnUrl(image) || ''} alt="Product" className="w-full h-44 object-cover rounded-xl border border-border/40" onLoad={(e) => {
+                    const img = e.currentTarget; setImgDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+                  }} />
+                  {imgDimensions && (
+                    <p className="text-center text-[11px] text-muted-foreground mt-1.5">{imgDimensions.w} × {imgDimensions.h} px</p>
+                  )}
+                  <button type="button" onClick={() => { if (image) { fetch('/api/upload/product-image', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: image }) }).catch(() => {}); } setImage(''); setLocalPreview(''); setImgDimensions(null); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+                </div>
+              ) : (
+                <div
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
+                  onClick={() => fileRef.current?.click()}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+                >
+                  {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
+                  {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
+                  <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
+                  <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
+                </div>
+              )}
+              {uploadError && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <span>⚠</span>
+                  <span>{t('seller.imageUploadFailedHint')}</span>
+                </div>
+              )}
+              <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
+              <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
+            </>
           )}
-          {uploadError && (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
-              <span>⚠</span>
-              <span>{t('seller.imageUploadFailedHint')}</span>
-            </div>
-          )}
-          <p className="text-center text-[11px] text-muted-foreground">{t('marketplace.orUrl')}</p>
-          <Input placeholder={t('seller.productImagePh')} value={image} onChange={(e) => { setImage(e.target.value); setLocalPreview(''); setImgDimensions(null); setUploadError(false); }} className="text-[13px]" />
         </div>
 
         {/* Digital product file — buyers download it after payment verification (or free).
@@ -812,6 +998,24 @@ export function AddProductPanel() {
           </Button>
         </div>
       </SolidCard>
+
+      {/* Published Dialog (verified business sellers — instant publish) */}
+      <Dialog open={showPublishedDialog} onOpenChange={setShowPublishedDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/50">
+              <BadgeCheck className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <DialogTitle className="text-center">{t('seller.productPublished')}</DialogTitle>
+            <DialogDescription className="text-center">{t('seller.productPublishedDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center mt-2">
+            <Button onClick={() => setShowPublishedDialog(false)} className="gap-2">
+              {t('seller.okBtn')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Pending Approval Dialog */}
       <Dialog open={showPendingDialog} onOpenChange={setShowPendingDialog}>
@@ -847,6 +1051,8 @@ export function AddProductPanel() {
 export function EditProductPanel() {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
+  const user = useAppStore((s) => s.user);
+  const business = isVerifiedBusinessSeller(user);
   const editingProductId = useAppStore((s) => s.editingProductId);
   const setEditingProductId = useAppStore((s) => s.setEditingProductId);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
@@ -877,6 +1083,10 @@ export function EditProductPanel() {
   const [fileBusy, setFileBusy] = useState(false);
   /** Snapshot of the file state as loaded from the server — to know if it changed */
   const [originalHadFile, setOriginalHadFile] = useState(false);
+  /* Phase 2: gallery + digital classification + private delivery details */
+  const [images, setImages] = useState<string[]>([]);
+  const [digitalKind, setDigitalKind] = useState('');
+  const [deliveryDetails, setDeliveryDetails] = useState('');
 
   useEffect(() => {
     if (!editingProductId) { setNotFound(true); setLoading(false); return; }
@@ -906,6 +1116,14 @@ export function EditProductPanel() {
               : [createEmptyOption()]
           );
           setIsFree(!!p.isFree);
+          /* Phase 2: gallery + digital fields (owner view — GET returns them) */
+          setImages(
+            Array.isArray(p.images) && p.images.length > 0
+              ? p.images
+              : (p.image ? [p.image] : [])
+          );
+          setDigitalKind(p.digitalKind || '');
+          setDeliveryDetails(p.deliveryDetails || '');
           if (p.hasFile && p.fileName) {
             setFileInfo({ key: null, name: p.fileName, size: p.fileSize ?? null, type: p.fileType ?? null, existing: true });
             setOriginalHadFile(true);
@@ -958,6 +1176,31 @@ export function EditProductPanel() {
       setLocalPreview('');
       setUploadError(true);
     } finally { setUploading(false); }
+  };
+
+  /* ── Phase 2 (business sellers): multi-image gallery upload, first = cover ── */
+  const handleMultiImageUpload = async (files: FileList) => {
+    setUploading(true);
+    setUploadError(false);
+    const room = MAX_PRODUCT_IMAGES - images.length;
+    const list = Array.from(files).filter((f) => f.type.startsWith('image/')).slice(0, room);
+    if (list.length === 0) { setUploading(false); return; }
+    const uploaded: string[] = [];
+    for (const f of list) {
+      try {
+        const fd = new FormData(); fd.append('image', f);
+        const res = await fetch('/api/upload/product-image', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.url) uploaded.push(data.url as string);
+        else toast.error(data.error || 'Upload failed');
+      } catch {
+        toast.error('Upload failed');
+      }
+    }
+    if (uploaded.length > 0) setImages((prev) => [...prev, ...uploaded].slice(0, MAX_PRODUCT_IMAGES));
+    else setUploadError(true);
+    setUploading(false);
+    if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleSave = async () => {
@@ -1032,6 +1275,15 @@ export function EditProductPanel() {
       payload.fileType = fileInfo.type;
     } else if (fileInfo === null && originalHadFile) {
       payload.fileKey = null; // removal — server deletes the old object
+    }
+
+    /* ── Phase 2: business listing extensions ── */
+    if (business) {
+      payload.images = images;
+      if (!isPhysical) {
+        payload.digitalKind = digitalKind || null;
+        payload.deliveryDetails = deliveryDetails.trim() || null;
+      }
     }
 
     setSubmitting(true);
@@ -1199,6 +1451,43 @@ export function EditProductPanel() {
           </div>
         )}
 
+        {/* ── Phase 2 (business, non-physical): digital kind + private delivery details ── */}
+        {business && savedItemType === 'non_physical' && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.digitalKind')}</Label>
+              <div className="flex flex-wrap gap-2">
+                {DIGITAL_KINDS.map((dk) => (
+                  <button
+                    key={dk.key}
+                    onClick={() => setDigitalKind(digitalKind === dk.key ? '' : dk.key)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      digitalKind === dk.key
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {t(dk.labelKey)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{t('seller.deliveryDetails')}</Label>
+              <Textarea
+                placeholder={t('seller.deliveryDetailsPh')}
+                value={deliveryDetails}
+                onChange={(e) => setDeliveryDetails(e.target.value)}
+                rows={3}
+              />
+              <p className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                <Lock className="h-3 w-3 shrink-0" />
+                {t('seller.deliveryDetailsHint')}
+              </p>
+            </div>
+          </>
+        )}
+
         <div className="space-y-2 sm:space-y-3">
           <Label className="text-sm font-semibold">{t('seller.productCategory')}</Label>
           <div className="flex flex-wrap gap-2">
@@ -1218,32 +1507,78 @@ export function EditProductPanel() {
           </div>
         </div>
 
+        {/* ── Images: business = multi-image gallery; personal = single image ── */}
         <div className="space-y-2">
-          <Label className="text-sm font-semibold">{t('seller.productImage')}</Label>
-          {(image || localPreview) ? (
-            <div className="relative group">
-              <img src={localPreview || cdnUrl(image) || ''} alt={title} className="w-full h-44 object-cover rounded-xl border border-border/40" />
-              <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
-            </div>
+          <Label className="text-sm font-semibold">{business ? t('seller.productImages') : t('seller.productImage')}</Label>
+          {business ? (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {images.map((url, idx) => (
+                  <div key={url} className="relative group">
+                    <img src={cdnUrl(url) || ''} alt={`${title} ${idx + 1}`} className="h-32 w-full object-cover rounded-xl border border-border/40" />
+                    {idx === 0 && (
+                      <span className="absolute left-2 top-2 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                        {locale === 'en' ? 'Cover' : 'কভার'}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setImages((prev) => prev.filter((u) => u !== url))}
+                      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < MAX_PRODUCT_IMAGES && (
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length > 0) handleMultiImageUpload(e.dataTransfer.files); }}
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-32 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border/40 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+                  >
+                    {uploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Upload className="h-5 w-5 text-muted-foreground" />}
+                    <p className="text-[11px] text-muted-foreground">{t('seller.addMoreImages', { count: images.length, max: MAX_PRODUCT_IMAGES })}</p>
+                  </div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => { if (e.target.files && e.target.files.length > 0) handleMultiImageUpload(e.target.files); }} className="hidden" />
+              {uploadError && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <span>⚠</span>
+                  <span>{t('seller.imageUploadFailedHint')}</span>
+                </div>
+              )}
+              {/* NOTE: removals are persisted on save — the PATCH endpoint deletes removed R2 files */}
+            </>
           ) : (
-            <div
-              onDragOver={e => e.preventDefault()}
-              onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
-              onClick={() => fileRef.current?.click()}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
-            >
-              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
-              {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
-              <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
-              <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
-            </div>
-          )}
-          {uploadError && (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
-              <span>⚠</span>
-              <span>{t('seller.imageUploadFailedHint')}</span>
-            </div>
+            <>
+              {(image || localPreview) ? (
+                <div className="relative group">
+                  <img src={localPreview || cdnUrl(image) || ''} alt={title} className="w-full h-44 object-cover rounded-xl border border-border/40" />
+                  <button type="button" onClick={() => { setImage(''); setLocalPreview(''); setUploadError(false); if (fileRef.current) fileRef.current.value = ''; }} className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"><Pencil className="h-3.5 w-3.5" /></button>
+                </div>
+              ) : (
+                <div
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleImageUpload(f); }}
+                  onClick={() => fileRef.current?.click()}
+                  className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/40 p-6 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+                >
+                  {uploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <ImageIcon className="h-7 w-7 text-muted-foreground" />}
+                  {uploading && <p className="text-[11px] text-primary font-medium">{t('marketplace.uploading')}</p>}
+                  <p className="text-[13px] text-muted-foreground">{!uploading && t('marketplace.dragDrop')}</p>
+                  <p className="text-[11px] text-muted-foreground/60">{t('marketplace.maxSize')}</p>
+                  <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} className="hidden" />
+                </div>
+              )}
+              {uploadError && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+                  <span>⚠</span>
+                  <span>{t('seller.imageUploadFailedHint')}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -1273,10 +1608,13 @@ export function EditProductPanel() {
 
 export function MyProductsPanel() {
   const t = useT();
+  const user = useAppStore((s) => s.user);
+  const business = isVerifiedBusinessSeller(user);
   const [products, setProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const setDashboardPanel = useAppStore((s) => s.setDashboardPanel);
   const setEditingProductId = useAppStore((s) => s.setEditingProductId);
 
@@ -1293,6 +1631,30 @@ export function MyProductsPanel() {
   }, []);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  /* ── Phase 2: publish / unpublish — Verified Business Sellers only ── */
+  const handleTogglePublish = async (p: SellerProduct) => {
+    const nextStatus = p.status === 'active' ? 'inactive' : 'active';
+    setTogglingId(p.id);
+    try {
+      const res = await fetch('/api/products/' + p.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        toast.success(nextStatus === 'active' ? t('seller.productPublishedToast') : t('seller.productUnpublishedToast'));
+        fetchProducts();
+      } else {
+        toast.error(data.error || t('seller.productUpdateError'));
+      }
+    } catch {
+      toast.error(t('seller.productUpdateError'));
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const isSearching = normalizedQuery.length > 0;
@@ -1440,10 +1802,34 @@ export function MyProductsPanel() {
                         })()
                       : formatTaka(p.price)}
                   </span>
-                  <Badge className={p.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-0' : 'bg-zinc-100 text-zinc-600 dark:bg-accent/40 dark:text-zinc-400 border-0'}>
-                    {p.status === 'active' ? t('seller.active') : p.status}
+                  <Badge className={statusBadgeClass(p.status)}>
+                    {t(statusKey(p.status))}
                   </Badge>
                 </div>
+                {/* ── Phase 2: publish/unpublish toggle (business sellers) ── */}
+                {business && (p.status === 'active' || p.status === 'inactive') && (
+                  <div className="mt-2 pt-2 border-t border-border/40">
+                    <Button
+                      size="sm"
+                      variant={p.status === 'active' ? 'outline' : 'default'}
+                      disabled={togglingId === p.id}
+                      onClick={() => handleTogglePublish(p)}
+                      className={`h-7 w-full rounded-lg px-2.5 text-[11px] font-semibold gap-1 ${
+                        p.status === 'active'
+                          ? 'border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-800/50 dark:text-orange-400 dark:hover:bg-orange-500/10'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                    >
+                      {togglingId === p.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : p.status === 'active' ? (
+                        <><X className="h-3 w-3" /> {t('seller.unpublish')}</>
+                      ) : (
+                        <><Upload className="h-3 w-3" /> {t('seller.publish')}</>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             </SolidCard>
           ))}
