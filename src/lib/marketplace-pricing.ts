@@ -140,6 +140,7 @@ export const ORDER_STATUSES = [
   'cancelled',
   'failed',
   'refunded',
+  'disputed',
 ] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
@@ -161,14 +162,15 @@ export const CUSTOMER_CANCELLABLE = new Set<string>(['pending_payment'])
  */
 const ADMIN_TRANSITIONS: Record<string, string[]> = {
   pending_payment: ['cancelled'],
-  queued: ['processing', 'in_progress', 'completed', 'partial', 'failed', 'cancelled', 'refunded'],
-  processing: ['in_progress', 'completed', 'partial', 'failed', 'cancelled', 'refunded'],
-  in_progress: ['completed', 'partial', 'failed', 'cancelled', 'refunded'],
+  queued: ['processing', 'in_progress', 'completed', 'partial', 'failed', 'cancelled', 'refunded', 'disputed'],
+  processing: ['in_progress', 'completed', 'partial', 'failed', 'cancelled', 'refunded', 'disputed'],
+  in_progress: ['completed', 'partial', 'failed', 'cancelled', 'refunded', 'disputed'],
   partial: ['in_progress', 'completed', 'refunded', 'failed'],
   failed: ['queued', 'processing', 'in_progress', 'refunded'],
   completed: ['partial', 'refunded'],
   cancelled: [],
   refunded: [],
+  disputed: ['completed', 'cancelled', 'refunded'],
 }
 
 export function canAdminTransition(from: string, to: string): boolean {

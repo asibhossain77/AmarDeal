@@ -114,6 +114,10 @@ export function AdminMarketplaceOrdersPanel() {
             ? { action: 'set_status', status: 'refunded', note: reason }
             : action === 'start'
               ? { action: 'set_status', status: 'processing' }
+            : action === 'resolve_cancel'
+              ? { action: 'set_status', status: 'cancelled', note: reason }
+            : action === 'resolve_complete'
+              ? { action: 'set_status', status: 'completed' }
               : { action: 'set_status', status: 'completed' };
     setActionBusy(true);
     try {

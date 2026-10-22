@@ -10,7 +10,7 @@ import { useState, useEffect, useSyncExternalStore, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Package, Loader2, ArrowLeft, ShieldCheck, Clock, Link2, CreditCard,
+  Package, Loader2, ArrowLeft, ShieldCheck, ShieldAlert, Clock, Link2, CreditCard,
   Wallet, Ban, CheckCircle2, Copy, XCircle, LayoutList, History, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -85,6 +85,10 @@ export function OrderDetailPanel() {
   const [payingGateway, setPayingGateway] = useState(false);
   const [gatewayEnabled, setGatewayEnabled] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // ── Phase 3: dispute flow (paid orders in fulfilment) ──
+  const [showDisputeBox, setShowDisputeBox] = useState(false);
+  const [disputeReason, setDisputeReason] = useState('');
+  const [disputing, setDisputing] = useState(false);
 
   const fetchOrder = useCallback(async (): Promise<OrderDetail> => {
     const res = await fetch(`/api/marketplace/orders/${orderDetailId}`);
@@ -110,6 +114,8 @@ export function OrderDetailPanel() {
   }, []);
 
   const canPay = order?.status === 'pending_payment' && order?.paymentStatus === 'unpaid';
+  const canDispute = !!order && order.paymentStatus === 'paid'
+    && ['queued', 'processing', 'in_progress'].includes(order.status);
 
   // Load manual methods when the pay box opens
   useEffect(() => {
@@ -200,6 +206,31 @@ export function OrderDetailPanel() {
       toast.error(t('myOrders.cancelFailed'));
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleDispute = async () => {
+    if (!order || !disputeReason.trim()) return;
+    setDisputing(true);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'dispute', reason: disputeReason.trim() }),
+      });
+      const data = await res.json();
+      if (data.success || res.ok) {
+        toast.success(t('myOrders.disputeFiled'));
+        setShowDisputeBox(false);
+        setDisputeReason('');
+        refetch();
+      } else {
+        toast.error(data.error || t('myOrders.disputeFailed'));
+      }
+    } catch {
+      toast.error(t('myOrders.disputeFailed'));
+    } finally {
+      setDisputing(false);
     }
   };
 
@@ -346,6 +377,42 @@ export function OrderDetailPanel() {
                 {cancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
                 {t('myOrders.cancel')}
               </Button>
+            </div>
+          )}
+
+          {/* Phase 3: dispute actions — paid orders in fulfilment */}
+          {canDispute && !showDisputeBox && (
+            <div className="mt-3">
+              <Button
+                onClick={() => setShowDisputeBox(true)}
+                disabled={disputing}
+                variant="outline"
+                className="h-10 gap-2 rounded-xl px-4 text-[12px] font-semibold text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400"
+              >
+                <ShieldAlert className="h-3.5 w-3.5" />{t('myOrders.openDispute')}
+              </Button>
+            </div>
+          )}
+          {canDispute && showDisputeBox && (
+            <div className="mt-3 space-y-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 dark:border-red-500/30 dark:bg-red-500/10">
+              <p className="text-[12px] font-semibold text-red-700 dark:text-red-300">{t('myOrders.disputeTitle')}</p>
+              <textarea
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder={t('myOrders.disputePh')}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-[13px]"
+              />
+              <div className="flex gap-2">
+                <Button onClick={handleDispute} disabled={disputing || !disputeReason.trim()} className="h-10 flex-1 gap-2 rounded-xl text-[12px] font-semibold">
+                  {disputing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+                  {t('myOrders.disputeSubmit')}
+                </Button>
+                <Button onClick={() => { setShowDisputeBox(false); setDisputeReason(''); }} variant="outline" className="h-10 rounded-xl px-4 text-[12px] font-semibold">
+                  {t('marketplace.cancel')}
+                </Button>
+              </div>
             </div>
           )}
 

@@ -46,6 +46,13 @@ export async function POST(req: NextRequest) {
       customerNote,
       targetLink,
       clientRequestId,
+      // Phase 3: physical delivery info
+      buyerName,
+      buyerPhone,
+      addressLine,
+      city,
+      postalCode,
+      deliveryNote,
     } = body as {
       productId?: string
       optionId?: string
@@ -53,6 +60,12 @@ export async function POST(req: NextRequest) {
       customerNote?: string
       targetLink?: string
       clientRequestId?: string
+      buyerName?: string
+      buyerPhone?: string
+      addressLine?: string
+      city?: string
+      postalCode?: string
+      deliveryNote?: string
     }
 
     if (!productId || typeof productId !== 'string') {
@@ -172,6 +185,40 @@ export async function POST(req: NextRequest) {
         ? targetLink.trim().slice(0, 500)
         : null
 
+    // ── Phase 3: physical delivery info — required for physical orders,
+    //    ignored for everything else. Stored on the order so the seller
+    //    can fulfil delivery; visible only to buyer/seller/admin. ──
+    let delivery: {
+      buyerName: string | null
+      buyerPhone: string | null
+      addressLine: string | null
+      city: string | null
+      postalCode: string | null
+      deliveryNote: string | null
+    } = {
+      buyerName: null, buyerPhone: null, addressLine: null,
+      city: null, postalCode: null, deliveryNote: null,
+    }
+    if (isPhysicalOrder) {
+      const dName = typeof buyerName === 'string' ? buyerName.trim().slice(0, 120) : ''
+      const dPhone = typeof buyerPhone === 'string' ? buyerPhone.trim().slice(0, 30) : ''
+      const dAddress = typeof addressLine === 'string' ? addressLine.trim().slice(0, 300) : ''
+      if (!dName || !dPhone || !dAddress) {
+        return NextResponse.json(
+          { error: 'ফিজিক্যাল পণ্যের জন্য প্রাপকের নাম, ফোন নম্বর ও সম্পূর্ণ ঠিকানা প্রয়োজন', code: 'DELIVERY_INFO_REQUIRED' },
+          { status: 400 },
+        )
+      }
+      delivery = {
+        buyerName: dName,
+        buyerPhone: dPhone,
+        addressLine: dAddress,
+        city: typeof city === 'string' ? city.trim().slice(0, 80) || null : null,
+        postalCode: typeof postalCode === 'string' ? postalCode.trim().slice(0, 20) || null : null,
+        deliveryNote: typeof deliveryNote === 'string' ? deliveryNote.trim().slice(0, 500) || null : null,
+      }
+    }
+
     // ── Create with order-number collision retry ──
     // Physical orders decrement stock ATOMICALLY: the guarded updateMany
     // (quantity >= qty) and the order INSERT commit or roll back together,
@@ -200,6 +247,7 @@ export async function POST(req: NextRequest) {
           paymentStatus: 'unpaid',
           customerNote: note,
           linkUrl: link,
+          ...delivery,
         }
         if (isPhysicalOrder) {
           order = await db.$transaction(async (tx) => {
@@ -284,6 +332,20 @@ export async function GET(req: NextRequest) {
     const sort = searchParams.get('sort') || 'newest'
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
     const pageSize = Math.min(50, Math.max(5, parseInt(searchParams.get('pageSize') || '20', 10) || 20))
+
+    // ── Phase 3: the seller order dashboard is a Verified Business Seller
+    // feature — personal digital sellers get an explicit 403 (the UI hides
+    // the page for them too; this is the server-side enforcement).
+    const caller = await db.user.findUnique({
+      where: { id: userId },
+      select: { sellerRole: true, sellerDisabled: true },
+    })
+    if (caller?.sellerDisabled || (caller && caller.sellerRole !== 'business')) {
+      return NextResponse.json(
+        { error: 'শুধুমাত্র অনুমোদিত ভেরিফায়েড বিজনেস সেলার অর্ডার ড্যাশবোর্ড ব্যবহার করতে পারবেন', code: 'FORBIDDEN' },
+        { status: 403 },
+      )
+    }
 
     // Hard scope: MY product orders only (serviceId null + sellerId = me).
     const baseWhere: Record<string, unknown> = {

@@ -33,6 +33,8 @@ interface NavItem {
   icon: React.ElementType;
   panel: DashboardPanel;
   sellerOnly?: boolean;
+  /** Phase 3: only Verified Business Sellers (sellerRole === 'business') */
+  businessOnly?: boolean;
 }
 
 export const navItems: NavItem[] = [
@@ -47,7 +49,7 @@ export const navItems: NavItem[] = [
 ];
 
 export const sellerNavItems: NavItem[] = [
-  { labelKey: 'seller.marketplaceOrders', icon: ShoppingBag, panel: 'seller-marketplace-orders', sellerOnly: true },
+  { labelKey: 'seller.marketplaceOrders', icon: ShoppingBag, panel: 'seller-marketplace-orders', sellerOnly: true, businessOnly: true },
   { labelKey: 'seller.activeDealsList', icon: ClipboardCheck, panel: 'seller-orders', sellerOnly: true },
   { labelKey: 'seller.myProducts', icon: Package, panel: 'seller-products', sellerOnly: true },
   { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },
@@ -120,6 +122,10 @@ export function DashboardSidebar() {
                 <div className="h-px flex-1 bg-border/50" />
               </div>
               {sellerNavItems.map((item) => {
+                // Phase 3: the marketplace orders dashboard is a Verified
+                // Business Seller feature — personal digital sellers never
+                // see it (the API returns 403 for them as well).
+                if (item.businessOnly && user?.sellerRole !== 'business') return null;
                 const Icon = item.icon;
                 const isActive = dashboardPanel === item.panel;
                 return (

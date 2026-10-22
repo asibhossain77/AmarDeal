@@ -49,7 +49,7 @@ export function clampQuantity(v: unknown): number {
    Only these transitions exist. Everything else is rejected with
    409 by the API route — a client cannot invent a new state. */
 
-export type OrderAction = 'start' | 'complete' | 'cancel'
+export type OrderAction = 'start' | 'complete' | 'cancel' | 'dispute' | 'resolve_complete' | 'resolve_cancel'
 
 export interface OrderShape {
   id: string
@@ -69,7 +69,7 @@ export interface TransitionCheck {
 }
 
 export function isOrderAction(v: unknown): v is OrderAction {
-  return v === 'start' || v === 'complete' || v === 'cancel'
+  return v === 'start' || v === 'complete' || v === 'cancel' || v === 'dispute' || v === 'resolve_complete' || v === 'resolve_cancel'
 }
 
 export function isOrderStatus(v: unknown): v is string {
@@ -157,6 +157,59 @@ export function checkOrderTransition(
     return { ok: true, data: { status: 'completed', completedAt: new Date() } }
   }
 
+  // ── Phase 3: dispute flow ──
+  // Buyer (or admin) may open a dispute on a PAID, in-fulfilment order.
+  // Only an admin can resolve it — sellers cannot resolve or reject
+  // disputes on their own, and nobody can dispute an unpaid order
+  // (unpaid orders are simply cancelled).
+  if (action === 'dispute') {
+    if (role === 'seller') {
+      return { ok: false, code: 'FORBIDDEN', error: 'বিক্রেতা নিজের অর্ডারে বিরোধ দাখিল করতে পারবেন না' }
+    }
+    if (!['queued', 'processing', 'in_progress'].includes(order.status)) {
+      return {
+        ok: false,
+        code: 'INVALID_TRANSITION',
+        error: 'এই অর্ডার অবস্থায় বিরোধ দাখিল করা যাবে না',
+      }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return {
+        ok: false,
+        code: 'INVALID_TRANSITION',
+        error: 'পেমেন্ট যাচাই না হওয়া অর্ডারে বিরোধ দাখিল হয় না — অর্ডারটি বাতিল করুন',
+      }
+    }
+    if (!reason || !reason.trim()) {
+      return { ok: false, code: 'REASON_REQUIRED', error: 'বিরোধের কারণ লিখুন' }
+    }
+    return {
+      ok: true,
+      data: { status: 'disputed', disputeReason: reason.trim().slice(0, 500), disputedAt: new Date() },
+    }
+  }
+
+  if (action === 'resolve_complete' || action === 'resolve_cancel') {
+    if (role !== 'admin') {
+      return { ok: false, code: 'FORBIDDEN', error: 'বিরোধ মীমাংসা শুধুমাত্র অ্যাডমিন করতে পারবেন' }
+    }
+    if (order.status !== 'disputed') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শুধু বিরোধপূর্ণ অর্ডার মীমাংসা করা যাবে' }
+    }
+    if (action === 'resolve_complete') {
+      return { ok: true, data: { status: 'completed', completedAt: new Date() } }
+    }
+    return {
+      ok: true,
+      data: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledBy: 'admin',
+        cancelReason: reason?.trim().slice(0, 500) || 'dispute_resolved_cancelled',
+      },
+    }
+  }
+
   return { ok: false, code: 'INVALID_ACTION', error: 'অজানা অ্যাকশন' }
 }
 
@@ -201,6 +254,7 @@ export async function notifyBuyerOrderUpdate(order: {
     completed: { title: 'অর্ডার সম্পন্ন', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) সম্পন্ন হয়েছে।` },
     cancelled: { title: 'অর্ডার বাতিল', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) বাতিল করা হয়েছে।` },
     refunded: { title: 'অর্ডার রিফান্ড', message: `"${order.productTitle}" অর্ডারটির (${order.orderNumber}) টাকা রিফান্ড করা হয়েছে।` },
+    disputed: { title: 'বিরোধ দাখিল হয়েছে', message: `"${order.productTitle}" অর্ডারে (${order.orderNumber}) বিরোধ দাখিল হয়েছে — অ্যাডমিন মীমাংসা করবেন।` },
   }
   const n = map[order.status]
   if (!n) return
@@ -230,6 +284,7 @@ export async function notifySellerOrderUpdate(order: {
     queued: { title: 'পেমেন্ট যাচাই হয়েছে', message: `"${order.productTitle}" অর্ডারের (${order.orderNumber}) পেমেন্ট যাচাই হয়েছে — অর্ডারটি পূরণ করুন।` },
     completed: { title: 'অর্ডার সম্পন্ন', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) সম্পন্ন হিসেবে চিহ্নিত হয়েছে।` },
     refunded: { title: 'অর্ডার রিফান্ড', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) রিফান্ড করা হয়েছে।` },
+    disputed: { title: 'অর্ডারে বিরোধ', message: `"${order.productTitle}" অর্ডারে (${order.orderNumber}) ক্রেতা বিরোধ দাখিল করেছেন — অ্যাডমিন মীমাংসা করবেন।` },
   }
   const n = map[order.status]
   if (!n) return

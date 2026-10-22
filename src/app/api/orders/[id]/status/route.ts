@@ -55,6 +55,7 @@ export async function PATCH(
         productId: true,
         orderNumber: true,
         serviceName: true,
+        disputeReason: true,
       },
     })
 
@@ -113,6 +114,7 @@ export async function PATCH(
         completedAt: true,
         cancelledAt: true,
         cancelReason: true,
+        disputeReason: true,
       },
     })
 
@@ -128,18 +130,24 @@ export async function PATCH(
             ? (updated.cancelReason || `Order cancelled by ${role}`)
             : action === 'start'
               ? 'Seller started fulfilment'
-              : 'Order marked completed',
+              : action === 'dispute'
+                ? (updated.disputeReason || `Dispute opened by ${role}`)
+                : action === 'resolve_complete'
+                  ? 'Admin resolved dispute — order completed'
+                  : action === 'resolve_cancel'
+                    ? (updated.cancelReason || 'Admin resolved dispute — order cancelled')
+                    : 'Order marked completed',
         actorType: role,
         actorId: userId,
       },
     }).catch(() => {})
 
     // ── Post-transition side effects ──
-    if (action === 'complete') {
+    if (action === 'complete' || action === 'resolve_complete') {
       // paid digital-file order → grant the buyer download entitlement
       await grantDigitalEntitlementOnComplete(order.productId, order.userId)
     }
-    if (action === 'cancel') {
+    if (action === 'cancel' || action === 'resolve_cancel') {
       // physical order cancelled → the reserved stock units go back
       await restorePhysicalStockOnCancel(order.productId, updated.quantity)
     }

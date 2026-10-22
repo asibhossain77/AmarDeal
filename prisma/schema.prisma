@@ -689,6 +689,18 @@ model MarketplaceOrder {
   cancelReason      String?
   refundedAt        DateTime?
   customerNote      String?
+
+  // ── Phase 3: physical delivery info (buyer-supplied at order time,
+  //    visible only to buyer / order seller / admin — never public) ──
+  buyerName         String?
+  buyerPhone        String?
+  addressLine       String?
+  city              String?
+  postalCode        String?
+  deliveryNote      String?
+  // ── Phase 3: dispute flow ──
+  disputeReason     String?
+  disputedAt        DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

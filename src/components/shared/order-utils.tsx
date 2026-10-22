@@ -59,6 +59,7 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700/40 dark:text-zinc-400 border-0',
   failed: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400 border-0',
   refunded: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400 border-0',
+  disputed: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 border-0',
 };
 
 const PAYMENT_BADGE: Record<string, string> = {

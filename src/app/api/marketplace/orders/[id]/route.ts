@@ -43,6 +43,7 @@ export async function GET(
           select: {
             id: true, title: true, image: true, category: true, description: true,
             fileKey: true, fileName: true, fileSize: true, productType: true,
+            itemType: true,
           },
         },
         option: { select: { id: true, name: true, price: true } },
@@ -87,6 +88,7 @@ export async function GET(
             fileName: order.product.fileName,
             fileSize: order.product.fileSize,
             productType: order.product.productType,
+            itemType: order.product.itemType,
           }
         : null,
       option: order.option,
@@ -123,6 +125,18 @@ export async function GET(
       cancelledBy: order.cancelledBy,
       cancelReason: order.cancelReason,
       refundedAt: order.refundedAt,
+      // ── Phase 3: physical delivery info + dispute context ──
+      // (only the three authorized parties ever reach this route)
+      delivery: {
+        buyerName: order.buyerName,
+        buyerPhone: order.buyerPhone,
+        addressLine: order.addressLine,
+        city: order.city,
+        postalCode: order.postalCode,
+        deliveryNote: order.deliveryNote,
+      },
+      disputeReason: order.disputeReason,
+      disputedAt: order.disputedAt,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       events: order.events.map((e) => ({

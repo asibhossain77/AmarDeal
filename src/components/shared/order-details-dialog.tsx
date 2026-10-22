@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, XCircle, ShieldCheck, RotateCcw, ExternalLink, FileDown, Play } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, ShieldCheck, ShieldAlert, RotateCcw, ExternalLink, FileDown, Play } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
@@ -48,10 +48,22 @@ export interface OrderDetailData {
   cancelledBy?: string | null;
   cancelReason: string | null;
   refundedAt: string | null;
+  // ── Phase 3: physical delivery info + dispute context ──
+  delivery?: {
+    buyerName: string | null;
+    buyerPhone: string | null;
+    addressLine: string | null;
+    city: string | null;
+    postalCode: string | null;
+    deliveryNote: string | null;
+  } | null;
+  disputeReason?: string | null;
+  disputedAt?: string | null;
   viewerRole: 'buyer' | 'seller' | 'admin';
   product: {
     id: string; title: string; image: string | null; category?: string;
     description?: string; hasFile?: boolean; fileName?: string | null; fileSize?: number | null;
+    itemType?: string;
   } | null;
   option: { id: string; name: string; price: number } | null;
   buyer: { id: string; name: string; imageLink: string | null };
@@ -63,7 +75,7 @@ export interface OrderDetailData {
   };
 }
 
-export type OrderDialogAction = 'start' | 'complete' | 'cancel' | 'refund' | 'verify_payment' | 'pay_now';
+export type OrderDialogAction = 'start' | 'complete' | 'cancel' | 'refund' | 'verify_payment' | 'pay_now' | 'dispute' | 'resolve_complete' | 'resolve_cancel';
 
 function formatBytes(bytes: number | null): string {
   if (!bytes) return '';
@@ -110,8 +122,14 @@ export function OrderDetailsDialog({
   const canVerify = role === 'admin' && order.status === 'pending_payment' && order.paymentStatus === 'awaiting_verification';
   const canRefund = role === 'admin' && order.paymentStatus === 'paid' && (order.status === 'processing' || order.status === 'completed' || order.status === 'queued' || order.status === 'in_progress');
   const canPay = role === 'buyer' && order.status === 'pending_payment' && order.paymentStatus === 'unpaid';
+  // Phase 3: buyer may dispute a PAID order while it is being fulfilled;
+  // only admin resolves disputes.
+  const canDispute = role === 'buyer' && order.paymentStatus === 'paid'
+    && (order.status === 'queued' || order.status === 'processing' || order.status === 'in_progress');
+  const canResolveComplete = role === 'admin' && order.status === 'disputed';
+  const canResolveCancel = role === 'admin' && order.status === 'disputed';
 
-  const hasAnyAction = canCancel || canStart || canComplete || canVerify || canRefund || canPay;
+  const hasAnyAction = canCancel || canStart || canComplete || canVerify || canRefund || canPay || canDispute || canResolveComplete || canResolveCancel;
 
   const closeConfirm = () => { setConfirmAction(null); setReason(''); };
 
@@ -129,6 +147,9 @@ export function OrderDetailsDialog({
     verify_payment: { title: t('orders.confirmVerifyTitle'), desc: t('orders.confirmVerifyDesc') },
     refund: { title: t('orders.confirmRefundTitle'), desc: t('orders.confirmRefundDesc'), withReason: true },
     pay_now: { title: t('orders.submitPayment'), desc: t('orders.paymentVerifyNote') },
+    dispute: { title: t('orders.confirmDisputeTitle'), desc: t('orders.confirmDisputeDesc'), withReason: true },
+    resolve_complete: { title: t('orders.confirmResolveCompleteTitle'), desc: t('orders.confirmResolveCompleteDesc') },
+    resolve_cancel: { title: t('orders.confirmResolveCancelTitle'), desc: t('orders.confirmResolveCancelDesc'), withReason: true },
   };
 
   return (
@@ -204,6 +225,31 @@ export function OrderDetailsDialog({
               </div>
             )}
           </div>
+
+          {/* Phase 3: physical delivery info — buyer-supplied, auth-gated by the detail API */}
+          {order.delivery && order.product?.itemType === 'physical' && (
+            <div className="mt-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('orders.deliveryInfo')}</p>
+              <div className="mt-1.5 space-y-1 text-[13px]">
+                <p className="font-semibold text-foreground">{order.delivery.buyerName || '—'}</p>
+                {order.delivery.buyerPhone && (
+                  <p className="text-muted-foreground" dir="ltr">{t('orders.deliveryPhone')}: {order.delivery.buyerPhone}</p>
+                )}
+                <p className="text-muted-foreground">{t('orders.deliveryAddress')}: {[order.delivery.addressLine, order.delivery.city, order.delivery.postalCode].filter(Boolean).join(', ') || '—'}</p>
+                {order.delivery.deliveryNote && (
+                  <p className="text-muted-foreground">{t('orders.deliveryNote')}: {order.delivery.deliveryNote}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Phase 3: dispute context */}
+          {order.status === 'disputed' && order.disputeReason && (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">{t('orders.disputeReasonLabel')}</p>
+              <p className="mt-1 text-[13px] text-red-700 dark:text-red-300">{order.disputeReason}</p>
+            </div>
+          )}
 
           <Separator className="my-3" />
 
@@ -301,6 +347,27 @@ export function OrderDetailsDialog({
                 className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold text-rose-600 hover:bg-rose-500/10 hover:text-rose-600 dark:text-rose-400">
                 <RotateCcw className="h-3.5 w-3.5" />
                 {t('orders.refundOrder')}
+              </Button>
+            )}
+            {canDispute && (
+              <Button size="sm" variant="outline" onClick={() => setConfirmAction('dispute')} disabled={busy}
+                className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                {t('orders.openDispute')}
+              </Button>
+            )}
+            {canResolveComplete && (
+              <Button size="sm" onClick={() => setConfirmAction('resolve_complete')} disabled={busy}
+                className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {t('orders.resolveComplete')}
+              </Button>
+            )}
+            {canResolveCancel && (
+              <Button size="sm" variant="outline" onClick={() => setConfirmAction('resolve_cancel')} disabled={busy}
+                className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive">
+                <XCircle className="h-3.5 w-3.5" />
+                {t('orders.resolveCancel')}
               </Button>
             )}
           </div>

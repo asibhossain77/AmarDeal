@@ -38,7 +38,7 @@ import { OrderDetailsDialog, OrderDetailData, OrderDialogAction } from '@/compon
 
 const PAGE_SIZE = 20;
 
-const STATUS_OPTIONS = ['all', 'open', 'pending_payment', 'queued', 'processing', 'in_progress', 'completed', 'cancelled', 'refunded'] as const;
+const STATUS_OPTIONS = ['all', 'open', 'pending_payment', 'queued', 'processing', 'in_progress', 'completed', 'cancelled', 'refunded', 'disputed'] as const;
 
 interface ListResponse {
   orders: OrderLite[];
