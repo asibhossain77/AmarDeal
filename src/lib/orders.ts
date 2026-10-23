@@ -34,7 +34,10 @@ export { ORDER_STATUSES, PAYMENT_STATUSES }
 export const OPEN_ORDER_STATUSES: readonly string[] = ['pending_payment']
 
 /** Statuses grouped under the Processing card (paid, in fulfilment) */
-export const FULFILMENT_STATUSES: readonly string[] = ['queued', 'processing', 'in_progress']
+export const FULFILMENT_STATUSES: readonly string[] = ['queued', 'processing', 'in_progress', 'shipped', 'out_for_delivery']
+
+/** Phase 5: physical delivery pipeline statuses (product orders only) */
+export const DELIVERY_STATUSES: readonly string[] = ['shipped', 'out_for_delivery', 'delivered']
 
 /* ── Quantity guard (product orders) ─────────────────────────── */
 export const MAX_ORDER_QTY = 99
@@ -50,6 +53,8 @@ export function clampQuantity(v: unknown): number {
    409 by the API route — a client cannot invent a new state. */
 
 export type OrderAction = 'start' | 'complete' | 'cancel' | 'dispute' | 'resolve_complete' | 'resolve_cancel'
+  // ── Phase 5: delivery tracking actions ──
+  | 'ship' | 'out_for_delivery' | 'mark_delivered' | 'deliver_digital' | 'confirm_receipt'
 
 export interface OrderShape {
   id: string
@@ -58,6 +63,20 @@ export interface OrderShape {
   userId: string
   sellerId: string | null
   productId: string | null
+  // ── Phase 5: product classification for delivery-flow gating ──
+  itemType?: string | null
+  productHasFile?: boolean
+  trackingNumber?: string | null
+}
+
+/** Phase 5: optional payload for ship / deliver_digital actions */
+export interface DeliveryPayload {
+  courierName?: string
+  trackingNumber?: string
+  dispatchDate?: string
+  estimatedDeliveryDate?: string
+  shippingNote?: string
+  deliveryContent?: string
 }
 
 export interface TransitionCheck {
@@ -70,6 +89,14 @@ export interface TransitionCheck {
 
 export function isOrderAction(v: unknown): v is OrderAction {
   return v === 'start' || v === 'complete' || v === 'cancel' || v === 'dispute' || v === 'resolve_complete' || v === 'resolve_cancel'
+    || v === 'ship' || v === 'out_for_delivery' || v === 'mark_delivered' || v === 'deliver_digital' || v === 'confirm_receipt'
+}
+
+/** Parse a client-supplied date ('yyyy-mm-dd' or ISO) — null when invalid */
+function parseDeliveryDate(v: string | undefined): Date | null {
+  if (!v || typeof v !== 'string') return null
+  const d = new Date(v.length <= 10 ? `${v}T00:00:00.000Z` : v)
+  return Number.isNaN(d.getTime()) ? null : d
 }
 
 export function isOrderStatus(v: unknown): v is string {
@@ -80,12 +107,15 @@ export function isOrderStatus(v: unknown): v is string {
  * Validate a requested product-order transition against the actor's
  * role. Roles: 'buyer' (the order's user), 'seller' (the order's
  * sellerId), 'admin' (verified Admin record — checked by the caller).
+ * `payload` carries delivery-flow inputs (Phase 5) — courier info for
+ * 'ship', digital handover content for 'deliver_digital'.
  */
 export function checkOrderTransition(
   order: OrderShape,
   action: OrderAction,
   role: 'buyer' | 'seller' | 'admin',
   reason?: string,
+  payload?: DeliveryPayload,
 ): TransitionCheck {
   if (action === 'cancel') {
     if (order.status !== 'pending_payment') {
@@ -157,8 +187,150 @@ export function checkOrderTransition(
     return { ok: true, data: { status: 'completed', completedAt: new Date() } }
   }
 
+  // ── Phase 5: delivery tracking flow ──────────────────────────────
+  // Physical: processing → shipped (courier+tracking REQUIRED) →
+  //           out_for_delivery → delivered → completed (buyer confirms).
+  // Digital:  processing → delivered (content or file entitlement).
+  // A seller can NEVER mark a physical order delivered without a
+  // tracking record, and can never move a state backwards.
+
+  if (action === 'ship') {
+    if (role === 'buyer') {
+      return { ok: false, code: 'FORBIDDEN', error: 'শুধু বিক্রেতা শিপিং তথ্য দিতে পারেন' }
+    }
+    if (order.itemType !== 'physical') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শুধুমাত্র ফিজিক্যাল পণ্যের অর্ডার শিপ করা যায়' }
+    }
+    if (order.status !== 'processing') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'প্রসেসিং অবস্থার অর্ডারই শুধু শিপ করা যায়' }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'পেমেন্ট যাচাই ছাড়া অর্ডার শিপ করা যাবে না' }
+    }
+    const courier = typeof payload?.courierName === 'string' ? payload.courierName.trim() : ''
+    const tracking = typeof payload?.trackingNumber === 'string' ? payload.trackingNumber.trim() : ''
+    if (!courier) {
+      return { ok: false, code: 'COURIER_REQUIRED', error: 'কুরিয়ারের নাম লিখুন' }
+    }
+    if (!tracking) {
+      return { ok: false, code: 'TRACKING_REQUIRED', error: 'ট্র্যাকিং নম্বর লিখুন — এটি ছাড়া শিপিং নিশ্চিত করা যাবে না' }
+    }
+    return {
+      ok: true,
+      data: {
+        status: 'shipped',
+        courierName: courier.slice(0, 80),
+        trackingNumber: tracking.slice(0, 80),
+        dispatchDate: parseDeliveryDate(payload?.dispatchDate) ?? new Date(),
+        estimatedDeliveryDate: parseDeliveryDate(payload?.estimatedDeliveryDate),
+        shippingNote: typeof payload?.shippingNote === 'string' ? payload.shippingNote.trim().slice(0, 500) || null : null,
+      },
+    }
+  }
+
+  if (action === 'out_for_delivery') {
+    if (role === 'buyer') {
+      return { ok: false, code: 'FORBIDDEN', error: 'শুধু বিক্রেতা ডেলিভারি স্ট্যাটাস আপডেট করতে পারেন' }
+    }
+    if (order.itemType !== 'physical') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শুধুমাত্র ফিজিক্যাল পণ্যের অর্ডারে প্রযোজ্য' }
+    }
+    if (order.status !== 'shipped') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শিপ হওয়ার পরেই ডেলিভারির পথে চিহ্নিত করা যাবে' }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'পেমেন্ট যাচাই ছাড়া এই পরিবর্তন সম্ভব নয়' }
+    }
+    return { ok: true, data: { status: 'out_for_delivery' } }
+  }
+
+  if (action === 'mark_delivered') {
+    if (role === 'buyer') {
+      return { ok: false, code: 'FORBIDDEN', error: 'শুধু বিক্রেতা ডেলিভারি নিশ্চিত করতে পারেন' }
+    }
+    if (order.itemType !== 'physical') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শুধুমাত্র ফিজিক্যাল পণ্যের অর্ডারে প্রযোজ্য' }
+    }
+    if (!['shipped', 'out_for_delivery'].includes(order.status)) {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'শিপ বা ডেলিভারির পথে থাকা অর্ডারই শুধু ডেলিভারি হিসেবে চিহ্নিত হবে' }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'পেমেন্ট যাচাই ছাড়া ডেলিভারি নিশ্চিত করা যাবে না' }
+    }
+    // Anti-false-delivery validation: a tracking record must exist before
+    // an order can be marked delivered — no shipping proof, no delivery.
+    if (!order.trackingNumber || !order.trackingNumber.trim()) {
+      return {
+        ok: false,
+        code: 'TRACKING_REQUIRED',
+        error: 'ট্র্যাকিং নম্বর ছাড়া ডেলিভারি নিশ্চিত করা যাবে না — আগে শিপিং তথ্য দিন',
+      }
+    }
+    return { ok: true, data: { status: 'delivered', deliveredAt: new Date() } }
+  }
+
+  if (action === 'deliver_digital') {
+    if (role === 'buyer') {
+      return { ok: false, code: 'FORBIDDEN', error: 'শুধু বিক্রেতা ডিজিটাল ডেলিভারি করতে পারেন' }
+    }
+    if (order.itemType === 'physical') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'ফিজিক্যাল অর্ডারে ডিজিটাল ডেলিভারি প্রযোজ্য নয়' }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'পেমেন্ট যাচাই ছাড়া ডেলিভারি করা যাবে না' }
+    }
+    const content = typeof payload?.deliveryContent === 'string' ? payload.deliveryContent.trim() : ''
+    if (order.status === 'delivered') {
+      // Correction path: seller can replace the delivered content while the
+      // order is still awaiting the buyer's receipt confirmation.
+      if (!content) {
+        return { ok: false, code: 'CONTENT_REQUIRED', error: 'নতুন ডেলিভারি কনটেন্ট লিখুন' }
+      }
+      return {
+        ok: true,
+        data: { deliveryContent: content.slice(0, 5000), deliveryContentAt: new Date() },
+      }
+    }
+    if (order.status !== 'processing') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'প্রসেসিং অবস্থার অর্ডারই শুধু ডেলিভার করা যায়' }
+    }
+    // File products deliver via the download entitlement — content optional.
+    // Non-file digital goods (account / license / subscription) REQUIRE the
+    // secure handover content, otherwise the buyer receives nothing.
+    if (!order.productHasFile && !content) {
+      return {
+        ok: false,
+        code: 'CONTENT_REQUIRED',
+        error: 'ডিজিটাল ডেলিভারি কনটেন্ট লিখুন — ফাইল ছাড়া পণ্যের জন্য এটি বাধ্যতামূলক',
+      }
+    }
+    return {
+      ok: true,
+      data: {
+        status: 'delivered',
+        deliveredAt: new Date(),
+        ...(content ? { deliveryContent: content.slice(0, 5000), deliveryContentAt: new Date() } : {}),
+      },
+    }
+  }
+
+  if (action === 'confirm_receipt') {
+    if (role === 'seller') {
+      return { ok: false, code: 'FORBIDDEN', error: 'গ্রহণ নিশ্চিত করা ক্রেতার কাজ' }
+    }
+    if (order.status !== 'delivered') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'ডেলিভারি হওয়ার পরেই গ্রহণ নিশ্চিত করা যাবে' }
+    }
+    if (order.paymentStatus !== 'paid') {
+      return { ok: false, code: 'INVALID_TRANSITION', error: 'পেমেন্ট যাচাই ছাড়া এই পরিবর্তন সম্ভব নয়' }
+    }
+    return { ok: true, data: { status: 'completed', completedAt: new Date() } }
+  }
+
   // ── Phase 3: dispute flow ──
-  // Buyer (or admin) may open a dispute on a PAID, in-fulfilment order.
+  // Buyer (or admin) may open a dispute on a PAID, in-fulfilment order —
+  // Phase 5: disputes stay open through the whole delivery pipeline
+  // (shipped / out_for_delivery / delivered) until receipt is confirmed.
   // Only an admin can resolve it — sellers cannot resolve or reject
   // disputes on their own, and nobody can dispute an unpaid order
   // (unpaid orders are simply cancelled).
@@ -166,7 +338,7 @@ export function checkOrderTransition(
     if (role === 'seller') {
       return { ok: false, code: 'FORBIDDEN', error: 'বিক্রেতা নিজের অর্ডারে বিরোধ দাখিল করতে পারবেন না' }
     }
-    if (!['queued', 'processing', 'in_progress'].includes(order.status)) {
+    if (!['queued', 'processing', 'in_progress', 'shipped', 'out_for_delivery', 'delivered'].includes(order.status)) {
       return {
         ok: false,
         code: 'INVALID_TRANSITION',
@@ -247,10 +419,15 @@ export async function notifyBuyerOrderUpdate(order: {
   orderNumber: string
   productTitle: string
   status: string
+  /** Phase 5: appended detail (courier/tracking, digital handover hint) */
+  extra?: string
 }): Promise<void> {
   const map: Record<string, { title: string; message: string }> = {
     queued: { title: 'পেমেন্ট যাচাই সম্পন্ন', message: `"${order.productTitle}" অর্ডারের (${order.orderNumber}) পেমেন্ট যাচাই হয়েছে — বিক্রেতা কাজ শুরু করবেন।` },
     processing: { title: 'অর্ডার প্রসেসিং', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) এখন প্রসেসিং অবস্থায় আছে।` },
+    shipped: { title: 'অর্ডার শিপ হয়েছে', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) কুরিয়ারে পাঠানো হয়েছে।${order.extra ? ` ${order.extra}` : ''}` },
+    out_for_delivery: { title: 'অর্ডার ডেলিভারির পথে', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) ডেলিভারির পথে আছে — প্রস্তুত থাকুন।` },
+    delivered: { title: 'অর্ডার ডেলিভারি হয়েছে', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) ডেলিভারি হয়েছে।${order.extra ? ` ${order.extra}` : ''}` },
     completed: { title: 'অর্ডার সম্পন্ন', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) সম্পন্ন হয়েছে।` },
     cancelled: { title: 'অর্ডার বাতিল', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) বাতিল করা হয়েছে।` },
     refunded: { title: 'অর্ডার রিফান্ড', message: `"${order.productTitle}" অর্ডারটির (${order.orderNumber}) টাকা রিফান্ড করা হয়েছে।` },
@@ -277,12 +454,15 @@ export async function notifySellerOrderUpdate(order: {
   orderNumber: string
   productTitle: string
   status: string
+  /** Phase 5: appended detail line */
+  extra?: string
 }): Promise<void> {
   const map: Record<string, { title: string; message: string }> = {
     pending_payment: { title: 'পেমেন্ট জমা হয়েছে', message: `"${order.productTitle}" অর্ডারের (${order.orderNumber}) পেমেন্ট তথ্য জমা হয়েছে — অ্যাডমিন যাচাই করছেন।` },
     cancelled: { title: 'অর্ডার বাতিল', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) ক্রেতা বাতিল করেছেন।` },
     queued: { title: 'পেমেন্ট যাচাই হয়েছে', message: `"${order.productTitle}" অর্ডারের (${order.orderNumber}) পেমেন্ট যাচাই হয়েছে — অর্ডারটি পূরণ করুন।` },
-    completed: { title: 'অর্ডার সম্পন্ন', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) সম্পন্ন হিসেবে চিহ্নিত হয়েছে।` },
+    delivered: { title: 'অর্ডার ডেলিভারি হয়েছে', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) ডেলিভারি হিসেবে চিহ্নিত হয়েছে।` },
+    completed: { title: 'অর্ডার সম্পন্ন', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) ক্রেতা গ্রহণ করেছেন — সম্পন্ন।${order.extra ? ` ${order.extra}` : ''}` },
     refunded: { title: 'অর্ডার রিফান্ড', message: `"${order.productTitle}" অর্ডারটি (${order.orderNumber}) রিফান্ড করা হয়েছে।` },
     disputed: { title: 'অর্ডারে বিরোধ', message: `"${order.productTitle}" অর্ডারে (${order.orderNumber}) ক্রেতা বিরোধ দাখিল করেছেন — অ্যাডমিন মীমাংসা করবেন।` },
   }

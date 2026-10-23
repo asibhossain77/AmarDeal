@@ -12,12 +12,15 @@ import { toast } from 'sonner';
 import {
   Package, Loader2, ArrowLeft, ShieldCheck, ShieldAlert, Clock, Link2, CreditCard,
   Wallet, Ban, CheckCircle2, Copy, XCircle, LayoutList, History, Zap,
+  Truck, FileText, FileDown, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppStore } from '@/lib/store';
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { OrderStatusBadge, formatMoney, formatDate, truncateLink } from './my-orders-panel';
+import { formatOrderDateTime } from '@/components/shared/order-utils';
+import { OrderTracker, CopyRow } from '@/components/shared/order-tracker';
 
 const emptySubscribe = () => () => {};
 
@@ -54,10 +57,38 @@ interface OrderDetail {
   cancelReason: string | null;
   createdAt: string;
   updatedAt: string;
+  completedAt: string | null;
+  deliveredAt: string | null;
+  viewerRole: 'buyer' | 'seller' | 'admin';
   service: {
     deliveryEstimate: string | null;
     instructions: string | null;
   };
+  // ── Phase 5: delivery tracking + secure handover ──
+  product: {
+    id: string;
+    itemType?: string | null;
+    hasFile?: boolean;
+    fileName?: string | null;
+    fileSize?: number | null;
+  } | null;
+  delivery?: {
+    buyerName: string | null;
+    buyerPhone: string | null;
+    addressLine: string | null;
+    city: string | null;
+    postalCode: string | null;
+    deliveryNote: string | null;
+  } | null;
+  shipping?: {
+    courierName: string | null;
+    trackingNumber: string | null;
+    dispatchDate: string | null;
+    estimatedDeliveryDate: string | null;
+    shippingNote: string | null;
+  } | null;
+  deliveryContent?: string | null;
+  deliveryContentAt?: string | null;
   events: OrderEvent[];
 }
 
@@ -71,6 +102,7 @@ interface ManualMethod {
 
 export function OrderDetailPanel() {
   const t = useT();
+  const locale = useAppStore((s) => s.locale);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const user = useAppStore((s) => s.user);
   const orderDetailId = useAppStore((s) => s.orderDetailId);
@@ -115,7 +147,38 @@ export function OrderDetailPanel() {
 
   const canPay = order?.status === 'pending_payment' && order?.paymentStatus === 'unpaid';
   const canDispute = !!order && order.paymentStatus === 'paid'
-    && ['queued', 'processing', 'in_progress'].includes(order.status);
+    && ['queued', 'processing', 'in_progress', 'shipped', 'out_for_delivery', 'delivered'].includes(order.status);
+  // Phase 5: buyer confirms receipt on a delivered order → completed
+  const canConfirmReceipt = !!order && order.viewerRole === 'buyer'
+    && order.status === 'delivered' && order.paymentStatus === 'paid';
+  const [confirmingReceipt, setConfirmingReceipt] = useState(false);
+
+  const handleConfirmReceipt = async () => {
+    if (!order) return;
+    setConfirmingReceipt(true);
+    try {
+      const res = await fetch(`/api/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'confirm_receipt' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('orderDetail.receiptConfirmed'));
+        refetch();
+      } else {
+        toast.error(data.error || t('orderDetail.receiptFailed'));
+      }
+    } catch {
+      toast.error(t('orderDetail.receiptFailed'));
+    } finally {
+      setConfirmingReceipt(false);
+    }
+  };
+
+  const isPhysical = order?.product?.itemType === 'physical';
+  const isDigital = !!order?.product && !isPhysical;
+  const shipping = order?.shipping;
 
   // Load manual methods when the pay box opens
   useEffect(() => {
@@ -313,6 +376,19 @@ export function OrderDetailPanel() {
           </div>
         </div>
 
+        {/* Phase 5: order progress tracker — product orders only */}
+        {order.product && !['pending_payment'].includes(order.status) && (
+          <div className="mt-4 rounded-xl border border-border/30 bg-muted/10 p-4">
+            <OrderTracker
+              status={order.status}
+              paymentStatus={order.paymentStatus}
+              itemType={order.product.itemType}
+              estimatedDeliveryDate={order.shipping?.estimatedDeliveryDate ?? null}
+              events={order.events.map((e) => ({ toStatus: e.toStatus, createdAt: e.createdAt }))}
+            />
+          </div>
+        )}
+
         {/* Key facts */}
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-muted/40 p-3 dark:bg-muted/40">
@@ -416,6 +492,20 @@ export function OrderDetailPanel() {
             </div>
           )}
 
+          {/* Phase 5: buyer confirms receipt — delivered order */}
+          {canConfirmReceipt && (
+            <div className="mt-3">
+              <Button
+                onClick={handleConfirmReceipt}
+                disabled={confirmingReceipt}
+                className="h-10 gap-2 rounded-xl px-4 text-[12px] font-semibold"
+              >
+                {confirmingReceipt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                {t('orderDetail.confirmReceipt')}
+              </Button>
+            </div>
+          )}
+
           {/* Pay box */}
           {canPay && showPayBox && (
             <div className="mt-3 space-y-3 rounded-xl border border-primary/20 bg-primary/[0.04] p-3.5">
@@ -481,6 +571,81 @@ export function OrderDetailPanel() {
             </div>
           )}
         </div>
+
+        {/* Phase 3: the buyer's own delivery address — confirms what the seller received */}
+        {isPhysical && order.delivery && (order.delivery.addressLine || order.delivery.city) && (
+          <div className="mt-4 rounded-xl border border-border/30 p-3.5 dark:border-border/20">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('orderDetail.deliveryAddressTitle')}</p>
+            <p className="mt-1.5 text-[13px] font-semibold text-foreground">{order.delivery.buyerName}</p>
+            <p className="text-[12px] text-muted-foreground">
+              {[order.delivery.addressLine, order.delivery.city, order.delivery.postalCode].filter(Boolean).join(', ')}
+            </p>
+            {order.delivery.buyerPhone && (
+              <p className="text-[12px] text-muted-foreground" dir="ltr">{order.delivery.buyerPhone}</p>
+            )}
+          </div>
+        )}
+
+        {/* Phase 5: shipping / tracking details — physical orders with a courier record */}
+        {isPhysical && shipping && (shipping.courierName || shipping.trackingNumber) && (
+          <div className="mt-4 rounded-xl border border-teal-200 bg-teal-50/60 p-3.5 dark:border-teal-500/30 dark:bg-teal-500/10">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-400">
+              <Truck className="h-3.5 w-3.5" />{t('orderDetail.shippingDetails')}
+            </p>
+            <div className="mt-1.5 divide-y divide-teal-200/60 dark:divide-teal-500/20">
+              {shipping.courierName && <CopyRow label={t('orderDetail.courier')} value={shipping.courierName} mono={false} />}
+              {shipping.trackingNumber && <CopyRow label={t('orderDetail.trackingNo')} value={shipping.trackingNumber} />}
+              {shipping.dispatchDate && (
+                <div className="flex items-center justify-between gap-4 py-1.5">
+                  <span className="text-[12px] font-medium text-muted-foreground">{t('orderDetail.dispatchDate')}</span>
+                  <span className="text-[13px] font-medium text-foreground" dir="ltr">{formatOrderDateTime(shipping.dispatchDate, locale)}</span>
+                </div>
+              )}
+              {shipping.estimatedDeliveryDate && (
+                <div className="flex items-center justify-between gap-4 py-1.5">
+                  <span className="text-[12px] font-medium text-muted-foreground">{t('orderDetail.estimatedDelivery')}</span>
+                  <span className="text-[13px] font-medium text-foreground" dir="ltr">{formatOrderDateTime(shipping.estimatedDeliveryDate, locale)}</span>
+                </div>
+              )}
+            </div>
+            {shipping.shippingNote && (
+              <p className="mt-2 rounded-lg bg-background/60 p-2.5 text-[12px] leading-relaxed text-muted-foreground">{shipping.shippingNote}</p>
+            )}
+            <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">{t('orderDetail.manualTrackingNote')}</p>
+          </div>
+        )}
+
+        {/* Phase 5: secure digital delivery — only the buyer sees their own content.
+            Served exclusively through the auth-gated detail API; never public. */}
+        {isDigital && order.deliveryContent && (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+              <FileText className="h-3.5 w-3.5" />{t('orderDetail.digitalDelivery')}
+            </p>
+            <p className="mt-2 whitespace-pre-wrap break-words rounded-lg bg-background/60 p-3 font-mono text-[12px] leading-relaxed text-foreground" dir="auto">{order.deliveryContent}</p>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <Lock className="h-3 w-3" aria-hidden />{t('orderDetail.contentPrivate')}
+              </p>
+              {order.deliveryContentAt && (
+                <span className="text-[10px] text-muted-foreground" dir="ltr">{formatOrderDateTime(order.deliveryContentAt, locale)}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Phase 5: file download — delivered file-based digital orders */}
+        {isDigital && order.product?.hasFile && (order.status === 'delivered' || order.status === 'completed') && order.viewerRole === 'buyer' && (
+          <a
+            href={`/api/download/${order.product.id}`}
+            className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3.5 transition-colors hover:bg-primary/10"
+          >
+            <span className="flex items-center gap-2 text-[13px] font-semibold text-primary">
+              <FileDown className="h-4 w-4" aria-hidden />{t('orderDetail.downloadFile')}
+            </span>
+            <span className="text-[11px] text-muted-foreground" dir="ltr">{order.product.fileName || ''}</span>
+          </a>
+        )}
 
         {/* Fulfilment info */}
         {(order.fulfilmentNote || order.startCount !== null || order.remains !== null) && (

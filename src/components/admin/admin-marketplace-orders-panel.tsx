@@ -17,7 +17,7 @@ import {
   OrderStatusBadge, PaymentStatusBadge, OrderProductThumb, CounterpartyAvatar,
   formatTaka, formatOrderDate, type OrderLite, type OrderCounts,
 } from '@/components/shared/order-utils';
-import { OrderDetailsDialog, OrderDetailData, OrderDialogAction } from '@/components/shared/order-details-dialog';
+import { OrderDetailsDialog, OrderDetailData, OrderDialogAction, OrderDialogExtra } from '@/components/shared/order-details-dialog';
 
 /* ═══════════════════════════════════════════════════════════════
    Admin Marketplace Orders — the platform administrator's
@@ -102,9 +102,60 @@ export function AdminMarketplaceOrdersPanel() {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-marketplace-orders'] });
 
   /* Actions reuse the EXISTING admin endpoint — one guarded mutation API
-     for every marketplace order type (verify/reject/set_status/note). */
-  const handleAction = async (action: OrderDialogAction, reason?: string) => {
+     for every marketplace order type (verify/reject/set_status/note).
+     Phase 5: the delivery-flow actions (ship / out_for_delivery /
+     mark_delivered / deliver_digital / confirm_receipt) belong to the
+     product-order workflow, so they route to the product-order status
+     endpoint; courier-record corrections go to the shipping endpoint. */
+  const PRODUCT_FLOW_ACTIONS = new Set<OrderDialogAction>(['ship', 'out_for_delivery', 'mark_delivered', 'deliver_digital', 'confirm_receipt', 'start', 'complete', 'dispute']);
+  const handleAction = async (action: OrderDialogAction, reason?: string, extra?: OrderDialogExtra) => {
     if (!detail || action === 'pay_now') return;
+    if (action === 'ship_edit') {
+      setActionBusy(true);
+      try {
+        const res = await fetch(`/api/orders/${detail.id}/shipping`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...extra }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          toast.success(t('orders.actionDone'));
+          setDetail({ ...detail, ...json.order, viewerRole: detail.viewerRole } as OrderDetailData);
+          refresh();
+        } else {
+          toast.error(json.error || t('orders.actionFailed'));
+        }
+      } catch {
+        toast.error(t('orders.actionFailed'));
+      } finally {
+        setActionBusy(false);
+      }
+      return;
+    }
+    if (PRODUCT_FLOW_ACTIONS.has(action) && detail.product) {
+      setActionBusy(true);
+      try {
+        const res = await fetch(`/api/orders/${detail.id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, reason, ...extra }),
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          toast.success(t('orders.actionDone'));
+          setDetail({ ...detail, ...json.order, viewerRole: detail.viewerRole } as OrderDetailData);
+          refresh();
+        } else {
+          toast.error(json.error || t('orders.actionFailed'));
+        }
+      } catch {
+        toast.error(t('orders.actionFailed'));
+      } finally {
+        setActionBusy(false);
+      }
+      return;
+    }
     const payload =
       action === 'verify_payment'
         ? { action: 'verify_payment' }
@@ -228,7 +279,7 @@ export function AdminMarketplaceOrdersPanel() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {['all', 'open', 'pending_payment', 'queued', 'processing', 'in_progress', 'completed', 'cancelled', 'refunded'].map((s) => (
+            {['all', 'open', 'pending_payment', 'queued', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled', 'refunded'].map((s) => (
               <SelectItem key={s} value={s}>{t(statusLabelKey(s) as never)}</SelectItem>
             ))}
           </SelectContent>

@@ -19,7 +19,7 @@ import {
   OrderStatusBadge, PaymentStatusBadge, OrderProductThumb, CounterpartyAvatar,
   formatTaka, formatOrderDate, type OrderLite, type OrderCounts,
 } from '@/components/shared/order-utils';
-import { OrderDetailsDialog, OrderDetailData, OrderDialogAction } from '@/components/shared/order-details-dialog';
+import { OrderDetailsDialog, OrderDetailData, OrderDialogAction, OrderDialogExtra } from '@/components/shared/order-details-dialog';
 
 /* ═══════════════════════════════════════════════════════════════
    Seller Marketplace Orders — the Orders management page.
@@ -38,7 +38,7 @@ import { OrderDetailsDialog, OrderDetailData, OrderDialogAction } from '@/compon
 
 const PAGE_SIZE = 20;
 
-const STATUS_OPTIONS = ['all', 'open', 'pending_payment', 'queued', 'processing', 'in_progress', 'completed', 'cancelled', 'refunded', 'disputed'] as const;
+const STATUS_OPTIONS = ['all', 'open', 'pending_payment', 'queued', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled', 'refunded', 'disputed'] as const;
 
 interface ListResponse {
   orders: OrderLite[];
@@ -122,14 +122,19 @@ export function SellerMarketplaceOrders() {
     queryClient.invalidateQueries({ queryKey: ['seller-marketplace-orders'] });
   };
 
-  const handleAction = async (action: OrderDialogAction, reason?: string) => {
+  const handleAction = async (action: OrderDialogAction, reason?: string, extra?: OrderDialogExtra) => {
     if (!detail || action === 'pay_now') return;
     setActionBusy(true);
     try {
-      const res = await fetch(`/api/orders/${detail.id}/status`, {
+      // Phase 5: courier-record correction routes to the dedicated
+      // shipping endpoint (no status change, seller/admin only).
+      const url = action === 'ship_edit'
+        ? `/api/orders/${detail.id}/shipping`
+        : `/api/orders/${detail.id}/status`;
+      const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason }),
+        body: JSON.stringify(action === 'ship_edit' ? { ...extra } : { action, reason, ...extra }),
       });
       const json = await res.json();
       if (res.ok && json.success) {

@@ -21,7 +21,18 @@ import {
                (processing + paid) orders → completed
    - cancel:   buyer → own unpaid order; seller → own unpaid order;
                admin → pending_payment orders
-   A buyer can NEVER start, complete, or mark an order paid —
+   Phase 5 delivery flow:
+   - ship:             seller/admin — processing + paid physical
+                       order + courier name + tracking number → shipped
+   - out_for_delivery: seller/admin — shipped physical order
+   - mark_delivered:   seller/admin — shipped/out_for_delivery
+                       physical order WITH a tracking record on file
+                       (no tracking proof → no delivery claim)
+   - deliver_digital:  seller/admin — processing digital order →
+                       delivered (secure handover content stored
+                       order-scoped; file products get download access)
+   - confirm_receipt:  buyer — delivered order → completed
+   A buyer can NEVER start, complete, ship, or mark an order paid —
    payment truth comes only from the existing verification
    mechanism (admin verify_payment). Admin refunds/cancellations of
    paid orders go through PATCH /api/admin/marketplace/orders/[id].
@@ -37,8 +48,17 @@ export async function PATCH(
     const userId = guard.userId
 
     const { id } = await params
-    const body = await req.json().catch(() => ({}))
-    const { action, reason } = body as { action?: string; reason?: string }
+    const body = await req.json().catch(() => ({})) as {
+      action?: string
+      reason?: string
+      courierName?: string
+      trackingNumber?: string
+      dispatchDate?: string
+      estimatedDeliveryDate?: string
+      shippingNote?: string
+      deliveryContent?: string
+    }
+    const { action, reason } = body
 
     if (!isOrderAction(action)) {
       return NextResponse.json({ error: 'অবৈধ অ্যাকশন' }, { status: 400 })
@@ -56,6 +76,9 @@ export async function PATCH(
         orderNumber: true,
         serviceName: true,
         disputeReason: true,
+        // ── Phase 5: delivery-flow gating fields ──
+        trackingNumber: true,
+        product: { select: { itemType: true, fileKey: true } },
       },
     })
 
@@ -83,7 +106,24 @@ export async function PATCH(
       )
     }
 
-    const check = checkOrderTransition(order, action as OrderAction, role, reason)
+    const check = checkOrderTransition(
+      {
+        ...order,
+        itemType: order.product?.itemType ?? null,
+        productHasFile: !!order.product?.fileKey,
+      },
+      action as OrderAction,
+      role,
+      reason,
+      {
+        courierName: body.courierName,
+        trackingNumber: body.trackingNumber,
+        dispatchDate: body.dispatchDate,
+        estimatedDeliveryDate: body.estimatedDeliveryDate,
+        shippingNote: body.shippingNote,
+        deliveryContent: body.deliveryContent,
+      },
+    )
     if (!check.ok || !check.data) {
       return NextResponse.json(
         { error: check.error ?? 'অনুমোদিত নয়', code: check.code },
@@ -115,36 +155,58 @@ export async function PATCH(
         cancelledAt: true,
         cancelReason: true,
         disputeReason: true,
+        // ── Phase 5: delivery tracking fields (echoed back to the UI) ──
+        courierName: true,
+        trackingNumber: true,
+        dispatchDate: true,
+        estimatedDeliveryDate: true,
+        shippingNote: true,
+        deliveredAt: true,
+        deliveryContentAt: true,
       },
     })
 
     // ── Audit trail (same event log the SMM order flow uses) ──
+    const isContentUpdateOnly = action === 'deliver_digital' && updated.status === order.status
     await db.marketplaceOrderEvent.create({
       data: {
         orderId: order.id,
-        type: 'status_changed',
+        type: isContentUpdateOnly ? 'delivery_updated' : 'status_changed',
         fromStatus: order.status,
         toStatus: updated.status,
         message:
-          action === 'cancel'
-            ? (updated.cancelReason || `Order cancelled by ${role}`)
-            : action === 'start'
-              ? 'Seller started fulfilment'
-              : action === 'dispute'
-                ? (updated.disputeReason || `Dispute opened by ${role}`)
-                : action === 'resolve_complete'
-                  ? 'Admin resolved dispute — order completed'
-                  : action === 'resolve_cancel'
-                    ? (updated.cancelReason || 'Admin resolved dispute — order cancelled')
-                    : 'Order marked completed',
+          action === 'ship'
+            ? `কুরিয়ার: ${updated.courierName} · ট্র্যাকিং: ${updated.trackingNumber}`
+            : action === 'out_for_delivery'
+              ? 'ডেলিভারির পথে চিহ্নিত করা হয়েছে'
+              : action === 'mark_delivered'
+                ? 'ডেলিভারি সম্পন্ন — কুরিয়ার নিশ্চিতকৃত'
+                : action === 'deliver_digital'
+                  ? isContentUpdateOnly
+                    ? 'ডিজিটাল ডেলিভারি কনটেন্ট হালনাগাদ করা হয়েছে'
+                    : 'ডিজিটাল কনটেন্ট ডেলিভারি দেওয়া হয়েছে — অর্ডার পেজ থেকে সংগ্রহ করুন'
+                  : action === 'confirm_receipt'
+                    ? 'ক্রেতা অর্ডার গ্রহণ নিশ্চিত করেছেন'
+                    : action === 'cancel'
+                      ? (updated.cancelReason || `Order cancelled by ${role}`)
+                      : action === 'start'
+                        ? 'Seller started fulfilment'
+                        : action === 'dispute'
+                          ? (updated.disputeReason || `Dispute opened by ${role}`)
+                          : action === 'resolve_complete'
+                            ? 'Admin resolved dispute — order completed'
+                            : action === 'resolve_cancel'
+                              ? (updated.cancelReason || 'Admin resolved dispute — order cancelled')
+                              : 'Order marked completed',
         actorType: role,
         actorId: userId,
       },
     }).catch(() => {})
 
     // ── Post-transition side effects ──
-    if (action === 'complete' || action === 'resolve_complete') {
+    if (action === 'complete' || action === 'resolve_complete' || action === 'deliver_digital') {
       // paid digital-file order → grant the buyer download entitlement
+      // (Phase 5: granted on DELIVERY, not only on legacy completion)
       await grantDigitalEntitlementOnComplete(order.productId, order.userId)
     }
     if (action === 'cancel' || action === 'resolve_cancel') {
@@ -153,6 +215,12 @@ export async function PATCH(
     }
 
     // Notify the counterpart(s) — never the actor themself
+    const buyerExtra =
+      action === 'ship'
+        ? `কুরিয়ার: ${updated.courierName}, ট্র্যাকিং: ${updated.trackingNumber} — অর্ডার পেজে বিস্তারিত দেখুন।`
+        : action === 'deliver_digital'
+          ? 'ডিজিটাল কনটেন্ট অর্ডার পেজে সুরক্ষিতভাবে দেওয়া হয়েছে — শুধু আপনি এটি দেখতে পারবেন।'
+          : undefined
     if (role !== 'buyer') {
       await notifyBuyerOrderUpdate({
         id: updated.id,
@@ -160,6 +228,7 @@ export async function PATCH(
         orderNumber: updated.orderNumber,
         productTitle,
         status: updated.status,
+        extra: buyerExtra,
       })
     }
     if (role !== 'seller' && order.sellerId) {
@@ -169,6 +238,7 @@ export async function PATCH(
         orderNumber: updated.orderNumber,
         productTitle,
         status: updated.status,
+        extra: action === 'confirm_receipt' ? 'রিসিপ্ট নিশ্চিত করা হয়েছে।' : undefined,
       })
     }
 

@@ -701,6 +701,18 @@ model MarketplaceOrder {
   // ── Phase 3: dispute flow ──
   disputeReason     String?
   disputedAt        DateTime?
+  // ── Phase 5: physical delivery tracking (seller-supplied) ──
+  courierName       String?
+  trackingNumber    String?
+  dispatchDate      DateTime?
+  estimatedDeliveryDate DateTime?
+  shippingNote      String?
+  deliveredAt       DateTime?
+  // ── Phase 5: secure digital delivery content (order-scoped — the ONLY
+  //    copy of seller→buyer digital handover data; never on product pages,
+  //    list APIs select explicit fields so it cannot leak) ──
+  deliveryContent   String?
+  deliveryContentAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

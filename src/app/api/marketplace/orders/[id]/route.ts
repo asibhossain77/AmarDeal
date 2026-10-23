@@ -135,6 +135,20 @@ export async function GET(
         postalCode: order.postalCode,
         deliveryNote: order.deliveryNote,
       },
+      // ── Phase 5: seller-supplied shipping/tracking record ──
+      shipping: {
+        courierName: order.courierName,
+        trackingNumber: order.trackingNumber,
+        dispatchDate: order.dispatchDate,
+        estimatedDeliveryDate: order.estimatedDeliveryDate,
+        shippingNote: order.shippingNote,
+      },
+      deliveredAt: order.deliveredAt,
+      // ── Phase 5: secure digital handover content — order-scoped, only
+      //    for digital orders. Never present on physical orders and never
+      //    exposed by any list/product API (explicit selects everywhere). ──
+      deliveryContent: order.product?.itemType !== 'physical' ? order.deliveryContent : null,
+      deliveryContentAt: order.product?.itemType !== 'physical' ? order.deliveryContentAt : null,
       disputeReason: order.disputeReason,
       disputedAt: order.disputedAt,
       createdAt: order.createdAt,

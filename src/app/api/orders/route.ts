@@ -470,7 +470,9 @@ export async function GET(req: NextRequest) {
       total: [...byStatus.values()].reduce((a, b) => a + b, 0),
       pending: OPEN_ORDER_STATUSES.reduce((a, s) => a + (byStatus.get(s) ?? 0), 0),
       processing: FULFILMENT_STATUSES.reduce((a, s) => a + (byStatus.get(s) ?? 0), 0),
-      completed: byStatus.get('completed') ?? 0,
+      // Phase 5: delivered is a successful terminal-adjacent state —
+      // sellers see it in the Completed card (awaiting receipt confirm).
+      completed: (byStatus.get('completed') ?? 0) + (byStatus.get('delivered') ?? 0),
       cancelled: byStatus.get('cancelled') ?? 0,
       refunded: byStatus.get('refunded') ?? 0,
     }
