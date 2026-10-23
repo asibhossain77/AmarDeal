@@ -100,6 +100,10 @@ export async function POST(req: NextRequest) {
             name: true,
             isSeller: true,
             sellerDisabled: true,
+            // Phase 4: direct orders are for Verified Business Sellers
+            // (physical AND digital) — personal digital sellers keep the
+            // Admin Deal / Message workflow only.
+            sellerRole: true,
             admin: { select: { userId: true } },
           },
         },
@@ -120,22 +124,24 @@ export async function POST(req: NextRequest) {
 
     const isPlatformOwned = !!product.seller.admin
 
-    // ── Task 82: Order Now is for PHYSICAL products ──
-    // Non-physical SELLER products are served by the Admin Deal / Message
-    // actions instead. Platform-owned (admin-sold) products keep the
-    // existing direct-order behaviour — the Task 62/81 flow is preserved.
+    // ── Phase 4: Order Now eligibility — physical AND digital products ──
+    // Eligible = platform-owned (admin-sold, Task 62/81 flow preserved) OR
+    // a Verified Business Seller's product (physical or digital). Personal
+    // digital sellers keep the Admin Deal / Message workflow only — they do
+    // not have the order dashboard required to fulfil direct orders.
     // The client hides the button, but THIS is the security boundary:
     // eligibility is re-checked here on every submission.
-    if (!isPlatformOwned && product.itemType !== 'physical') {
+    const isBusinessSeller = product.seller.sellerRole === 'business'
+    if (!isPlatformOwned && !isBusinessSeller) {
       return NextResponse.json(
         { error: 'এই পণ্যটি সরাসরি অর্ডার করা যাবে না — Admin Deal বা মেসেজ ব্যবহার করুন', code: 'ORDER_NOT_ALLOWED' },
         { status: 403 },
       )
     }
 
+    const isPhysicalOrder = product.itemType === 'physical'
     // Physical orders never use SMM-style option packages (enforced at
     // creation); this is defense-in-depth against tampered rows.
-    const isPhysicalOrder = product.itemType === 'physical'
     if (isPhysicalOrder && product.productType === 'multi') {
       return NextResponse.json({ error: 'অবৈধ পণ্য কনফিগারেশন' }, { status: 400 })
     }
@@ -185,9 +191,31 @@ export async function POST(req: NextRequest) {
         ? targetLink.trim().slice(0, 500)
         : null
 
-    // ── Phase 3: physical delivery info — required for physical orders,
-    //    ignored for everything else. Stored on the order so the seller
-    //    can fulfil delivery; visible only to buyer/seller/admin. ──
+    // ── Phase 4: digital fulfilment info — for a Verified Business Seller's
+    //    account/license/subscription products the seller CANNOT deliver
+    //    without the buyer's credentials (game ID etc.), so customerNote is
+    //    REQUIRED — backend-enforced, mirroring the checkout form.
+    //    Platform-owned products keep the legacy flow (never required). ──
+    const FULFILMENT_KINDS = ['account', 'license', 'subscription']
+    if (
+      !isPhysicalOrder &&
+      !isPlatformOwned &&
+      isBusinessSeller &&
+      FULFILMENT_KINDS.includes(product.digitalKind ?? '') &&
+      !note
+    ) {
+      return NextResponse.json(
+        { error: 'অর্ডার পূরণের তথ্য (গেম আইডি / একাউন্ট তথ্য) প্রয়োজন', code: 'FULFILMENT_INFO_REQUIRED' },
+        { status: 400 },
+      )
+    }
+
+    // ── Phase 3: physical delivery info — required for physical orders.
+    //    Phase 4: digital orders store the buyer contact (OPTIONAL — the
+    //    session user is already on the order) so the seller can reach the
+    //    buyer; fulfilment info rides on customerNote. Delivery address
+    //    fields stay null for digital orders. Visible only to
+    //    buyer/seller/admin — never public. ──
     let delivery: {
       buyerName: string | null
       buyerPhone: string | null
@@ -217,6 +245,12 @@ export async function POST(req: NextRequest) {
         postalCode: typeof postalCode === 'string' ? postalCode.trim().slice(0, 20) || null : null,
         deliveryNote: typeof deliveryNote === 'string' ? deliveryNote.trim().slice(0, 500) || null : null,
       }
+    } else {
+      // Digital: optional contact (sanitized, never required, no address)
+      const dName = typeof buyerName === 'string' ? buyerName.trim().slice(0, 120) : ''
+      const dPhone = typeof buyerPhone === 'string' ? buyerPhone.trim().slice(0, 30) : ''
+      if (dName) delivery.buyerName = dName
+      if (dPhone) delivery.buyerPhone = dPhone
     }
 
     // ── Create with order-number collision retry ──
@@ -290,6 +324,19 @@ export async function POST(req: NextRequest) {
     if (!order) {
       return NextResponse.json({ error: 'অর্ডার তৈরি করা যায়নি — আবার চেষ্টা করুন' }, { status: 500 })
     }
+
+    // ── Activity history: creation event (Phase 4 — same event log the
+    //    status transitions, payment submissions and admin actions use) ──
+    await db.marketplaceOrderEvent.create({
+      data: {
+        orderId: order.id,
+        type: 'order_created',
+        toStatus: 'pending_payment',
+        message: `Direct order placed via checkout — ${qty} × ${product.title}${optionName ? ` (${optionName})` : ''}`,
+        actorType: 'user',
+        actorId: userId,
+      },
+    }).catch(() => {})
 
     // ── Notify the seller (existing notification infra — DB + WS + push) ──
     await notifySellerNewOrder({

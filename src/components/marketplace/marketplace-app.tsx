@@ -132,7 +132,7 @@ interface NavItemData {
   onClick?: () => void; href?: string;
 }
 
-function useNavActions(page: 'browse' | 'cart' | 'product', onOpenCategories: () => void) {
+function useNavActions(page: 'browse' | 'cart' | 'product' | 'checkout', onOpenCategories: () => void) {
   return useMemo(() => ({
     home: () => {
       if (page === 'browse') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -467,7 +467,7 @@ function CategorySheet({ open, onClose, active, onSelect, enabledPlatforms, loca
 
 /* ── Fixed bottom navigation — Home · Categories · Nilam · Orders · Cart · Account ──
  * Mobile only (<md). On desktop the persistent sidebar takes over. */
-function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart' | 'product'; onOpenCategories: () => void }) {
+function BottomNav({ page, onOpenCategories }: { page: 'browse' | 'cart' | 'product' | 'checkout'; onOpenCategories: () => void }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const count = useCartStore(selectCartCount);
@@ -620,7 +620,7 @@ function SidebarLangButton({ expanded }: { expanded: boolean }) {
 }
 
 function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSeller }: {
-  page: 'browse' | 'cart' | 'product'; expanded: boolean; onToggle: () => void;
+  page: 'browse' | 'cart' | 'product' | 'checkout'; expanded: boolean; onToggle: () => void;
   onOpenCategories: () => void; onBecomeSeller: () => void;
 }) {
   const t = useT();
@@ -749,7 +749,7 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
  * Radix Sheet provides the close button, backdrop click, Escape key and
  * background scroll lock out of the box. */
 function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller, onAddProduct, isSeller }: {
-  open: boolean; onOpenChange: (v: boolean) => void; page: 'browse' | 'cart' | 'product';
+  open: boolean; onOpenChange: (v: boolean) => void; page: 'browse' | 'cart' | 'product' | 'checkout';
   onOpenCategories: () => void; onBecomeSeller: () => void; onAddProduct: () => void; isSeller: boolean;
 }) {
   const t = useT();
@@ -881,7 +881,21 @@ function MenuDrawer({ open, onOpenChange, page, onOpenCategories, onBecomeSeller
 }
 
 /* ── MarketplaceApp — the shell itself ── */
-export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' }) {
+/* ── Phase 4: Direct checkout — lazy chunk, only loaded for 'page-checkout' ── */
+const CheckoutView = dynamic(
+  () => import('@/components/marketplace/checkout').then((m) => ({ default: m.CheckoutView })),
+  { ssr: false, loading: () => (
+    <div className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted/60" />
+        <div className="h-40 animate-pulse rounded-2xl bg-muted/60" />
+        <div className="h-32 animate-pulse rounded-2xl bg-muted/60" />
+      </div>
+    </div>
+  ) }
+);
+
+export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' | 'checkout' }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
   const user = useAppStore((s) => s.user);
@@ -933,6 +947,16 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' }
      return to the seller profile when that is where the user came from. */
   const handleHeaderBack = useCallback(() => {
     const s = useAppStore.getState();
+    // Checkout back → the product the buyer came from
+    if (s.view === 'page-checkout') {
+      if (s.checkoutDraft?.productId) {
+        s.setProductDetailId(s.checkoutDraft.productId);
+        s.setView('page-product');
+      } else {
+        s.setView('page-marketplace');
+      }
+      return;
+    }
     if (s._prevView === 'page-seller-profile') s.goBack();
     else s.setView('page-marketplace');
   }, []);
@@ -1079,7 +1103,7 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' }
           on BOTH breakpoints — no drawer, no duplicate navigation. */}
       <header className="flex w-full items-center justify-between px-4 py-2.5 sm:px-6 lg:px-8">
         <div className="flex items-center gap-1.5">
-          {page === 'product' ? (
+          {page === 'product' || page === 'checkout' ? (
             <button
               type="button"
               onClick={handleHeaderBack}
@@ -1120,6 +1144,8 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' }
 
       {page === 'product' ? (
         <ProductDetailView />
+      ) : page === 'checkout' ? (
+        <CheckoutView />
       ) : page === 'cart' ? (
         <CartView />
       ) : (

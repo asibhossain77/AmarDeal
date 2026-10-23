@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Locale } from '@/lib/i18n'
 
-export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-cart' | 'page-seller-profile' | 'page-product' | 'page-download' | 'page-auction' | 'page-auction-detail' | 'page-service'
+export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'blog' | 'page-how-it-works' | 'page-fees' | 'page-security' | 'page-faq' | 'page-about' | 'page-privacy' | 'page-terms' | 'page-contact' | 'page-marketplace' | 'page-cart' | 'page-seller-profile' | 'page-product' | 'page-checkout' | 'page-download' | 'page-auction' | 'page-auction-detail' | 'page-service'
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-marketplace-orders' | 'seller-business-profile' | 'seller-withdraw' | 'seller-auctions' | 'my-orders' | 'order-detail'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
@@ -49,6 +49,16 @@ export interface DealPreFill {
   quantity?: number
 }
 
+/* ── Phase 4: Direct checkout draft — what the buyer picked on the
+   product page before the checkout page opens. The checkout page
+   re-fetches the product server-truth via /api/products/[id] and
+   re-validates everything server-side at order creation. ── */
+export interface CheckoutDraft {
+  productId: string
+  optionId?: string | null
+  quantity?: number
+}
+
 export interface DealInfo {
   id: string
   title: string
@@ -79,6 +89,8 @@ interface AppState {
   locale: Locale
   sellerProfileId: string | null
   productDetailId: string | null
+  /* Phase 4: direct-checkout draft (product page → checkout page) */
+  checkoutDraft: CheckoutDraft | null
   /* Auction detail page (/nilam/[id]) */
   auctionDetailId: string | null
   /* Digital product download page (/download/[id]) */
@@ -107,6 +119,7 @@ interface AppState {
   setSellerProfileId: (id: string | null) => void
   setEditingProductId: (id: string | null) => void
   setProductDetailId: (id: string | null) => void
+  setCheckoutDraft: (draft: CheckoutDraft | null) => void
   setAuctionDetailId: (id: string | null) => void
   setDownloadProductId: (id: string | null) => void
   setServiceDetailId: (id: string | null) => void
@@ -138,6 +151,7 @@ export const useAppStore = create<AppState>((set) => ({
   locale: getSavedLocale(),
   sellerProfileId: null,
   productDetailId: null,
+  checkoutDraft: null,
   auctionDetailId: null,
   downloadProductId: null,
   serviceDetailId: null,
@@ -191,6 +205,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSellerProfileId: (sellerProfileId) => set({ sellerProfileId }),
   setEditingProductId: (editingProductId) => set({ editingProductId }),
   setProductDetailId: (productDetailId) => set({ productDetailId }),
+  setCheckoutDraft: (checkoutDraft) => set({ checkoutDraft }),
   setAuctionDetailId: (auctionDetailId) => set({ auctionDetailId }),
   setDownloadProductId: (downloadProductId) => set({ downloadProductId }),
   setServiceDetailId: (serviceDetailId) => set({ serviceDetailId }),

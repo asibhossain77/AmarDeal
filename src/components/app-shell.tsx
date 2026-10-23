@@ -249,6 +249,12 @@ function PageProductDetail() {
   return <MarketplaceApp page="product" />;
 }
 
+function PageCheckout() {
+  /* Phase 4: Direct checkout — same marketplace shell so the buyer never
+     leaves the app chrome between product → checkout → payment. */
+  return <MarketplaceApp page="checkout" />;
+}
+
 function PageAuctionList() {
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
@@ -462,7 +468,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
 
   return (
     <div className="min-h-screen flex flex-col !bg-[#F2F4F7] dark:!bg-background">
-      {!['dashboard', 'admin', 'page-marketplace', 'page-cart', 'page-product'].includes(view) && <Navbar />}
+      {!['dashboard', 'admin', 'page-marketplace', 'page-cart', 'page-product', 'page-checkout'].includes(view) && <Navbar />}
       {view === 'auth' && <AuthView />}
       {view === 'dashboard' && <DashboardView />}
       {view === 'admin' && <AdminView />}
@@ -480,6 +486,7 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
       {view === 'page-cart' && <PageCart />}
       {view === 'page-seller-profile' && <SellerProfileView />}
       {view === 'page-product' && <PageProductDetail />}
+      {view === 'page-checkout' && <PageCheckout />}
       {view === 'page-download' && <DownloadView />}
       {view === 'page-auction' && <PageAuctionList />}
       {view === 'page-auction-detail' && <PageAuctionDetail />}
