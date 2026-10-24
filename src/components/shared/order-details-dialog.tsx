@@ -23,6 +23,12 @@ import {
   CounterpartyAvatar, formatTaka, formatOrderDate, formatOrderDateTime,
 } from './order-utils';
 import { OrderTracker, CopyRow } from './order-tracker';
+import {
+  OrderProtectionSection,
+  type CancellationRequestData,
+  type RefundRequestData,
+  type DisputeData,
+} from './order-protection';
 
 /* ═══════════════════════════════════════════════════════════════
    OrderDetailsDialog — shared compact order details panel.
@@ -68,6 +74,10 @@ export interface OrderDetailData {
   } | null;
   disputeReason?: string | null;
   disputedAt?: string | null;
+  // ── Phase 6: buyer protection payloads (role-scoped by the API) ──
+  cancellationRequest?: CancellationRequestData | null;
+  refundRequest?: RefundRequestData | null;
+  dispute?: DisputeData | null;
   // ── Phase 5: delivery tracking + secure digital handover ──
   shipping?: {
     courierName: string | null;
@@ -151,12 +161,15 @@ export function OrderDetailsDialog({
   order,
   busy,
   onAction,
+  onRefresh,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   order: OrderDetailData | null;
   busy?: boolean;
   onAction: (action: OrderDialogAction, reason?: string, extra?: OrderDialogExtra) => Promise<void> | void;
+  /** Phase 6: called after a protection action so the parent refetches */
+  onRefresh?: () => void;
 }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
@@ -190,12 +203,11 @@ export function OrderDetailsDialog({
   const canVerify = role === 'admin' && order.status === 'pending_payment' && order.paymentStatus === 'awaiting_verification';
   const canRefund = role === 'admin' && order.paymentStatus === 'paid' && (order.status === 'processing' || order.status === 'completed' || order.status === 'queued' || order.status === 'in_progress' || order.status === 'shipped' || order.status === 'out_for_delivery' || order.status === 'delivered');
   const canPay = role === 'buyer' && order.status === 'pending_payment' && order.paymentStatus === 'unpaid';
-  // Phase 3 + 5: buyer may dispute a PAID order through the whole delivery
-  // pipeline until receipt confirmation; only admin resolves disputes.
-  const canDispute = role === 'buyer' && paid
-    && (order.status === 'queued' || order.status === 'processing' || order.status === 'in_progress' || order.status === 'shipped' || order.status === 'out_for_delivery' || order.status === 'delivered');
   const canResolveComplete = role === 'admin' && order.status === 'disputed';
   const canResolveCancel = role === 'admin' && order.status === 'disputed';
+  // Phase 6: buyer/seller disputes with categories moved into the
+  // OrderProtectionSection (better evidence + thread UX) — the legacy
+  // buyer-only inline dispute button is retired.
 
   // ── Phase 5: delivery-flow actions ──
   const canShip = (role === 'seller' || role === 'admin') && isPhysical && order.status === 'processing' && paid;
@@ -206,7 +218,7 @@ export function OrderDetailsDialog({
   // Editing the courier record after the ship action (before delivery)
   const canEditShipping = (role === 'seller' || role === 'admin') && isPhysical && (order.status === 'shipped' || order.status === 'out_for_delivery') && !!order.shipping?.trackingNumber;
 
-  const hasAnyAction = canCancel || canStart || canComplete || canVerify || canRefund || canPay || canDispute || canResolveComplete || canResolveCancel
+  const hasAnyAction = canCancel || canStart || canComplete || canVerify || canRefund || canPay || canResolveComplete || canResolveCancel
     || canShip || canOutForDelivery || canMarkDelivered || canDeliverDigital || canConfirmReceipt;
 
   const closeConfirm = () => { setConfirmAction(null); setReason(''); };
@@ -421,13 +433,37 @@ export function OrderDetailsDialog({
             </a>
           )}
 
-          {/* Phase 3: dispute context */}
-          {order.status === 'disputed' && order.disputeReason && (
+          {/* Phase 3: dispute context — kept for legacy orders without a
+              structured dispute record */}
+          {order.status === 'disputed' && order.disputeReason && !order.dispute && (
             <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:text-red-400">{t('orders.disputeReasonLabel')}</p>
               <p className="mt-1 text-[13px] text-red-700 dark:text-red-300">{order.disputeReason}</p>
             </div>
           )}
+
+          {/* Phase 6: buyer protection — cancellation / refund / dispute.
+              Buyers and sellers act here; admins decide in the dedicated
+              protection panels (read-only context in this dialog). */}
+          <div className="mt-3">
+            <OrderProtectionSection
+              order={{
+                id: order.id,
+                orderNumber: order.orderNumber,
+                status: order.status,
+                paymentStatus: order.paymentStatus,
+                totalAmount: order.totalAmount,
+                refundedAt: order.refundedAt ?? null,
+                productItemType: product?.itemType ?? null,
+                hasProduct: !!product,
+                cancellationRequest: order.cancellationRequest ?? null,
+                refundRequest: order.refundRequest ?? null,
+                dispute: order.dispute ?? null,
+              }}
+              viewerRole={role}
+              onChanged={onRefresh}
+            />
+          </div>
 
           <Separator className="my-3" />
 
@@ -639,13 +675,6 @@ export function OrderDetailsDialog({
                   className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold text-rose-600 hover:bg-rose-500/10 hover:text-rose-600 dark:text-rose-400">
                   <RotateCcw className="h-3.5 w-3.5" />
                   {t('orders.refundOrder')}
-                </Button>
-              )}
-              {canDispute && (
-                <Button size="sm" variant="outline" onClick={() => setConfirmAction('dispute')} disabled={busy}
-                  className="h-9 gap-1.5 rounded-lg text-[13px] font-semibold text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400">
-                  <ShieldAlert className="h-3.5 w-3.5" />
-                  {t('orders.openDispute')}
                 </Button>
               )}
               {canResolveComplete && (

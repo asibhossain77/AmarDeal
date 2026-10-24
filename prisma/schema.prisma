@@ -61,6 +61,7 @@ model User {
   oauthAuthCodes     OAuthAuthorizationCode[]
   marketplaceOrdersAsBuyer  MarketplaceOrder[] @relation("MarketplaceOrderBuyer")
   marketplaceOrdersAsSeller MarketplaceOrder[] @relation("MarketplaceOrderSeller")
+  adminAuditLogs            AdminAuditLog[]
 }
 
 model Admin {
@@ -718,6 +719,10 @@ model MarketplaceOrder {
 
   paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   events        MarketplaceOrderEvent[]
+  // ── Phase 6: buyer protection ──
+  cancellationRequest OrderCancellationRequest?
+  refundRequest       RefundRequest?
+  dispute             OrderDispute?
 
   @@index([userId, createdAt])
   @@index([sellerId, status])
@@ -742,4 +747,137 @@ model MarketplaceOrderEvent {
   createdAt  DateTime @default(now())
 
   @@index([orderId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════
+// Phase 6 — Buyer Protection: cancellation, refunds, disputes.
+// All money movement stays with the EXISTING admin verification
+// flows: a cancellation approval on a PAID order can never cancel
+// the order directly — it can only spawn a RefundRequest, and an
+// order is marked refunded ONLY after the admin records a verified
+// manual refund (reference + proof).
+// ═══════════════════════════════════════════════════════════
+
+// Buyer-initiated cancellation request (seller/admin responds).
+// Eligibility is enforced server-side in src/lib/order-protection.ts:
+// unpaid pending_payment orders cancel directly (existing flow);
+// payment-submitted / paid-but-unfulfilled orders go through here.
+model OrderCancellationRequest {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  order           MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestedById   String
+  requestedByRole String   @default("buyer") // buyer (seller-initiated uses direct cancel)
+  reason          String
+  // pending → approved | rejected
+  status          String   @default("pending")
+  decidedById     String?
+  decidedByRole   String?  // seller | admin
+  decisionNote    String?
+  decidedAt       DateTime?
+  // Set when approval spawned a RefundRequest (order was already paid):
+  // the order itself is only cancelled after the refund is verified.
+  refundRequestId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// Buyer-initiated refund request — one per order (prevents duplicates).
+// Status flow: requested → under_review → approved → processing → refunded
+//                                       └→ rejected (any pre-refunded state)
+// 'refunded' requires refundReference (+ proof) — never set automatically.
+model RefundRequest {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  order           MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestedById   String
+  reason          String
+  // JSON array of evidence objects [{key,fileName,fileSize,fileType}]
+  evidence        String?
+  // Requested amount — validated server-side: 0 < amount <= verified paid total
+  amount          Float
+  // requested | under_review | approved | rejected | processing | refunded
+  status          String   @default("requested")
+  adminNote       String?  // rejection reason / decision note (buyer-visible)
+  infoRequest     String?  // admin's "additional information needed" note
+  reviewedById    String?
+  reviewedAt      DateTime?
+  refundMethod    String?  // manual channel used (bKash/Nagad/bank…)
+  refundReference String?  // transaction id of the ACTUAL manual refund
+  refundProof     String?  // JSON array — screenshot/proof of the manual refund
+  refundedAt      DateTime?
+  cancellationRequestId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+// Order dispute with a timestamped two-sided evidence thread.
+// Buyer AND seller can raise one per order. While a dispute is open on a
+// not-yet-completed order, the order itself carries status 'disputed'
+// (existing vocabulary); on completion-stage orders the record stands alone.
+model OrderDispute {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  order         MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  raisedById    String
+  raisedByRole  String   // buyer | seller
+  // Order status before the dispute flipped it to 'disputed' — lets an
+  // admin cleanly resume fulfilment when a dispute is rejected.
+  preDisputeStatus String?
+  // item_not_received | not_as_described | damaged_physical | incorrect_digital | other
+  category      String   @default("other")
+  description   String
+  // JSON array of evidence objects [{key,fileName,fileSize,fileType}]
+  evidence      String?
+  // open | under_review | resolved | rejected
+  status        String   @default("open")
+  resolution    String?  // admin resolution notes
+  // refund | cancel | complete | rejected | none
+  outcome       String?
+  resolvedById  String?
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages      OrderDisputeMessage[]
+
+  @@index([status, createdAt])
+}
+
+// Timestamped dispute conversation — descriptions, screenshots, evidence
+// from both parties plus the reviewing admin.
+model OrderDisputeMessage {
+  id          String   @id @default(cuid())
+  disputeId   String
+  dispute     OrderDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  senderId    String
+  senderRole  String   // buyer | seller | admin
+  text        String
+  // JSON array of attachment objects [{key,fileName,fileSize,fileType}]
+  attachments String?
+  createdAt   DateTime @default(now())
+
+  @@index([disputeId, createdAt])
+}
+
+// Audit trail for every sensitive admin decision (refund/cancellation/
+// dispute actions, forced order transitions). Rows are write-once.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  adminName  String?
+  action     String   // e.g. refund_approve, refund_completed, dispute_resolve
+  targetType String   // refund_request | cancellation_request | dispute | order
+  targetId   String?
+  orderId    String?
+  details    String?  // JSON payload snapshot
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([adminId, createdAt])
 }

@@ -51,6 +51,10 @@ const AdminAffiliatePayoutsPanel = dynamic(() => import('./admin-affiliate-payou
 const AdminSellerWithdrawalsPanel = dynamic(() => import('./admin-seller-withdrawals-panel').then(m => ({ default: m.AdminSellerWithdrawalsPanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplacePanel = dynamic(() => import('./marketplace-panel').then(m => ({ default: m.AdminMarketplacePanel })), { loading: () => <PanelLoader /> });
 const AdminMarketplaceOrdersPanel = dynamic(() => import('./admin-marketplace-orders-panel').then(m => ({ default: m.AdminMarketplaceOrdersPanel })), { loading: () => <PanelLoader /> });
+const AdminOrderCancellationsPanel = dynamic(() => import('./admin-order-cancellations-panel').then(m => ({ default: m.AdminOrderCancellationsPanel })), { loading: () => <PanelLoader /> });
+const AdminRefundsPanel = dynamic(() => import('./admin-refunds-panel').then(m => ({ default: m.AdminRefundsPanel })), { loading: () => <PanelLoader /> });
+const AdminOrderDisputesPanel = dynamic(() => import('./admin-order-disputes-panel').then(m => ({ default: m.AdminOrderDisputesPanel })), { loading: () => <PanelLoader /> });
+const AdminOrderAuditPanel = dynamic(() => import('./admin-order-audit-panel').then(m => ({ default: m.AdminOrderAuditPanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
@@ -467,7 +471,7 @@ function DashboardStatsPanel() {
   const role = user?.adminRole;
   const staffPerms = new Set(user?.permissions ?? []);
   const ALWAYS = new Set(['dashboard', 'profile']);
-  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders']);
+  const SUPPORT_ALLOWED = new Set(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders','order-cancellations','refunds','order-disputes','order-audit']);
 
   const canAccess = (target: string) => {
     if (role === 'super_admin') return true;
@@ -4321,6 +4325,14 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminMarketplacePanel />;
     case 'marketplace-orders':
       return <AdminMarketplaceOrdersPanel />;
+    case 'order-cancellations':
+      return <AdminOrderCancellationsPanel />;
+    case 'refunds':
+      return <AdminRefundsPanel />;
+    case 'order-disputes':
+      return <AdminOrderDisputesPanel />;
+    case 'order-audit':
+      return <AdminOrderAuditPanel />;
     case 'pending-products':
       return <PendingProductsPanel />;
     case 'services':
@@ -4353,7 +4365,7 @@ export function AdminMain() {
 
   // ── Role-based permission guard ──
   const ALWAYS_ALLOWED = new Set<string>(['dashboard', 'profile']);
-  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders']);
+  const SUPPORT_PANELS = new Set<string>(['dashboard','profile','payment-verify','payouts','seller-withdrawals','admin-calls','disputes','all-deals','contact-info','blog','marketplace-orders','order-cancellations','refunds','order-disputes','order-audit']);
 
   const hasPanelAccess = (panel: string): boolean => {
     if (!user || user.adminRole === 'super_admin') return true;

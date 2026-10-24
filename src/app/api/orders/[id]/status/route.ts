@@ -204,6 +204,37 @@ export async function PATCH(
     }).catch(() => {})
 
     // ── Post-transition side effects ──
+    // Phase 6: the legacy buyer 'dispute' action also creates a structured
+    // OrderDispute row so all dispute history lives in one place.
+    if (action === 'dispute') {
+      await db.orderDispute.upsert({
+        where: { orderId: order.id },
+        create: {
+          orderId: order.id,
+          raisedById: userId,
+          raisedByRole: role === 'buyer' ? 'buyer' : 'seller',
+          preDisputeStatus: null,
+          category: 'other',
+          description: reason?.trim().slice(0, 2000) || 'বিরোধ দাখিল হয়েছে',
+          status: 'open',
+        },
+        update: {},
+      }).catch(() => {})
+    }
+    // Phase 6: admin dispute resolution via the legacy actions closes the
+    // structured dispute record with the matching outcome.
+    if (action === 'resolve_complete' || action === 'resolve_cancel') {
+      await db.orderDispute.updateMany({
+        where: { orderId: order.id, status: { in: ['open', 'under_review'] } },
+        data: {
+          status: 'resolved',
+          outcome: action === 'resolve_complete' ? 'complete' : 'cancel',
+          resolution: (reason?.trim().slice(0, 1000)) || (action === 'resolve_complete' ? 'অর্ডার সম্পন্ন করে মীমাংসা' : 'অর্ডার বাতিল করে মীমাংসা'),
+          resolvedById: userId,
+          resolvedAt: new Date(),
+        },
+      }).catch(() => {})
+    }
     if (action === 'complete' || action === 'resolve_complete' || action === 'deliver_digital') {
       // paid digital-file order → grant the buyer download entitlement
       // (Phase 5: granted on DELIVERY, not only on legacy completion)

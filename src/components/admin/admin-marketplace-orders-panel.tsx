@@ -436,6 +436,7 @@ export function AdminMarketplaceOrdersPanel() {
         order={detail}
         busy={actionBusy || detailBusy}
         onAction={handleAction}
+        onRefresh={() => { if (detail) openDetailsRefresh(detail.id); refresh(); }}
       />
     </div>
   );

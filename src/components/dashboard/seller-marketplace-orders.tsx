@@ -122,6 +122,16 @@ export function SellerMarketplaceOrders() {
     queryClient.invalidateQueries({ queryKey: ['seller-marketplace-orders'] });
   };
 
+  // Reload the currently open detail dialog (Phase 6 protection actions)
+  const reloadDetail = async () => {
+    if (!detail) return;
+    try {
+      const res = await fetch(`/api/marketplace/orders/${detail.id}`);
+      const json = await res.json();
+      if (res.ok && json.order) setDetail(json.order as OrderDetailData);
+    } catch { /* keep stale dialog content */ }
+  };
+
   const handleAction = async (action: OrderDialogAction, reason?: string, extra?: OrderDialogExtra) => {
     if (!detail || action === 'pay_now') return;
     setActionBusy(true);
@@ -455,6 +465,7 @@ export function SellerMarketplaceOrders() {
         order={detail}
         busy={actionBusy || detailBusy}
         onAction={handleAction}
+        onRefresh={() => { reloadDetail(); refreshList(); }}
       />
     </div>
   );

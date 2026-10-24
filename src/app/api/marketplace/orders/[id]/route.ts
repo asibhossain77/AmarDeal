@@ -19,6 +19,36 @@ import { getAdminFromRequest } from '@/lib/admin-guard'
    sent to admins.
    ═══════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════
+   Phase 6: refund payload is role-scoped — the buyer sees the full
+   review trail (it is their money), the seller only learns that a
+   refund is pending + how much (the reason/notes stay private),
+   admins see everything.
+   ═══════════════════════════════════════════════════════════════ */
+type RefundRow = {
+  id: string; status: string; reason: string; amount: number
+  adminNote: string | null; infoRequest: string | null
+  refundMethod: string | null; refundReference: string | null
+  refundedAt: Date | null; evidence: string | null; createdAt: Date
+} | null
+
+function buildRefundPayload(
+  refund: RefundRow,
+  viewerRole: 'admin' | 'seller' | 'buyer',
+) {
+  if (!refund) return null
+  if (viewerRole === 'seller') {
+    return {
+      id: refund.id,
+      status: refund.status,
+      amount: refund.amount,
+      refundedAt: refund.refundedAt,
+      createdAt: refund.createdAt,
+    }
+  }
+  return refund
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -32,6 +62,32 @@ export async function GET(
       where: { id },
       include: {
         events: { orderBy: { createdAt: 'asc' } },
+        // ── Phase 6: buyer protection records ──
+        cancellationRequest: {
+          select: {
+            id: true, status: true, reason: true, requestedByRole: true,
+            decidedByRole: true, decisionNote: true, decidedAt: true,
+            refundRequestId: true, createdAt: true,
+          },
+        },
+        refundRequest: {
+          select: {
+            id: true, status: true, reason: true, amount: true, adminNote: true,
+            infoRequest: true, refundMethod: true, refundReference: true,
+            refundedAt: true, evidence: true, createdAt: true,
+          },
+        },
+        dispute: {
+          include: {
+            messages: {
+              orderBy: { createdAt: 'asc' },
+              select: {
+                id: true, senderId: true, senderRole: true, text: true,
+                attachments: true, createdAt: true,
+              },
+            },
+          },
+        },
         service: {
           select: {
             id: true, name: true, category: true, description: true,
@@ -151,6 +207,10 @@ export async function GET(
       deliveryContentAt: order.product?.itemType !== 'physical' ? order.deliveryContentAt : null,
       disputeReason: order.disputeReason,
       disputedAt: order.disputedAt,
+      // ── Phase 6: buyer protection payloads (role-scoped) ──
+      cancellationRequest: order.cancellationRequest,
+      refundRequest: buildRefundPayload(order.refundRequest, viewerRole),
+      dispute: order.dispute,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       events: order.events.map((e) => ({
