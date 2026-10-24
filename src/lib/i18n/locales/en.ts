@@ -72,14 +72,23 @@ export const en: Record<TranslationKey, string> = {
   'settings.serverError': 'Server error',
   'settings.failed': 'Failed',
 
-  // ── Hero (minimal — title, description, three CTAs) ──
-  'hero.headline.start': 'Shopping, Admin Deal &',
-  'hero.headline.highlight': 'business verification',
-  'hero.headline.end': ' in one place',
-  'hero.subtitle': 'Find products and digital services, manage deals, and learn about Bangladeshi brands with Midman.',
-  'hero.cta.marketplace': 'Marketplace',
-  'hero.cta.adminDeal': 'Start Admin Deal',
-  'hero.cta.verify': 'Verify Bangladeshi Brands',
+  // ── Hero (headline, description, trust chips + four action cards) ──
+  'hero.headline.start': 'Trade Smarter,',
+  'hero.headline.highlight': 'Grow Together',
+  'hero.headline.end': '',
+  'hero.subtitle': 'Midman connects buyers, sellers and trusted businesses — making every deal safer, easier and more transparent.',
+  'hero.trust.escrow': 'Escrow-secured transactions',
+  'hero.trust.verified': 'Verified businesses & brands',
+  'hero.cards.navLabel': 'Primary services',
+  'hero.cards.dashboard.title': 'Dashboard / Login Registration',
+  'hero.cards.dashboard.description': 'Access your account or create a new one.',
+  'hero.cards.marketplace.title': 'Marketplace',
+  'hero.cards.marketplace.description': 'Explore digital products and services from trusted sellers.',
+  'hero.cards.adminDeal.title': 'Admin Deal',
+  'hero.cards.adminDeal.description': 'Manage deals and requests with a secure transaction process.',
+  'hero.cards.verify.title': 'Midman Verify',
+  'hero.cards.verify.description': 'Build trust with business profiles, brand information, and verification.',
+  'hero.cards.verify.external': '(opens in a new tab)',
 
   // ── Footer ──
   'footer.defaultDescription': "Bangladesh's most trusted escrow platform. We ensure safe online transactions so you can buy and sell with confidence.",

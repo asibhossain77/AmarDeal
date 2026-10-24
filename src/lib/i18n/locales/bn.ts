@@ -70,14 +70,23 @@ export const bn = {
   'settings.serverError': 'সার্ভারে সমস্যা',
   'settings.failed': 'ব্যর্থ হয়েছে',
 
-  // ── Hero (minimal — title, description, three CTAs) ──
-  'hero.headline.start': 'কেনাকাটা, অ্যাডমিন ডিল ও',
-  'hero.headline.highlight': 'ব্যবসার পরিচয় যাচাই',
-  'hero.headline.end': ' এক জায়গায়',
-  'hero.subtitle': 'পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, ডিল পরিচালনা করুন এবং বাংলাদেশি ব্র্যান্ড সম্পর্কে জানুন Midman-এর মাধ্যমে।',
-  'hero.cta.marketplace': 'Marketplace',
-  'hero.cta.adminDeal': 'Admin Deal করুন',
-  'hero.cta.verify': 'বাংলাদেশের ব্র্যান্ড যাচাই করুন',
+  // ── Hero (headline, description, trust chips + four action cards) ──
+  'hero.headline.start': 'স্মার্ট কেনাবেচা,',
+  'hero.headline.highlight': 'একসাথে এগিয়ে যান',
+  'hero.headline.end': '',
+  'hero.subtitle': 'Midman ক্রেতা, বিক্রেতা ও বিশ্বস্ত ব্যবসায়িক প্রতিষ্ঠানকে এক প্ল্যাটফর্মে যুক্ত করে — প্রতিটি ডিল আরও নিরাপদ, সহজ ও স্বচ্ছ করে।',
+  'hero.trust.escrow': 'এসক্রো-সুরক্ষিত লেনদেন',
+  'hero.trust.verified': 'যাচাইকৃত ব্যবসা ও ব্র্যান্ড',
+  'hero.cards.navLabel': 'প্রধান সেবাসমূহ',
+  'hero.cards.dashboard.title': 'ড্যাশবোর্ড / লগইন রেজিস্ট্রেশন',
+  'hero.cards.dashboard.description': 'আপনার অ্যাকাউন্টে প্রবেশ করুন অথবা নতুন অ্যাকাউন্ট তৈরি করুন।',
+  'hero.cards.marketplace.title': 'মার্কেটপ্লেস',
+  'hero.cards.marketplace.description': 'বিশ্বস্ত বিক্রেতাদের ডিজিটাল পণ্য ও সার্ভিস ঘুরে দেখুন।',
+  'hero.cards.adminDeal.title': 'অ্যাডমিন ডিল',
+  'hero.cards.adminDeal.description': 'নিরাপদ লেনদেন প্রক্রিয়ায় ডিল ও রিকোয়েস্ট পরিচালনা করুন।',
+  'hero.cards.verify.title': 'মিডম্যান ভেরিফাই',
+  'hero.cards.verify.description': 'ব্যবসায়িক প্রোফাইল, ব্র্যান্ড তথ্য ও ভেরিফিকেশনের মাধ্যমে আস্থা তৈরি করুন।',
+  'hero.cards.verify.external': '(নতুন ট্যাবে খোলে)',
 
   // ── Footer ──
   'footer.defaultDescription': 'বাংলাদেশের একটি নিরাপদ এসক্রো প্ল্যাটফর্ম। আমরা নিরাপদ অনলাইন লেনদেন নিশ্চিত করতে সাহায্য করি।',
