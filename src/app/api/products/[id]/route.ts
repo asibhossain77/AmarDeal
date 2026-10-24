@@ -41,7 +41,7 @@ export async function GET(
         where: { id },
         include: {
           seller: {
-            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true, admin: { select: { userId: true } } },
+            select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true, sellerDisabled: true, admin: { select: { userId: true } } },
           },
           options: OPTIONS_SELECT,
         },
@@ -54,7 +54,7 @@ export async function GET(
         select: {
           id: true, title: true, description: true, price: true, category: true, image: true,
           status: true, createdAt: true, updatedAt: true, sellerId: true,
-          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true } },
+          seller: { select: { id: true, name: true, imageLink: true, email: true, whatsappNumber: true, sellerRole: true, businessVerified: true, sellerDisabled: true } },
         },
       })
     }
@@ -125,6 +125,9 @@ export async function GET(
           whatsappNumber: product.seller.whatsappNumber,
           sellerRole: (product.seller as { sellerRole?: string }).sellerRole ?? 'personal',
           businessVerified: (product.seller as { businessVerified?: boolean }).businessVerified ?? false,
+          // Phase 8: suspended sellers cannot take orders — the UI hides the
+          // order action and the order route enforces it server-side.
+          isActive: (product.seller as { sellerDisabled?: boolean }).sellerDisabled !== true,
         },
       },
     })

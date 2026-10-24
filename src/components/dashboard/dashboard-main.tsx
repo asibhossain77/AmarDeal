@@ -30,6 +30,7 @@ import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
 import { useT } from '@/lib/i18n';
 import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, BusinessProfilePanel } from '@/components/seller/seller-main';
+import { SellerReviewsPanel } from '@/components/seller/seller-reviews-panel';
 import { WithdrawPanel } from '@/components/seller/withdraw-panel';
 import { AuctionsPanel } from '@/components/seller/auctions-panel';
 import { SellerMarketplaceOrders } from './seller-marketplace-orders';
@@ -535,7 +536,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail';
 
   // Show seller disabled message
-  if (user?.sellerDisabled && ['seller-orders', 'seller-marketplace-orders', 'seller-analytics', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-auctions'].includes(dashboardPanel)) {
+  if (user?.sellerDisabled && ['seller-orders', 'seller-marketplace-orders', 'seller-analytics', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-reviews', 'seller-auctions'].includes(dashboardPanel)) {
     return (
       <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
@@ -591,6 +592,7 @@ export function DashboardMain() {
       {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
       {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}
       {dashboardPanel === 'seller-business-profile' && <BusinessProfilePanel />}
+      {dashboardPanel === 'seller-reviews' && <SellerReviewsPanel />}
       {dashboardPanel === 'seller-withdraw' && <WithdrawPanel />}
       {dashboardPanel === 'seller-auctions' && <AuctionsPanel />}
     </div>

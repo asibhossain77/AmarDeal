@@ -44,7 +44,7 @@ import { fbqTrack, genMetaEventId } from '@/lib/meta-client';
 import { CATEGORIES, CATEGORY_BG } from '@/components/landing/marketplace-section';
 
 interface OrderProductSeller {
-  id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; sellerRole?: string | null; businessVerified?: boolean;
+  id: string; name: string; email?: string; imageLink?: string | null; whatsappNumber?: string | null; sellerRole?: string | null; businessVerified?: boolean; isActive?: boolean;
 }
 interface OrderProductOption {
   id: string; name: string; price: number; isAvailable: boolean; sortOrder: number;
@@ -256,6 +256,9 @@ export function ProductDetailView() {
   };
 
   const waNumber = product?.seller.whatsappNumber || null;
+  // Phase 8: suspended sellers cannot take orders — hide the order action
+  // (the order route enforces the same rule server-side).
+  const sellerActive = product ? product.seller.isActive !== false : true;
   const waHref = product ? waMeLink(waNumber, locale === 'bn'
     ? `হাই! আমি Midman মার্কেটপ্লেসে আপনার "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''} পণ্যটি${qty > 1 ? ` (${qty} পিস)` : ''} দেখলাম। বিস্তারিত জানতে চাই।`
     : `Hi! I saw your product "${product.title}"${selectedOption ? ` (${selectedOption.name})` : ''}${qty > 1 ? ` (quantity: ${qty})` : ''} on the Midman marketplace. I'd like to know more about it.`) : null;
@@ -268,6 +271,7 @@ export function ProductDetailView() {
      Orders dashboard, completely separate from Admin Deals. */
   const handleBuyNow = () => {
     if (!product) return;
+    if (!sellerActive) { toast.error(t('sellerProfile.storeSuspendedDesc')); return; }
     if (!user) { toast.error(t('marketplace.loginRequired')); setView('auth'); return; }
     /* Multi-price: an option MUST be selected before ordering */
     if (isMulti && !selectedOption) { toast.error(t('marketplace.selectPackageHint')); return; }
@@ -785,7 +789,7 @@ export function ProductDetailView() {
                     dedicated checkout page; creates a NORMAL marketplace order
                     (never a Deal); the seller sees it in their Dashboard Orders
                     page. Eligibility is re-validated server-side on submit. */}
-                {canOrderNow && (
+                {canOrderNow && sellerActive && (
                   <Button
                     onClick={handleBuyNow}
                     disabled={outOfStock || (isMulti && !selectedOption)}

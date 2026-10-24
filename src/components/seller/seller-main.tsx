@@ -286,19 +286,30 @@ export function BusinessProfilePanel() {
   const t = useT();
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
+  const locale = useAppStore((s) => s.locale);
   const [businessName, setBusinessName] = useState('');
   const [businessBio, setBusinessBio] = useState('');
+  const [businessCategory, setBusinessCategory] = useState('');
+  const [publicContact, setPublicContact] = useState('');
+  const [storeLogo, setStoreLogo] = useState<string | null>(null);
   const [profileName, setProfileName] = useState('');
   const [productCount, setProductCount] = useState(0);
+  const [pendingNameChange, setPendingNameChange] = useState<{ businessName: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/seller/profile').then(r => r.json()).then(data => {
+  const loadProfile = useCallback(async () => {
+    try {
+      const res = await fetch('/api/seller/profile');
+      const data = await res.json();
       if (data.user) {
         setBusinessName(data.user.businessName || '');
         setBusinessBio(data.user.businessBio || '');
+        setBusinessCategory(data.user.businessCategory || '');
+        setPublicContact(data.user.publicContact || '');
+        setStoreLogo(data.user.storeLogo || null);
         setProfileName(data.user.name || '');
         // Sync fresh seller role fields into the store — the cached user object
         // can be stale after an admin approves a business application.
@@ -308,8 +319,35 @@ export function BusinessProfilePanel() {
         }
       }
       setProductCount(data.productCount || 0);
-    }).catch(() => {}).finally(() => setLoading(false));
+      setPendingNameChange(data.pendingNameChange || null);
+    } catch { /* keep current */ } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      if (storeLogo) fd.append('oldImage', storeLogo);
+      const res = await fetch('/api/upload/profile-image', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setStoreLogo(data.url);
+        toast.success(t('seller.storeLogo') + ' ✓');
+      } else {
+        toast.error(data.error || t('seller.profileSaveFailed'));
+      }
+    } catch {
+      toast.error(t('seller.profileSaveFailed'));
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -317,12 +355,22 @@ export function BusinessProfilePanel() {
       const res = await fetch('/api/seller/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, businessBio, name: profileName }),
+        body: JSON.stringify({
+          businessName, businessBio, name: profileName,
+          businessCategory: businessCategory || null,
+          storeLogo: storeLogo || null,
+          publicContact,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success(t('seller.profileSaved'));
+        if (data.nameChangePending) {
+          toast.info(data.message || t('seller.nameApprovalNote'));
+        } else {
+          toast.success(t('seller.profileSaved'));
+        }
         setEditing(false);
+        await loadProfile();
         if (data.user && user) {
           setUser({ ...user, name: data.user.name, businessName: data.user.businessName, businessBio: data.user.businessBio } as any);
         }
@@ -401,11 +449,28 @@ export function BusinessProfilePanel() {
         )}
       </div>
 
+      {/* Pending verified-name change banner (Phase 8) */}
+      {pendingNameChange && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t('seller.nameChangePending')}</p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                {t('seller.pendingName')}: <span className="font-semibold">{pendingNameChange.businessName}</span> — {t('seller.nameApprovalNote')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <SolidCard className="space-y-5">
-        {/* Header with avatar */}
+        {/* Header with store logo (falls back to profile photo) */}
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 overflow-hidden">
-            {user?.imageLink ? (
+            {storeLogo ? (
+              <img src={cdnUrl(storeLogo) || ''} alt={displayName} className="h-16 w-16 rounded-2xl object-cover" />
+            ) : user?.imageLink ? (
               <img src={cdnUrl(user.imageLink) || ''} alt={user.name} className="h-16 w-16 rounded-2xl object-cover" />
             ) : (
               <Store className="h-7 w-7 text-primary" />
@@ -431,6 +496,38 @@ export function BusinessProfilePanel() {
 
         {editing ? (
           <div className="space-y-4 pt-2">
+            {/* Store logo upload (Phase 8) */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.storeLogo')}</Label>
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 rounded-xl border border-border/50 bg-muted/40 overflow-hidden flex items-center justify-center">
+                  {uploadingLogo ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : storeLogo ? (
+                    <img src={cdnUrl(storeLogo) || ''} alt="logo" className="h-14 w-14 object-cover" />
+                  ) : (
+                    <Store className="h-6 w-6 text-muted-foreground/40" />
+                  )}
+                </div>
+                <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
+                  <Upload className="h-3.5 w-3.5" />
+                  {t('seller.storeLogo')}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={uploadingLogo}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleLogoUpload(f);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('seller.storeLogoHint')}</p>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">{t('seller.yourName')}</Label>
               <Input
@@ -448,6 +545,30 @@ export function BusinessProfilePanel() {
                 placeholder={t('seller.businessNamePh')}
                 className="h-11 rounded-xl"
               />
+              <p className="text-xs text-amber-600 dark:text-amber-400">{t('seller.nameApprovalNote')}</p>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.businessCategory')}</Label>
+              <select
+                value={businessCategory}
+                onChange={(e) => setBusinessCategory(e.target.value)}
+                className="w-full h-11 rounded-xl border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30"
+              >
+                <option value="">{t('seller.businessCategoryPh')}</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.key} value={c.key}>{locale === 'bn' ? c.bn : c.en}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">{t('seller.publicContact')}</Label>
+              <Input
+                value={publicContact}
+                onChange={(e) => setPublicContact(e.target.value)}
+                placeholder={t('seller.publicContactPh')}
+                className="h-11 rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">{t('seller.publicContactHint')}</p>
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium text-foreground">{t('seller.businessBio')}</Label>
@@ -478,6 +599,20 @@ export function BusinessProfilePanel() {
                 <p className="text-sm font-semibold text-foreground">{displayName}</p>
               </div>
             )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl bg-muted/40 p-4 space-y-1">
+                <p className="text-xs text-muted-foreground">{t('seller.businessCategory')}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {businessCategory
+                    ? (() => { const c = CATEGORIES.find(x => x.key === businessCategory); return c ? (locale === 'bn' ? c.bn : c.en) : businessCategory; })()
+                    : '—'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-muted/40 p-4 space-y-1">
+                <p className="text-xs text-muted-foreground">{t('seller.publicContact')}</p>
+                <p className="text-sm font-semibold text-foreground break-words">{publicContact || '—'}</p>
+              </div>
+            </div>
             {businessBio ? (
               <div className="rounded-xl bg-muted/40 p-4 space-y-1">
                 <p className="text-xs text-muted-foreground">{t('seller.businessBio')}</p>

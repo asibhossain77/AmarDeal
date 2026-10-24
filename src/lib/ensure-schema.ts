@@ -531,13 +531,47 @@ const TABLE_DDL: string[] = [
     "id" TEXT NOT NULL PRIMARY KEY,
     "sellerId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "orderId" TEXT,
     "rating" INTEGER NOT NULL,
     "comment" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'published',
+    "sellerReply" TEXT,
+    "sellerReplyAt" DATETIME,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     CONSTRAINT "SellerReview_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "SellerReview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 )`,
+  `CREATE TABLE IF NOT EXISTS "ReviewReport" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "reviewId" TEXT NOT NULL,
+    "reporterId" TEXT,
+    "reason" TEXT NOT NULL,
+    "details" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'open',
+    "resolution" TEXT,
+    "adminNote" TEXT,
+    "reviewedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "ReviewReport_reviewId_fkey" FOREIGN KEY ("reviewId") REFERENCES "SellerReview" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "ReviewReport_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+)`,
+  `CREATE INDEX IF NOT EXISTS "ReviewReport_status_createdAt_idx" ON "ReviewReport"("status", "createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "ReviewReport_reviewId_idx" ON "ReviewReport"("reviewId")`,
+  `CREATE TABLE IF NOT EXISTS "StoreChangeRequest" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "sellerId" TEXT NOT NULL,
+    "changes" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "adminNote" TEXT,
+    "reviewedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "StoreChangeRequest_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+)`,
+  `CREATE INDEX IF NOT EXISTS "StoreChangeRequest_sellerId_status_idx" ON "StoreChangeRequest"("sellerId", "status")`,
+  `CREATE INDEX IF NOT EXISTS "StoreChangeRequest_status_createdAt_idx" ON "StoreChangeRequest"("status", "createdAt")`,
   `CREATE TABLE IF NOT EXISTS "SellerWithdrawal" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
@@ -919,8 +953,12 @@ const COLUMN_CHECKS: [string, string, string][] = [
   ['SellerFollower', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
   ['SellerReview', 'sellerId', `TEXT NOT NULL DEFAULT ''`],
   ['SellerReview', 'userId', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerReview', 'orderId', `TEXT`],
   ['SellerReview', 'rating', `INTEGER NOT NULL DEFAULT 0`],
   ['SellerReview', 'comment', `TEXT NOT NULL DEFAULT ''`],
+  ['SellerReview', 'status', `TEXT NOT NULL DEFAULT 'published'`],
+  ['SellerReview', 'sellerReply', `TEXT`],
+  ['SellerReview', 'sellerReplyAt', `DATETIME`],
   ['SellerReview', 'createdAt', `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`],
   ['SellerReview', 'updatedAt', `DATETIME NOT NULL DEFAULT ''`],
   ['SellerWithdrawal', 'userId', `TEXT NOT NULL DEFAULT ''`],
@@ -964,6 +1002,9 @@ const COLUMN_CHECKS: [string, string, string][] = [
   ['User', 'businessBio', `TEXT`],
   ['User', 'businessName', `TEXT`],
   ['User', 'whatsappNumber', `TEXT`],
+  ['User', 'businessCategory', `TEXT`],
+  ['User', 'storeLogo', `TEXT`],
+  ['User', 'publicContact', `TEXT`],
   ['User', 'sellerRole', `TEXT NOT NULL DEFAULT 'personal'`],
   ['User', 'businessVerified', `BOOLEAN NOT NULL DEFAULT 0`],
 ];
@@ -1035,6 +1076,30 @@ async function runEnsureSchema(): Promise<EnsureSchemaReport> {
   }
 
   report.alreadyUpToDate = report.tablesCreated.length === 0 && report.columnsAdded.length === 0 && report.errors.length === 0
+
+  // 3. Phase 8 — SellerReview unique-constraint migration:
+  //    (sellerId, userId) → (sellerId, userId, orderId) so one verified-purchase
+  //    review per eligible order is possible. Legacy rows keep orderId NULL.
+  try {
+    const idxList = await db.$queryRawUnsafe<Array<{ name: string }>>(
+      `PRAGMA index_list("SellerReview")`
+    )
+    const hasOldUnique = idxList.some(r => r.name === 'SellerReview_sellerId_userId_key')
+    if (hasOldUnique) {
+      await db.$executeRawUnsafe(`DROP INDEX IF EXISTS "SellerReview_sellerId_userId_key"`)
+      await db.$executeRawUnsafe(
+        `CREATE UNIQUE INDEX IF NOT EXISTS "SellerReview_sellerId_userId_orderId_key" ON "SellerReview"("sellerId", "userId", "orderId")`
+      )
+      report.columnsAdded.push('SellerReview:unique-per-order')
+    } else {
+      await db.$executeRawUnsafe(
+        `CREATE UNIQUE INDEX IF NOT EXISTS "SellerReview_sellerId_userId_orderId_key" ON "SellerReview"("sellerId", "userId", "orderId")`
+      )
+    }
+  } catch (err) {
+    report.errors.push(`SellerReview index migration: ${err instanceof Error ? err.message.slice(0, 120) : String(err)}`)
+  }
+
   if (report.tablesCreated.length || report.columnsAdded.length || report.errors.length) {
     console.log(
       `[schema-heal] tables: ${report.tablesCreated.join(', ') || 'none'} | columns: ${report.columnsAdded.join(', ') || 'none'} | errors: ${report.errors.length}`

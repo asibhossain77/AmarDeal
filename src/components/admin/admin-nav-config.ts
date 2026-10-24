@@ -31,6 +31,7 @@ import {
   ScrollText,
   Percent,
   PieChart,
+  Star,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -55,6 +56,7 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { label: 'সেলার উত্তোলন', icon: Wallet, panel: 'seller-withdrawals' },
       { label: 'লাইভ চ্যাট', icon: Headphones, panel: 'admin-calls' },
       { label: 'বিরোধ ম্যানেজমেন্ট', icon: AlertTriangle, panel: 'disputes' },
+      { label: 'রিভিউ মডারেশন', icon: Star, panel: 'review-moderation' },
       { label: 'অর্ডার বাতিল আবেদন', icon: Ban, panel: 'order-cancellations' },
       { label: 'রিফান্ড ম্যানেজমেন্ট', icon: RotateCcw, panel: 'refunds' },
       { label: 'অর্ডার বিরোধ', icon: ShieldAlert, panel: 'order-disputes' },
@@ -119,6 +121,7 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
         { label: t('adminNav.sellerWithdrawals'), icon: Wallet, panel: 'seller-withdrawals' },
         { label: t('adminNav.liveChat'), icon: Headphones, panel: 'admin-calls' },
         { label: t('adminNav.disputeManagement'), icon: AlertTriangle, panel: 'disputes' },
+        { label: t('adminNav.reviewModeration'), icon: Star, panel: 'review-moderation' },
         { label: t('adminNav.orderCancellations'), icon: Ban, panel: 'order-cancellations' },
         { label: t('adminNav.refunds'), icon: RotateCcw, panel: 'refunds' },
         { label: t('adminNav.orderDisputes'), icon: ShieldAlert, panel: 'order-disputes' },

@@ -155,5 +155,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // skip services on db error
   }
 
-  return [...staticPages, ...categoryPages, ...productPages, ...servicePages];
+  // Verified seller storefronts (Phase 8) — active sellers only
+  let sellerPages: MetadataRoute.Sitemap = [];
+  try {
+    const sellers = await db.user.findMany({
+      where: { isSeller: true, sellerDisabled: false },
+      select: { id: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 200,
+    });
+    sellerPages = sellers.map(sl => ({
+      url: `${baseUrl}/s/${sl.id}`,
+      lastModified: new Date(sl.updatedAt),
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    }));
+  } catch {
+    // skip sellers on db error
+  }
+
+  return [...staticPages, ...categoryPages, ...productPages, ...servicePages, ...sellerPages];
 }

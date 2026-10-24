@@ -242,8 +242,10 @@ export interface AdminAuditInput {
   action: string
   // Phase 7 adds seller_withdrawal (payout completed), ledger (adjustment)
   // and commission_setting (rate change) targets.
+  // Phase 8 adds review (moderation actions) and store_change_request
+  // (verified store-name approvals) targets.
   targetType: 'refund_request' | 'cancellation_request' | 'dispute' | 'order' | 'payment'
-    | 'seller_withdrawal' | 'ledger' | 'commission_setting'
+    | 'seller_withdrawal' | 'ledger' | 'commission_setting' | 'review' | 'store_change_request'
   targetId?: string | null
   orderId?: string | null
   details?: Record<string, unknown> | null

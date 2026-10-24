@@ -22,6 +22,7 @@ import {
   Gavel,
   ShoppingBag,
   TrendingUp,
+  Star,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
@@ -57,6 +58,7 @@ export const sellerNavItems: NavItem[] = [
   { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },
   { labelKey: 'seller.auctionNav', icon: Gavel, panel: 'seller-auctions', sellerOnly: true },
   { labelKey: 'seller.businessProfile', icon: Briefcase, panel: 'seller-business-profile', sellerOnly: true },
+  { labelKey: 'seller.myReviews', icon: Star, panel: 'seller-reviews', sellerOnly: true },
   { labelKey: 'nav.withdraw', icon: Banknote, panel: 'seller-withdraw', sellerOnly: true },
 ];
 

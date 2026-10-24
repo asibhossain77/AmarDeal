@@ -18,6 +18,9 @@ model User {
   sellerDisabled  Boolean  @default(false)
   sellerRole      String   @default("personal") // 'personal' | 'business' (business = admin-approved Verified Business Seller)
   businessVerified Boolean @default(false) // true only when a business application is approved by admin
+  businessCategory String?
+  storeLogo        String?
+  publicContact    String?
   isActive        Boolean  @default(true)
   emailVerified   Boolean  @default(false)
   resetToken      String?
@@ -63,6 +66,8 @@ model User {
   marketplaceOrdersAsSeller MarketplaceOrder[] @relation("MarketplaceOrderSeller")
   adminAuditLogs            AdminAuditLog[]
   ledgerEntries             SellerLedgerEntry[]
+  reportedReviews           ReviewReport[]      @relation("ReviewReporter")
+  storeChangeRequests       StoreChangeRequest[]
 }
 
 model Admin {
@@ -495,17 +500,61 @@ model SellerReview {
   id        String   @id @default(cuid())
   sellerId  String
   userId    String
+  orderId   String?
   rating    Int
   comment   String
+  status    String   @default("published") // 'published' | 'hidden' (admin moderation)
+  sellerReply String?
+  sellerReplyAt DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   seller User @relation("SellerReviews", fields: [sellerId], references: [id], onDelete: Cascade)
   user   User @relation("UserSellerReviews", fields: [userId], references: [id], onDelete: Cascade)
+  order  MarketplaceOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
-  @@unique([sellerId, userId])
+  reports ReviewReport[]
+
+  @@unique([sellerId, userId, orderId])
   @@index([sellerId])
   @@index([userId])
+  @@index([orderId])
+}
+
+model ReviewReport {
+  id          String   @id @default(cuid())
+  reviewId    String
+  reporterId  String?
+  reason      String // abusive | fraudulent | irrelevant | spam | other
+  details     String?
+  status      String   @default("open") // open | resolved | dismissed
+  resolution  String? // review_hidden | review_kept | dismissed
+  adminNote   String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  review   SellerReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reporter User?        @relation("ReviewReporter", fields: [reporterId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([reviewId])
+}
+
+model StoreChangeRequest {
+  id         String    @id @default(cuid())
+  sellerId   String
+  changes    String // JSON payload of proposed verified-info changes
+  status     String    @default("pending") // pending | approved | rejected
+  adminNote  String?
+  reviewedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([sellerId, status])
+  @@index([status, createdAt])
 }
 
 // Saved withdrawal accounts (bkash/nagad/rocket/bank) for sellers.
@@ -763,6 +812,8 @@ model MarketplaceOrder {
   cancellationRequest OrderCancellationRequest?
   refundRequest       RefundRequest?
   dispute             OrderDispute?
+  // ── Phase 8: verified-purchase seller reviews ──
+  reviews       SellerReview[]
 
   @@index([userId, createdAt])
   @@index([sellerId, status])

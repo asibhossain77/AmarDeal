@@ -58,6 +58,7 @@ const AdminOrderAuditPanel = dynamic(() => import('./admin-order-audit-panel').t
 const AdminMarketplaceCommissionPanel = dynamic(() => import('./admin-marketplace-commission-panel').then(m => ({ default: m.AdminMarketplaceCommissionPanel })), { loading: () => <PanelLoader /> });
 const AdminSellerFinancialsPanel = dynamic(() => import('./admin-seller-financials-panel').then(m => ({ default: m.AdminSellerFinancialsPanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
+const ReviewModerationPanel = dynamic(() => import('./review-moderation-panel').then(m => ({ default: m.ReviewModerationPanel })), { loading: () => <PanelLoader /> });
 const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
   ShieldCheck,
@@ -4333,6 +4334,8 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminRefundsPanel />;
     case 'order-disputes':
       return <AdminOrderDisputesPanel />;
+    case 'review-moderation':
+      return <ReviewModerationPanel />;
     case 'order-audit':
       return <AdminOrderAuditPanel />;
     case 'marketplace-commission':
