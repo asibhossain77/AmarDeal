@@ -21,6 +21,7 @@ import {
   SeparatorHorizontal,
   Gavel,
   ShoppingBag,
+  TrendingUp,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
 import { SellerApplyButton } from './seller-apply-dialog';
@@ -50,6 +51,7 @@ export const navItems: NavItem[] = [
 
 export const sellerNavItems: NavItem[] = [
   { labelKey: 'seller.marketplaceOrders', icon: ShoppingBag, panel: 'seller-marketplace-orders', sellerOnly: true, businessOnly: true },
+  { labelKey: 'seller.salesAnalytics', icon: TrendingUp, panel: 'seller-analytics', sellerOnly: true, businessOnly: true },
   { labelKey: 'seller.activeDealsList', icon: ClipboardCheck, panel: 'seller-orders', sellerOnly: true },
   { labelKey: 'seller.myProducts', icon: Package, panel: 'seller-products', sellerOnly: true },
   { labelKey: 'seller.addProduct', icon: PackagePlus, panel: 'seller-add-product', sellerOnly: true },

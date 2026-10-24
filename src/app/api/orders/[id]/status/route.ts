@@ -10,6 +10,7 @@ import {
   restorePhysicalStockOnCancel,
   type OrderAction,
 } from '@/lib/orders'
+import { recordMarketplaceSale } from '@/lib/seller-ledger'
 
 /* ═══════════════════════════════════════════════════════════════
    PATCH /api/orders/[id]/status — product-order actions.
@@ -239,6 +240,17 @@ export async function PATCH(
       // paid digital-file order → grant the buyer download entitlement
       // (Phase 5: granted on DELIVERY, not only on legacy completion)
       await grantDigitalEntitlementOnComplete(order.productId, order.userId)
+    }
+    // ── Phase 7: seller financial ledger — gross sale + commission
+    // snapshot at the moment the order completes (idempotent) ──
+    if (updated.status === 'completed' && order.status !== 'completed' && order.sellerId) {
+      await recordMarketplaceSale({
+        orderId: order.id,
+        sellerId: order.sellerId,
+        totalAmount: updated.totalAmount,
+        orderNumber: updated.orderNumber,
+        paymentStatus: updated.paymentStatus,
+      })
     }
     if (action === 'cancel' || action === 'resolve_cancel') {
       // physical order cancelled → the reserved stock units go back

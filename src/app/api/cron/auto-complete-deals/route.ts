@@ -134,6 +134,18 @@ export async function GET(req: NextRequest) {
         if (res.count !== 1) continue
         completed++
 
+        // ── Phase 7: itemized seller ledger — auto-completed deal earning
+        // (idempotent; one bad ledger write never aborts the pass) ──
+        if (deal.sellerId) {
+          const { recordDealEarning } = await import('@/lib/seller-ledger')
+          await recordDealEarning({
+            dealId: deal.id,
+            sellerId: deal.sellerId,
+            amount: deal.amount,
+            dealTitle: deal.title,
+          })
+        }
+
         // System chat message (visible to both parties)
         await db.chatMessage
           .create({

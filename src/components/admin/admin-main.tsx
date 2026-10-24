@@ -55,6 +55,8 @@ const AdminOrderCancellationsPanel = dynamic(() => import('./admin-order-cancell
 const AdminRefundsPanel = dynamic(() => import('./admin-refunds-panel').then(m => ({ default: m.AdminRefundsPanel })), { loading: () => <PanelLoader /> });
 const AdminOrderDisputesPanel = dynamic(() => import('./admin-order-disputes-panel').then(m => ({ default: m.AdminOrderDisputesPanel })), { loading: () => <PanelLoader /> });
 const AdminOrderAuditPanel = dynamic(() => import('./admin-order-audit-panel').then(m => ({ default: m.AdminOrderAuditPanel })), { loading: () => <PanelLoader /> });
+const AdminMarketplaceCommissionPanel = dynamic(() => import('./admin-marketplace-commission-panel').then(m => ({ default: m.AdminMarketplaceCommissionPanel })), { loading: () => <PanelLoader /> });
+const AdminSellerFinancialsPanel = dynamic(() => import('./admin-seller-financials-panel').then(m => ({ default: m.AdminSellerFinancialsPanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
@@ -4333,6 +4335,10 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <AdminOrderDisputesPanel />;
     case 'order-audit':
       return <AdminOrderAuditPanel />;
+    case 'marketplace-commission':
+      return <AdminMarketplaceCommissionPanel />;
+    case 'seller-financials':
+      return <AdminSellerFinancialsPanel />;
     case 'pending-products':
       return <PendingProductsPanel />;
     case 'services':

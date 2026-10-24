@@ -62,6 +62,7 @@ model User {
   marketplaceOrdersAsBuyer  MarketplaceOrder[] @relation("MarketplaceOrderBuyer")
   marketplaceOrdersAsSeller MarketplaceOrder[] @relation("MarketplaceOrderSeller")
   adminAuditLogs            AdminAuditLog[]
+  ledgerEntries             SellerLedgerEntry[]
 }
 
 model Admin {
@@ -584,6 +585,12 @@ model SellerWithdrawal {
   accountNumber String
   status        String   @default("pending") // pending | approved | completed | rejected
   adminNote     String?
+  // ── Phase 7: verified payment evidence — a payout can NEVER be marked
+  //    completed without a payment reference (bKash/bank TxnID etc.) ──
+  paymentReference String?
+  paymentNote      String?
+  completedById    String?
+  completedAt      DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -591,6 +598,39 @@ model SellerWithdrawal {
 
   @@index([userId, status])
   @@index([status])
+}
+
+// ═════════════════════════════════════════════════════════
+// Phase 7 — Seller financial ledger (append-only, itemized).
+// Written ONLY by verified server flows at the moment authoritative
+// state changes; @@unique([sourceType, sourceId, type]) makes every
+// write idempotent — duplicate financial rows are impossible.
+// Admin Deal transactions (sourceType 'deal') and Marketplace Order
+// earnings (sourceType 'marketplace_order') stay distinguishable.
+// Commission % is snapshotted into `details` at write time — later
+// rate changes never rewrite history.
+// ═════════════════════════════════════════════════════════
+model SellerLedgerEntry {
+  id         String @id @default(cuid())
+  sellerId   String
+  seller     User   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  // marketplace_order | deal | withdrawal | adjustment
+  sourceType String
+  // Transaction reference: order id / deal id / withdrawal id / adjustment id
+  sourceId   String
+  // sale | commission | refund | commission_reversal | deal_earning | payout | adjustment
+  type       String
+  // Signed amount: + credit to seller, − debit from seller (BDT)
+  amount     Float
+  description String
+  // JSON: { orderNumber?, dealTitle?, rate?, paymentReference?, reason?, adminName?, backfilled? }
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@unique([sourceType, sourceId, type])
+  @@index([sellerId, createdAt])
+  @@index([sellerId, type])
+  @@index([sourceType, sourceId])
 }
 
 // ── OAuth 2.0 Authorization Code (single-use, short-lived) ──

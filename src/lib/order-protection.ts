@@ -240,7 +240,10 @@ export interface AdminAuditInput {
   adminId: string
   adminName?: string | null
   action: string
+  // Phase 7 adds seller_withdrawal (payout completed), ledger (adjustment)
+  // and commission_setting (rate change) targets.
   targetType: 'refund_request' | 'cancellation_request' | 'dispute' | 'order' | 'payment'
+    | 'seller_withdrawal' | 'ledger' | 'commission_setting'
   targetId?: string | null
   orderId?: string | null
   details?: Record<string, unknown> | null

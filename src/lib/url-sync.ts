@@ -205,7 +205,7 @@ export function parseUrl(pathname: string): ParsedUrl {
       result.dashboardPanel = 'deal-detail';
       result.dealId = segments[2];
     } else {
-      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'my-orders', 'seller-orders', 'seller-marketplace-orders', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-auctions'];
+      const valid: DashboardPanel[] = ['overview', 'new-deal', 'my-deals', 'deal-detail', 'payment', 'profile', 'settings', 'affiliate', 'review', 'my-orders', 'seller-orders', 'seller-marketplace-orders', 'seller-analytics', 'seller-products', 'seller-add-product', 'seller-business-profile', 'seller-withdraw', 'seller-auctions'];
       result.dashboardPanel = valid.includes(seg2 as DashboardPanel) ? seg2 as DashboardPanel : 'overview';
     }
     return result;
@@ -240,6 +240,10 @@ export function parseUrl(pathname: string): ParsedUrl {
       'whatsapp-settings',
       'two-factor', 'ai-prompt', 'popup', 'google-oauth', 'piprapay', 'affiliate',
       'affiliate-payouts', 'marketplace', 'pending-products', 'services', 'marketplace-orders',
+      // Phase 6: buyer protection
+      'order-cancellations', 'refunds', 'order-disputes', 'order-audit',
+      // Phase 7: seller earnings & finance
+      'marketplace-commission', 'seller-financials',
     ];
     result.adminPanel = valid.includes(seg2 as AdminPanel) ? seg2 as AdminPanel : 'dashboard';
     return result;

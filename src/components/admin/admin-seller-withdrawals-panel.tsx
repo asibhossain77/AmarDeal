@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -72,6 +73,10 @@ export function AdminSellerWithdrawalsPanel() {
   const [loading, setLoading] = useState<string | null>(null);
   const [rejectDlg, setRejectDlg] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' });
   const [rejectRsn, setRejectRsn] = useState('');
+  // ── Phase 7: completion REQUIRES verified payment evidence ──
+  const [completeDlg, setCompleteDlg] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' });
+  const [payRef, setPayRef] = useState('');
+  const [payNote, setPayNote] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-seller-wds', tab],
@@ -89,7 +94,15 @@ export function AdminSellerWithdrawalsPanel() {
   const pendingCnt = wds.filter((w: any) => w.status === 'pending').length;
 
   const act = useCallback(async (id: string, action: 'approve' | 'complete') => {
-    if (!confirm(t(action === 'approve' ? 'adminSellerWd.confirmApprove' : 'adminSellerWd.confirmComplete'))) return;
+    if (action === 'complete') {
+      // Phase 7: opening a dialog collects the VERIFIED payment reference —
+      // the API rejects completion without it.
+      setPayRef('');
+      setPayNote('');
+      setCompleteDlg({ open: true, id, name: wds.find((w: any) => w.id === id)?.user?.name || '' });
+      return;
+    }
+    if (!confirm(t('adminSellerWd.confirmApprove'))) return;
     setLoading(id);
     try {
       const r = await fetch(`/api/admin/seller-withdrawals/${id}/${action}`, { method: 'POST' });
@@ -98,7 +111,26 @@ export function AdminSellerWithdrawalsPanel() {
       toast.success(d.message || t('adminSellerWd.actionSuccess'));
       qc.invalidateQueries({ queryKey: ['admin-seller-wds'] });
     } catch (e) { toast.error((e as Error).message || t('adminSellerWd.actionFailed')); } finally { setLoading(null); }
-  }, [t, qc]);
+  }, [t, qc, wds]);
+
+  const complete = useCallback(async () => {
+    if (!payRef.trim()) { toast.error(t('adminFin.payoutRefHint')); return; }
+    setLoading(completeDlg.id);
+    try {
+      const r = await fetch(`/api/admin/seller-withdrawals/${completeDlg.id}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentReference: payRef.trim(), paymentNote: payNote.trim() || undefined }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      toast.success(d.message || t('adminSellerWd.actionSuccess'));
+      setCompleteDlg({ open: false, id: '', name: '' });
+      setPayRef('');
+      setPayNote('');
+      qc.invalidateQueries({ queryKey: ['admin-seller-wds'] });
+    } catch (e) { toast.error((e as Error).message || t('adminSellerWd.actionFailed')); } finally { setLoading(null); }
+  }, [completeDlg, payRef, payNote, t, qc]);
 
   const reject = useCallback(async () => {
     setLoading(rejectDlg.id);
@@ -268,6 +300,31 @@ export function AdminSellerWithdrawalsPanel() {
             <Button variant="outline" onClick={() => setRejectDlg({ open: false, id: '', name: '' })} disabled={!!loading}>{t('adminSellerWd.cancel')}</Button>
             <Button className="bg-red-600 hover:bg-red-700 text-white" disabled={!!loading} onClick={reject}>
               {loading === rejectDlg.id ? <LoadingAnimation size="sm" /> : <XCircle className="h-4 w-4" />}{t('adminSellerWd.confirmReject')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Phase 7: payout completion — payment reference REQUIRED */}
+      <Dialog open={completeDlg.open} onOpenChange={(o) => !o && setCompleteDlg({ open: false, id: '', name: '' })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-600" />{t('adminSellerWd.complete')}</DialogTitle>
+            <DialogDescription>{t('adminFin.payoutRefHint')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('adminFin.payoutRefLabel')} *</label>
+              <Input value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder={t('adminFin.payoutRefPlaceholder')} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">{t('adminFin.payoutNoteLabel')}</label>
+              <Textarea value={payNote} onChange={(e) => setPayNote(e.target.value)} rows={2} className="resize-none" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setCompleteDlg({ open: false, id: '', name: '' })} disabled={!!loading}>{t('adminSellerWd.cancel')}</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!!loading || !payRef.trim()} onClick={complete}>
+              {loading === completeDlg.id ? <LoadingAnimation size="sm" /> : <ShieldCheck className="h-4 w-4" />}{t('adminSellerWd.confirmComplete')}
             </Button>
           </DialogFooter>
         </DialogContent>

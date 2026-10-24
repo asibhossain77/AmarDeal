@@ -171,6 +171,19 @@ export async function PATCH(
           : []),
       ])
 
+      // ── Phase 7: seller ledger — dispute resolved as COMPLETE earns the
+      // seller their gross sale + commission snapshot (idempotent) ──
+      if (outcome === 'complete' && orderUpdate && order.sellerId) {
+        const { recordMarketplaceSale } = await import('@/lib/seller-ledger')
+        await recordMarketplaceSale({
+          orderId: order.id,
+          sellerId: order.sellerId,
+          totalAmount: order.totalAmount,
+          orderNumber: order.orderNumber,
+          paymentStatus: order.paymentStatus,
+        })
+      }
+
       await db.marketplaceOrderEvent.create({
         data: {
           orderId: order.id,

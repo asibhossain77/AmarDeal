@@ -33,6 +33,7 @@ import { AddProductPanel, EditProductPanel, MyProductsPanel, ActiveDealsPanel, B
 import { WithdrawPanel } from '@/components/seller/withdraw-panel';
 import { AuctionsPanel } from '@/components/seller/auctions-panel';
 import { SellerMarketplaceOrders } from './seller-marketplace-orders';
+import { SellerAnalyticsPanel } from './seller-analytics-panel';
 
 
 const emptySubscribe = () => () => {};
@@ -534,7 +535,7 @@ export function DashboardMain() {
   const isImmersive = dashboardPanel === 'deal-detail';
 
   // Show seller disabled message
-  if (user?.sellerDisabled && ['seller-orders', 'seller-marketplace-orders', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-auctions'].includes(dashboardPanel)) {
+  if (user?.sellerDisabled && ['seller-orders', 'seller-marketplace-orders', 'seller-analytics', 'seller-products', 'seller-add-product', 'seller-edit-product', 'seller-business-profile', 'seller-auctions'].includes(dashboardPanel)) {
     return (
       <div className="flex-1 p-4 sm:p-6 lg:px-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
@@ -585,6 +586,7 @@ export function DashboardMain() {
       {/* Seller panels */}
       {dashboardPanel === 'seller-orders' && <ActiveDealsPanel />}
       {dashboardPanel === 'seller-marketplace-orders' && <SellerMarketplaceOrders />}
+      {dashboardPanel === 'seller-analytics' && <SellerAnalyticsPanel />}
       {dashboardPanel === 'seller-products' && <MyProductsPanel />}
       {dashboardPanel === 'seller-add-product' && <AddProductPanel />}
       {dashboardPanel === 'seller-edit-product' && <EditProductPanel />}

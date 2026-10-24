@@ -43,6 +43,17 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // ── Phase 7: itemized seller ledger — deal earning (idempotent) ──
+    if (updated.sellerId) {
+      const { recordDealEarning } = await import('@/lib/seller-ledger')
+      await recordDealEarning({
+        dealId: updated.id,
+        sellerId: updated.sellerId,
+        amount: updated.amount,
+        dealTitle: updated.title,
+      })
+    }
+
     // Notify the seller that the buyer completed the deal
     if (updated.buyerId && updated.sellerId) {
       await notifyUser({

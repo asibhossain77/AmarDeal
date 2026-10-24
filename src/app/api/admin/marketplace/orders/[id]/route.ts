@@ -236,6 +236,21 @@ export async function PATCH(
           const { grantDigitalEntitlementOnComplete } = await import('@/lib/orders')
           grantDigitalEntitlementOnComplete(order.productId, order.userId).catch(() => {})
         }
+        // ── Phase 7: seller ledger — admin-completed order earns the
+        // seller a gross sale + commission snapshot (idempotent; only
+        // verified-paid orders record, platform SMM orders have no
+        // sellerId and are skipped inside) ──
+        if (toStatus === 'completed' && order.sellerId) {
+          const { recordMarketplaceSale } = await import('@/lib/seller-ledger')
+          await recordMarketplaceSale({
+            orderId: order.id,
+            sellerId: order.sellerId,
+            totalAmount: order.totalAmount,
+            orderNumber: order.orderNumber,
+            paymentStatus: order.paymentStatus,
+            paidAt: order.paidAt,
+          })
+        }
       }
 
       return NextResponse.json({ success: true })

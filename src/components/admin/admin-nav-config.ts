@@ -29,6 +29,8 @@ import {
   Ban,
   RotateCcw,
   ScrollText,
+  Percent,
+  PieChart,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -74,6 +76,8 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'পেমেন্ট মেথড', icon: CreditCard, panel: 'payment-methods' },
       { label: 'ফি কাঠামো', icon: Receipt, panel: 'fee-rules' },
+      { label: 'মার্কেটপ্লেস কমিশন', icon: Percent, panel: 'marketplace-commission' },
+      { label: 'সেলার আর্থিক রিপোর্ট', icon: PieChart, panel: 'seller-financials' },
       { label: 'অ্যাফিলিয়েট', icon: Link2, panel: 'affiliate' },
       { label: 'অ্যাফিলিয়েট পেআউট', icon: Banknote, panel: 'affiliate-payouts' },
     ],
@@ -136,6 +140,8 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
       items: [
         { label: t('adminNav.paymentMethods'), icon: CreditCard, panel: 'payment-methods' },
         { label: t('adminNav.feeRules'), icon: Receipt, panel: 'fee-rules' },
+        { label: t('adminNav.marketplaceCommission'), icon: Percent, panel: 'marketplace-commission' },
+        { label: t('adminNav.sellerFinancials'), icon: PieChart, panel: 'seller-financials' },
         { label: t('adminNav.affiliate'), icon: Link2, panel: 'affiliate' },
         { label: t('adminNav.affiliatePayouts'), icon: Banknote, panel: 'affiliate-payouts' },
       ],

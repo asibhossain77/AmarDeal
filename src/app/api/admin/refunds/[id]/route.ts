@@ -243,6 +243,18 @@ export async function PATCH(
         targetType: 'refund_request', targetId: request.id, orderId: request.orderId,
         details: { amount: request.amount, reference, proof: proof.map((p) => p.key) },
       })
+      // ── Phase 7: seller ledger — verified refund debits the seller and
+      // reverses the commission at the sale's snapshot rate (idempotent) ──
+      if (request.order.sellerId) {
+        const { recordMarketplaceRefund } = await import('@/lib/seller-ledger')
+        await recordMarketplaceRefund({
+          orderId: request.orderId,
+          sellerId: request.order.sellerId,
+          refundAmount: request.amount,
+          orderNumber: request.order.orderNumber,
+          refundRequestId: request.id,
+        })
+      }
       return NextResponse.json({ success: true, request: updated })
     }
 
