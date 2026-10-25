@@ -1,105 +1,78 @@
 'use client';
 
 /**
- * HeroActionCards — the four primary destination cards of the Midman hero.
- *
- * Each card navigates to an EXISTING destination — no new routes, no changes
+ * ─────────────────────────────────────────────────────────────────────────────
+ * HeroActionCards — the four primary CTA buttons of the Midman hero (2×2 grid)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Each button navigates to an EXISTING destination — no new routes, no changes
  * to auth/deal/marketplace/verify workflows:
  *
- *   1. Dashboard / Login Registration → logged-in: role-aware dashboard
- *      (navigateToDashboard), guest: existing auth view (/login).
- *   2. Marketplace                    → existing /marketplace SPA view.
- *   3. Admin Deal                     → Midman's deal service (NOT the admin
- *      panel): logged-in → dashboard "new-deal" panel, guest → login.
- *   4. Midman Verify                  → the existing verify.midman.bd site.
+ *   1. Login / Registration → logged-in: role-aware dashboard
+ *      (navigateToDashboard — admin → admin view, seller/buyer → dashboard),
+ *      guest: existing auth view. The first slot is NEVER shown twice: the
+ *      label, icon and handler swap with auth state, keeping the total at
+ *      exactly four buttons.
+ *   2. Marketplace          → existing /marketplace SPA view.
+ *   3. Admin Deal           → Midman's deal service (NOT the admin panel):
+ *      logged-in → dashboard "new-deal" panel, guest → login.
+ *   4. Midman Verify        → the existing verify.midman.bd site.
  *
- * Layout: 1 column on very narrow screens, 2×2 from 420px (mobile/tablet),
- * single row of four on desktop (lg+). Full-card click/keyboard targets,
- * subtle lift + arrow-shift hover, reduced-motion friendly.
+ * Layout: two columns × two rows at every breakpoint (per design spec) —
+ * comfortable on mobile, aligned in the hero's right column on desktop.
+ * Solid dark-green primary button; the other three use a light mint
+ * background with a subtle green border. Restrained hover (arrow shift),
+ * accessible focus rings, reduced-motion friendly.
  */
 
-import { ArrowRight, CircleUserRound, Handshake, ShieldCheck, Store, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CircleUserRound, Handshake, LayoutDashboard, ShieldCheck, Store, type LucideIcon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useTranslation } from '@/lib/i18n';
 
-type Accent = 'green' | 'mint' | 'purple' | 'orange';
+/* Shared button shell — equal height, consistent radius and focus states.
+   Labels wrap to a second line on very narrow screens instead of truncating
+   (min-h instead of fixed h), so the exact texts always stay readable. */
+const BUTTON_CLASS =
+  'group flex min-h-12 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12.5px] font-semibold leading-tight transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-[52px] sm:min-h-[52px] sm:gap-2.5 sm:px-5 sm:py-0 sm:text-sm motion-reduce:transition-none';
 
-/* Coordinated accent tints — green stays primary (brand-dominant) */
-const ACCENTS: Record<Accent, { chip: string; glow: string; icon: string; arrowHover: string }> = {
-  green: {
-    chip: 'bg-primary/10 dark:bg-primary/15',
-    glow: 'bg-primary/[0.10] dark:bg-primary/[0.16]',
-    icon: 'text-primary',
-    arrowHover:
-      'group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground',
-  },
-  mint: {
-    chip: 'bg-[#DDF7EC] dark:bg-[#19342C]',
-    glow: 'bg-[#14B8A6]/[0.10] dark:bg-[#14B8A6]/[0.16]',
-    icon: 'text-[#0D9276] dark:text-[#5EEAD4]',
-    arrowHover:
-      'group-hover:bg-[#0D9276] group-hover:border-[#0D9276] group-hover:text-white dark:group-hover:bg-[#14B8A6] dark:group-hover:border-[#14B8A6]',
-  },
-  purple: {
-    chip: 'bg-[#F1EBFE] dark:bg-[#2A2839]',
-    glow: 'bg-[#8B5CF6]/[0.10] dark:bg-[#8B5CF6]/[0.16]',
-    icon: 'text-[#7C3AED] dark:text-[#C4B5FD]',
-    arrowHover:
-      'group-hover:bg-[#7C3AED] group-hover:border-[#7C3AED] group-hover:text-white dark:group-hover:bg-[#8B5CF6] dark:group-hover:border-[#8B5CF6]',
-  },
-  orange: {
-    chip: 'bg-[#FDEFDF] dark:bg-[#392C19]',
-    glow: 'bg-[#F97316]/[0.10] dark:bg-[#F97316]/[0.16]',
-    icon: 'text-[#EA580C] dark:text-[#FDBA74]',
-    arrowHover:
-      'group-hover:bg-[#EA580C] group-hover:border-[#EA580C] group-hover:text-white dark:group-hover:bg-[#F97316] dark:group-hover:border-[#F97316]',
-  },
-};
+/* Primary — solid dark forest green with white text (light mode); the brand
+   green token takes over in dark mode, matching the site's solid buttons. */
+const PRIMARY_CLASS = `${BUTTON_CLASS} bg-[#123B2A] text-white shadow-md shadow-black/[0.12] hover:bg-[#0E2F21] active:shadow-sm dark:bg-primary dark:text-primary-foreground dark:shadow-primary/20 dark:hover:bg-primary/90`;
 
-const CARD_CLASS =
-  'group relative flex h-full flex-col rounded-[20px] border border-border/70 bg-card p-5 text-left shadow-sm shadow-black/[0.03] transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:shadow-black/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0';
+/* Secondary — very light mint background, subtle green border, green text. */
+const SECONDARY_CLASS = `${BUTTON_CLASS} border border-primary/25 bg-primary/[0.05] text-primary hover:border-primary/45 hover:bg-primary/[0.09] active:bg-primary/[0.07] dark:border-primary/30 dark:bg-primary/[0.1] dark:hover:border-primary/45 dark:hover:bg-primary/[0.16]`;
 
-interface ActionCardProps {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  accent: Accent;
-  href: string;
-  ariaLabel: string;
-  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
-  external?: boolean;
+/* Right-arrow affordance shared by every button. */
+function ButtonArrow() {
+  return (
+    <ArrowRight
+      aria-hidden
+      className="ml-auto h-4 w-4 shrink-0 opacity-70 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+    />
+  );
 }
 
-function ActionCard({ icon: Icon, title, description, accent, href, ariaLabel, onClick, external }: ActionCardProps) {
-  const a = ACCENTS[accent];
+interface CtaButtonProps {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  external?: boolean;
+  ariaLabel?: string;
+  primary?: boolean;
+}
+
+function CtaButton({ icon: Icon, label, href, onClick, external, ariaLabel, primary }: CtaButtonProps) {
   return (
     <a
       href={href}
       onClick={onClick}
-      aria-label={ariaLabel}
+      aria-label={ariaLabel ?? label}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className={CARD_CLASS}
+      className={primary ? PRIMARY_CLASS : SECONDARY_CLASS}
     >
-      {/* soft accent glow (top-right corner wash) */}
-      <span
-        aria-hidden
-        className={`pointer-events-none absolute -right-7 -top-7 h-24 w-24 rounded-full blur-2xl transition-opacity duration-300 opacity-60 group-hover:opacity-100 motion-reduce:transition-none ${a.glow}`}
-      />
-
-      <span className={`mb-4 flex h-11 w-11 items-center justify-center rounded-[14px] transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none ${a.chip}`}>
-        <Icon className={`h-[22px] w-[22px] ${a.icon}`} aria-hidden />
-      </span>
-
-      <h3 className="text-[15px] font-semibold leading-snug text-foreground">{title}</h3>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{description}</p>
-
-      <span className="mt-auto flex justify-end pt-4">
-        <span
-          className={`flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition-all duration-300 group-hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 ${a.arrowHover}`}
-        >
-          <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" aria-hidden />
-        </span>
-      </span>
+      <Icon aria-hidden className="h-[18px] w-[18px] shrink-0 sm:h-5 sm:w-5" />
+      <span className="min-w-0 flex-1">{label}</span>
+      <ButtonArrow />
     </a>
   );
 }
@@ -107,16 +80,24 @@ function ActionCard({ icon: Icon, title, description, accent, href, ariaLabel, o
 export function HeroActionCards() {
   const locale = useAppStore((s) => s.locale);
   const { t } = useTranslation(locale);
+  const user = useAppStore((s) => s.user);
 
-  /* Card 1 — Dashboard / Login: guests → auth view, logged-in → role-aware dashboard */
-  const handleDashboard = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  /* Slot 1 — Login/Registration (guest) ⇄ Dashboard (logged-in, role-aware).
+     Deliberately exclusive: the same grid slot changes with auth state. */
+  const handleAuthSlot = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const s = useAppStore.getState();
     if (s.user) s.navigateToDashboard();
     else s.setView('auth');
   };
 
-  /* Card 3 — Admin Deal service (NOT the admin panel): existing hero workflow */
+  /* Marketplace: existing SPA view */
+  const handleMarketplace = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    useAppStore.getState().setView('page-marketplace');
+  };
+
+  /* Admin Deal service (NOT the admin panel): existing hero workflow */
   const handleAdminDeal = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const s = useAppStore.getState();
@@ -128,47 +109,31 @@ export function HeroActionCards() {
     }
   };
 
-  /* Card 2 — Marketplace: existing SPA view */
-  const handleMarketplace = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    useAppStore.getState().setView('page-marketplace');
-  };
-
   return (
-    <nav aria-label={t('hero.cards.navLabel')} className="mt-10 pb-12 sm:mt-12 sm:pb-14 lg:mt-16 lg:pb-20">
-      <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 sm:gap-5 lg:grid-cols-4">
-        <ActionCard
-          icon={CircleUserRound}
-          accent="green"
-          title={t('hero.cards.dashboard.title')}
-          description={t('hero.cards.dashboard.description')}
-          href="/login"
-          onClick={handleDashboard}
-          ariaLabel={t('hero.cards.dashboard.title')}
+    <nav aria-label={t('hero.cards.navLabel')}>
+      <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+        <CtaButton
+          primary
+          icon={user ? LayoutDashboard : CircleUserRound}
+          label={user ? t('hero.cards.dashboard.loggedIn') : t('hero.cards.dashboard.title')}
+          href={user ? '/dashboard' : '/login'}
+          onClick={handleAuthSlot}
         />
-        <ActionCard
+        <CtaButton
           icon={Store}
-          accent="mint"
-          title={t('hero.cards.marketplace.title')}
-          description={t('hero.cards.marketplace.description')}
+          label={t('hero.cards.marketplace.title')}
           href="/marketplace"
           onClick={handleMarketplace}
-          ariaLabel={t('hero.cards.marketplace.title')}
         />
-        <ActionCard
+        <CtaButton
           icon={Handshake}
-          accent="purple"
-          title={t('hero.cards.adminDeal.title')}
-          description={t('hero.cards.adminDeal.description')}
+          label={t('hero.cards.adminDeal.title')}
           href="/login"
           onClick={handleAdminDeal}
-          ariaLabel={t('hero.cards.adminDeal.title')}
         />
-        <ActionCard
+        <CtaButton
           icon={ShieldCheck}
-          accent="orange"
-          title={t('hero.cards.verify.title')}
-          description={t('hero.cards.verify.description')}
+          label={t('hero.cards.verify.title')}
           href="https://verify.midman.bd"
           external
           ariaLabel={`${t('hero.cards.verify.title')} ${t('hero.cards.verify.external')}`}
