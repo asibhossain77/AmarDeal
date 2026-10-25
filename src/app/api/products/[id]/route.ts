@@ -8,6 +8,7 @@ import { ownsFileKey, validateDigitalFile, deleteFileByKey, MAX_DIGITAL_FILE_SIZ
 import { isValidProductCategory } from '@/lib/product-categories'
 import { isItemCondition, sanitizeShippingInfo } from '@/lib/product-item-type'
 import { withSellerRoleColumns } from '@/lib/seller-verify'
+import { notifyAdmins } from '@/lib/push'
 import {
   VALID_DIGITAL_KINDS,
   isVerifiedBusinessSeller,
@@ -67,9 +68,26 @@ export async function GET(
       )
     }
 
-    // ── Phase 2: private deliveryDetails — owner or admin only ──
+    // ── Session identity — needed for private fields AND moderation gating ──
     const sessionId = req.cookies.get(SESSION_COOKIE)?.value
     const isOwner = !!sessionId && sessionId === product.sellerId
+
+    // ── Phase 9: moderated listings are not public ──
+    // pending / rejected / unpublished / removed listings are visible only to
+    // the owner and administrators — everyone else gets the same 404 as a
+    // missing product (no information leak about moderated content).
+    const MODERATED_STATUSES = ['pending', 'rejected', 'unpublished', 'removed']
+    if (MODERATED_STATUSES.includes(product.status) && !isOwner) {
+      const admin = sessionId ? await getAdminFromRequest(req) : null
+      if (!admin) {
+        return NextResponse.json(
+          { success: false, error: 'পণ্য পাওয়া যায়নি' },
+          { status: 404 }
+        )
+      }
+    }
+
+    // ── Phase 2: private deliveryDetails — owner or admin only ──
     let canSeeDeliveryDetails = isOwner
     if (!canSeeDeliveryDetails && sessionId) {
       const admin = await getAdminFromRequest(req)
@@ -154,7 +172,7 @@ export async function PATCH(
 
     const existing = await db.digitalProduct.findUnique({
       where: { id },
-      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true, itemType: true, images: true },
+      select: { sellerId: true, image: true, title: true, productType: true, price: true, isFree: true, fileKey: true, fileName: true, itemType: true, images: true, status: true },
     })
 
     if (!existing) {
@@ -171,6 +189,19 @@ export async function PATCH(
       )
     }
 
+    // ── Phase 9: admin-removed listings are read-only ──
+    // (deletion stays an admin or owner choice for everything else).
+    if (existing.status === 'removed') {
+      return NextResponse.json(
+        { success: false, error: 'প্ল্যাটফর্ম নীতিমালার ভিত্তিতে সরানো পণ্য সম্পাদনা করা যাবে না — সাপোর্টে যোগাযোগ করুন' },
+        { status: 403 }
+      )
+    }
+    // Moderation closed loop: rejected / unpublished listings return to the
+    // pending queue when the seller edits them ("require changes" flow —
+    // the moderation note tells the seller what to fix).
+    const reSubmitForReview = existing.status === 'rejected' || existing.status === 'unpublished'
+
     // ── Phase 2: seller role drives publish/unpublish + business listing fields ──
     const owner = await withSellerRoleColumns(async () =>
       db.user.findUnique({
@@ -179,6 +210,14 @@ export async function PATCH(
       })
     )
     const businessSeller = isVerifiedBusinessSeller(owner)
+
+    // ── Phase 9: a suspended seller can no longer modify listings ──
+    if (owner?.sellerDisabled) {
+      return NextResponse.json(
+        { success: false, error: 'আপনার সেলার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে — পণ্য সম্পাদনা করতে পারবেন না' },
+        { status: 403 }
+      )
+    }
 
     const body = await req.json()
     const { title, description, price, category, image, status, quantity, productType, options, isFree, fileKey, fileName, fileSize, fileType, itemType, condition, shippingInfo, digitalKind, deliveryDetails, images } = body
@@ -367,6 +406,11 @@ export async function PATCH(
       data.status = status
     }
 
+    // ── Phase 9: moderation closed loop — override ANY client status ──
+    if (reSubmitForReview) {
+      data.status = 'pending'
+    }
+
     if (quantity !== undefined) {
       const quantityNum = Math.floor(Number(quantity))
       // Physical: 0 allowed (sold out — orders can also drive it to 0).
@@ -514,6 +558,18 @@ export async function PATCH(
     const updatedOptions = ((product as { options?: { id: string; name: string; price: number; isAvailable: boolean; sortOrder: number }[] }).options) ?? []
     const updatedIsMulti = (product as { productType?: string }).productType === 'multi' && updatedOptions.length > 0
     const range = priceRangeFromPrices(updatedOptions.length > 0 ? updatedOptions.map((o) => o.price) : [product.price])
+
+    // Phase 9: moderated listing resubmitted — let admins know a review is waiting
+    if (reSubmitForReview) {
+      notifyAdmins({
+        type: 'product_resubmitted',
+        title: 'পণ্য পুনরায় রিভিউয়ের অপেক্ষায়',
+        message: `সেলার মডারেশন নোট অনুযায়ী পণ্যটি সংশোধন করেছেন — "${existing.title}" এখন রিভিউয়ের অপেক্ষায়।`,
+        relatedType: 'product_moderation',
+        relatedId: id,
+        pushUrl: '/admin',
+      }).catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,

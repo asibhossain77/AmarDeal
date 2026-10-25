@@ -29,7 +29,10 @@ async function loadProducts(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category')
 
-    const where: Record<string, unknown> = { status: 'active' }
+    // Phase 9: suspended sellers' listings disappear from the public feed —
+    // the seller gate (sellerDisabled) is the source of truth, so an admin
+    // suspension instantly hides every active listing of that seller.
+    const where: Record<string, unknown> = { status: 'active', seller: { sellerDisabled: false } }
     if (category && isValidProductCategory(category)) {
       where.category = category
     }
@@ -146,13 +149,21 @@ export async function POST(req: NextRequest) {
     const user = await withSellerRoleColumns(async () =>
       db.user.findUnique({
         where: { id: userId },
-        select: { isSeller: true, sellerRole: true, businessVerified: true },
+        select: { isSeller: true, sellerDisabled: true, sellerRole: true, businessVerified: true },
       })
     )
 
     if (!user?.isSeller) {
       return NextResponse.json(
         { success: false, error: 'শুধুমাত্র বিক্রেতারা পণ্য তৈরি করতে পারেন' },
+        { status: 403 }
+      )
+    }
+
+    // Phase 9: suspended sellers cannot create new listings
+    if (user.sellerDisabled) {
+      return NextResponse.json(
+        { success: false, error: 'আপনার সেলার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে — পণ্য তৈরি করতে পারবেন না' },
         { status: 403 }
       )
     }

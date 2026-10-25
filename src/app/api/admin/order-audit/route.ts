@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {}
     if (action) where.action = { contains: action }
-    if (['refund_request', 'cancellation_request', 'dispute', 'order', 'payment'].includes(targetType)) {
+    if (['refund_request', 'cancellation_request', 'dispute', 'order', 'payment',
+         'seller', 'product', 'moderation_report', 'seller_application'].includes(targetType)) {
       where.targetType = targetType
     }
 

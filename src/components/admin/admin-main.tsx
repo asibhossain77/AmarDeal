@@ -59,6 +59,10 @@ const AdminMarketplaceCommissionPanel = dynamic(() => import('./admin-marketplac
 const AdminSellerFinancialsPanel = dynamic(() => import('./admin-seller-financials-panel').then(m => ({ default: m.AdminSellerFinancialsPanel })), { loading: () => <PanelLoader /> });
 const PendingProductsPanel = dynamic(() => import('./pending-products-panel').then(m => ({ default: m.PendingProductsPanel })), { loading: () => <PanelLoader /> });
 const ReviewModerationPanel = dynamic(() => import('./review-moderation-panel').then(m => ({ default: m.ReviewModerationPanel })), { loading: () => <PanelLoader /> });
+const AdminMarketplaceMonitorPanel = dynamic(() => import('./admin-marketplace-monitor-panel').then(m => ({ default: m.AdminMarketplaceMonitorPanel })), { loading: () => <PanelLoader /> });
+const AdminMarketplaceSellersPanel = dynamic(() => import('./admin-marketplace-sellers-panel').then(m => ({ default: m.AdminMarketplaceSellersPanel })), { loading: () => <PanelLoader /> });
+const AdminMarketplaceProductsPanel = dynamic(() => import('./admin-marketplace-products-panel').then(m => ({ default: m.AdminMarketplaceProductsPanel })), { loading: () => <PanelLoader /> });
+const AdminModerationReportsPanel = dynamic(() => import('./admin-moderation-reports-panel').then(m => ({ default: m.AdminModerationReportsPanel })), { loading: () => <PanelLoader /> });
 const AdminServicesPanel = dynamic(() => import('./services-panel').then(m => ({ default: m.AdminServicesPanel })), { loading: () => <PanelLoader /> });
 import {
   ShieldCheck,
@@ -4338,6 +4342,14 @@ function AdminPanelContent({ panel }: { panel: AdminPanel }) {
       return <ReviewModerationPanel />;
     case 'order-audit':
       return <AdminOrderAuditPanel />;
+    case 'marketplace-monitor':
+      return <AdminMarketplaceMonitorPanel />;
+    case 'marketplace-sellers':
+      return <AdminMarketplaceSellersPanel />;
+    case 'marketplace-products':
+      return <AdminMarketplaceProductsPanel />;
+    case 'moderation-reports':
+      return <AdminModerationReportsPanel />;
     case 'marketplace-commission':
       return <AdminMarketplaceCommissionPanel />;
     case 'seller-financials':

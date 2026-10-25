@@ -2239,6 +2239,11 @@ export function SellerMain() {
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">সেলার অ্যাকাউন্ট নিষ্ক্রিয়</h2>
           <p className="text-sm text-muted-foreground mb-1">আপনার সেলার অ্যাকাউন্ট অ্যাডমিন দ্বারা সাময়িকভাবে নিষ্ক্রিয় করা হয়েছে।</p>
+          {user?.sellerSuspendReason && (
+            <p className="text-xs text-orange-600 dark:text-orange-400 mb-4 max-w-md">
+              {t("seller.suspensionReason")}: {user.sellerSuspendReason}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground mb-6">অ্যাকাউন্ট আনলক করতে সাপোর্টে যোগাযোগ করুন।</p>
           <div className="rounded-xl bg-muted/40 border border-border/50 p-4 w-full space-y-2">
             <p className="text-xs font-semibold text-foreground">সাপোর্টে যোগাযোগ করুন:</p>

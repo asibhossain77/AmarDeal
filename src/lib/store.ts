@@ -5,7 +5,7 @@ export type AppView = 'landing' | 'auth' | 'dashboard' | 'seller' | 'admin' | 'b
 export type DashboardPanel = 'overview' | 'new-deal' | 'my-deals' | 'deal-detail' | 'payment' | 'profile' | 'settings' | 'affiliate' | 'review' | 'seller-add-product' | 'seller-edit-product' | 'seller-products' | 'seller-orders' | 'seller-marketplace-orders' | 'seller-analytics' | 'seller-business-profile' | 'seller-reviews' | 'seller-withdraw' | 'seller-auctions' | 'my-orders' | 'order-detail'
 /* SellerPanel kept for backward-compat — no longer used as a separate view */
 export type SellerPanel = 'overview' | 'new-deal' | 'active-deals' | 'deal-detail' | 'my-products' | 'business-profile' | 'add-product'
-export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products' | 'services' | 'marketplace-orders' | 'order-cancellations' | 'refunds' | 'order-disputes' | 'order-audit' | 'marketplace-commission' | 'seller-financials' | 'review-moderation'
+export type AdminPanel = 'dashboard' | 'payment-verify' | 'payouts' | 'seller-withdrawals' | 'all-deals' | 'users' | 'settings' | 'payment-methods' | 'fee-rules' | 'contact-info' | 'profile' | 'contract' | 'admin-calls' | 'disputes' | 'blog' | 'email-settings' | 'whatsapp-settings' | 'two-factor' | 'ai-prompt' | 'popup' | 'google-oauth' | 'piprapay' | 'affiliate' | 'affiliate-payouts' | 'marketplace' | 'pending-products' | 'services' | 'marketplace-orders' | 'order-cancellations' | 'refunds' | 'order-disputes' | 'order-audit' | 'marketplace-commission' | 'seller-financials' | 'review-moderation' | 'marketplace-sellers' | 'marketplace-products' | 'moderation-reports' | 'marketplace-monitor'
 /* Tabs inside the admin Marketplace panel — dashboard deep-links can preselect one */
 export type AdminMarketplaceTab = 'settings' | 'banners' | 'products' | 'applications'
 
@@ -33,6 +33,8 @@ export interface UserInfo {
   permissions: string[]
   isSeller: boolean
   sellerDisabled: boolean
+  /* Phase 9: admin-recorded suspension reason — shown on the seller dashboard gate */
+  sellerSuspendReason?: string | null
   sellerRole?: string
   businessVerified?: boolean
   imageLink?: string | null

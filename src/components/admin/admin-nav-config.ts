@@ -32,6 +32,10 @@ import {
   Percent,
   PieChart,
   Star,
+  UsersRound,
+  PackageSearch,
+  Flag,
+  Activity,
 } from 'lucide-react';
 import type { AdminPanel } from '@/lib/store';
 
@@ -61,6 +65,15 @@ export const ADMIN_NAV_GROUPS: NavGroup[] = [
       { label: 'রিফান্ড ম্যানেজমেন্ট', icon: RotateCcw, panel: 'refunds' },
       { label: 'অর্ডার বিরোধ', icon: ShieldAlert, panel: 'order-disputes' },
       { label: 'অ্যাডমিন অডিট লগ', icon: ScrollText, panel: 'order-audit' },
+    ],
+  },
+  {
+    title: 'মার্কেটপ্লেস মডারেশন',
+    items: [
+      { label: 'মার্কেটপ্লেস মনিটর', icon: Activity, panel: 'marketplace-monitor' },
+      { label: 'সেলার ম্যানেজমেন্ট', icon: UsersRound, panel: 'marketplace-sellers' },
+      { label: 'প্রোডাক্ট ম্যানেজমেন্ট', icon: PackageSearch, panel: 'marketplace-products' },
+      { label: 'রিপোর্ট ম্যানেজমেন্ট', icon: Flag, panel: 'moderation-reports' },
     ],
   },
   {
@@ -126,6 +139,15 @@ export function getAdminNavGroups(t: (key: string) => string): NavGroup[] {
         { label: t('adminNav.refunds'), icon: RotateCcw, panel: 'refunds' },
         { label: t('adminNav.orderDisputes'), icon: ShieldAlert, panel: 'order-disputes' },
         { label: t('adminNav.orderAudit'), icon: ScrollText, panel: 'order-audit' },
+      ],
+    },
+    {
+      title: t('adminNav.groupMarketplaceModeration'),
+      items: [
+        { label: t('adminNav.marketplaceMonitor'), icon: Activity, panel: 'marketplace-monitor' },
+        { label: t('adminNav.sellerManagement'), icon: UsersRound, panel: 'marketplace-sellers' },
+        { label: t('adminNav.productManagement'), icon: PackageSearch, panel: 'marketplace-products' },
+        { label: t('adminNav.reportManagement'), icon: Flag, panel: 'moderation-reports' },
       ],
     },
     {

@@ -16,6 +16,13 @@ model User {
   password  String
   isSeller        Boolean  @default(false)
   sellerDisabled  Boolean  @default(false)
+  // ── Phase 9: seller moderation ──
+  // sellerDisabled stays the master gate (seller dashboard, notifications,
+  // public storefront all check it). Suspension metadata makes the decision
+  // auditable and explainable to the seller.
+  sellerSuspendedAt DateTime? // when the current suspension started
+  sellerSuspendReason String? // admin-recorded reason (seller-visible)
+  sellerRestricted  Boolean @default(false) // permanent restriction — reactivation is a deliberate super/staff decision
   sellerRole      String   @default("personal") // 'personal' | 'business' (business = admin-approved Verified Business Seller)
   businessVerified Boolean @default(false) // true only when a business application is approved by admin
   businessCategory String?
@@ -347,6 +354,12 @@ model DigitalProduct {
   // ── Verified Business Seller listing extensions (Phase 2) ──
   digitalKind     String?  // non-physical classification: 'file'|'account'|'license'|'subscription'|'other'
   deliveryDetails String?  // PRIVATE digital delivery instructions — owner/admin only, never public
+  // ── Phase 9: product moderation — set when an admin rejects, unpublishes
+  //    or removes a listing; moderationNote is surfaced to the seller so the
+  //    listing can be fixed and resubmitted for review ──
+  moderationNote   String?  // admin-recorded reason (seller-visible)
+  moderatedAt      DateTime?
+  moderatedByName  String?
   images          String?  // JSON array of gallery image URLs; images[0] mirrors `image`
   // Digital product file (uploaded to R2 `files/` prefix) — null = physical/service product
   isFree      Boolean  @default(false) // free products: anyone can download without a deal
@@ -957,6 +970,45 @@ model OrderDisputeMessage {
 
 // Audit trail for every sensitive admin decision (refund/cancellation/
 // dispute actions, forced order transitions). Rows are write-once.
+// ═════════════════════════════════════════════════════════
+// Phase 9 — centralized marketplace moderation reports.
+// Covers reported SELLERS and PRODUCTS (review reports keep using the
+// existing ReviewReport model + panel — both surfaces are visible to
+// admins). targetId is a LOOSE reference (no FK) with a denormalized
+// label/meta snapshot so the report — and the moderation history it
+// carries — survives even if the reported product or seller row is
+// later deleted (accountability requirement).
+// ═════════════════════════════════════════════════════════
+model ModerationReport {
+  id            String   @id @default(cuid())
+  // 'seller' | 'product'
+  targetType    String
+  targetId      String
+  // Snapshot at report time: product title / seller name — shown even after deletion
+  targetLabel   String
+  // JSON snapshot: { sellerId?, sellerName?, sellerEmail?, productId?, productTitle?, productStatus? }
+  targetMeta    String?
+  // Reporting admin (loose reference)
+  reporterId    String?
+  reporterName  String?
+  // Short reason + optional supporting details
+  reason        String
+  details       String?
+  // pending | under_review | resolved | rejected
+  status        String   @default("pending")
+  // Action taken: no_action | product_unpublished | product_removed | product_restored | seller_suspended | seller_restricted
+  resolution    String?
+  adminNote     String?
+  decidedById   String?
+  decidedByName String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
 model AdminAuditLog {
   id         String   @id @default(cuid())
   adminId    String

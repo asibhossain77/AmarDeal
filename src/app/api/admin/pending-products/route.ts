@@ -82,21 +82,21 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'অবৈধ অ্যাকশন' }, { status: 400 })
     }
 
-    const product = await db.digitalProduct.findUnique({ where: { id: productId } })
-    if (!product || product.status !== 'pending') {
-      return NextResponse.json({ error: 'পণ্য পাওয়া যায়নি' }, { status: 404 })
-    }
-
-    const newStatus = action === 'approve' ? 'active' : 'rejected'
-    await db.digitalProduct.update({
-      where: { id: productId },
-      data: { status: newStatus },
-    })
-
-    // If rejected and has image, delete from R2
-    if (action === 'reject' && product.image) {
-      const { deleteFromR2 } = await import('@/lib/r2')
-      await deleteFromR2(product.image)
+    // ── Phase 9: moderation lifecycle via the shared helper ──
+    // approve → active / reject → rejected. The helper stores the rejection
+    // reason on the product (seller-visible), notifies the seller and writes
+    // an append-only audit log entry. The old destructive image deletion on
+    // reject is gone: rejected listings must stay intact so the seller can
+    // fix the issue and resubmit for review (Phase 9 "require changes" loop).
+    const { moderateProduct } = await import('@/lib/marketplace-moderation')
+    const result = await moderateProduct(
+      productId,
+      action === 'approve' ? 'approve' : 'reject',
+      rejectionReason,
+      guard.admin,
+    )
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
     return NextResponse.json({

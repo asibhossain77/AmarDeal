@@ -244,8 +244,11 @@ export interface AdminAuditInput {
   // and commission_setting (rate change) targets.
   // Phase 8 adds review (moderation actions) and store_change_request
   // (verified store-name approvals) targets.
+  // Phase 9 adds seller / product / moderation_report / seller_application
+  // (marketplace moderation decisions) targets.
   targetType: 'refund_request' | 'cancellation_request' | 'dispute' | 'order' | 'payment'
     | 'seller_withdrawal' | 'ledger' | 'commission_setting' | 'review' | 'store_change_request'
+    | 'seller' | 'product' | 'moderation_report' | 'seller_application'
   targetId?: string | null
   orderId?: string | null
   details?: Record<string, unknown> | null
