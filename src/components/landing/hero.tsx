@@ -54,7 +54,7 @@ export function Hero() {
     : { initial: 'hidden' as const, animate: 'visible' as const };
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden" aria-labelledby="hero-heading">
       {/* ── Background treatment ──
           Light: clean white → light-mint gradient. Dark: deep charcoal-green.
           Both keep a subtle green radial glow; light mode adds a faint dot grid. */}
@@ -124,6 +124,7 @@ export function Hero() {
           >
             <motion.h1
               variants={fadeUp}
+              id="hero-heading"
               className="max-w-xl font-display text-[1.95rem] font-bold leading-[1.28] tracking-tight text-[#123B2A] dark:text-[#EAF6EE] sm:text-4xl sm:leading-[1.24] lg:text-[2.85rem] lg:leading-[1.22] xl:text-[3.1rem]"
             >
               {headStart}

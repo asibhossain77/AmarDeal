@@ -59,12 +59,13 @@ export function SmartphoneMockup({ screen, className = '' }: SmartphoneMockupPro
         className="pointer-events-none absolute -inset-8 rounded-[4rem] bg-primary/[0.08] blur-3xl sm:-inset-12 dark:bg-primary/[0.1]"
       />
 
-      {/* ── 1) Phone frame (hardware body) ── */}
-      <div className="relative rounded-[2.6rem] border border-zinc-200/90 bg-gradient-to-b from-white via-zinc-100 to-zinc-200/70 p-2 shadow-xl shadow-black/[0.07] sm:rounded-[2.9rem] sm:p-2.5 dark:border-white/[0.09] dark:from-zinc-800 dark:via-zinc-800 dark:to-zinc-900 dark:shadow-black/50">
+      {/* ── 1) Phone frame (hardware body) — dark slim frame in both modes
+          (per hero spec: dark frame + clean screen; screen bg set below) ── */}
+      <div className="relative rounded-[2.6rem] border border-zinc-700/70 bg-gradient-to-b from-zinc-800 via-zinc-900 to-zinc-950 p-2 shadow-xl shadow-black/[0.18] sm:rounded-[2.9rem] sm:p-2.5 dark:border-white/[0.09] dark:shadow-black/50">
         {/* Hardware side buttons (volume left, power right) */}
-        <div aria-hidden className="absolute -left-[2.5px] top-[90px] h-9 w-[3px] rounded-l-md bg-zinc-300 dark:bg-zinc-700" />
-        <div aria-hidden className="absolute -left-[2.5px] top-[136px] h-12 w-[3px] rounded-l-md bg-zinc-300 dark:bg-zinc-700" />
-        <div aria-hidden className="absolute -right-[2.5px] top-[112px] h-16 w-[3px] rounded-r-md bg-zinc-300 dark:bg-zinc-700" />
+        <div aria-hidden className="absolute -left-[2.5px] top-[90px] h-9 w-[3px] rounded-l-md bg-zinc-600" />
+        <div aria-hidden className="absolute -left-[2.5px] top-[136px] h-12 w-[3px] rounded-l-md bg-zinc-600" />
+        <div aria-hidden className="absolute -right-[2.5px] top-[112px] h-16 w-[3px] rounded-r-md bg-zinc-600" />
 
         {/* ── 2) Screen container (display surface) ── */}
         <div className="relative aspect-[9/19] w-full overflow-hidden rounded-[2rem] bg-background ring-1 ring-black/[0.06] sm:rounded-[2.3rem] dark:ring-white/[0.08]">
