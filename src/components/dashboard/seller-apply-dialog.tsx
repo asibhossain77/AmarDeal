@@ -29,7 +29,8 @@ interface CountryCode {
 }
 
 // Popular country codes for WhatsApp — Bangladesh first (default)
-const COUNTRY_CODES: CountryCode[] = [
+// Exported for reuse by the inline Seller Request section on the Account page
+export const COUNTRY_CODES: CountryCode[] = [
   { iso: 'BD', name: 'বাংলাদেশ', dial: '+880', flag: '🇧🇩' },
   { iso: 'IN', name: 'India', dial: '+91', flag: '🇮🇳' },
   { iso: 'PK', name: 'Pakistan', dial: '+92', flag: '🇵🇰' },

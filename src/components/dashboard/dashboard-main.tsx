@@ -23,8 +23,7 @@ import { UserPaymentView } from './user-payment-view';
 import { MyDealsPanel } from './my-deals-panel';
 import { MyOrdersPanel } from './my-orders-panel';
 import { OrderDetailPanel } from './order-detail-panel';
-import { ProfilePanel } from './profile-panel';
-import { SettingsPanel } from './settings-panel';
+import { AccountPanel } from './account-panel';
 import { AffiliatePanel } from './affiliate-panel';
 import { DashboardReviewPanel } from './dashboard-review-panel';
 import { BackButton } from '@/components/shared/back-button';
@@ -580,10 +579,13 @@ export function DashboardMain() {
       {dashboardPanel === 'my-orders' && <MyOrdersPanel />}
       {dashboardPanel === 'order-detail' && <OrderDetailPanel />}
       {dashboardPanel === 'payment' && <UserPaymentView />}
-      {dashboardPanel === 'profile' && <ProfilePanel />}
+      {/* Unified Account page (renamed from Profile). The legacy
+          /dashboard/settings deep-link opens the same panel with the
+          Account Settings tab preselected — no bookmark breaks. */}
+      {dashboardPanel === 'profile' && <AccountPanel />}
+      {dashboardPanel === 'settings' && <AccountPanel initialTab="settings" />}
       {dashboardPanel === 'affiliate' && <AffiliatePanel />}
       {dashboardPanel === 'review' && <DashboardReviewPanel />}
-      {dashboardPanel === 'settings' && <SettingsPanel />}
       {/* Seller panels */}
       {dashboardPanel === 'seller-orders' && <ActiveDealsPanel />}
       {dashboardPanel === 'seller-marketplace-orders' && <SellerMarketplaceOrders />}

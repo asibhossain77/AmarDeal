@@ -1,0 +1,719 @@
+'use client';
+
+/* ═══════════════════════════════════════════════════════════════
+   Seller Request Section — inline (NOT a modal) panel rendered
+   inside the unified Account page. Reuses the exact same APIs,
+   validation rules and i18n strings as the legacy
+   seller-apply-dialog (still used by the marketplace sidebar):
+     - GET  /api/user/become-seller          → latest application
+     - POST /api/user/become-seller          → submit application
+            (backend rejects a second application while pending)
+     - POST /api/user/become-seller/verify   → WhatsApp code check
+     - POST /api/upload/seller-document      → business doc upload
+   The verification code is NEVER shown to the user — only the
+   admin sees it and sends it to the user's WhatsApp.
+   ═══════════════════════════════════════════════════════════════ */
+
+import { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Sparkles, Store, XCircle, Loader2, Ban, Check, MessageCircle, ShieldCheck,
+  UserRound, Building2, BadgeCheck, Upload, X, ImagePlus, ArrowLeft, Clock,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useT } from '@/lib/i18n';
+import { useAppStore } from '@/lib/store';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { COUNTRY_CODES } from './seller-apply-dialog';
+
+interface Application {
+  id: string;
+  status: string;
+  rejectionReason: string | null;
+  applicationType?: string | null;
+}
+
+type SellerRoleStep = 'role' | 'personal' | 'business';
+
+export function SellerRequestSection() {
+  const t = useT();
+  const user = useAppStore((s) => s.user);
+
+  const [loading, setLoading] = useState(true);
+  const [application, setApplication] = useState<Application | null>(null);
+  const [step, setStep] = useState<SellerRoleStep>('role');
+  const [selectedRole, setSelectedRole] = useState<'personal' | 'business' | null>(null);
+  const [showRejectedNote, setShowRejectedNote] = useState(true);
+
+  const [countryCode, setCountryCode] = useState('BD');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  // Business application fields
+  const [businessName, setBusinessName] = useState('');
+  const [idType, setIdType] = useState<'nid' | 'trade_licence' | null>(null);
+  const [idNumber, setIdNumber] = useState('');
+  const [docUrl, setDocUrl] = useState('');
+  const [docUploading, setDocUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/user/become-seller')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.application) setApplication(data.application);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const isSeller = !!user?.isSeller;
+  const isBusinessSeller = isSeller && !!user?.businessVerified;
+  const activeApplicationType = application?.applicationType === 'business' ? 'business' : 'personal';
+  const selectedCountry = COUNTRY_CODES.find((c) => c.iso === countryCode) || COUNTRY_CODES[0];
+  const localDigits = whatsappNumber.replace(/\D/g, '').replace(/^0+/, '');
+
+  const clearError = (key: string) => setErrors((prev) => { const n = { ...prev }; delete n[key]; return n; });
+
+  const validatePersonal = () => {
+    const newErrors: Record<string, string> = {};
+    if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
+    else if (localDigits.length < 6 || localDigits.length > 14) newErrors.whatsappNumber = t('seller.whatsappInvalid');
+    if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateBusiness = () => {
+    const newErrors: Record<string, string> = {};
+    if (!businessName.trim() || businessName.trim().length < 2) newErrors.businessName = t('seller.requiredField');
+    if (!idType) newErrors.idType = t('seller.requiredField');
+    if (!idNumber.trim() || idNumber.trim().length < 4) newErrors.idNumber = t('seller.requiredField');
+    if (!whatsappNumber.trim()) newErrors.whatsappNumber = t('seller.requiredField');
+    else if (localDigits.length < 6 || localDigits.length > 14) newErrors.whatsappNumber = t('seller.whatsappInvalid');
+    if (!termsAccepted) newErrors.terms = t('seller.acceptTerms');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePersonalSubmit = async () => {
+    if (!validatePersonal()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/user/become-seller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationType: 'personal',
+          whatsappNumber: `${selectedCountry.dial}${localDigits}`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('dashboard.becomeSellerSuccess'));
+        setApplication({ id: '', status: 'pending', rejectionReason: null, applicationType: 'personal' });
+      } else {
+        toast.error(data.error || t('dashboard.becomeSellerError'));
+      }
+    } catch {
+      toast.error(t('dashboard.becomeSellerError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDocUpload = async (file: File) => {
+    setDocUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await fetch('/api/upload/seller-document', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setDocUrl(data.url);
+        toast.success(t('seller.docUploaded'));
+      } else {
+        toast.error(data.error || t('seller.docUploadFailed'));
+      }
+    } catch {
+      toast.error(t('seller.docUploadFailed'));
+    } finally {
+      setDocUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const handleBusinessSubmit = async () => {
+    if (!validateBusiness()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/user/become-seller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicationType: 'business',
+          businessName: businessName.trim(),
+          idType,
+          idNumber: idNumber.trim(),
+          documentImage: docUrl || undefined,
+          whatsappNumber: `${selectedCountry.dial}${localDigits}`,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(t('dashboard.becomeSellerSuccess'));
+        setApplication({ id: '', status: 'pending', rejectionReason: null, applicationType: 'business' });
+      } else {
+        toast.error(data.error || t('dashboard.becomeSellerError'));
+      }
+    } catch {
+      toast.error(t('dashboard.becomeSellerError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const normalizeTypedCode = (v: string) => {
+    const bn = '০১২৩৪৫৬৭৮৯';
+    return v.replace(/[০-৯]/g, (d) => String(bn.indexOf(d))).replace(/[^0-9]/g, '').slice(0, 6);
+  };
+
+  const handleVerify = async () => {
+    if (normalizeTypedCode(codeInput).length < 6) return;
+    setVerifying(true);
+    setCodeError(null);
+    try {
+      const res = await fetch('/api/user/become-seller/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codeInput }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const curr = useAppStore.getState().user;
+        if (curr) useAppStore.getState().setUser({ ...curr, isSeller: true, sellerRole: 'personal' });
+        toast.success(t('seller.verifySuccess'));
+        setApplication({ id: application?.id || '', status: 'approved', rejectionReason: null, applicationType: 'personal' });
+      } else {
+        setCodeError(data.error || t('seller.verifyWrong'));
+      }
+    } catch {
+      setCodeError(t('seller.verifyWrong'));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  /* ── Reusable field renderers (functions, NOT components — same rationale
+        as seller-apply-dialog: avoid remounts that close mobile keyboards) ── */
+
+  const renderTerms = () => (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => { setTermsAccepted(!termsAccepted); clearError('terms'); }}
+        className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+          termsAccepted ? 'border-primary/30 bg-primary/5' : errors.terms ? 'border-destructive/40 bg-destructive/5' : 'border-border hover:border-border/80'
+        }`}
+      >
+        <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
+          termsAccepted ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/40'
+        }`}>
+          {termsAccepted && <Check className="h-3 w-3" />}
+        </div>
+        <span className="text-xs leading-relaxed text-muted-foreground">{t('seller.termsText')}</span>
+      </button>
+      {errors.terms && <p className="text-xs text-destructive pl-1">{errors.terms}</p>}
+    </div>
+  );
+
+  const renderWhatsAppField = () => (
+    <div className="space-y-2">
+      <Label htmlFor="account-seller-wa" className="text-sm font-semibold">{t('seller.whatsappNumber')}</Label>
+      <div className="flex gap-2">
+        <Select value={countryCode} onValueChange={(v) => setCountryCode(v)}>
+          <SelectTrigger
+            aria-label={t('seller.countryCode')}
+            className="w-[118px] shrink-0 gap-1 rounded-xl border-border/60 bg-background px-3"
+          >
+            <SelectValue>
+              <span className="flex items-center gap-1.5 text-sm font-medium">
+                <span className="text-base leading-none">{selectedCountry.flag}</span>
+                <span>{selectedCountry.dial}</span>
+              </span>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {COUNTRY_CODES.map((c) => (
+              <SelectItem key={c.iso} value={c.iso} className="gap-2">
+                <span className="flex items-center gap-2">
+                  <span className="text-base leading-none">{c.flag}</span>
+                  <span className="text-sm">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">{c.dial}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="relative flex-1 min-w-0">
+          <MessageCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#25D366]" />
+          <Input
+            id="account-seller-wa"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder={t('seller.whatsappNumberPh')}
+            value={whatsappNumber}
+            onChange={(e) => {
+              setWhatsappNumber(e.target.value);
+              clearError('whatsappNumber');
+            }}
+            className="pl-10 rounded-xl"
+          />
+        </div>
+      </div>
+      {errors.whatsappNumber && <p className="text-xs text-destructive">{errors.whatsappNumber}</p>}
+      <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.whatsappHelp')}</p>
+    </div>
+  );
+
+  /* ── Status badge card ── */
+  const renderStatusCard = (status: 'pending' | 'approved' | 'rejected', description: string) => {
+    const styles = {
+      pending: {
+        wrap: 'border-amber-500/25 bg-amber-500/5',
+        icon: <Clock className="h-4 w-4 text-amber-500" />,
+        text: 'text-amber-600 dark:text-amber-400',
+        label: t('seller.pending'),
+      },
+      approved: {
+        wrap: 'border-emerald-500/25 bg-emerald-500/5',
+        icon: <BadgeCheck className="h-4 w-4 text-emerald-500" />,
+        text: 'text-emerald-600 dark:text-emerald-400',
+        label: t('account.statusApproved'),
+      },
+      rejected: {
+        wrap: 'border-red-500/25 bg-red-500/5',
+        icon: <XCircle className="h-4 w-4 text-red-500" />,
+        text: 'text-red-600 dark:text-red-400',
+        label: t('account.statusRejected'),
+      },
+    }[status];
+    return (
+      <div className={`rounded-xl border px-4 py-3 ${styles.wrap}`}>
+        <p className="text-[11px] font-medium text-muted-foreground">{t('account.statusLabel')}</p>
+        <p className={`mt-1 flex items-center gap-1.5 text-sm font-bold ${styles.text}`}>
+          {styles.icon}
+          {styles.label}
+        </p>
+        {description && <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{description}</p>}
+      </div>
+    );
+  };
+
+  /* ── Role selection (two cards with verification requirements) ── */
+  const renderRoleSelect = () => (
+    <div className="space-y-3">
+      {application?.status === 'rejected' && showRejectedNote && (
+        <div className="flex items-start justify-between gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2.5">
+          <p className="text-xs leading-relaxed text-red-600 dark:text-red-400">
+            <XCircle className="mr-1 inline h-3.5 w-3.5 -translate-y-px" />
+            {t('seller.rejectedDesc')} {application.rejectionReason || 'N/A'}
+          </p>
+          <button onClick={() => setShowRejectedNote(false)} className="shrink-0 text-red-400 hover:text-red-600" aria-label="close">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Personal Digital Seller card */}
+      <button
+        type="button"
+        onClick={() => { setSelectedRole('personal'); clearError('role'); }}
+        className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+          selectedRole === 'personal'
+            ? 'border-amber-500/60 bg-amber-500/5 shadow-sm'
+            : errors.role ? 'border-destructive/40' : 'border-border hover:border-amber-500/40 hover:bg-amber-500/[0.03]'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+            selectedRole === 'personal' ? 'bg-amber-500 text-white' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+          }`}>
+            <UserRound className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-bold text-foreground">{t('seller.rolePersonal')}</p>
+              <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                {t('seller.personalSellerBadge')}
+              </span>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('seller.rolePersonalDesc')}</p>
+            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed font-medium text-amber-600 dark:text-amber-400">
+              <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" />
+              {t('seller.rolePersonalVerify')}
+            </p>
+          </div>
+        </div>
+      </button>
+
+      {/* Verified Business Seller card */}
+      <button
+        type="button"
+        onClick={() => { setSelectedRole('business'); clearError('role'); }}
+        className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+          selectedRole === 'business'
+            ? 'border-emerald-500/60 bg-emerald-500/5 shadow-sm'
+            : errors.role ? 'border-destructive/40' : 'border-border hover:border-emerald-500/40 hover:bg-emerald-500/[0.03]'
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+            selectedRole === 'business' ? 'bg-emerald-500 text-white' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+          }`}>
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-bold text-foreground">{t('seller.roleBusiness')}</p>
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <BadgeCheck className="h-3 w-3" />
+                {t('admin.sellerApps.typeBusiness')}
+              </span>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('seller.roleBusinessDesc')}</p>
+            <p className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed font-medium text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0" />
+              {t('seller.roleBusinessVerify')}
+            </p>
+          </div>
+        </div>
+      </button>
+
+      {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
+
+      <Button
+        onClick={() => {
+          if (selectedRole === 'personal') setStep('personal');
+          else if (selectedRole === 'business') setStep('business');
+          else setErrors({ role: t('seller.requiredField') });
+        }}
+        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2 shadow-md shadow-amber-500/20"
+      >
+        {t('seller.roleContinue')}
+        <ArrowLeft className="h-4 w-4 rotate-180" />
+      </Button>
+    </div>
+  );
+
+  /* ── Personal Digital Seller form (WhatsApp only) ── */
+  const renderPersonalForm = () => (
+    <div className="space-y-4">
+      <button
+        type="button"
+        onClick={() => { setStep('role'); setSelectedRole(null); }}
+        className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {t('seller.roleBack')}
+      </button>
+      {renderWhatsAppField()}
+      {renderTerms()}
+      <Button
+        onClick={handlePersonalSubmit}
+        disabled={submitting}
+        className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-2 shadow-md shadow-amber-500/20"
+      >
+        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+        {submitting ? t('seller.submitting') : t('seller.submit')}
+      </Button>
+    </div>
+  );
+
+  /* ── Verified Business Seller form (NID / trade licence) ── */
+  const renderBusinessForm = ({ upgrade = false }: { upgrade?: boolean } = {}) => (
+    <div className="space-y-4">
+      {!upgrade && (
+        <button
+          type="button"
+          onClick={() => { setStep('role'); setSelectedRole(null); }}
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {t('seller.roleBack')}
+        </button>
+      )}
+
+      {/* Business name */}
+      <div className="space-y-2">
+        <Label htmlFor="account-seller-biz-name" className="text-sm font-semibold">{t('seller.businessName')}</Label>
+        <Input
+          id="account-seller-biz-name"
+          placeholder={t('seller.businessNamePh')}
+          value={businessName}
+          onChange={(e) => { setBusinessName(e.target.value); clearError('businessName'); }}
+          className="rounded-xl"
+        />
+        {errors.businessName && <p className="text-xs text-destructive">{errors.businessName}</p>}
+      </div>
+
+      {/* Verification document type */}
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">{t('seller.idType')}</Label>
+        <div className="grid grid-cols-2 gap-2">
+          {([
+            { value: 'nid' as const, label: t('seller.idTypeNid') },
+            { value: 'trade_licence' as const, label: t('seller.idTypeTrade') },
+          ]).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setIdType(opt.value); clearError('idType'); }}
+              className={`flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-xs font-semibold transition-all ${
+                idType === opt.value
+                  ? 'border-emerald-500/60 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400'
+                  : 'border-border text-muted-foreground hover:border-emerald-500/40'
+              }`}
+            >
+              <ShieldCheck className={`h-4 w-4 ${idType === opt.value ? 'text-emerald-500' : 'text-muted-foreground/60'}`} />
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {errors.idType && <p className="text-xs text-destructive">{errors.idType}</p>}
+      </div>
+
+      {/* ID number */}
+      <div className="space-y-2">
+        <Label htmlFor="account-seller-id-number" className="text-sm font-semibold">{t('seller.idNumber')}</Label>
+        <Input
+          id="account-seller-id-number"
+          inputMode="text"
+          placeholder={t('seller.idNumberPh')}
+          value={idNumber}
+          onChange={(e) => { setIdNumber(e.target.value); clearError('idNumber'); }}
+          className="rounded-xl"
+          dir="ltr"
+        />
+        {errors.idNumber ? (
+          <p className="text-xs text-destructive">{errors.idNumber}</p>
+        ) : (
+          <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.idNumberHelp')}</p>
+        )}
+      </div>
+
+      {/* Document photo (optional) */}
+      <div className="space-y-2">
+        <Label className="text-sm font-semibold">
+          {t('seller.documentPhoto')} <span className="font-normal text-muted-foreground">{t('seller.documentPhotoOptional')}</span>
+        </Label>
+        {docUrl ? (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-2.5">
+            <img src={docUrl} alt={t('seller.documentPhoto')} className="h-12 w-12 rounded-lg object-cover" />
+            <p className="flex flex-1 items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              <BadgeCheck className="h-4 w-4" />
+              {t('seller.docUploaded')}
+            </p>
+            <button
+              type="button"
+              onClick={() => setDocUrl('')}
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title={t('seller.removeDoc')}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={docUploading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-3 py-4 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
+          >
+            {docUploading ? (
+              <><Loader2 className="h-4 w-4 animate-spin" />{t('seller.uploadingDoc')}</>
+            ) : (
+              <><ImagePlus className="h-4 w-4" />{t('seller.uploadDoc')}</>
+            )}
+          </button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleDocUpload(f); }}
+        />
+        <p className="text-xs leading-relaxed text-muted-foreground">{t('seller.documentPhotoHelp')}</p>
+      </div>
+
+      {renderWhatsAppField()}
+      {renderTerms()}
+
+      <Button
+        onClick={handleBusinessSubmit}
+        disabled={submitting}
+        className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white gap-2 shadow-md shadow-emerald-500/20"
+      >
+        {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BadgeCheck className="h-4 w-4" />}
+        {submitting ? t('seller.submitting') : t('seller.submit')}
+      </Button>
+    </div>
+  );
+
+  /* ── WhatsApp verification (pending personal application) ── */
+  const renderVerifyView = () => (
+    <div className="space-y-4">
+      {renderStatusCard('pending', t('seller.verifyDesc'))}
+      <div className="rounded-2xl border-2 border-dashed border-amber-400/40 bg-amber-500/5 px-4 py-4">
+        <Input
+          aria-label={t('seller.verifyTitle')}
+          inputMode="numeric"
+          placeholder="······"
+          value={codeInput}
+          onChange={(e) => { setCodeInput(normalizeTypedCode(e.target.value)); setCodeError(null); }}
+          className="h-14 border-none bg-transparent text-center font-mono text-2xl font-bold tracking-[0.45em] shadow-none focus-visible:ring-0"
+          dir="ltr"
+        />
+      </div>
+      {codeError && <p className="text-xs text-destructive text-center">{codeError}</p>}
+      <Button
+        onClick={handleVerify}
+        disabled={verifying || normalizeTypedCode(codeInput).length < 6}
+        className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white gap-2 shadow-md shadow-emerald-500/20"
+      >
+        {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+        {verifying ? t('seller.verifying') : t('seller.verifySubmit')}
+      </Button>
+      <p className="text-xs text-center text-muted-foreground">{t('seller.verifyNoCode')}</p>
+    </div>
+  );
+
+  /* ── Main render ── */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Verified Business Seller — approved state
+  if (isBusinessSeller) {
+    return (
+      <div className="space-y-4">
+        {renderStatusCard('approved', t('account.approvedBusinessDesc'))}
+        <button
+          onClick={() => useAppStore.getState().setDashboardPanel('seller-orders')}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+        >
+          <Store className="h-4 w-4" />
+          {t('seller.goToDashboard')}
+        </button>
+      </div>
+    );
+  }
+
+  // Admin-disabled seller account — suspension notice; upgrade applications
+  // are not offered while the seller account is disabled (matches the
+  // dashboard's seller-panel gate: "সেলার অ্যাকাউন্ট নিষ্ক্রিয়")
+  if (isSeller && user?.sellerDisabled) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3">
+        <Ban className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+        <div>
+          <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{t('seller.accountDisabled')}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('seller.accountDisabledDesc')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Approved Personal Digital Seller — status + optional business upgrade
+  if (isSeller) {
+    const upgradingPending = application?.status === 'pending' && activeApplicationType === 'business';
+    return (
+      <div className="space-y-6">
+        {renderStatusCard('approved', t('account.approvedPersonalDesc'))}
+
+        <div className="h-px bg-border/50" />
+
+        {upgradingPending ? (
+          <div className="space-y-3">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Building2 className="h-4 w-4 text-emerald-500" />
+                {t('account.upgradeTitle')}
+              </h3>
+            </div>
+            {renderStatusCard('pending', t('seller.businessPendingDesc'))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                <Building2 className="h-4 w-4 text-emerald-500" />
+                {t('account.upgradeTitle')}
+              </h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t('account.upgradeDesc')}</p>
+            </div>
+            {renderBusinessForm({ upgrade: true })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Pending business application — documents under admin review
+  if (application?.status === 'pending' && activeApplicationType === 'business') {
+    return (
+      <div className="space-y-4">
+        {renderStatusCard('pending', t('seller.businessPendingDesc'))}
+        <div className="flex items-center justify-center py-2">
+          <div className="flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/5 px-4 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            {t('seller.businessPending')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pending personal application — enter the WhatsApp verification code
+  if (application?.status === 'pending') {
+    return renderVerifyView();
+  }
+
+  // Disabled seller account — re-apply through the personal flow
+  if (application?.status === 'disabled') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 rounded-xl border border-orange-500/20 bg-orange-500/5 px-4 py-3">
+          <Ban className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+          <div>
+            <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{t('seller.accountDisabled')}</p>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('seller.accountDisabledDesc')}</p>
+          </div>
+        </div>
+        {renderPersonalForm()}
+      </div>
+    );
+  }
+
+  // Fresh / rejected application — role selection → personal / business form
+  return (
+    <div className="space-y-4">
+      {step === 'role' && renderRoleSelect()}
+      {step === 'personal' && renderPersonalForm()}
+      {step === 'business' && renderBusinessForm()}
+    </div>
+  );
+}

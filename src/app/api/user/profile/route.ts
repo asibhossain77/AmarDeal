@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
     const id = guard.userId
 
     const body = await req.json()
-    const { action, currentPassword, newPassword, email, phone, imageLink } = body
+    const { action, currentPassword, newPassword, email, phone, imageLink, name } = body
 
     const user = await db.user.findUnique({ where: { id } })
     if (!user) {
@@ -38,6 +38,50 @@ export async function PUT(req: NextRequest) {
         data: { password: hashedPassword },
       })
       return NextResponse.json({ success: true, message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে' })
+    }
+
+    /* ─── Update Permitted Profile Info (name / phone only — email, roles and
+           seller/admin flags are identity or permission fields and can never
+           be changed through this endpoint) ─── */
+    if (action === 'update_info') {
+      const updates: { name?: string; phone?: string } = {}
+
+      if (name !== undefined) {
+        const trimmedName = String(name).trim()
+        if (trimmedName.length < 2 || trimmedName.length > 60) {
+          return NextResponse.json({ error: 'নাম কমপক্ষে ২ অক্ষর এবং সর্বোচ্চ ৬০ অক্ষরের হতে হবে' }, { status: 400 })
+        }
+        updates.name = trimmedName
+      }
+
+      if (phone !== undefined) {
+        const trimmedPhone = String(phone).trim()
+        if (!/^[+]?[0-9\s-]{6,20}$/.test(trimmedPhone)) {
+          return NextResponse.json({ error: 'সঠিক ফোন নম্বর দিন' }, { status: 400 })
+        }
+        // Prevent taking a phone number that belongs to another account
+        if (trimmedPhone !== (user.phone || '')) {
+          const duplicate = await db.user.findFirst({
+            where: { phone: trimmedPhone, NOT: { id } },
+            select: { id: true },
+          })
+          if (duplicate) {
+            return NextResponse.json({ error: 'এই ফোন নম্বরটি অন্য অ্যাকাউন্টে ব্যবহৃত হচ্ছে' }, { status: 400 })
+          }
+        }
+        updates.phone = trimmedPhone
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return NextResponse.json({ error: 'পরিবর্তনের কিছু নেই' }, { status: 400 })
+      }
+
+      const updated = await db.user.update({ where: { id }, data: updates })
+      return NextResponse.json({
+        success: true,
+        message: 'প্রোফাইল তথ্য আপডেট হয়েছে',
+        user: { name: updated.name, phone: updated.phone },
+      })
     }
 
     /* ─── Update Profile Image Link ─── */

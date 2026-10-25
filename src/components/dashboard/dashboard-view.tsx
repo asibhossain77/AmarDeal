@@ -8,7 +8,6 @@ import { useT } from '@/lib/i18n';
 import { useTheme } from 'next-themes';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { LogOut, Menu, Sun, Moon, Globe, Home, ShoppingCart } from 'lucide-react';
-import { SellerApplyButton } from './seller-apply-dialog';
 import { NotificationBell } from '@/components/shared/notification-bell';
 import { MidmanLogo } from '@/components/shared/midman-logo';
 
@@ -125,11 +124,6 @@ export function DashboardView() {
                   </button>
                 </nav>
                 <div className="border-t border-border/50 p-3 space-y-2">
-                  {!user?.isAdmin && (
-                    <div className="px-1">
-                      <SellerApplyButton variant="sidebar" />
-                    </div>
-                  )}
                   <button
                     onClick={() => { logout(); setMobileOpen(false); }}
                     className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"

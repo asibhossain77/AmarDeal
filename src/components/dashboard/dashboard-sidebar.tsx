@@ -8,7 +8,6 @@ import {
   ArrowLeftRight,
   UserCircle,
   LogOut,
-  Settings,
   Users,
   MessageSquare,
   ShoppingCart,
@@ -25,7 +24,6 @@ import {
   Star,
 } from 'lucide-react';
 import { useT } from '@/lib/i18n';
-import { SellerApplyButton } from './seller-apply-dialog';
 import { cdnUrl } from '@/lib/cdn-url';
 
 const emptySubscribe = () => () => {};
@@ -47,7 +45,6 @@ export const navItems: NavItem[] = [
   { labelKey: 'nav.profile', icon: UserCircle, panel: 'profile' },
   { labelKey: 'nav.affiliate', icon: Users, panel: 'affiliate' },
   { labelKey: 'nav.review', icon: MessageSquare, panel: 'review' },
-  { labelKey: 'nav.settings', icon: Settings, panel: 'settings' },
 ];
 
 export const sellerNavItems: NavItem[] = [
@@ -159,7 +156,6 @@ export function DashboardSidebar() {
             <ShoppingCart className="h-[18px] w-[18px]" />
             {t('page.marketplace.title') || 'মার্কেটপ্লেস'}
           </button>
-          {!user?.isAdmin && <SellerApplyButton variant="sidebar" />}
           <div className="flex items-center gap-3 rounded-xl py-2">
             <div
               className="h-9 w-9 shrink-0 rounded-full overflow-hidden"
