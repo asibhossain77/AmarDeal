@@ -1,6 +1,5 @@
 import { Navbar } from '@/components/landing/navbar';
 import { Footer } from '@/components/landing/footer';
-import { LiveSupportButton } from '@/components/live-support-button';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -43,7 +42,6 @@ export function SeoPageLayout({
 
         <Footer />
       </div>
-      <LiveSupportButton />
     </div>
   );
 }

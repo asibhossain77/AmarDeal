@@ -4,7 +4,7 @@ import { LoadingAnimation } from '@/components/shared/loading-animation'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, animate, useTransform, PanInfo } from 'framer-motion';
 import { MessageCircle, X, Send, Bot, Mail, HelpCircle, ChevronRight } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { usePathname } from 'next/navigation';
 
 interface ContactInfo {
   whatsapp: string | null;
@@ -56,14 +56,11 @@ function FacebookIcon({ className }: { className?: string }) {
 }
 
 export function LiveSupportButton() {
-  const view = useAppStore((s) => s.view);
-  const dashboardPanel = useAppStore((s) => s.dashboardPanel);
-  const adminPanel = useAppStore((s) => s.adminPanel);
-
-  // Hide support button on deal detail pages (they have their own admin call button in chat)
-  const isDealDetail =
-    (view === 'dashboard' && (dashboardPanel === 'deal-detail' || dashboardPanel === 'seller-order-detail')) ||
-    (view === 'admin' && adminPanel === 'all-deals');
+  // The support widget is intentionally visible on the landing page ("/") only.
+  // Every other page — dashboard, seller, admin, marketplace, cart, product,
+  // auth, blog, auctions and all SEO pages — is excluded by this route gate.
+  const pathname = usePathname();
+  const isLanding = pathname === '/';
 
   const [isOpen, setIsOpen] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -179,10 +176,8 @@ export function LiveSupportButton() {
   if (contact.telegramGroup) contactLinks.push({ href: contact.telegramGroup, icon: TelegramIcon, label: 'Telegram', color: 'bg-sky-50', hoverColor: 'hover:bg-sky-100', darkColor: 'dark:bg-sky-950/30', darkHover: 'dark:hover:bg-sky-950/50' });
   if (contact.facebookGroup) contactLinks.push({ href: contact.facebookGroup, icon: FacebookIcon, label: 'Facebook', color: 'bg-blue-50', hoverColor: 'hover:bg-blue-100', darkColor: 'dark:bg-blue-950/30', darkHover: 'dark:hover:bg-blue-950/50' });
 
-  // Marketplace app shell intentionally has no support entry points (its
-  // navigation is the mobile bottom nav / desktop sidebar only). The product
-  // details page renders inside the same shell, so it is excluded too.
-  if (isDealDetail || view === 'page-marketplace' || view === 'page-cart' || view === 'page-product') return null;
+  // Landing-page-only visibility (route-based gate above); no other route renders the widget.
+  if (!isLanding) return null;
 
   return (
     <motion.div
