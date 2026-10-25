@@ -301,10 +301,30 @@ export function Navbar() {
             <LanguageSwitcher />
             <ThemeToggle />
             {user ? (
-              <Button onClick={() => navigateToDashboard()} className="gap-2 rounded-[9px] font-medium shadow-sm shadow-primary/15 transition-all hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]">
-                <LayoutDashboard className="h-4 w-4" />
-                {t('nav.dashboard')}
-              </Button>
+              <>
+                <Button onClick={() => navigateToDashboard()} className="gap-2 rounded-[9px] font-medium shadow-sm shadow-primary/15 transition-all hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {t('nav.dashboard')}
+                </Button>
+                {/* Logout — mirrors the mobile sheet so logged-in users can
+                    sign out from the landing navbar without entering the
+                    dashboard (icon-only + tooltip, matching the center
+                    icon-link style). */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleLogout}
+                      aria-label={t('nav.logout')}
+                      className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                    >
+                      <LogOut className="h-[18px] w-[18px]" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs font-medium rounded-lg">
+                    {t('nav.logout')}
+                  </TooltipContent>
+                </Tooltip>
+              </>
             ) : (
               <Button onClick={() => setView('auth')} className="gap-2 rounded-[9px] font-medium shadow-sm shadow-primary/15 transition-all hover:shadow-md hover:shadow-primary/25 active:scale-[0.98]">
                 <LogIn className="h-4 w-4" />

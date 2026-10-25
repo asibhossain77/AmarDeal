@@ -619,9 +619,9 @@ function SidebarLangButton({ expanded }: { expanded: boolean }) {
   );
 }
 
-function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSeller }: {
+function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSeller, onAddProduct, isSeller }: {
   page: 'browse' | 'cart' | 'product' | 'checkout'; expanded: boolean; onToggle: () => void;
-  onOpenCategories: () => void; onBecomeSeller: () => void;
+  onOpenCategories: () => void; onBecomeSeller: () => void; onAddProduct: () => void; isSeller: boolean;
 }) {
   const t = useT();
   const locale = useAppStore((s) => s.locale);
@@ -655,6 +655,15 @@ function DesktopSidebar({ page, expanded, onToggle, onOpenCategories, onBecomeSe
     },
     { key: 'verify', label: t('nav.midmanVerify'), Icon: BadgeCheck, href: 'https://verify.midman.bd' },
   ];
+
+  /* Seller-only quick action — mirrors the mobile drawer's "পণ্য যোগ করুন"
+     entry so sellers get the same shortcut on desktop (same dialog). */
+  if (isSeller) {
+    platformItems.push({
+      key: 'add-product', label: t('marketplace.addProduct'), Icon: Package,
+      onClick: onAddProduct,
+    });
+  }
 
   const toggleLabel = expanded ? t('nav.collapseSidebar') : t('nav.expandSidebar');
 
@@ -1088,6 +1097,8 @@ export function MarketplaceApp({ page }: { page: 'browse' | 'cart' | 'product' |
         onToggle={toggleSidebar}
         onOpenCategories={() => setCatSheetOpen(true)}
         onBecomeSeller={handleBecomeSeller}
+        onAddProduct={() => setAddProductOpen(true)}
+        isSeller={!!user?.isSeller}
       />
 
       <div

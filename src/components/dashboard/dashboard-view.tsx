@@ -90,6 +90,11 @@ export function DashboardView() {
                         <div className="h-px flex-1 bg-border/50" />
                       </div>
                       {sellerNavItems.map((item) => {
+                        /* Phase 3: marketplace-orders & analytics are
+                           Verified Business Seller panels — personal digital
+                           sellers never see them, matching the desktop
+                           sidebar (the API returns 403 for them as well). */
+                        if (item.businessOnly && user?.sellerRole !== 'business') return null;
                         const Icon = item.icon;
                         const active = dashboardPanel === item.panel;
                         return (
