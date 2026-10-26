@@ -53,26 +53,31 @@ type SmartphoneMockupProps = {
 export function SmartphoneMockup({ screen, className = '' }: SmartphoneMockupProps) {
   return (
     <div className={`relative ${className}`}>
-      {/* Soft ambient glow behind the device — subtle in both themes */}
+      {/* Soft ambient glow behind the device — subtle in both themes.
+          lg: inset is reduced so the glow stays proportional to the
+          smaller desktop mockup. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-8 rounded-[4rem] bg-primary/[0.08] blur-3xl sm:-inset-12 dark:bg-primary/[0.1]"
+        className="pointer-events-none absolute -inset-8 rounded-[4rem] bg-primary/[0.08] blur-3xl sm:-inset-12 lg:-inset-9 dark:bg-primary/[0.1]"
       />
 
       {/* ── 1) Phone frame (hardware body) — dark slim frame in both modes
-          (per hero spec: dark frame + clean screen; screen bg set below) ── */}
-      <div className="relative rounded-[2.6rem] border border-zinc-700/70 bg-gradient-to-b from-zinc-800 via-zinc-900 to-zinc-950 p-2 shadow-xl shadow-black/[0.18] sm:rounded-[2.9rem] sm:p-2.5 dark:border-white/[0.09] dark:shadow-black/50">
-        {/* Hardware side buttons (volume left, power right) */}
-        <div aria-hidden className="absolute -left-[2.5px] top-[90px] h-9 w-[3px] rounded-l-md bg-zinc-600" />
-        <div aria-hidden className="absolute -left-[2.5px] top-[136px] h-12 w-[3px] rounded-l-md bg-zinc-600" />
-        <div aria-hidden className="absolute -right-[2.5px] top-[112px] h-16 w-[3px] rounded-r-md bg-zinc-600" />
+          (per hero spec: dark frame + clean screen; screen bg set below).
+          lg: bezel radius/padding scale down with the smaller desktop size. */}
+      <div className="relative rounded-[2.6rem] border border-zinc-700/70 bg-gradient-to-b from-zinc-800 via-zinc-900 to-zinc-950 p-2 shadow-xl shadow-black/[0.18] sm:rounded-[2.9rem] sm:p-2.5 lg:rounded-[2rem] lg:p-2 dark:border-white/[0.09] dark:shadow-black/50">
+        {/* Hardware side buttons (volume left, power right) — lg: positions
+            scale with the shorter desktop body */}
+        <div aria-hidden className="absolute -left-[2.5px] top-[90px] h-9 w-[3px] rounded-l-md bg-zinc-600 lg:top-[66px] lg:h-7" />
+        <div aria-hidden className="absolute -left-[2.5px] top-[136px] h-12 w-[3px] rounded-l-md bg-zinc-600 lg:top-[100px] lg:h-9" />
+        <div aria-hidden className="absolute -right-[2.5px] top-[112px] h-16 w-[3px] rounded-r-md bg-zinc-600 lg:top-[82px] lg:h-12" />
 
         {/* ── 2) Screen container (display surface) ── */}
-        <div className="relative aspect-[9/19] w-full overflow-hidden rounded-[2rem] bg-background ring-1 ring-black/[0.06] sm:rounded-[2.3rem] dark:ring-white/[0.08]">
-          {/* Dynamic island */}
+        <div className="relative aspect-[9/19] w-full overflow-hidden rounded-[2rem] bg-background ring-1 ring-black/[0.06] sm:rounded-[2.3rem] lg:rounded-[1.6rem] dark:ring-white/[0.08]">
+          {/* Dynamic island — lg: slightly smaller to stay proportional on
+              the compact desktop mockup */}
           <div
             aria-hidden
-            className="absolute left-1/2 top-2.5 z-20 h-[20px] w-[80px] -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-black"
+            className="absolute left-1/2 top-2.5 z-20 h-[20px] w-[80px] -translate-x-1/2 rounded-full bg-zinc-900 lg:top-2 lg:h-4 lg:w-16 dark:bg-black"
           />
 
           {/* ── 3) SCREEN CONTENT AREA ─────────────────────────────────────────

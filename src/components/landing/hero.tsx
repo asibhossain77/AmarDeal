@@ -28,9 +28,10 @@ const stagger: Variants = {
  * --primary, --primary-foreground, --foreground, --border…) — no hardcoded
  * hex colors — so light and dark modes always match the rest of the site.
  *
- * Desktop (lg+): realistic smartphone mockup on the LEFT (~35-40% of the hero
- * visual area) showing a miniature Midman mobile interface; headline,
- * description, the four CTA buttons (2×2 grid) and the trust row on the RIGHT.
+ * Desktop (lg+): realistic smartphone mockup on the LEFT (~25% of the hero
+ * width — kept deliberately compact so the content leads) showing a miniature
+ * Midman mobile interface; headline, description, the four CTA buttons
+ * (2×2 grid) and the trust row on the RIGHT.
  *
  * Mobile: single column in a fixed order — headline → description → CTA
  * buttons → phone mockup BELOW the content (never above or beside it).
@@ -82,35 +83,41 @@ export function Hero() {
       <div className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-14 lg:px-8 lg:pb-16">
         {/* ── Phone left · content right (desktop) · content → phone (mobile) ──
             Compact vertical rhythm: the whole hero stays within a normal
-            desktop viewport (phone column is the height driver). */}
-        <div className="grid items-center gap-12 pt-10 sm:pt-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:pt-14 xl:gap-14">
+            desktop viewport. Phone column is narrower than the content column
+            (0.8fr/1.2fr) so the shrunken mockup keeps a balanced gap to the
+            text instead of drifting into empty space. */}
+        <div className="grid items-center gap-12 pt-10 sm:pt-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10 lg:pt-14 xl:gap-14">
           {/* ── LEFT: smartphone mockup (desktop) / below content (mobile) ── */}
           <motion.div
             {...motionProps}
             variants={fadeUp}
             className="order-2 flex justify-center lg:order-1 lg:justify-start"
           >
-            <div className="relative w-full max-w-[264px] sm:max-w-[288px] lg:max-w-[310px] xl:max-w-[340px]">
-              {/* Abstract curved shapes behind the phone (desktop only —
-                  reduced decoration on small screens per spec) */}
+            {/* Desktop mockup width: 228px (lg) / 248px (xl) — ~27% smaller
+                than the previous 310/340px so the phone supports the hero
+                instead of dominating it. Mobile/tablet widths unchanged. */}
+            <div className="relative w-full max-w-[264px] sm:max-w-[288px] lg:max-w-[228px] xl:max-w-[248px]">
+              {/* Decorative shapes scale with the smaller desktop mockup
+                  (~0.73× of the previous sizes, offsets included) so the
+                  composition around the phone stays identical. */}
               <div
                 aria-hidden
-                className="pointer-events-none absolute -left-24 -top-16 hidden h-[380px] w-[380px] rounded-full border border-primary/15 lg:block dark:border-primary/20"
+                className="pointer-events-none absolute -left-[72px] -top-12 hidden h-[280px] w-[280px] rounded-full border border-primary/15 lg:block dark:border-primary/20"
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute -left-12 -top-4 hidden h-[280px] w-[280px] rounded-full border border-primary/10 lg:block dark:border-primary/15"
+                className="pointer-events-none absolute -left-9 -top-3 hidden h-[208px] w-[208px] rounded-full border border-primary/10 lg:block dark:border-primary/15"
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-14 -right-20 hidden h-[300px] w-[300px] rounded-full bg-primary/[0.09] blur-3xl lg:block dark:bg-primary/[0.12]"
+                className="pointer-events-none absolute -bottom-10 -right-14 hidden h-[220px] w-[220px] rounded-full bg-primary/[0.09] blur-3xl lg:block dark:bg-primary/[0.12]"
               />
               {/* Floating shield badge — reinforces the verify message */}
               <div
                 aria-hidden
-                className="absolute -left-7 bottom-24 hidden h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-card shadow-lg shadow-primary/10 lg:flex dark:border-primary/25"
+                className="absolute -left-5 bottom-[72px] hidden h-10 w-10 items-center justify-center rounded-2xl border border-primary/20 bg-card shadow-lg shadow-primary/10 lg:flex dark:border-primary/25"
               >
-                <ShieldCheck className="h-6 w-6 text-primary" />
+                <ShieldCheck className="h-5 w-5 text-primary" />
               </div>
 
               <SmartphoneMockup screen={<HeroPhoneScreen />} />
@@ -148,7 +155,9 @@ export function Hero() {
             </motion.p>
 
             {/* Four primary CTA buttons (2×2 grid, auth-aware) */}
-            <motion.div variants={fadeUp} className="mt-8 w-full max-w-md lg:max-w-none">
+            {/* CTA grid keeps its previous rendered width (~506-568px) even
+                though the content column is wider now — capped at 34rem. */}
+            <motion.div variants={fadeUp} className="mt-8 w-full max-w-md lg:max-w-[34rem]">
               <HeroActionCards />
             </motion.div>
 
