@@ -84,14 +84,18 @@ export function Hero() {
         {/* ── Phone left · content right (desktop) · content → phone (mobile) ──
             Compact vertical rhythm: the whole hero stays within a normal
             desktop viewport. Phone column is narrower than the content column
-            (0.8fr/1.2fr) so the shrunken mockup keeps a balanced gap to the
-            text instead of drifting into empty space. */}
+            (0.8fr/1.2fr) with the mockup centered inside it, so the gap to
+            the text stays balanced — connected but never cramped. */}
         <div className="grid items-center gap-12 pt-10 sm:pt-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10 lg:pt-14 xl:gap-14">
-          {/* ── LEFT: smartphone mockup (desktop) / below content (mobile) ── */}
+          {/* ── LEFT: smartphone mockup (desktop) / below content (mobile) ──
+              Desktop: centered inside its column — pulls the mockup toward
+              the right-hand content (removes the dead space of the old
+              lg:justify-start) while keeping it clearly on the left half.
+              Same flex centering as mobile → no behaviour change below lg. */}
           <motion.div
             {...motionProps}
             variants={fadeUp}
-            className="order-2 flex justify-center lg:order-1 lg:justify-start"
+            className="order-2 flex justify-center lg:order-1 lg:justify-center"
           >
             {/* Desktop mockup width: 228px (lg) / 248px (xl) — ~27% smaller
                 than the previous 310/340px so the phone supports the hero
