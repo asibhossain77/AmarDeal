@@ -73,10 +73,10 @@ export const en: Record<TranslationKey, string> = {
   'settings.failed': 'Failed',
 
   // ── Hero (headline, description, trust row, four CTA buttons, phone screen) ──
-  'hero.headline.start': 'Shopping, admin deals',
-  'hero.headline.middle': '& business',
-  'hero.headline.highlight': 'verification',
-  'hero.headline.end': ' in one secure place',
+  'hero.headline.start': 'Buy safely,',
+  'hero.headline.middle': '',
+  'hero.headline.highlight': 'Sell safely',
+  'hero.headline.end': '',
   'hero.subtitle': 'Find products and digital services, manage deals, and learn about brands — all through Midman.',
   'hero.trust.escrow': 'Secure transactions',
   'hero.trust.verified': 'Verified businesses',

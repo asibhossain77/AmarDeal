@@ -19,9 +19,12 @@
  *
  * Layout: two columns × two rows at every breakpoint (per design spec) —
  * comfortable on mobile, aligned in the hero's right column on desktop.
- * Solid dark-green primary button; the other three use a light mint
- * background with a subtle green border. Restrained hover (arrow shift),
- * accessible focus rings, reduced-motion friendly.
+ * COLOR POLICY: token-only styling that mirrors the site's own buttons —
+ * the primary slot is `bg-primary` + `text-primary-foreground` (the exact
+ * navbar Button pattern); the other three use the site's established
+ * `bg-primary/10 text-primary` green-tint surface with a subtle green border.
+ * Restrained hover (arrow shift), accessible focus rings, reduced-motion
+ * friendly.
  */
 
 import { ArrowRight, CircleUserRound, Handshake, LayoutDashboard, ShieldCheck, Store, type LucideIcon } from 'lucide-react';
@@ -34,12 +37,13 @@ import { useTranslation } from '@/lib/i18n';
 const BUTTON_CLASS =
   'group flex min-h-12 items-center gap-2 rounded-2xl px-3 py-2 text-left text-[12.5px] font-semibold leading-tight transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:h-[52px] sm:min-h-[52px] sm:gap-2.5 sm:px-5 sm:py-0 sm:text-sm motion-reduce:transition-none';
 
-/* Primary — solid dark forest green with white text (light mode); the brand
-   green token takes over in dark mode, matching the site's solid buttons. */
-const PRIMARY_CLASS = `${BUTTON_CLASS} bg-[#123B2A] text-white shadow-md shadow-black/[0.12] hover:bg-[#0E2F21] active:shadow-sm dark:bg-primary dark:text-primary-foreground dark:shadow-primary/20 dark:hover:bg-primary/90`;
+/* Primary — solid brand green with the theme's on-primary text color, exactly
+   like the site's own <Button /> (bg-primary text-primary-foreground). */
+const PRIMARY_CLASS = `${BUTTON_CLASS} bg-primary text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 active:shadow-sm`;
 
-/* Secondary — very light mint background, subtle green border, green text. */
-const SECONDARY_CLASS = `${BUTTON_CLASS} border border-primary/25 bg-primary/[0.05] text-primary hover:border-primary/45 hover:bg-primary/[0.09] active:bg-primary/[0.07] dark:border-primary/30 dark:bg-primary/[0.1] dark:hover:border-primary/45 dark:hover:bg-primary/[0.16]`;
+/* Secondary — the site's established green-tint surface (bg-primary/10),
+   subtle green border and brand-colored text. */
+const SECONDARY_CLASS = `${BUTTON_CLASS} border border-primary/20 bg-primary/10 text-primary hover:border-primary/40 hover:bg-primary/15 active:bg-primary/[0.12] dark:border-primary/25 dark:bg-primary/15 dark:hover:border-primary/40 dark:hover:bg-primary/20`;
 
 /* Right-arrow affordance shared by every button. */
 function ButtonArrow() {

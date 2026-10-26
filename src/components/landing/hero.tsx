@@ -24,6 +24,10 @@ const stagger: Variants = {
 /**
  * Hero — premium green fintech hero (phone mockup left · content right).
  *
+ * COLOR POLICY: this hero uses ONLY the existing theme tokens (--background,
+ * --primary, --primary-foreground, --foreground, --border…) — no hardcoded
+ * hex colors — so light and dark modes always match the rest of the site.
+ *
  * Desktop (lg+): realistic smartphone mockup on the LEFT (~35-40% of the hero
  * visual area) showing a miniature Midman mobile interface; headline,
  * description, the four CTA buttons (2×2 grid) and the trust row on the RIGHT.
@@ -56,23 +60,18 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden" aria-labelledby="hero-heading">
       {/* ── Background treatment ──
-          Light: clean white → light-mint gradient. Dark: deep charcoal-green.
-          Both keep a subtle green radial glow; light mode adds a faint dot grid. */}
+          Transparent — inherits the existing theme body background (#F2F4F7
+          light / #131511 dark) so the hero is seamless with the sections
+          below. Decoration is token-colored only: soft green radial glows +
+          a faint dot grid (desktop, light mode). */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div
-          className="absolute inset-0 hidden dark:block"
-          style={{ background: 'linear-gradient(180deg, #0A0C0A 0%, #0D120E 100%)' }}
-        />
-        <div
-          className="absolute inset-0 dark:hidden"
-          style={{ background: 'linear-gradient(180deg, #FAFDFA 0%, #EDF7EF 100%)' }}
-        />
         {/* Soft green radial glows */}
         <div className="absolute left-1/2 top-[-140px] h-[420px] w-[720px] max-w-[120vw] -translate-x-1/2 rounded-full bg-primary/[0.07] blur-[120px] dark:bg-primary/[0.09]" />
         <div className="absolute bottom-[-120px] left-[-180px] h-[380px] w-[380px] rounded-full bg-primary/[0.06] blur-[110px] dark:bg-primary/[0.08]" />
-        {/* Faint dot grid (light mode only) */}
+        {/* Faint dot grid (light mode, desktop only — reduced decoration on
+            small screens per spec) */}
         <div
-          className="absolute inset-0 opacity-[0.035] dark:hidden"
+          className="absolute inset-0 hidden opacity-[0.035] lg:block dark:hidden"
           style={{
             backgroundImage: 'radial-gradient(circle, oklch(0.768 0.189 131) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
@@ -80,16 +79,18 @@ export function Hero() {
         />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-14 lg:px-8 lg:pb-20">
-        {/* ── Phone left · content right (desktop) · content → phone (mobile) ── */}
-        <div className="grid items-center gap-12 pt-10 sm:pt-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:pt-16 xl:gap-14">
+      <div className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 sm:pb-14 lg:px-8 lg:pb-16">
+        {/* ── Phone left · content right (desktop) · content → phone (mobile) ──
+            Compact vertical rhythm: the whole hero stays within a normal
+            desktop viewport (phone column is the height driver). */}
+        <div className="grid items-center gap-12 pt-10 sm:pt-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:pt-14 xl:gap-14">
           {/* ── LEFT: smartphone mockup (desktop) / below content (mobile) ── */}
           <motion.div
             {...motionProps}
             variants={fadeUp}
             className="order-2 flex justify-center lg:order-1 lg:justify-start"
           >
-            <div className="relative w-full max-w-[264px] sm:max-w-[300px] lg:max-w-[330px] xl:max-w-[368px]">
+            <div className="relative w-full max-w-[264px] sm:max-w-[288px] lg:max-w-[310px] xl:max-w-[340px]">
               {/* Abstract curved shapes behind the phone (desktop only —
                   reduced decoration on small screens per spec) */}
               <div
@@ -125,13 +126,18 @@ export function Hero() {
             <motion.h1
               variants={fadeUp}
               id="hero-heading"
-              className="max-w-xl font-display text-[1.95rem] font-bold leading-[1.28] tracking-tight text-[#123B2A] dark:text-[#EAF6EE] sm:text-4xl sm:leading-[1.24] lg:text-[2.85rem] lg:leading-[1.22] xl:text-[3.1rem]"
+              className="max-w-xl font-display text-[1.9rem] font-bold leading-[1.3] tracking-tight text-primary-foreground dark:text-foreground sm:text-4xl sm:leading-[1.26] lg:text-[2.6rem] lg:leading-[1.24] xl:text-[2.85rem]"
             >
               {headStart}
               <br />
-              {headMiddle} <span className="text-primary">{highlight}</span>
-              <br />
-              {headEnd}
+              {headMiddle ? `${headMiddle} ` : null}
+              <span className="text-primary">{highlight}</span>
+              {headEnd ? (
+                <>
+                  <br />
+                  {headEnd}
+                </>
+              ) : null}
             </motion.h1>
 
             <motion.p

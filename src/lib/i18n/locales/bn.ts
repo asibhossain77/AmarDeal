@@ -71,10 +71,10 @@ export const bn = {
   'settings.failed': 'ব্যর্থ হয়েছে',
 
   // ── Hero (headline, description, trust row, four CTA buttons, phone screen) ──
-  'hero.headline.start': 'কেনাকাটা, অ্যাডমিন ডিল ও',
-  'hero.headline.middle': 'ব্যবসার',
-  'hero.headline.highlight': 'নিরাপদ যাচাই',
-  'hero.headline.end': ' এক জায়গায়',
+  'hero.headline.start': 'নিরাপদে কিনুন,',
+  'hero.headline.middle': '',
+  'hero.headline.highlight': 'নিরাপদে বিক্রি করুন',
+  'hero.headline.end': '',
   'hero.subtitle': 'পণ্য ও ডিজিটাল সার্ভিস খুঁজুন, ডিল পরিচালনা করুন এবং ব্র্যান্ড সম্পর্কে জানুন Midman-এর মাধ্যমে।',
   'hero.trust.escrow': 'নিরাপদ লেনদেন',
   'hero.trust.verified': 'যাচাইকৃত ব্যবসা',
