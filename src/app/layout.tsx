@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { Hind_Siliguri, Noto_Sans_Bengali } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "next-themes";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { headers } from "next/headers";
@@ -31,19 +31,36 @@ const getSiteLogo = cache(async (): Promise<string> => {
   return FALLBACK_LOGO;
 });
 
-const hindSiliguri = Hind_Siliguri({
+// ── Self-hosted fonts (next/font/local) ───────────────────────────────────
+// Both Bangla faces ship as local woff2 files in src/fonts/ instead of
+// next/font/google. Why: next/font/google downloads from
+// fonts.googleapis.com/gstatic at BUILD time, and Turbopack's google-font
+// import map can collide on the CDN-served URLs ("next/font/google queries
+// have exactly one entry" → "Can't resolve
+// @vercel/turbopack-next/internal/font/google/font") — a network/CDN-
+// dependent build failure. Local files make the build deterministic and
+// offline-safe, with identical rendering (same font data, same CSS variable
+// names --font-hind-siliguri / --font-noto-bengali consumed in globals.css).
+
+/* Body/UI face — Hind Siliguri (Bengali + Latin coverage in one file per weight) */
+const hindSiliguri = localFont({
   variable: "--font-hind-siliguri",
-  subsets: ["bengali", "latin"],
-  weight: ["400", "500", "700"],
   display: "swap",
+  src: [
+    { path: "../fonts/HindSiliguri-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/HindSiliguri-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/HindSiliguri-Bold.woff2", weight: "700", style: "normal" },
+  ],
 });
 
-/* Display face for hero headlines / brand marks — standard clean Bangla Google font */
-const notoSansBengali = Noto_Sans_Bengali({
+/* Display face for hero headlines / brand marks — Noto Sans Bengali,
+   variable font (wght 100–900) covering the 400–800 weights in use */
+const notoSansBengali = localFont({
   variable: "--font-noto-bengali",
-  subsets: ["bengali", "latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
+  src: [
+    { path: "../fonts/NotoSansBengali-wght.woff2", weight: "400 800", style: "normal" },
+  ],
 });
 
 export async function generateMetadata(): Promise<Metadata> {
