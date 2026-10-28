@@ -47,7 +47,6 @@ import { SectionSkeleton } from '@/components/shared/skeletons/landing-skeleton'
 
 /* ── Eager: site loader (shown immediately) ── */
 import { DynamicFavicon } from '@/components/shared/dynamic-favicon';
-import { SiteLoader } from '@/components/shared/site-loader';
 
 /* ── Dynamic: heavy views (admin, dashboard, auth) — with skeleton fallbacks ── */
 const AuthView = dynamic(() => import('@/components/auth/auth-view').then(m => ({ default: m.AuthView })), { ssr: false, loading: () => <AuthSkeleton /> });
@@ -279,18 +278,10 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   const setView = useAppStore((s) => s.setView);
   const setUser = useAppStore((s) => s.setUser);
   const [checking, setChecking] = useState(true);
-  const [minReady, setMinReady] = useState(false);
 
   // Initialise URL ↔ Store sync (address bar reflects current page)
   useEffect(() => {
     initUrlSync();
-  }, []);
-
-  // Minimum loader display — reduced from 1800ms to 600ms for faster LCP.
-  // Auth check runs in parallel; once both are done, content appears.
-  useEffect(() => {
-    const t = setTimeout(() => setMinReady(true), 600);
-    return () => clearTimeout(t);
   }, []);
 
   // Scroll to top whenever the view changes
@@ -462,8 +453,12 @@ export function AppShell({ initialView }: { initialView?: AppView }) {
   }, [setUser]);
 
 
-  if (!minReady || checking) {
-    return <SiteLoader />;
+  // While the session check resolves, render nothing: the boot LoadingScreen
+  // (root layout) covers this window with the branded loader, so no second
+  // fullscreen loader here — one loader, one source of truth. `checking`
+  // always resolves (see .finally() above), so this cannot blank forever.
+  if (checking) {
+    return null;
   }
 
   return (

@@ -10,6 +10,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/lib/query-client";
 import { LocaleEffect } from "@/components/shared/locale-effect";
+import { LoadingScreen } from "@/components/shared/loading-screen";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "";
@@ -326,6 +327,9 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${hindSiliguri.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning>
+        {/* Boot loader — first element in <body> so its pre-paint session
+            guard runs before anything can paint. CSP-nonce'd inline script. */}
+        <LoadingScreen nonce={nonce} />
         <MetaPixel nonce={nonce} />
         <ThemeProvider
           attribute="class"

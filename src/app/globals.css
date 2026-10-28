@@ -189,3 +189,56 @@ html.dark .linkify-link--purple {
   color: rgb(233 213 255); /* purple-200 */
   text-decoration-color: rgb(233 213 255 / 0.5);
 }
+
+/* ── Boot LoadingScreen (src/components/shared/loading-screen.tsx) ─────────
+   Full-screen boot overlay: logo + slim green bar on bg-background.
+   Hidden permanently for the session via html[data-mm-booted]. */
+.mm-loader-bar {
+  transform: translateX(-110%);
+  animation: mm-loader-bar-slide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+@keyframes mm-loader-bar-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  55% {
+    transform: translateX(35%);
+  }
+  100% {
+    transform: translateX(255%);
+  }
+}
+/* Pure-CSS failsafe: if hydration never happens (JS blocked/crashed),
+   the overlay still fades away ~2.4s after first paint — nobody gets
+   trapped behind it. Opacity-only (no motion). */
+.mm-loader {
+  animation: mm-loader-exit 400ms ease 2.4s forwards;
+}
+@keyframes mm-loader-exit {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+/* Session-once guard (set pre-paint by the inline script on repeat visits):
+   display:none stops all animations before a single frame is shown. */
+html[data-mm-booted] .mm-loader {
+  display: none;
+}
+/* Reduced motion: no sliding bar (static partial fill), keep the short
+   opacity-only exits. The JS/CSS failsafes above stay active. */
+@media (prefers-reduced-motion: reduce) {
+  .mm-loader-bar {
+    animation: none;
+    transform: translateX(0);
+  }
+}
+/* Fade-out phase (toggled by LoadingScreen on ready): opacity-only,
+   paired with the transition classes on the element. */
+.mm-loader-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
